@@ -1,7 +1,7 @@
 <?php
 
 //aqui tengo parametros por defecto, cuando la llame con parentesis vacios, usarà estos:
-function ConexionBD($Host = 'localhost' ,  $User = 'root',  $Password = '', $BaseDeDatos='proyecto' ) {
+function ConexionBD($Host = 'localhost' ,  $User = 'root',  $Password = '', $BaseDeDatos='roberts_libros' ) {
 
     //procedo al intento de conexion con esos parametros
     $linkConexion = mysqli_connect($Host, $User, $Password, $BaseDeDatos);

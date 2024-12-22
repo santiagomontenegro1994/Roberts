@@ -217,7 +217,6 @@ function Listar_Tipos($vConexion) {
     return $Listado;
 }
 
-
 function Listar_Estilistas($vConexion) {
 
     $Listado=array();
