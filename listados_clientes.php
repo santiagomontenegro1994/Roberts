@@ -18,7 +18,7 @@ require_once 'funciones/conexion.php';
 $MiConexion = ConexionBD();
 
 //ahora voy a llamar el script con la funcion que genera mi listado
-require_once 'funciones/select_clientes.php';
+require_once 'funciones/select_general.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 
@@ -117,7 +117,7 @@ $CantidadClientes = count($ListadoClientes);
                 <th scope="col">Apellido</th>
                 <th scope="col">Direccion</th>
                 <th scope="col">Telefono</th>
-                <th scope="col">Email</th>
+                <th scope="col">DNI</th>
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
@@ -129,7 +129,7 @@ $CantidadClientes = count($ListadoClientes);
                         <td><?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['DIRECCION']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
-                        <td><?php echo $ListadoClientes[$i]['EMAIL']; ?></td>
+                        <td><?php echo $ListadoClientes[$i]['DNI']; ?></td>
                         <td>
                           <!-- eliminar la consulta -->
                           <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
