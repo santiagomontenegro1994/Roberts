@@ -34,12 +34,12 @@
         </a>
         <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="agregar_turnos.php">
+            <a href="agregar_libros.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
-            <a href="listados_turnos.php">
+            <a href="listados_libros.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
           </li>

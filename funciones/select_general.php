@@ -26,7 +26,7 @@ function Listar_Clientes($vConexion) {
         //3) el resultado deberá organizarse en una matriz, entonces lo recorro
         $i=0;
         while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID_CLIENTE'] = $data['id'];
+            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
             $Listado[$i]['NOMBRE'] = $data['nombre'];
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
@@ -170,6 +170,47 @@ function Modificar_Cliente($vConexion) {
         return false;
     }
     
+}
+
+function InsertarLibros($vConexion){
+    
+    $SQL_Insert="INSERT INTO libros (isbn, titulo, autor, editorial, precio)
+    VALUES ('".$_POST['ISBN']."' , '".$_POST['Titulo']."' , '".$_POST['Autor']."', '".$_POST['Editorial']."', '".$_POST['Precio']."')";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
+function Validar_Libros(){
+    $_SESSION['ISBN']='';
+    if (strlen($_POST['ISBN']) < 5) {
+        $_SESSION['Mensaje'].='Debes ingresar un ISBN con al menos 5 caracteres. <br />';
+    }
+    if (strlen($_POST['Titulo']) < 5) {
+        $_SESSION['Mensaje'].='Debes ingresar un Titulo con al menos 5 caracteres. <br />';
+    }
+    if (strlen($_POST['Autor']) < 5) {
+        $_SESSION['Mensaje'].='Debes ingresar un Autor con al menos 5 caracteres. <br />';
+    }
+    if (strlen($_POST['Editorial']) < 3) {
+        $_SESSION['Mensaje'].='Debes ingresar una Editorial con al menos 3 caracteres. <br />';
+    }
+    if (strlen($_POST['Precio']) < 2) {
+        $_SESSION['Mensaje'].='Debes ingresar un Precio con al menos 2 caracteres. <br />';
+    }
+
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
 }
 
 function ColorDeFila($vFecha,$vEstado) {
