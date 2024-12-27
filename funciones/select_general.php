@@ -81,17 +81,17 @@ function Eliminar_Cliente($vConexion , $vIdConsulta) {
 
 
     //soy admin 
-        $SQL_MiConsulta="SELECT Id FROM clientes 
-                        WHERE Id = $vIdConsulta ";
+        $SQL_MiConsulta="SELECT idCliente FROM clientes 
+                        WHERE idCliente = $vIdConsulta ";
    
     
     $rs = mysqli_query($vConexion, $SQL_MiConsulta);
         
     $data = mysqli_fetch_array($rs);
 
-    if (!empty($data['Id']) ) {
+    if (!empty($data['idCliente']) ) {
         //si se cumple todo, entonces elimino:
-        mysqli_query($vConexion, "DELETE FROM clientes WHERE Id = $vIdConsulta");
+        mysqli_query($vConexion, "DELETE FROM clientes WHERE idCliente = $vIdConsulta");
         return true;
 
     }else {
@@ -104,18 +104,18 @@ function Datos_Cliente($vConexion , $vIdCliente) {
     $DatosCliente  =   array();
     //me aseguro que la consulta exista
     $SQL = "SELECT * FROM clientes 
-            WHERE Id = $vIdCliente";
+            WHERE idCliente = $vIdCliente";
 
     $rs = mysqli_query($vConexion, $SQL);
 
     $data = mysqli_fetch_array($rs) ;
     if (!empty($data)) {
-        $DatosCliente['ID_CLIENTE'] = $data['id'];
+        $DatosCliente['ID_CLIENTE'] = $data['idCliente'];
         $DatosCliente['NOMBRE'] = $data['nombre'];
         $DatosCliente['APELLIDO'] = $data['apellido'];
         $DatosCliente['TELEFONO'] = $data['telefono'];
         $DatosCliente['DIRECCION'] = $data['direccion'];
-        $DatosCliente['EMAIL'] = $data['email'];
+        $DatosCliente['DNI'] = $data['dni'];
     }
     return $DatosCliente;
 
@@ -153,7 +153,7 @@ function Modificar_Cliente($vConexion) {
     $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
     $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
     $direccion = mysqli_real_escape_string($vConexion, $_POST['Direccion']);
-    $email = mysqli_real_escape_string($vConexion, $_POST['Email']);
+    $dni = mysqli_real_escape_string($vConexion, $_POST['DNI']);
     $idCliente = mysqli_real_escape_string($vConexion, $_POST['IdCliente']);
 
     $SQL_MiConsulta = "UPDATE clientes 
@@ -161,8 +161,8 @@ function Modificar_Cliente($vConexion) {
     apellido = '$apellido',
     telefono = '$telefono',
     direccion = '$direccion',
-    email = '$email'
-    WHERE Id = '$idCliente'";
+    dni = '$dni'
+    WHERE idCliente = '$idCliente'";
 
     if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
         return true;
