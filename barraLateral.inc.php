@@ -44,26 +44,25 @@
             </a>
           </li>
         </ul>
-      </li><!-- End Turnos Nav -->
+      </li><!-- End Libros Nav -->
 
       <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-journal-text"></i><span>Pedidos de Libros</span><i class="bi bi-chevron-down ms-auto"></i>
+        <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-bag"></i><span>Pedidos de Libros</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
-        <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="agregar_turnos.php">
+            <a href="agregar_pedido.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
-            <a href="listados_turnos.php">
+            <a href="listados_pedidos.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
           </li>
         </ul>
-      </li><!-- End Turnos Nav -->
-
+      </li><!-- End Pedido de Libros Nav -->
 
     </ul>
 

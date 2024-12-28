@@ -39,6 +39,31 @@ function Listar_Clientes($vConexion) {
     return $Listado;
 }
 
+function Listar_Clientes_Pedidos($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT idCLiente , apellido , nombre
+        FROM clientes
+        ORDER BY apellido";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID'] = $data['idCLiente'];
+            $Listado[$i]['APELLIDO'] = $data['apellido'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
 function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
     $Listado=array();
 
@@ -54,8 +79,8 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
         case 'Telefono':
         $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%'";
         break;
-        case 'Email':
-        $sql = "SELECT * FROM clientes WHERE email LIKE '%$parametro%'";
+        case 'DNI':
+        $sql = "SELECT * FROM clientes WHERE dni LIKE '%$parametro%'";
         break;
         }    
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
@@ -64,12 +89,12 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
         //3) el resultado deberá organizarse en una matriz, entonces lo recorro
         $i=0;
         while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID_CLIENTE'] = $data['id'];
+            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
             $Listado[$i]['NOMBRE'] = $data['nombre'];
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
             $Listado[$i]['DIRECCION'] = $data['direccion'];
-            $Listado[$i]['EMAIL'] = $data['email'];
+            $Listado[$i]['DNI'] = $data['dni'];
             $i++;
         }
 
@@ -211,6 +236,58 @@ function Validar_Libros(){
     }
 
     return $_SESSION['Mensaje'];
+}
+
+function Listar_Libros($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT * FROM libros";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_LIBRO'] = $data['idLibros'];
+            $Listado[$i]['ISBN'] = $data['isbn'];
+            $Listado[$i]['TITULO'] = $data['titulo'];
+            $Listado[$i]['AUTOR'] = $data['autor'];
+            $Listado[$i]['EDITORIAL'] = $data['editorial'];
+            $Listado[$i]['PRECIO'] = $data['precio'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
+function Listar_Libros_Pedidos($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT idLibros , titulo , autor , precio
+        FROM libros
+        ORDER BY titulo";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID'] = $data['idLibros'];
+            $Listado[$i]['TITULO'] = $data['titulo'];
+            $Listado[$i]['AUTOR'] = $data['autor'];
+            $Listado[$i]['PRECIO'] = $data['precio'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
 }
 
 function ColorDeFila($vFecha,$vEstado) {
