@@ -52,7 +52,7 @@
         </a>
         <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="agregar_pedido.php">
+            <a href="agregar_pedidos.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>

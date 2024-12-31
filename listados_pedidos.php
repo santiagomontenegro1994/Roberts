@@ -22,8 +22,8 @@ require_once 'funciones/select_general.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 
-$ListadoLibros = Listar_Libros($MiConexion);
-$CantidadLibros = count($ListadoLibros);
+$ListadoPedidos = Listar_Pedidos($MiConexion);
+$CantidadPedidos = count($ListadoPedidos);
 
   //estoy en condiciones de poder buscar segun el parametro
   
@@ -45,12 +45,12 @@ $CantidadLibros = count($ListadoLibros);
 <main id="main" class="main">
 
 <div class="pagetitle">
-  <h1>Listado Libros</h1>
+  <h1>Listado Pedidos</h1>
   <nav>
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-      <li class="breadcrumb-item">Libros</li>
-      <li class="breadcrumb-item active">Listado Libros</li>
+      <li class="breadcrumb-item">Pedidos</li>
+      <li class="breadcrumb-item active">Listado Pedidos</li>
     </ol>
   </nav>
 </div><!-- End Page Title -->
@@ -59,7 +59,7 @@ $CantidadLibros = count($ListadoLibros);
     
     <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Listado Libros</h5>
+          <h5 class="card-title">Listado Pedidos</h5>
           <?php if (!empty($_SESSION['Mensaje'])) { ?>
             <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
               <?php echo $_SESSION['Mensaje'] ?>
@@ -113,33 +113,44 @@ $CantidadLibros = count($ListadoLibros);
             <thead>
               <tr>
                 <th scope="col">#</th>
-                <th scope="col">ISBN</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Cliente</th>
                 <th scope="col">Titulo</th>
                 <th scope="col">Autor</th>
-                <th scope="col">Editorial</th>
                 <th scope="col">Precio</th>
+                <th scope="col">Seña</th>
+                <th scope="col">Saldo</th>
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
             <tbody>
-                <?php for ($i=0; $i<$CantidadLibros; $i++) { ?>
-                    <tr>
+                <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
+                  //Calculo el saldo
+                  $saldo=$ListadoPedidos[$i]['PRECIO']-$ListadoPedidos[$i]['SEÑA'];
+
+                  //Metodo para pintar las filas
+                  list($Title, $Color) = ColorDeFila($ListadoPedidos[$i]['ESTADO']);
+                  ?>
+                    
+                    <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                         <th scope="row"><?php echo $i+1; ?></th>
-                        <td><?php echo $ListadoLibros[$i]['ISBN']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['AUTOR']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['PRECIO']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['CLIENTE']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['TITULO']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['AUTOR']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['PRECIO']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['SEÑA']; ?></td>
+                        <td><?php echo $saldo; ?></td>
                         <td>
                           <!-- eliminar la consulta -->
-                          <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
+                          <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             class="btn btn-success btn-danger" 
                             title="Eliminar" 
-                            onclick="return confirm('Confirma eliminar este libro?');">
+                            onclick="return confirm('Confirma eliminar este Pedido?');">
                               <i class="fa fa-times"></i>
                           </a>
 
-                          <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
+                          <a href="modificar_clientes.php?ID_CLIENTE=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             class="btn btn-success btn-circle btn-warning" 
                             title="Modificar">
                           <i class="bi bi-person-fill-slash"></i>

@@ -212,7 +212,7 @@ function InsertarLibros($vConexion){
 }
 
 function Validar_Libros(){
-    $_SESSION['ISBN']='';
+    $_SESSION['Mensaje']='';
     if (strlen($_POST['ISBN']) < 5) {
         $_SESSION['Mensaje'].='Debes ingresar un ISBN con al menos 5 caracteres. <br />';
     }
@@ -236,6 +236,27 @@ function Validar_Libros(){
     }
 
     return $_SESSION['Mensaje'];
+}
+
+function Datos_Libro($vConexion , $vIdLibro) {
+    $DatosLibro  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT * FROM libros 
+            WHERE IdLibros = $vIdLibro";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosLibro['ID_LIBRO'] = $data['idLibros'];
+        $DatosLibro['ISBN'] = $data['isbn'];
+        $DatosLibro['TITULO'] = $data['titulo'];
+        $DatosLibro['AUTOR'] = $data['autor'];
+        $DatosLibro['EDITORIAL'] = $data['editorial'];
+        $DatosLibro['PRECIO'] = $data['precio'];
+    }
+    return $DatosLibro;
+
 }
 
 function Listar_Libros($vConexion) {
@@ -290,34 +311,182 @@ function Listar_Libros_Pedidos($vConexion) {
     return $Listado;
 }
 
-function ColorDeFila($vFecha,$vEstado) {
+function Listar_Libros_Parametro($vConexion,$criterio,$parametro) {
+    $Listado=array();
+
+      //1) genero la consulta que deseo segun el parametro
+        $sql = "SELECT * FROM libros";
+        switch ($criterio) { 
+        case 'Titulo': 
+        $sql = "SELECT * FROM libros WHERE titulo LIKE '%$parametro%'";
+        break;
+        case 'Autor':
+        $sql = "SELECT * FROM libros WHERE autor LIKE '%$parametro%'";
+        break;
+        case 'Editorial':
+        $sql = "SELECT * FROM libros WHERE editorial LIKE '%$parametro%'";
+        break;
+        case 'ISBN':
+        $sql = "SELECT * FROM libros WHERE isbn LIKE '%$parametro%'";
+        break;
+        }    
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $sql);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_LIBRO'] = $data['idLibros'];
+            $Listado[$i]['ISBN'] = $data['isbn'];
+            $Listado[$i]['TITULO'] = $data['titulo'];
+            $Listado[$i]['AUTOR'] = $data['autor'];
+            $Listado[$i]['EDITORIAL'] = $data['editorial'];
+            $Listado[$i]['PRECIO'] = $data['precio'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
+function Modificar_Libros($vConexion) {
+    $isbn = mysqli_real_escape_string($vConexion, $_POST['ISBN']);
+    $autor = mysqli_real_escape_string($vConexion, $_POST['Autor']);
+    $titulo = mysqli_real_escape_string($vConexion, $_POST['Titulo']);
+    $editorial = mysqli_real_escape_string($vConexion, $_POST['Editorial']);
+    $precio = mysqli_real_escape_string($vConexion, $_POST['Precio']);
+    $idLibro = mysqli_real_escape_string($vConexion, $_POST['IdLibro']);
+
+    $SQL_MiConsulta = "UPDATE libros 
+    SET isbn = '$isbn',
+    titulo = '$titulo',
+    autor = '$autor',
+    editorial = '$editorial',
+    precio = '$precio'
+    WHERE idLibros = '$idLibro'";
+
+    if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    }else {
+        return false;
+    }
+    
+}
+
+function Eliminar_Libro($vConexion , $vIdConsulta) {
+
+
+    //soy admin 
+        $SQL_MiConsulta="SELECT idLibros FROM libros 
+                        WHERE idLibros = $vIdConsulta ";
+   
+    
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idLibros']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "DELETE FROM libros WHERE idLibros = $vIdConsulta");
+        return true;
+
+    }else {
+        return false;
+    }
+    
+}
+
+function Listar_Pedidos($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT C.nombre, PL.idPedidoLibros, PL.fecha, PL.tituloLibro, PL.autorLibro, PL.precio, PL.seña, E.denominación
+
+        FROM pedido_libros PL, clientes C, estado E
+        WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado 
+        ORDER BY PL.fecha, C.nombre";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en un vector, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID'] = $data['idPedidoLibros'];
+            $Listado[$i]['CLIENTE'] = $data['nombre'];
+            $Listado[$i]['FECHA'] = $data['fecha'];
+            $Listado[$i]['TITULO'] = $data['tituloLibro'];
+            $Listado[$i]['AUTOR'] = $data['autorLibro'];
+            $Listado[$i]['PRECIO'] = $data['precio'];
+            $Listado[$i]['SEÑA'] = $data['seña'];
+            $Listado[$i]['ESTADO'] = $data['denominación'];
+
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
+function InsertarPedido($vConexion){
+    
+    $SQL_Insert="INSERT INTO pedido_libros (idCliente, fecha, tituloLibro, autorLibro, precio, seña, idEstado)
+    VALUES ('".$_POST['Cliente']."' , CURDATE(), '".$_POST['Titulo']."', '".$_POST['Autor']."', '".$_POST['Precio']."', '".$_POST['Seña']."', 1)";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
+function Validar_Pedidos(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['Cliente']) == 'Selecciona una opcion') {
+        $_SESSION['Mensaje'].='Debes seleccionar un Cliente. <br />';
+    }
+    if (strlen($_POST['Libro']) == 'Selecciona una opcion') {
+        $_SESSION['Mensaje'].='Debes seleccionar un Libro. <br />';
+    }
+    if (strlen($_POST['Seña']) < 1) {
+        $_SESSION['Mensaje'].='Debes ingresar una seña. <br />';
+    }
+    
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function ColorDeFila($vEstado) {
     $Title='';
     $Color=''; 
-    $FechaActual = date("Y-m-d");
 
-    if ($vFecha < $FechaActual && $vEstado!=3){
-        //la fecha del viaje es mayor a mañana?
-        $Title='Turno Vencido';
+    if ($vEstado=='Pendiente'){
+        //Estado pendiente
+        $Title='Pendiente de buscar';
         $Color='table-danger'; 
     
-    } else if ($vEstado == 2){
-        //Turno en Curso
-        $Title='Turno en Curso';
+    } else if ($vEstado == 'Listo para retirar'){
+        //Estado listo para retirar
+        $Title='Listo para retirar';
         $Color='table-warning'; 
-    } else if ($vEstado==3){
-        //Turno Completado
-        $Title='Turno Completado';
+    } else if ($vEstado=='Retirado'){
+        //Estado retirado
+        $Title='Retirado';
         $Color='table-success'; 
-    } else if ($vEstado == 1){
-        //Turno pendiente
-        $Title='Turno Pendiente';
-        $Color='table-primary';
-    }
-        
+    }     
     
     return [$Title, $Color];
 
 }
+
 
 
 ?>
