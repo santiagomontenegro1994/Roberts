@@ -82,26 +82,26 @@ $CantidadPedidos = count($ListadoPedidos);
               </div>
               <div class="col-sm-5 mt-2">
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Titulo" checked>
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Fecha" checked>
                       <label class="form-check-label" for="gridRadios1">
-                        Titulo
+                        Fecha
                       </label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Autor">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Cliente">
                       <label class="form-check-label" for="gridRadios2">
-                        Autor
+                        Cliente
                       </label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Editorial">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Titulo">
                       <label class="form-check-label" for="gridRadios3">
-                        Editorial
+                        Titulo
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="ISBN">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
                       <label class="form-check-label" for="gridRadios4">
-                        ISBN
+                        Estado
                     </div>
                     
                   </div>
