@@ -143,16 +143,22 @@ $CantidadPedidos = count($ListadoPedidos);
                         <td><?php echo $saldo; ?></td>
                         <td>
                           <!-- eliminar la consulta -->
-                          <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                          <a href="eliminar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             class="btn btn-success btn-danger" 
                             title="Eliminar" 
                             onclick="return confirm('Confirma eliminar este Pedido?');">
                               <i class="fa fa-times"></i>
                           </a>
 
-                          <a href="modificar_clientes.php?ID_CLIENTE=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                          <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             class="btn btn-success btn-circle btn-warning" 
                             title="Modificar">
+                          <i class="bi bi-person-fill-slash"></i>
+                          </a>
+
+                          <a href="imprimir_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                            class="btn btn-success btn-circle btn-info" 
+                            title="Imprimir">
                           <i class="bi bi-person-fill-slash"></i>
                           </a>
                       

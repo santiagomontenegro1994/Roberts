@@ -113,10 +113,11 @@ $CantidadLibros = count($ListadoLibros);
             <thead>
               <tr>
                 <th scope="col">#</th>
-                <th scope="col">ISBN</th>
+                <th scope="col">Código</th>
                 <th scope="col">Titulo</th>
                 <th scope="col">Autor</th>
                 <th scope="col">Editorial</th>
+                <th scope="col">Mayorista</th>
                 <th scope="col">Precio</th>
                 <th scope="col">Acciones</th>
               </tr>
@@ -125,10 +126,11 @@ $CantidadLibros = count($ListadoLibros);
                 <?php for ($i=0; $i<$CantidadLibros; $i++) { ?>
                     <tr>
                         <th scope="row"><?php echo $i+1; ?></th>
-                        <td><?php echo $ListadoLibros[$i]['ISBN']; ?></td>
+                        <td>CODIGO</td>
                         <td><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
                         <td><?php echo $ListadoLibros[$i]['AUTOR']; ?></td>
                         <td><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
+                        <td>MAYORISTA</td>
                         <td><?php echo $ListadoLibros[$i]['PRECIO']; ?></td>
                         <td>
                           <!-- eliminar la consulta -->
