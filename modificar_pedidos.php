@@ -18,34 +18,33 @@ require_once 'funciones/select_general.php';
  
 //este array contendra los datos de la consulta original, y cuando 
 //pulse el boton, mantendrá los datos ingresados hasta que se validen y se puedan modificar
-$DatosLibroActual=array();
+$DatosPedidoActual=array();
 
-if (!empty($_POST['BotonModificarLibro'])) {
-    Validar_Libros();
+if (!empty($_POST['BotonModificarPedido'])) {
+    Validar_Pedido();
 
     if (empty($_SESSION['Mensaje'])) { //ya toque el boton modificar y el mensaje esta vacio...
         
         if (Modificar_Libros($MiConexion) != false) {
-            $_SESSION['Mensaje'] = "Tu libro se ha modificado correctamente!";
+            $_SESSION['Mensaje'] = "Tu pedido se ha modificado correctamente!";
             $_SESSION['Estilo']='success';
-            header('Location: listados_libros.php');
+            header('Location: listados_pedidos.php');
             exit;
         }
 
     }else {  //ya toque el boton modificar y el mensaje NO esta vacio...
         $_SESSION['Estilo']='warning';
-        $DatosLibroActual['ID_LIBRO'] = !empty($_POST['IdLibro']) ? $_POST['IdLibro'] :'';
-        $DatosLibroActual['ISBN'] = !empty($_POST['ISBN']) ? $_POST['ISBN'] :'';
-        $DatosLibroActual['AUTOR'] = !empty($_POST['Autor']) ? $_POST['Autor'] :'';
-        $DatosLibroActual['TITULO'] = !empty($_POST['Titulo']) ? $_POST['Titulo'] :'';
-        $DatosLibroActual['EDITORIAL'] = !empty($_POST['Editorial']) ? $_POST['Editorial'] :'';
-        $DatosLibroActual['PRECIO'] = !empty($_POST['Precio']) ? $_POST['Precio'] :'';
+        $DatosPedidoActual['ID_PEDIDO'] = !empty($_POST['IdPedido']) ? $_POST['IdPEdido'] :'';
+        $DatosPedidoActual['CLIENTE'] = !empty($_POST['Cliente']) ? $_POST['Cliente'] :'';
+        $DatosPedidoActual['LIBRO'] = !empty($_POST['Libro']) ? $_POST['Libro'] :'';
+        $DatosPedidoActual['PRECIO'] = !empty($_POST['Precio']) ? $_POST['Precio'] :'';
+        $DatosPedidoActual['SEÑA'] = !empty($_POST['Seña']) ? $_POST['Seña'] :'';
     }
 
-}else if (!empty($_GET['ID_LIBRO'])) {
+}else if (!empty($_GET['ID_PEDIDO'])) {
     //verifico que traigo el nro de consulta por GET si todabia no toque el boton de Modificar
     //busco los datos de esta consulta y los muestro
-    $DatosLibroActual = Datos_Libro($MiConexion , $_GET['ID_LIBRO']);
+    $DatosPedidoActual = Datos_Pedido($MiConexion , $_GET['ID_PEDIDO']);
 }
 
 ?>
@@ -53,19 +52,19 @@ if (!empty($_POST['BotonModificarLibro'])) {
   <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>Libros</h1>
+      <h1>Pedidos</h1>
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-          <li class="breadcrumb-item">Libros</li>
-          <li class="breadcrumb-item active">Modificar Libros</li>
+          <li class="breadcrumb-item">Pedidos</li>
+          <li class="breadcrumb-item active">Modificar Pedido</li>
         </ol>
       </nav>
     </div><!-- End Page Title -->
     <section class="section">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Modificar Libros</h5>
+              <h5 class="card-title">Modificar Pedido</h5>
 
               <!-- Horizontal Form -->
                 <form method='post'>
@@ -76,47 +75,29 @@ if (!empty($_POST['BotonModificarLibro'])) {
                 <?php } ?>
 
                 <div class="row mb-3">
-                  <label for="inputEmail3" class="col-sm-2 col-form-label">ISBN</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" name="ISBN" id="isbn"
-                    value="<?php echo !empty($DatosLibroActual['ISBN']) ? $DatosLibroActual['ISBN'] : ''; ?>">
-                  </div>
-                </div>
-                <div class="row mb-3">
-                  <label for="inputEmail3" class="col-sm-2 col-form-label">Titulo</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" name="Titulo" id="titulo"
-                    value="<?php echo !empty($DatosLibroActual['TITULO']) ? $DatosLibroActual['TITULO'] : ''; ?>">
-                  </div>
-                </div>
-                <div class="row mb-3">
-                  <label for="inputEmail3" class="col-sm-2 col-form-label">Autor</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" name="Autor" id="autor"
-                    value="<?php echo !empty($DatosLibroActual['AUTOR']) ? $DatosLibroActual['AUTOR'] : ''; ?>">
-                  </div>
-                </div>
-                <div class="row mb-3">
-                  <label for="inputEmail3" class="col-sm-2 col-form-label">Editorial</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" name="Editorial" id="editorial"
-                    value="<?php echo !empty($DatosLibroActual['EDITORIAL']) ? $DatosLibroActual['EDITORIAL'] : ''; ?>">
-                  </div>
-                </div>
-                <div class="row mb-3">
                   <label for="inputEmail3" class="col-sm-2 col-form-label">Precio</label>
                   <div class="col-sm-10">
                     <input type="number" class="form-control" name="Precio" id="precio"
-                    value="<?php echo !empty($DatosLibroActual['PRECIO']) ? $DatosLibroActual['PRECIO'] : ''; ?>">
+                    value="<?php echo !empty($DatosPedidoActual['PRECIO']) ? $DatosPedidoActual['PRECIO'] : ''; ?>">
                   </div>
                 </div>
 
+                <div class="row mb-3">
+                  <label for="inputEmail3" class="col-sm-2 col-form-label">Seña</label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" name="Seña" id="seña"
+                    value="<?php echo !empty($DatosPedidoActual['Seña']) ? $DatosPedidoActual['Seña'] : ''; ?>">
+                  </div>
+                </div>
+
+
+
                 <div class="text-center">
                   
-                    <input type='hidden' name="IdLibro" value="<?php echo $DatosLibroActual['ID_LIBRO']; ?>" />
+                    <input type='hidden' name="IdPedido" value="<?php echo $DatosPedidoActual['ID_PEDIDO']; ?>" />
                     
                     <button type="submit" class="btn btn-primary" value="Modificar" name="BotonModificarLibro">Modificar</button>
-                    <a href="listados_libros.php" 
+                    <a href="listados_pedidos.php" 
                     class="btn btn-success btn-info " 
                     title="Listado"> Volver al listado  </a>
                 </div>
