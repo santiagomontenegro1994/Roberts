@@ -88,20 +88,15 @@ $CantidadLibros = count($ListadoLibros);
                       </label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Autor">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Codigo">
                       <label class="form-check-label" for="gridRadios2">
-                        Autor
+                        Codigo
                       </label>
                     </div>
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Editorial">
                       <label class="form-check-label" for="gridRadios3">
                         Editorial
-                    </div>
-                    <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="ISBN">
-                      <label class="form-check-label" for="gridRadios4">
-                        ISBN
                     </div>
                     
                   </div>
@@ -115,7 +110,6 @@ $CantidadLibros = count($ListadoLibros);
                 <th scope="col">#</th>
                 <th scope="col">Código</th>
                 <th scope="col">Titulo</th>
-                <th scope="col">Autor</th>
                 <th scope="col">Editorial</th>
                 <th scope="col">Mayorista</th>
                 <th scope="col">Precio</th>
@@ -125,13 +119,12 @@ $CantidadLibros = count($ListadoLibros);
             <tbody>
                 <?php for ($i=0; $i<$CantidadLibros; $i++) { ?>
                     <tr>
-                        <th scope="row"><?php echo $i+1; ?></th>
-                        <td>CODIGO</td>
-                        <td><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['AUTOR']; ?></td>
-                        <td><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
-                        <td>MAYORISTA</td>
-                        <td><?php echo $ListadoLibros[$i]['PRECIO']; ?></td>
+                        <th scope="row" class="small"><?php echo $i+1; ?></th>
+                        <td class="small"><?php echo $ListadoLibros[$i]['CODIGO']; ?></td>
+                        <td class="small"><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
+                        <td class="small"><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
+                        <td class="small"><?php echo $ListadoLibros[$i]['MAYORISTA']; ?></td>
+                        <td class="small"><?php echo $ListadoLibros[$i]['PRECIO']; ?></td>
                         <td>
                           <!-- eliminar la consulta -->
                           <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 

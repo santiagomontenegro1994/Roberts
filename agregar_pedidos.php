@@ -41,7 +41,7 @@ if (!empty($_POST['Registrar'])) {
   <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>Turnos</h1>
+      <h1>Pedidos</h1>
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="index.php">Menu</a></li>

@@ -264,7 +264,12 @@ function Listar_Libros($vConexion) {
     $Listado=array();
 
       //1) genero la consulta que deseo
-        $SQL = "SELECT * FROM libros";
+        $SQL = "SELECT idLibros, codigo, titulo, editorial, precio, 'Personal' AS mayorista FROM libros 
+        UNION ALL 
+        SELECT idLibros, codigo, titulo, editorial, precio, 'SBS' AS mayorista FROM librossbs 
+        UNION ALL 
+        SELECT idLibros, codigo, titulo, editorial, precio, 'LEAS' AS mayorista FROM librosleas
+        LIMIT 1000";
 
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
         $rs = mysqli_query($vConexion, $SQL);
@@ -273,11 +278,11 @@ function Listar_Libros($vConexion) {
         $i=0;
         while ($data = mysqli_fetch_array($rs)) {
             $Listado[$i]['ID_LIBRO'] = $data['idLibros'];
-            $Listado[$i]['ISBN'] = $data['isbn'];
+            $Listado[$i]['CODIGO'] = $data['codigo'];
             $Listado[$i]['TITULO'] = $data['titulo'];
-            $Listado[$i]['AUTOR'] = $data['autor'];
             $Listado[$i]['EDITORIAL'] = $data['editorial'];
             $Listado[$i]['PRECIO'] = $data['precio'];
+            $Listado[$i]['MAYORISTA'] = $data['mayorista'];
             $i++;
         }
 
@@ -315,21 +320,28 @@ function Listar_Libros_Parametro($vConexion,$criterio,$parametro) {
     $Listado=array();
 
       //1) genero la consulta que deseo segun el parametro
-        $sql = "SELECT * FROM libros";
-        switch ($criterio) { 
+      switch ($criterio) { 
         case 'Titulo': 
-        $sql = "SELECT * FROM libros WHERE titulo LIKE '%$parametro%'";
-        break;
-        case 'Autor':
-        $sql = "SELECT * FROM libros WHERE autor LIKE '%$parametro%'";
-        break;
-        case 'Editorial':
-        $sql = "SELECT * FROM libros WHERE editorial LIKE '%$parametro%'";
-        break;
-        case 'ISBN':
-        $sql = "SELECT * FROM libros WHERE isbn LIKE '%$parametro%'";
-        break;
-        }    
+            $whereClause = "WHERE titulo LIKE '%$parametro%'"; 
+            break; 
+        case 'Codigo': 
+            $whereClause = "WHERE codigo LIKE '%$parametro%'"; 
+            break; 
+        case 'Editorial': 
+            $whereClause = "WHERE editorial LIKE '%$parametro%'";
+            break;
+        default: 
+            $whereClause = ""; 
+            break; 
+        }
+
+        $sql = "SELECT idLibros, codigo, titulo, editorial, precio, 'Personal' AS mayorista FROM libros $whereClause 
+        UNION ALL 
+        SELECT idLibros, codigo, titulo, editorial, precio, 'SBS' AS mayorista FROM librossbs $whereClause 
+        UNION ALL 
+        SELECT idLibros, codigo, titulo, editorial, precio, 'LEAS' AS mayorista FROM librosleas $whereClause 
+        LIMIT 1000";
+
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
         $rs = mysqli_query($vConexion, $sql);
         
@@ -337,11 +349,11 @@ function Listar_Libros_Parametro($vConexion,$criterio,$parametro) {
         $i=0;
         while ($data = mysqli_fetch_array($rs)) {
             $Listado[$i]['ID_LIBRO'] = $data['idLibros'];
-            $Listado[$i]['ISBN'] = $data['isbn'];
+            $Listado[$i]['CODIGO'] = $data['codigo'];
             $Listado[$i]['TITULO'] = $data['titulo'];
-            $Listado[$i]['AUTOR'] = $data['autor'];
             $Listado[$i]['EDITORIAL'] = $data['editorial'];
             $Listado[$i]['PRECIO'] = $data['precio'];
+            $Listado[$i]['MAYORISTA'] = $data['mayorista'];
             $i++;
         }
 
@@ -402,7 +414,7 @@ function Listar_Pedidos($vConexion) {
 
       //1) genero la consulta que deseo
         $SQL = "SELECT C.nombre, PL.idPedidoLibros, PL.fecha, PL.precio, PL.seña, E.denominación,
-        L.titulo, L.autor
+        L.titulo, L.editorial
         FROM pedido_libros PL, clientes C, estado E, libros L
         WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado AND PL.idLibro=L.idLibros
         ORDER BY PL.fecha, C.nombre";
@@ -417,7 +429,7 @@ function Listar_Pedidos($vConexion) {
             $Listado[$i]['CLIENTE'] = $data['nombre'];
             $Listado[$i]['FECHA'] = $data['fecha'];
             $Listado[$i]['TITULO'] = $data['titulo'];
-            $Listado[$i]['AUTOR'] = $data['autor'];
+            $Listado[$i]['EDITORIAL'] = $data['editorial'];
             $Listado[$i]['PRECIO'] = $data['precio'];
             $Listado[$i]['SEÑA'] = $data['seña'];
             $Listado[$i]['ESTADO'] = $data['denominación'];
