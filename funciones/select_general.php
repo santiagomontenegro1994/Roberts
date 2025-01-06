@@ -441,6 +441,33 @@ function Listar_Pedidos($vConexion) {
     return $Listado;
 }
 
+function Datos_Pedido($vConexion , $vIdPedido) {
+    $DatosPedido  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT PL.idPedidoLibros, PL.fecha, PL.precio, PL.seña, L.autor,
+        L.titulo, C.nombre, C.apellido, C.telefono
+        FROM pedido_libros PL, clientes C, libros L
+        WHERE PL.idCliente=C.idCliente AND PL.idLibro=L.idLibros
+        AND idPedidoLibros = $vIdPedido";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosPedido['ID_PEDIDO'] = $data['idPedidoLibros'];
+        $DatosPedido['NOMBRE_CLIENTE'] = $data['nombre'];
+        $DatosPedido['APELLIDO_CLIENTE'] = $data['apellido'];
+        $DatosPedido['TELEFONO_CLIENTE'] = $data['telefono'];
+        $DatosPedido['TITULO'] = $data['titulo'];
+        $DatosPedido['AUTOR'] = $data['autor'];
+        $DatosPedido['FECHA'] = $data['fecha'];
+        $DatosPedido['PRECIO'] = $data['precio'];
+        $DatosPedido['SEÑA'] = $data['seña'];
+    }
+    return $DatosPedido;
+
+}
+
 function InsertarPedido($vConexion){
     
     $SQL_Insert="INSERT INTO pedido_libros (idCliente, fecha, tituloLibro, autorLibro, precio, seña, idEstado)
