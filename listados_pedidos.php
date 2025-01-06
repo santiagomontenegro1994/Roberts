@@ -156,11 +156,7 @@ $CantidadPedidos = count($ListadoPedidos);
                           <i class="bi bi-person-fill-slash"></i>
                           </a>
 
-<<<<<<< HEAD
-                          <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
-=======
-                          <a href="imprimir_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
->>>>>>> 174c2676cd19c404345c504203b2f13356e852e1
+                          <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
                             class="btn btn-success btn-circle btn-info" 
                             title="Imprimir">
                           <i class="bi bi-person-fill-slash"></i>
