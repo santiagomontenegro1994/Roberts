@@ -6,6 +6,6 @@
     <title>Nuevo Pedido</title>
 </head>
 <body>
-    <h1>Ventas</h1>
+    <h1>Pedidos</h1>
 </body>
 </html>
