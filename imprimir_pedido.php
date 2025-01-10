@@ -23,6 +23,7 @@ $DatosPedidoActual = Datos_Pedido($MiConexion , $_GET['ID_PEDIDO']);
 
 //Empiezo a guardar el contenido en una variable
 ob_start();
+
 ?>
 
 <!DOCTYPE html>
