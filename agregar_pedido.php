@@ -30,11 +30,14 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
         <div class="card-body">
             <div class="d-flex justify-content-start align-items-center"> 
                 <h5 class="card-title mr-2">Datos de Cliente</h5> 
-                <button class="btn btn-primary btn-sm m-2" type="submit" value="Agregar" name="AgregarClientes">Agregar</button>
+                <button class="btn btn-primary btn-sm m-2" type="hidden" value="Agregar" name="AgregarClientes">Agregar</button>
             </div>
 
 <!-- Horizontal Form -->
-            <form class="row g-1" id='miFormularioClientes' method='post'>
+            <form class="row g-1" id="form_new_cliente_pedido" name="form_new_cliente_pedido" method='post'>
+
+            <input type="hidden" name="action" value="addCliente">
+            <input type="hidden" name="IdCliente" id="idCliente">
 
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">DNI</label>
@@ -42,19 +45,19 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Nombre</label>
-                <input type="text" class="form-control form-control-sm"  name="Nombre" id="nombre">
+                <input type="text" class="form-control form-control-sm"  name="Nombre" id="nombre" disabled required>
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Apellido</label>
-                <input type="text" class="form-control form-control-sm"  name="Apellido" id="apellido">
+                <input type="text" class="form-control form-control-sm"  name="Apellido" id="apellido" disabled required>
             </div>
             <div class="col-md-6 mb-1">
                 <label for="fecha" class="form-label">Direccion</label>
-                <input type="text" class="form-control form-control-sm"  name="Direccion" id="direccion">
+                <input type="text" class="form-control form-control-sm"  name="Direccion" id="direccion" disabled required>
             </div>
             <div class="col-md-6 mb-1">
                 <label for="fecha" class="form-label">Telefono</label>
-                <input type="text" class="form-control form-control-sm"  name="Telefono" id="telefono">
+                <input type="text" class="form-control form-control-sm"  name="Telefono" id="telefono" disabled required>
             </div>
 
             <div class="text-center">
@@ -62,10 +65,36 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </div>
             </form>
 <!-- End Horizontal Form -->
-
-
         </div>
-    </div>      
+    </div>   
+    
+    <!-- Table with stripped rows -->
+    <div class="card">
+    <div class="card-body">
+        <h5 class="card-title mr-2">Datos de Libro</h5>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+            <th scope="col">#</th>
+            <th scope="col">Titulo</th>
+            <th scope="col">Editorial</th>
+            <th scope="col">Precio</th>
+            </tr>
+        </thead>
+        <tbody>
+                    
+            <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left">
+                <th scope="row">1</th>
+                <td>TITULO</td>
+                <td>EDITORIAL</td>
+                <td>PRECIO</td>   
+            </tr>
+        </tbody>
+    </table>
+    </div>
+    </div>
+          <!-- End Table with stripped rows -->
+
 </section>            
             
         
