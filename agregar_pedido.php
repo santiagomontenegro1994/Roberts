@@ -60,7 +60,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <input type="text" class="form-control form-control-sm"  name="Telefono" id="telefono" disabled required>
             </div>
 
-            <div class="text-center">
+            <div class="text-center" id="div_registro_cliente">
                 <button class="btn btn-primary" type="submit" value="RegistrarClientes" name="RegistrarClientes">Registrar</button>
             </div>
             </form>
@@ -75,21 +75,64 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
     <table class="table table-striped">
         <thead>
             <tr>
-            <th scope="col">#</th>
+            <th scope="col">ID</th>
             <th scope="col">Titulo</th>
             <th scope="col">Editorial</th>
+            <th scope="col" class="col-2">Cantidad</th>
             <th scope="col">Precio</th>
+            <th scope="col">Precio total</th>
+            <th scope="col">Accion</th>
+            </tr>
+              
+            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
+                <th><input type="text" name="txt_id_libro" id="txt_id_libro"></th>
+                <td id="txt_titulo">-</td>
+                <td id="txt_editorial">-</td>
+                <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
+                <td id="txt_precio">0.00</td>
+                <td id="txt_precio_total">0.00</td>
+                <td><a href="#" id="add_libro_pedido"><i class="bi bi-plus"></i>Agregar</a></td>   
+            </tr>
+
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Titulo</th>
+                <th scope="col">Editorial</th>
+                <th scope="col" class="col-2">Cantidad</th>
+                <th scope="col">Precio</th>
+                <th scope="col">Precio total</th>
+                <th scope="col">Accion</th>
             </tr>
         </thead>
-        <tbody>
-                    
-            <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left">
-                <th scope="row">1</th>
-                <td>TITULO</td>
-                <td>EDITORIAL</td>
-                <td>PRECIO</td>   
+        <tbody id="detalle_venta"> 
+            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
+                <th>1</th>
+                <td>mi pobre angelito</td>
+                <td>Editorial</td>
+                <th>2</th>
+                <td>50.00</td>
+                <td>100.00</td>
+                <td>
+                    <a href="#" onclick="event.preventDefault(); del_libro_detalle(1);">
+                        <i class="bi bi-trash text-danger"></i></a>
+                </td>   
             </tr>
+            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
+                <th>12</th>
+                <td>libro 2</td>
+                <td>Editorial 7</td>
+                <th>3</th>
+                <td>25.00</td>
+                <td>75.00</td>
+                <td>
+                    <a href="#" onclick="event.preventDefault(); del_libro_detalle(1);">
+                        <i class="bi bi-trash text-danger"></i></a>
+                </td>   
+            </tr>   
         </tbody>
+        <tfoot>
+            
+        </tfoot>
     </table>
     </div>
     </div>
