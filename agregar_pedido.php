@@ -131,7 +131,19 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </tr>   
         </tbody>
         <tfoot>
-            
+            <tr>
+                <td>SUBTOTAL</td>
+                <td>1000.00</td>
+            </tr>
+            <tr>
+                <td>SEÑA</td>
+                <td>500.00</td>
+            </tr>
+            <tr>
+                <td>TOTAL</td>
+                <td>500.00</td>
+            </tr>
+
         </tfoot>
     </table>
     </div>
