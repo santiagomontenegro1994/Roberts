@@ -34,10 +34,10 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </div>
 
 <!-- Horizontal Form -->
-            <form class="row g-1" id="form_new_cliente_pedido" name="form_new_cliente_pedido" method='post'>
+        <form class="row g-1" id="formularioClientePedido" name="form_new_cliente_pedido">
 
             <input type="hidden" name="action" value="addCliente">
-            <input type="hidden" name="IdCliente" id="idCliente">
+            <input type="hidden" name="idCliente" id="idCliente">
 
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">DNI</label>
@@ -61,9 +61,9 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </div>
 
             <div class="text-center" id="div_registro_cliente" style="display: none;">
-                <button class="btn btn-primary" type="submit" value="RegistrarClientes" name="RegistrarClientes">Registrar</button>
+                <button type="submit" class="btn btn-primary">Registrar</button>
             </div>
-            </form>
+        </form>
 <!-- End Horizontal Form -->
         </div>
     </div>   

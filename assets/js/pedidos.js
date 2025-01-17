@@ -72,8 +72,38 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     });
 
     //Crear clientes
-    $('#form_new_cliente_pedido').submit(function(e){
-        preventDefault();
+    $('#formularioClientePedido').submit(function(e){
+        e.preventDefault();
+        $.ajax({
+            url: 'ajax.php',
+            type: "POST",
+            async : true,
+            data: $('#formularioClientePedido').serialize(), //le paso todos los elementos del formulario
+
+            success: function(response)
+            {
+                if(response != 'error'){
+                    //Agregar id al input hiden
+                    $('#idCliente').val(response);
+                    //Bloquea campos
+                    $('#nom_cliente').attr('disabled','disabled');
+                    $('#ape_cliente').attr('disabled','disabled');
+                    $('#tel_cliente').attr('disabled','disabled');
+                    $('#dir_cliente').attr('disabled','disabled');
+
+                    //Ocultar boton agregar
+                    $('.btn_new_cliente').slideUp();
+
+                    //Ocultar boton guardar
+                    $('#div_registro_cliente').slideUp();
+                }
+            },
+            error: function(error){
+                console.log('Error:', error);
+            }
+
+        });
+
     })
 
 });

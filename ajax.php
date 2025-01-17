@@ -34,6 +34,30 @@ $MiConexion=ConexionBD();
             exit;
         }
 
+        //registrar Cliente Pedidos
+        if($_POST['action'] == 'addCliente'){
+            
+            $dni = $_POST['dni_cliente'];
+            $nombre = $_POST['nom_cliente'];
+            $apellido = $_POST['ape_cliente'];
+            $direccion = $_POST['dir_cliente'];
+            $telefono = $_POST['tel_cliente'];
+
+            $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, dni, direccion, telefono)
+                                                        VALUES ('$nombre' , '$apellido' , '$dni', '$direccion', '$telefono')");
+
+
+            if($query_insert){ // si se ejecuto bien la insercion
+                $codCliente = mysqli_insert_id($MiConexion); // extraemos el ID por medio de la funcion mysqli_insert_id
+                $msg = $codCliente;
+            }else{
+                $msg = 'error';
+            }
+            mysqli_close($MiConexion);//cierro la conexion
+            echo $msg;
+            exit;                                          
+
+        }
 
 
 
