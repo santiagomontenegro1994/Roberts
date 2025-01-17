@@ -17,6 +17,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
       });
 
+
     //Buscar clientes
 
     $('#dni_cliente').keyup(function(e){ //cada vez que teclean un valor se activa
@@ -33,7 +34,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
             success: function(response)
             {
-                console.log(response);
                 if(response == 0){
                     $('#idCliente').val('');
                     $('#nom_cliente').val('');
@@ -70,6 +70,11 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         });
 
     });
+
+    //Crear clientes
+    $('#form_new_cliente_pedido').submit(function(e){
+        preventDefault();
+    })
 
 });
 
