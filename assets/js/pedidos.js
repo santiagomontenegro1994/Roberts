@@ -44,7 +44,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     $('.btn_new_cliente').slideDown();
                 }else{
                     var data = $.parseJSON(response);
-                    $('#idCliente').val(data.id);
+                    $('#idCliente').val(data.idCliente);
                     $('#nom_cliente').val(data.nombre);
                     $('#ape_cliente').val(data.apellido);
                     $('#dir_cliente').val(data.direccion);
