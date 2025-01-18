@@ -174,14 +174,14 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
     });
 
-    //Agregar producto al detalle
+    //Agregar producto al detalle temporal
     $('#add_libro_pedido').click(function(e){
         e.preventDefault();
-        if($('#txt_cant_producto').val() > 0){
+        if($('#txt_cantidad_libro').val() > 0){
 
             var codlibro = $('#txtIdLibro').val();
             var cantidad = $('#txt_cantidad_libro').val();
-            var action = 'addLibroDetalle';
+            var action = 'agregarLibroDetalle';
 
             $.ajax({
                 url: 'ajax.php',

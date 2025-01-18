@@ -91,7 +91,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
                 <td id="txt_precio">0.00</td>
                 <td id="txt_precio_total">0.00</td>
-                <td><a href="#" id="add_libro_pedido" style="display: none;"><i class="bi bi-plus text-danger"></i>Agregar</a></td>   
+                <td><a href="#" id="add_libro_pedido" style="display: none;"><i class="bi bi-plus text-succes"></i>Agregar</a></td>   
             </tr>
 
             <tr>
@@ -105,45 +105,11 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
             </tr>
         </thead>
         <tbody id="detalle_venta"> 
-            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
-                <th>1</th>
-                <td>mi pobre angelito</td>
-                <td>Editorial</td>
-                <th>2</th>
-                <td>50.00</td>
-                <td>100.00</td>
-                <td>
-                    <a href="#" onclick="event.preventDefault(); del_libro_detalle(1);">
-                        <i class="bi bi-trash text-danger"></i></a>
-                </td>   
-            </tr>
-            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
-                <th>12</th>
-                <td>libro 2</td>
-                <td>Editorial 7</td>
-                <th>3</th>
-                <td>25.00</td>
-                <td>75.00</td>
-                <td>
-                    <a href="#" onclick="event.preventDefault(); del_libro_detalle(1);">
-                        <i class="bi bi-trash text-danger"></i></a>
-                </td>   
-            </tr>   
+        <!-- CONTENIDO AJAX-->
         </tbody>
-        <tfoot >
-            <tr>
-                <td colspan="5" class="text-end">SUBTOTAL</td>
-                <td colspan="5" class="text-end">1000.00</td>
-            </tr>
-            <tr>
-                <td colspan="5" class="text-end">SEÑA</td>
-                <td colspan="5" class="text-end">500.00</td>
-            </tr>
-            <tr>
-                <td colspan="5" class="text-end">TOTAL</td>
-                <td colspan="5" class="text-end">500.00</td>
-            </tr>
 
+        <tfoot id="detalle_totales">
+        <!-- CONTENIDO AJAX-->
         </tfoot>
     </table>
     </div>
