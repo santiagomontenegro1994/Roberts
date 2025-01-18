@@ -174,6 +174,33 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
     });
 
+    //Agregar producto al detalle
+    $('#add_libro_pedido').click(function(e){
+        e.preventDefault();
+        if($('#txt_cant_producto').val() > 0){
+
+            var codlibro = $('#txtIdLibro').val();
+            var cantidad = $('#txt_cantidad_libro').val();
+            var action = 'addLibroDetalle';
+
+            $.ajax({
+                url: 'ajax.php',
+                type: "POST",
+                async : true,
+                data: {action:action,producto:codlibro,cantidad:cantidad}, 
+    
+                success: function(response){
+                    console.log(response);
+                },
+                error: function(error){
+                    console.log('Error:', error);
+                }
+    
+            });
+
+
+        }
+    });
 
 });
 
