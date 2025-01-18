@@ -59,6 +59,26 @@ $MiConexion=ConexionBD();
 
         }
 
+        //Buscar libro
+        if($_POST['action'] == 'infoLibro'){
+
+                $isbn = $_POST['libro'];
+
+                $query = mysqli_query($MiConexion,"SELECT titulo, editorial, precio
+                 FROM librosleas WHERE isbn LIKE '$isbn'");
+
+                mysqli_close($MiConexion);
+
+                $result = mysqli_num_rows($query);
+                if($result > 0){
+                    $data = mysqli_fetch_assoc($query);
+                    echo json_encode($data,JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                echo 'error';
+                exit;
+            
+        }
 
 
 

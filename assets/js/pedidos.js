@@ -15,7 +15,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
         $('#div_registro_cliente').slideDown();
 
-      });
+    });
 
 
     //Buscar clientes
@@ -104,28 +104,77 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
         });
 
-    })
+    });
 
     //Buscar Libro
-    $('#txt_id_libro').keyup(function(e){
+    $('#txtIdLibro').keyup(function(e){
         e.preventDefault();
-        $.ajax({
-            url: 'ajax.php',
-            type: "POST",
-            async : true,
-            data: $('#formularioClientePedido').serialize(), //le paso todos los elementos del formulario
 
-            success: function(response)
-            {
-                console.log(response);
-            },
-            error: function(error){
-                console.log('Error:', error);
-            }
+        var lb  = $(this).val(); //capturo lo que se teclea en libro
+        var action = 'infoLibro';
 
-        });
+        if(lb!= ''){ //si la variable es diferente de vacio ejecuto el ajax
 
-    })
+            $.ajax({
+                url: 'ajax.php',
+                type: "POST",
+                async : true,
+                data: {action:action,libro:lb}, 
+    
+                success: function(response){
+                    if(response!='error'){ //valido que la respuesta no sea error
+                        var info = JSON.parse(response);//guardo la informacion en info
+                        $('#txt_titulo').html(info.titulo); //paso los datos a las casillas
+                        $('#txt_editorial').html(info.editorial);
+                        $('#txt_precio').html(info.precio);
+                        $('#txt_cantidad_libro').val('1');
+                        $('#txt_precio_total').html(info.precio);
+
+                        //activar Cantidad
+                        $('#txt_cantidad_libro').removeAttr('disabled');
+
+                        //mostrar boton agregar
+                        $('#add_libro_pedido').slideDown();
+                    }else{
+                        $('#txt_titulo').html('-'); 
+                        $('#txt_editorial').html('-');
+                        $('#txt_precio').html('0.00');
+                        $('#txt_cantidad_libro').val('0');
+                        $('#txt_precio_total').html('0.00');
+
+                        //bloquear Cantidad
+                        $('#txt_cantidad_libro').attr('disabled','disabled');
+
+                        //mostrar boton agregar
+                        $('#add_libro_pedido').slideUp();
+                    }
+                },
+                error: function(error){
+                    console.log('Error:', error);
+                }
+    
+            });
+        }
+       
+
+    });
+
+    //Validar cantidad de producto antes de agregar
+    $('#txt_cantidad_libro').keyup(function(e){
+        e.preventDefault();
+
+        var precio_total =$(this).val() * $('#txt_precio').html();//calculo el precio total
+        $('#txt_precio_total').html(precio_total); //se lo paso al campo
+
+        //Oculta el boton agregar si es menor que 1
+        if($(this).val() < 1 || isNaN($(this).val()) ){
+            $('#add_libro_pedido').slideUp();
+        }else{
+            $('#add_libro_pedido').slideDown();
+        }
+    });
+
+
 });
 
     
