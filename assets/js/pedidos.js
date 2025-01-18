@@ -106,6 +106,26 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     })
 
+    //Buscar Libro
+    $('#txt_id_libro').keyup(function(e){
+        e.preventDefault();
+        $.ajax({
+            url: 'ajax.php',
+            type: "POST",
+            async : true,
+            data: $('#formularioClientePedido').serialize(), //le paso todos los elementos del formulario
+
+            success: function(response)
+            {
+                console.log(response);
+            },
+            error: function(error){
+                console.log('Error:', error);
+            }
+
+        });
+
+    })
 });
 
     
