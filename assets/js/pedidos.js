@@ -19,7 +19,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
 
     //Buscar clientes
-
     $('#dni_cliente').keyup(function(e){ //cada vez que teclean un valor se activa
         e.preventDefault(); //evito que se recargue
 
@@ -145,7 +144,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                         //bloquear Cantidad
                         $('#txt_cantidad_libro').attr('disabled','disabled');
 
-                        //mostrar boton agregar
+                        //ocultar boton agregar
                         $('#add_libro_pedido').slideUp();
                     }
                 },
@@ -190,7 +189,29 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 data: {action:action,producto:codlibro,cantidad:cantidad}, 
     
                 success: function(response){
-                    console.log(response);
+                    if(response != 'error'){//validamos que la respuesta no sea error
+                        var info = JSON.parse(response);//convertimos en JSON a un objeto
+                        $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                        $('#detalleTotal').html(info.totales);
+
+                        //ponemos todos los valores por defecto
+                        $('#txtIdLibro').val('');
+                        $('#txt_titulo').html('-'); 
+                        $('#txt_editorial').html('-');
+                        $('#txt_precio').html('0.00');
+                        $('#txt_cantidad_libro').val('0');
+                        $('#txt_precio_total').html('0.00');
+
+                        //bloquear Cantidad
+                        $('#txt_cantidad_libro').attr('disabled','disabled');
+
+                        //ocultar boton agregar
+                        $('#add_libro_pedido').slideUp();
+
+                    }else{
+                        console.log('no data');
+                    }
+
                 },
                 error: function(error){
                     console.log('Error:', error);

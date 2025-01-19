@@ -107,7 +107,7 @@ $MiConexion=ConexionBD();
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla  .='<tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
+                        $detalleTabla  .='<tr data-bs-toggle="tooltip" data-bs-placement="left">
                                             <th>'.$data['idLibro'].'</th>
                                             <td>'.$data['titulo'].'</td>
                                             <td>'.$data['editorial'].'</td>
@@ -148,8 +148,6 @@ $MiConexion=ConexionBD();
             exit;
 
         }
-
-
 
     }
     exit;

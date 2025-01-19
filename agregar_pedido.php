@@ -104,11 +104,11 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <th scope="col">Accion</th>
             </tr>
         </thead>
-        <tbody id="detalle_venta"> 
+        <tbody id="detalleVenta"> 
         <!-- CONTENIDO AJAX-->
         </tbody>
 
-        <tfoot id="detalle_totales">
+        <tfoot id="detalleTotal">
         <!-- CONTENIDO AJAX-->
         </tfoot>
     </table>
