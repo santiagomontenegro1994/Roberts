@@ -129,6 +129,14 @@ $_SESSION['Mensaje']='';
 require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
+
+<script type="text/javascript">//script para traer el detalle de pedido
+    $(document).ready(function(){ //se ejecuta despues que se cargue todo el documento
+        searchforDetalle();
+    });
+
+</script>
+
 </body>
 
 </html>

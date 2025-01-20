@@ -225,4 +225,27 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
 });
 
+//funcion para mostrar siempre el detalle del pedido(fuera del ready)
+function searchforDetalle(){
+    var action = 'searchforDetalle';
+
+    $.ajax({
+        url: 'ajax.php',
+        type: "POST",
+        async : true,
+        data: {action:action}, 
+
+        success: function(response){
+
+            console.log(response);
+
+        },
+        error: function(error){
+            console.log('Error:', error);
+        }
+
+    });
+    
+}
+
     
