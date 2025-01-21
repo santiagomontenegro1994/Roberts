@@ -225,20 +225,20 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
 });
 
-//funcion para mostrar siempre el detalle del pedido(fuera del ready)
-function searchforDetalle(){
-    var action = 'searchforDetalle';
+//funcion para eliminar el detalle del pedido(fuera del ready)
+function del_libro_detalle(correlativo){
+    var action ='delProductoDetalle';
+    var id_detalle =correlativo;
 
     $.ajax({
         url: 'ajax.php',
         type: "POST",
         async : true,
-        data: {action:action}, 
+        data: {action:action,id_detalle:id_detalle}, 
 
         success: function(response){
-
-            if(response != 'error'){//validamos que la respuesta no sea error
-                var info = JSON.parse(response);//convertimos en JSON a un objeto
+            if(response!='error'){
+                var info = JSON.parse(response);
                 $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
                 $('#detalleTotal').html(info.totales);
 
@@ -255,6 +255,37 @@ function searchforDetalle(){
 
                 //ocultar boton agregar
                 $('#add_libro_pedido').slideUp();
+                
+            }else{//si trae un error colocamos todo en blanco
+                $('#detalle_venta').html('');
+                $('#detalle_totales').html('');
+
+            }
+        },
+        error: function(error){
+            console.log('Error:', error);
+        }
+
+    });
+
+}
+
+//funcion para mostrar siempre el detalle del pedido(fuera del ready)
+function searchforDetalle(){
+    var action = 'searchforDetalle';
+
+    $.ajax({
+        url: 'ajax.php',
+        type: "POST",
+        async : true,
+        data: {action:action}, 
+
+        success: function(response){
+
+            if(response != 'error'){//validamos que la respuesta no sea error
+                var info = JSON.parse(response);//convertimos en JSON a un objeto
+                $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                $('#detalleTotal').html(info.totales);
 
             }else{
                 console.log('no data');

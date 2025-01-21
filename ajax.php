@@ -115,7 +115,7 @@ $MiConexion=ConexionBD();
                                             <td>'.$data['precio_pedido'].'</td>
                                             <td>'.$precioTotal.'</td>
                                             <td>
-                                                <a href="#" onclick="event.preventDefault(); del_libro_detalle('.$data['idLibro'].');">
+                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                     <i class="bi bi-trash text-danger"></i></a>
                                             </td>   
                                         </tr>';
@@ -190,7 +190,7 @@ $MiConexion=ConexionBD();
                                             <td>'.$data['precio_pedido'].'</td>
                                             <td>'.$precioTotal.'</td>
                                             <td>
-                                                <a href="#" onclick="event.preventDefault(); del_libro_detalle('.$data['idLibro'].');">
+                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                     <i class="bi bi-trash text-danger"></i></a>
                                             </td>   
                                         </tr>';
@@ -222,6 +222,73 @@ $MiConexion=ConexionBD();
             }
             exit;
 
+        }
+
+        //elimina datos del detalle temp
+        if($_POST['action'] == 'delProductoDetalle'){
+            if(empty($_POST['id_detalle'])){
+                echo 'error';//si viene vacio retorna error
+            }else{
+                $id_detalle = $_POST['id_detalle'];
+
+                //llamo al procedimiento almacenado para eliminar un detalle temp
+                $query_detalle_temp = mysqli_query($MiConexion,"CALL del_detalle_temp($id_detalle)");
+                $result = mysqli_num_rows($query_detalle_temp);
+                
+                
+                //Declaro variables que voy a usar
+                $detalleTabla='';
+                $subtotal=0;
+                $total=0;
+                $arrayData=array();
+
+                if($result > 0){//si tiene algo el result
+                    //recorro todos los detalle_temp
+                    while($data = mysqli_fetch_assoc($query_detalle_temp)){
+                        $precioTotal = round($data['cantidad'] * $data['precio_pedido'], 2);//calculo el precio total con 2 decimales
+                        $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
+                        $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
+
+                        //concateno cada una de las tablas del detalle con los datos correspondientes
+                        $detalleTabla  .='<tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                            <th>'.$data['idLibro'].'</th>
+                                            <td>'.$data['titulo'].'</td>
+                                            <td>'.$data['editorial'].'</td>
+                                            <th>'.$data['cantidad'].'</th>
+                                            <td>'.$data['precio_pedido'].'</td>
+                                            <td>'.$precioTotal.'</td>
+                                            <td>
+                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                    <i class="bi bi-trash text-danger"></i></a>
+                                            </td>   
+                                        </tr>';
+                    }
+
+                    //genero la tabla con totales
+                    $detalleTotales='<tr>
+                                        <td colspan="5" class="text-end">SUBTOTAL</td>
+                                        <td colspan="5" class="text-end">'.$subtotal.'</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="5" class="text-end">SEÑA</td>
+                                        <td colspan="5" class="text-end">0.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="5" class="text-end">TOTAL</td>
+                                        <td colspan="5" class="text-end">'.$total.'</td>
+                                    </tr>';
+                    
+                    $arrayData['detalle'] = $detalleTabla;
+                    $arrayData['totales'] = $detalleTotales;
+
+                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);//retorno en formato JSON
+
+                }else{
+                    echo 'error';
+                }
+                mysqli_close($MiConexion);
+            }
+            exit;
         }
         
 
