@@ -154,10 +154,19 @@ $MiConexion=ConexionBD();
             if(empty($_POST['action'])){
                 echo 'error';//...
             }else{
+                
+                //genero el Query para que me devuelva los datos de detalle temp
+                $query = mysqli_query($MiConexion,"SELECT tmp.correlativo,
+                                                          tmp.cantidad,
+                                                          tmp.precio_pedido,
+                                                          tmp.idLibro,
+                                                          l.titulo,
+                                                          l.editorial
+                                                   FROM detalle_temp tmp
+                                                   INNER JOIN librosleas l
+                                                   WHERE tmp.idLibro = l.idLibros");
 
-                //llamo al procedimiento almacenado y le paso los datos
-                $query_detalle_temp = mysqli_query($MiConexion,"CALL add_detalle_temp($idlibro,$cantidad)");
-                $result = mysqli_num_rows($query_detalle_temp);
+                $result = mysqli_num_rows($query);
                 
                 //Declaro variables que voy a usar
                 $detalleTabla='';
@@ -167,7 +176,7 @@ $MiConexion=ConexionBD();
 
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
-                    while($data = mysqli_fetch_assoc($query_detalle_temp)){
+                    while($data = mysqli_fetch_assoc($query)){
                         $precioTotal = round($data['cantidad'] * $data['precio_pedido'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
