@@ -71,21 +71,21 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
     <!-- Table with stripped rows -->
     <div class="card">
     <div class="card-body">
-        <h5 class="card-title mr-2">Datos de Libro</h5>
+        <h5 class="card-title mr-2">Datos del Pedido</h5>
     <table class="table table-striped">
         <thead>
-            <tr>
-            <th scope="col">ID</th>
+            <tr class="table-primary">
+            <th scope="col" class="text-truncate w-10">ID</th>
             <th scope="col">Titulo</th>
             <th scope="col">Editorial</th>
-            <th scope="col" class="col-2">Cantidad</th>
+            <th scope="col" class="w-10">Cantidad</th>
             <th scope="col">Precio</th>
-            <th scope="col">Precio total</th>
+            <th scope="col">Precio_Total</th>
             <th scope="col">Accion</th>
             </tr>
               
-            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left">
-                <th><input type="text" name="txtIdLibro" id="txtIdLibro"></th>
+            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left" >
+                <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control w-75"></th>
                 <td id="txt_titulo">-</td>
                 <td id="txt_editorial">-</td>
                 <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
@@ -94,7 +94,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <td><a href="#" id="add_libro_pedido" style="display: none;"><i class="bi bi-plus text-succes"></i>Agregar</a></td>   
             </tr>
 
-            <tr>
+            <tr class="table-primary">
                 <th scope="col">ID</th>
                 <th scope="col">Titulo</th>
                 <th scope="col">Editorial</th>
@@ -113,6 +113,10 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
         </tfoot>
     </table>
     </div>
+    </div>
+    <div class="d-flex justify-content-center align-items-center"> 
+        <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido">Anular</a> 
+        <a href="#" class="btn btn-primary btn-sm m-2"id="btn_new_pedido" style="display: none;">Crear Pedido</a>
     </div>
           <!-- End Table with stripped rows -->
 

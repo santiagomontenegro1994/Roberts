@@ -128,11 +128,12 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end">0.00</td>
+                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     
                     $arrayData['detalle'] = $detalleTabla;
@@ -203,11 +204,12 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end">0.00</td>
+                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     
                     $arrayData['detalle'] = $detalleTabla;
@@ -271,11 +273,12 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end">0.00</td>
+                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     
                     $arrayData['detalle'] = $detalleTabla;

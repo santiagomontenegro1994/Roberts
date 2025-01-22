@@ -4,7 +4,6 @@
 
 $(document).ready(function() { //Se asegura que el DOM este cargado 
 
-
     //Activa campos para agregar cliente
     $('.btn_new_cliente').click(function(e){
         e.preventDefault();
@@ -158,7 +157,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Validar cantidad de producto antes de agregar
+    //Validar cantidad de libro antes de agregar
     $('#txt_cantidad_libro').keyup(function(e){
         e.preventDefault();
 
@@ -170,6 +169,24 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             $('#add_libro_pedido').slideUp();
         }else{
             $('#add_libro_pedido').slideDown();
+        }
+    });
+
+   
+    // Evento keyup para recalcular el total restando la seña
+    $(document).on('keyup', '#seniaPedido', function (e) {
+        e.preventDefault();
+     
+        var precio_total =$('#total_pedido_original').html() - $(this).val();//calculo el precio total
+
+        // Actualizar el total restante en el DOM
+        $('#total_pedido').text(precio_total.toFixed(2));
+
+        // Mostrar u ocultar el botón según el total restante
+        if (totalRestante > 0) {
+            $('#btn_new_pedido').hide();
+        } else {
+            $('#btn_new_pedido').show();
         }
     });
 
@@ -211,6 +228,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     }else{
                         console.log('no data');
                     }
+                    viewProcesar();//llamo la funcion para ver si oculto el boton
 
                 },
                 error: function(error){
@@ -255,18 +273,28 @@ function del_libro_detalle(correlativo){
 
                 //ocultar boton agregar
                 $('#add_libro_pedido').slideUp();
-                
-            }else{//si trae un error colocamos todo en blanco
-                $('#detalle_venta').html('');
-                $('#detalle_totales').html('');
 
+            }else{//si trae un error colocamos todo en blanco
+                $('#detalleVenta').html('');
+                $('#detalleTotal').html('');
             }
+            viewProcesar();//llamo la funcion para ver si oculto el boton
         },
         error: function(error){
             console.log('Error:', error);
         }
 
     });
+
+}
+
+//funcion para mostrar u ocultar boton de registrar pedido(fuera del ready)
+function viewProcesar(){
+    if($('#detalleVenta tr').length > 0){
+        $('#btn_new_pedido').show();
+    }else{
+        $('#btn_new_pedido').hide();
+    }
 
 }
 
@@ -290,7 +318,7 @@ function searchforDetalle(){
             }else{
                 console.log('no data');
             }
-
+            viewProcesar();//llamo la funcion para ver si oculto el boton
 
         },
         error: function(error){
@@ -300,5 +328,7 @@ function searchforDetalle(){
     });
     
 }
+
+
 
     
