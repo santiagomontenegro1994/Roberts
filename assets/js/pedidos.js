@@ -241,6 +241,36 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
     });
 
+    //Anular pedido
+    $('#btn_anular_pedido').click(function(e){
+        e.preventDefault();
+        console.log('hola');
+        var rows =$('#detalleVenta tr').length;//cuantas filas tiene detalle venta
+
+        console.log(rows);
+        if(rows > 0){// si hay productos en el detalle                                                                                                                                  
+            var action = 'anularVenta';
+
+            $.ajax({
+                url: 'ajax.php',
+                type: "POST",
+                async : true,
+                data: {action:action}, 
+    
+                success: function(response){
+                    if(response!='error'){// si elimino todo el detalle
+                        location.reload();//refresca toda la pagina
+                    }
+                },
+                error: function(error){
+
+                }
+            });    
+
+        }
+
+    });
+
 });
 
 //funcion para eliminar el detalle del pedido(fuera del ready)

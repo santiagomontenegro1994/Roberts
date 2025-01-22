@@ -294,6 +294,19 @@ $MiConexion=ConexionBD();
             exit;
         }
         
+        //anular venta
+        if($_POST['action'] == 'anularVenta'){
+
+            $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp");
+            mysqli_close($MiConexion);
+            if($query_del){
+                echo 'ok';
+            }else{
+                echo 'error';
+            }
+            exit;
+
+        }
 
     }
     exit;
