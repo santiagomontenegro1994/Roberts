@@ -127,6 +127,10 @@ $MiConexion=ConexionBD();
                                         <td colspan="5" class="text-end">'.$subtotal.'</td>
                                     </tr>
                                     <tr>
+                                        <td colspan="5" class="text-end">DESCUENTO</td>
+                                        <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
+                                    </tr>
+                                    <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
                                         <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
@@ -203,6 +207,10 @@ $MiConexion=ConexionBD();
                                         <td colspan="5" class="text-end">'.$subtotal.'</td>
                                     </tr>
                                     <tr>
+                                        <td colspan="5" class="text-end">DESCUENTO</td>
+                                        <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
+                                    </tr>
+                                    <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
                                         <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
@@ -272,8 +280,12 @@ $MiConexion=ConexionBD();
                                         <td colspan="5" class="text-end">'.$subtotal.'</td>
                                     </tr>
                                     <tr>
+                                        <td colspan="5" class="text-end">DESCUENTO</td>
+                                        <td colspan="5" class="text-end"><input type="text" id="descuentoPedido" value="0" min="1"></td>
+                                    </tr>
+                                    <tr>
                                         <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
+                                        <td colspan="5" class="text-end"><input type="number" id="seniaPedido" value="0" min="1"></td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>

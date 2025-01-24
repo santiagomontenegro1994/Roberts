@@ -176,18 +176,79 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     // Evento keyup para recalcular el total restando la seña
     $(document).on('keyup', '#seniaPedido', function (e) {
         e.preventDefault();
-     
-        var precio_total =$('#total_pedido_original').html() - $(this).val();//calculo el precio total
+        
+        var descuento = $('#descuentoPedido').val();
 
-        // Actualizar el total restante en el DOM
-        $('#total_pedido').text(precio_total.toFixed(2));
+        if (descuento !== null && !isNaN(descuento) && parseFloat(descuento) > 0) {
 
-        // Mostrar u ocultar el botón según el total restante
-        if (precio_total < 0) {
-            $('#btn_new_pedido').hide();
-        } else {
-            $('#btn_new_pedido').show();
+            var descuentoCalculado = $('#total_pedido_original').html() * (descuento / 100);
+            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
+
+            var precio_total = totalConDescuento - $(this).val();//calculo el precio total
+
+            // Actualizar el total restante en el DOM
+            $('#total_pedido').text(precio_total.toFixed(2));
+    
+            // Mostrar u ocultar el botón según el total restante
+            if (precio_total < 0) {
+                $('#btn_new_pedido').hide();
+            } else {
+                $('#btn_new_pedido').show();
+            }
+        }else{
+            var precio_total =$('#total_pedido_original').html() - $(this).val();//calculo el precio total
+            console.log("entre");
+            console.log(descuento);
+            // Actualizar el total restante en el DOM
+            $('#total_pedido').text(precio_total.toFixed(2));
+    
+            // Mostrar u ocultar el botón según el total restante
+            if (precio_total < 0) {
+                $('#btn_new_pedido').hide();
+            } else {
+                $('#btn_new_pedido').show();
+            }
         }
+     
+    });
+
+     // Evento keyup para recalcular el total restando el descuento
+     $(document).on('keyup', '#descuentoPedido', function (e) {
+        e.preventDefault();
+        
+        var senia = $('#seniaPedido').val();
+
+        if (senia !== null && !isNaN(senia) && parseFloat(senia) > 0) {
+
+            var descuentoCalculado = $('#total_pedido_original').html() * ($(this).val() / 100);
+            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
+
+            var precio_total = totalConDescuento - senia;//calculo el precio total
+
+            // Actualizar el total restante en el DOM
+            $('#total_pedido').text(precio_total.toFixed(2));
+    
+            // Mostrar u ocultar el botón según el total restante
+            if (precio_total < 0) {
+                $('#btn_new_pedido').hide();
+            } else {
+                $('#btn_new_pedido').show();
+            }
+        }else{
+
+            var descuentoCalculado = $('#total_pedido_original').html() * ($(this).val() / 100);
+            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
+            // Actualizar el total restante en el DOM
+            $('#total_pedido').text(totalConDescuento.toFixed(2));
+    
+            // Mostrar u ocultar el botón según el total restante
+            if (totalConDescuento < 0) {
+                $('#btn_new_pedido').hide();
+            } else {
+                $('#btn_new_pedido').show();
+            }
+        }
+     
     });
 
     //Agregar producto al detalle temporal
