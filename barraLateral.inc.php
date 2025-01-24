@@ -51,14 +51,9 @@
           <i class="bi bi-bag"></i><span>Pedidos de Libros</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
         <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-        <li>
-            <a href="agregar_pedidos.php">
-              <i class="bi bi-circle"></i><span>Agregar</span>
-            </a>
-          </li>
           <li>
             <a href="agregar_pedido.php">
-              <i class="bi bi-circle"></i><span>Agregar1</span>
+              <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
