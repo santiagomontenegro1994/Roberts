@@ -271,6 +271,11 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
+    //Confirmar pedido
+    $('#btn_new_pedido').click(function(e){
+
+    });
+
 });
 
 //funcion para eliminar el detalle del pedido(fuera del ready)
