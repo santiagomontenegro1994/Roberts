@@ -115,8 +115,7 @@ $CantidadPedidos = count($ListadoPedidos);
                 <th scope="col">#</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Cliente</th>
-                <th scope="col">Titulo</th>
-                <th scope="col">Editorial</th>
+                <th scope="col">Detalle</th>
                 <th scope="col">Precio</th>
                 <th scope="col">Seña</th>
                 <th scope="col">Saldo</th>
@@ -136,8 +135,7 @@ $CantidadPedidos = count($ListadoPedidos);
                         <th scope="row"><?php echo $i+1; ?></th>
                         <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
                         <td><?php echo $ListadoPedidos[$i]['CLIENTE']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['TITULO']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['EDITORIAL']; ?></td>
+                        <td>en proceso</td>
                         <td><?php echo $ListadoPedidos[$i]['PRECIO']; ?></td>
                         <td><?php echo $ListadoPedidos[$i]['SEÑA']; ?></td>
                         <td><?php echo $saldo; ?></td>

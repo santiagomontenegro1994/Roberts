@@ -413,10 +413,9 @@ function Listar_Pedidos($vConexion) {
     $Listado=array();
 
       //1) genero la consulta que deseo
-        $SQL = "SELECT C.nombre, PL.idPedidoLibros, PL.fecha, PL.precio, PL.seña, E.denominación,
-        L.titulo, L.editorial
-        FROM pedido_libros PL, clientes C, estado E, libros L
-        WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado AND PL.idLibro=L.idLibros
+        $SQL = "SELECT C.nombre, PL.idPedidoLibros, PL.fecha, PL.precioTotal, PL.senia, E.denominación
+        FROM pedido_libros PL, clientes C, estado E
+        WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado
         ORDER BY PL.fecha, C.nombre";
 
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
@@ -428,10 +427,10 @@ function Listar_Pedidos($vConexion) {
             $Listado[$i]['ID'] = $data['idPedidoLibros'];
             $Listado[$i]['CLIENTE'] = $data['nombre'];
             $Listado[$i]['FECHA'] = $data['fecha'];
-            $Listado[$i]['TITULO'] = $data['titulo'];
-            $Listado[$i]['EDITORIAL'] = $data['editorial'];
-            $Listado[$i]['PRECIO'] = $data['precio'];
-            $Listado[$i]['SEÑA'] = $data['seña'];
+            $Listado[$i]['TITULO'] = 'en proceso';
+            $Listado[$i]['EDITORIAL'] = 'en proceso';
+            $Listado[$i]['PRECIO'] = $data['precioTotal'];
+            $Listado[$i]['SEÑA'] = $data['senia'];
             $Listado[$i]['ESTADO'] = $data['denominación'];
 
             $i++;
@@ -444,7 +443,7 @@ function Listar_Pedidos($vConexion) {
 function Datos_Pedido($vConexion , $vIdPedido) {
     $DatosPedido  =   array();
     //me aseguro que la consulta exista
-    $SQL = "SELECT PL.idPedidoLibros, PL.fecha, PL.precio, PL.seña, L.autor,
+    $SQL = "SELECT PL.idPedidoLibros, PL.fecha, PL.precioTotal, PL.senia, L.autor,
         L.titulo, C.nombre, C.apellido, C.telefono
         FROM pedido_libros PL, clientes C, libros L
         WHERE PL.idCliente=C.idCliente AND PL.idLibro=L.idLibros

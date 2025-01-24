@@ -294,7 +294,7 @@ $MiConexion=ConexionBD();
             exit;
         }
         
-        //anular venta
+        //anular pedido
         if($_POST['action'] == 'anularVenta'){
 
             $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp");
@@ -305,6 +305,32 @@ $MiConexion=ConexionBD();
                 echo 'error';
             }
             exit;
+
+        }
+
+        //confirmar pedido
+        if($_POST['action'] == 'procesarVenta'){
+            $codCliente = $_POST['codCliente'];
+            $senia = $_POST['senia'];
+
+                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp");
+                $result = mysqli_num_rows($query); //vemos si detalle temp tiene algo
+
+                if($result > 0){
+                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_venta($codCliente,$senia)");
+                    $result_detalle = mysqli_num_rows($query_procesar);
+                    //devuelve 0 cuando no encuentra registros
+                    if($result_detalle > 0){
+                        $data = mysqli_fetch_assoc($query_procesar);//guardo en data el query
+                        echo json_encode($data,JSON_UNESCAPED_UNICODE);// convierto en formato JSON 
+                    }else{
+                        echo 'error';
+                    }
+                }else{
+                    echo 'error';
+                }
+                mysqli_close($MiConexion);
+                exit;    
 
         }
 

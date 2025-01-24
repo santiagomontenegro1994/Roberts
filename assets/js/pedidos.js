@@ -183,7 +183,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         $('#total_pedido').text(precio_total.toFixed(2));
 
         // Mostrar u ocultar el botón según el total restante
-        if (totalRestante > 0) {
+        if (precio_total < 0) {
             $('#btn_new_pedido').hide();
         } else {
             $('#btn_new_pedido').show();
@@ -244,10 +244,9 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     //Anular pedido
     $('#btn_anular_pedido').click(function(e){
         e.preventDefault();
-        console.log('hola');
+
         var rows =$('#detalleVenta tr').length;//cuantas filas tiene detalle venta
 
-        console.log(rows);
         if(rows > 0){// si hay productos en el detalle                                                                                                                                  
             var action = 'anularVenta';
 
@@ -273,6 +272,46 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     //Confirmar pedido
     $('#btn_new_pedido').click(function(e){
+        e.preventDefault();
+        
+        var rows =$('#detalleVenta tr').length;//cuantas filas tiene detalle venta
+
+        if(rows > 0){// si hay productos en el detalle                                                                                                                                  
+            var action = 'procesarVenta';
+            var codCliente = $('#idCliente').val();
+            var senia = $('#seniaPedido').val();
+
+            
+            if(codCliente == null || codCliente == ''){
+                alert('Falta agregar cliente');
+            }else{
+
+                $.ajax({
+                    url: 'ajax.php',
+                    type: "POST",
+                    async : true,
+                    data: {action:action,codCliente:codCliente,senia:senia}, 
+        
+                    success: function(response){
+                        
+                        if(response!='error'){// si se genero el pedido
+
+                            // var info = JSON.parse(response);
+                            // console.log(info);
+                            alert('Pedido generado correctamente');
+                            location.reload();//refresca toda la pagina
+                        }else{
+                            console.log('no data');
+                        }
+                    },
+                    error: function(error){
+
+                    }
+                });    
+
+            }
+
+        }
 
     });
 
