@@ -75,23 +75,23 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
     <table class="table table-striped">
         <thead>
             <tr class="table-primary">
-            <th scope="col" class="text-truncate w-10">ID</th>
-            <th scope="col">Titulo</th>
-            <th scope="col">Editorial</th>
-            <th scope="col" class="w-10">Cantidad</th>
-            <th scope="col">Precio</th>
-            <th scope="col">Precio_Total</th>
-            <th scope="col">Accion</th>
+            <th scope="col" class="col-2 text-truncate" style="max-width: 50px;">ID</th>
+            <th scope="col" class="col-5">Titulo</th>
+            <th scope="col" class="col-3">Editorial</th>
+            <th scope="col" class="col-2">Cantidad</th>
+            <th scope="col" class="col-2">Precio</th>
+            <th scope="col" class="col-5">Precio_Total</th>
+            <th scope="col" class="col-6">Accion</th>
             </tr>
               
             <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left" >
-                <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control w-75"></th>
+                <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control form-control-sm w-75"></th>
                 <td id="txt_titulo">-</td>
                 <td id="txt_editorial">-</td>
                 <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
                 <td id="txt_precio">0.00</td>
                 <td id="txt_precio_total">0.00</td>
-                <td><a href="#" id="add_libro_pedido" style="display: none;"><i class="bi bi-plus text-succes"></i>Agregar</a></td>   
+                <td><a href="#" id="add_libro_pedido" class="text-success fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-success"></i> pedir</a></td>   
             </tr>
 
             <tr class="table-primary">
