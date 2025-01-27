@@ -117,6 +117,7 @@ $CantidadPedidos = count($ListadoPedidos);
                 <th scope="col">Cliente</th>
                 <th scope="col">Detalle</th>
                 <th scope="col">Precio</th>
+                <th scope="col">%Desc.</th>
                 <th scope="col">Seña</th>
                 <th scope="col">Saldo</th>
                 <th scope="col">Acciones</th>
@@ -124,8 +125,13 @@ $CantidadPedidos = count($ListadoPedidos);
             </thead>
             <tbody>
                 <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
+                  //cuento la cantidad de pedidos
+                  $cantidad = Contar_Pedidos($MiConexion,$ListadoPedidos[$i]['ID']);
+                  
                   //Calculo el saldo
-                  $saldo=$ListadoPedidos[$i]['PRECIO']-$ListadoPedidos[$i]['SEÑA'];
+                  // Calcular el monto del descuento
+                  $montoDescuento = $ListadoPedidos[$i]['PRECIO'] * ($ListadoPedidos[$i]['DESCUENTO'] / 100);
+                  $saldo=($ListadoPedidos[$i]['PRECIO']-$ListadoPedidos[$i]['SEÑA'])-$montoDescuento;
 
                   //Metodo para pintar las filas
                   list($Title, $Color) = ColorDeFila($ListadoPedidos[$i]['ESTADO']);
@@ -134,11 +140,13 @@ $CantidadPedidos = count($ListadoPedidos);
                     <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                         <th scope="row"><?php echo $i+1; ?></th>
                         <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['CLIENTE']; ?></td>
-                        <td>en proceso</td>
-                        <td><?php echo $ListadoPedidos[$i]['PRECIO']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['SEÑA']; ?></td>
-                        <td><?php echo $saldo; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['CLIENTE_N'];?> ,
+                        <?php echo $ListadoPedidos[$i]['CLIENTE_A'];?></td>
+                        <td><?php echo $cantidad; ?> pedido/s</td>
+                        <td>$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
+                        <td class="text-center">%<?php echo $ListadoPedidos[$i]['DESCUENTO']; ?></td>
+                        <td>$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
+                        <td>$<?php echo number_format($saldo, 2); ?></td>
                         <td>
                           <!-- eliminar la consulta -->
                           <a href="eliminar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 

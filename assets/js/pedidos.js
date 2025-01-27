@@ -340,7 +340,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             var action = 'procesarVenta';
             var codCliente = $('#idCliente').val();
             var senia = $('#seniaPedido').val();
-            var descuento = $('#seniaPedido').val();
+            var descuento = $('#descuentoPedido').val();
 
             
             if(codCliente == null || codCliente == ''){

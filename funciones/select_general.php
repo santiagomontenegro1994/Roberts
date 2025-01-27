@@ -413,10 +413,10 @@ function Listar_Pedidos($vConexion) {
     $Listado=array();
 
       //1) genero la consulta que deseo
-        $SQL = "SELECT C.nombre, PL.idPedidoLibros, PL.fecha, PL.precioTotal, PL.senia, E.denominación
+        $SQL = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal,PL.descuento, PL.senia, E.denominación
         FROM pedido_libros PL, clientes C, estado E
         WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado
-        ORDER BY PL.fecha, C.nombre";
+        ORDER BY PL.fecha DESC, C.nombre";
 
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
         $rs = mysqli_query($vConexion, $SQL);
@@ -425,11 +425,13 @@ function Listar_Pedidos($vConexion) {
         $i=0;
         while ($data = mysqli_fetch_array($rs)) {
             $Listado[$i]['ID'] = $data['idPedidoLibros'];
-            $Listado[$i]['CLIENTE'] = $data['nombre'];
+            $Listado[$i]['CLIENTE_N'] = $data['nombre'];
+            $Listado[$i]['CLIENTE_A'] = $data['apellido'];
             $Listado[$i]['FECHA'] = $data['fecha'];
             $Listado[$i]['TITULO'] = 'en proceso';
             $Listado[$i]['EDITORIAL'] = 'en proceso';
             $Listado[$i]['PRECIO'] = $data['precioTotal'];
+            $Listado[$i]['DESCUENTO'] = $data['descuento'];
             $Listado[$i]['SEÑA'] = $data['senia'];
             $Listado[$i]['ESTADO'] = $data['denominación'];
 
@@ -438,6 +440,25 @@ function Listar_Pedidos($vConexion) {
 
     //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
     return $Listado;
+}
+
+function Contar_Pedidos($vConexion, $id) {
+    // Genero la consulta que deseo
+    $SQL = "SELECT COUNT(*) AS total 
+            FROM detalle_pedido 
+            WHERE id_pedido_libros = '$id'";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    // Verificar si la consulta se ejecutó correctamente
+    if ($rs) {
+        // Obtener el resultado
+        $row = mysqli_fetch_assoc($rs);
+        return $row['total'];
+    } else {
+        // En caso de error, retornar 0 o manejar el error según tus necesidades
+        return 0;
+    }
 }
 
 function Datos_Pedido($vConexion , $vIdPedido) {
