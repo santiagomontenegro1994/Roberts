@@ -376,7 +376,67 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
+    
+
 });
+
+//Agrega libro a pedido desde la lista de libros(fuera del ready)
+function agregarAPedido(idLibro) {
+    // Solicitar la cantidad
+    var cantidad = prompt("Ingrese la cantidad:");
+
+    // Verificar que se haya ingresado un valor
+    if (cantidad > 0 && cantidad !== null && cantidad !== "" && !isNaN(cantidad)) {
+        // Confirmar la acción
+        var confirmar = confirm("¿Está seguro que desea agregar " + cantidad + " unidades al pedido?");
+        if (confirmar) {
+            // Redirigir a la página con los parámetros necesarios
+            //window.location.href = "modificar_libros.php?ID_LIBRO=" + idLibro + "&CANTIDAD=" + cantidad;
+
+            var action = 'agregarLibroDetalle';
+
+            $.ajax({
+                url: 'ajax.php',
+                type: "POST",
+                async : true,
+                data: {action:action,producto:idLibro,cantidad:cantidad}, 
+    
+                success: function(response){
+                    if(response != 'error'){//validamos que la respuesta no sea error
+                        var info = JSON.parse(response);//convertimos en JSON a un objeto
+                        $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                        $('#detalleTotal').html(info.totales);
+
+                        //ponemos todos los valores por defecto
+                        $('#txtIdLibro').val('');
+                        $('#txt_titulo').html('-'); 
+                        $('#txt_editorial').html('-');
+                        $('#txt_precio').html('0.00');
+                        $('#txt_cantidad_libro').val('0');
+                        $('#txt_precio_total').html('0.00');
+
+                        //bloquear Cantidad
+                        $('#txt_cantidad_libro').attr('disabled','disabled');
+
+                        //ocultar boton agregar
+                        $('#add_libro_pedido').slideUp();
+                        alert('Libro agregado al pedido!');
+                    }else{
+                        console.log('no data');
+                    }
+                    viewProcesar();//llamo la funcion para ver si oculto el boton
+
+                },
+                error: function(error){
+                    console.log('Error:', error);
+                }
+    
+            });
+        }
+    } else {
+        alert("Por favor, ingrese una cantidad válida.");
+    }
+}
 
 //funcion para eliminar el detalle del pedido(fuera del ready)
 function del_libro_detalle(correlativo){

@@ -143,12 +143,12 @@ $CantidadLibros = count($ListadoLibros);
                           </a>
                         <?php }?>
 
-                          <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            class="btn btn-primary" 
-                            title="Pedir">
-                            <i class="bi bi-person-fill-slash"></i>
-                          
-                          </a>
+                        <a href="#" 
+                          class="btn btn-primary" 
+                          title="Agregar a pedido" 
+                          onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
+                          <i class="bi bi-person-fill-slash"></i>
+                        </a>
                           
                         </td>
 
@@ -157,7 +157,7 @@ $CantidadLibros = count($ListadoLibros);
             </tbody>
           </table>
           <!-- End Table with stripped rows -->
-
+          
         </div>
     </div>
  
