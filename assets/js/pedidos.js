@@ -172,7 +172,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
     });
 
-   
     // Evento keyup para recalcular el total restando la seña
     $(document).on('keyup', '#seniaPedido', function (e) {
         e.preventDefault();
@@ -341,6 +340,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             var action = 'procesarVenta';
             var codCliente = $('#idCliente').val();
             var senia = $('#seniaPedido').val();
+            var descuento = $('#seniaPedido').val();
 
             
             if(codCliente == null || codCliente == ''){
@@ -351,7 +351,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     url: 'ajax.php',
                     type: "POST",
                     async : true,
-                    data: {action:action,codCliente:codCliente,senia:senia}, 
+                    data: {action:action,codCliente:codCliente,senia:senia,descuento:descuento}, 
         
                     success: function(response){
                         

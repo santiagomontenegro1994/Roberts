@@ -324,12 +324,13 @@ $MiConexion=ConexionBD();
         if($_POST['action'] == 'procesarVenta'){
             $codCliente = $_POST['codCliente'];
             $senia = $_POST['senia'];
+            $descuento = $_POST['descuento'];
 
                 $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp");
                 $result = mysqli_num_rows($query); //vemos si detalle temp tiene algo
 
                 if($result > 0){
-                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_venta($codCliente,$senia)");
+                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_venta($codCliente,$senia,$descuento)");
                     $result_detalle = mysqli_num_rows($query_procesar);
                     //devuelve 0 cuando no encuentra registros
                     if($result_detalle > 0){
