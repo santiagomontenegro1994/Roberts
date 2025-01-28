@@ -51,14 +51,13 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <label for="fecha" class="form-label">Apellido</label>
                 <input type="text" class="form-control form-control-sm"  name="ape_cliente" id="ape_cliente" disabled required>
             </div>
-            <div class="col-md-6 mb-1">
-                <label for="fecha" class="form-label">Direccion</label>
-                <input type="text" class="form-control form-control-sm"  name="dir_cliente" id="dir_cliente" disabled required>
+            <div class="col-md-12 d-flex justify-content-center">
+                <div class="col-md-6 mb-1 d-flex align-items-center">
+                    <label for="tel_cliente" class="form-label me-2">Telefono</label>
+                    <input type="number" class="form-control form-control-sm" name="tel_cliente" id="tel_cliente" disabled required>
+                </div>
             </div>
-            <div class="col-md-6 mb-1">
-                <label for="fecha" class="form-label">Telefono</label>
-                <input type="number" class="form-control form-control-sm"  name="tel_cliente" id="tel_cliente" disabled required>
-            </div>
+
 
             <div class="text-center" id="div_registro_cliente" style="display: none;">
                 <button type="submit" class="btn btn-primary">Registrar</button>

@@ -115,7 +115,6 @@ $CantidadClientes = count($ListadoClientes);
                 <th scope="col">#</th>
                 <th scope="col">Nombre</th>
                 <th scope="col">Apellido</th>
-                <th scope="col">Direccion</th>
                 <th scope="col">Telefono</th>
                 <th scope="col">DNI</th>
                 <th scope="col">Acciones</th>
@@ -127,7 +126,6 @@ $CantidadClientes = count($ListadoClientes);
                         <th scope="row"><?php echo $i+1; ?></th>
                         <td><?php echo $ListadoClientes[$i]['NOMBRE']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
-                        <td><?php echo $ListadoClientes[$i]['DIRECCION']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['DNI']; ?></td>
                         <td>

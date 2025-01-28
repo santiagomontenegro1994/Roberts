@@ -1,8 +1,8 @@
 <?php
 function InsertarClientes($vConexion){
     
-    $SQL_Insert="INSERT INTO clientes (nombre, apellido, dni, direccion, telefono)
-    VALUES ('".$_POST['Nombre']."' , '".$_POST['Apellido']."' , '".$_POST['DNI']."', '".$_POST['Direccion']."', '".$_POST['Telefono']."')";
+    $SQL_Insert="INSERT INTO clientes (nombre, apellido, dni, telefono)
+    VALUES ('".$_POST['Nombre']."' , '".$_POST['Apellido']."' , '".$_POST['DNI']."', '".$_POST['Telefono']."')";
 
 
     if (!mysqli_query($vConexion, $SQL_Insert)) {
@@ -30,7 +30,6 @@ function Listar_Clientes($vConexion) {
             $Listado[$i]['NOMBRE'] = $data['nombre'];
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $Listado[$i]['DIRECCION'] = $data['direccion'];
             $Listado[$i]['DNI'] = $data['dni'];
             $i++;
         }
@@ -93,7 +92,6 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
             $Listado[$i]['NOMBRE'] = $data['nombre'];
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $Listado[$i]['DIRECCION'] = $data['direccion'];
             $Listado[$i]['DNI'] = $data['dni'];
             $i++;
         }
@@ -139,7 +137,6 @@ function Datos_Cliente($vConexion , $vIdCliente) {
         $DatosCliente['NOMBRE'] = $data['nombre'];
         $DatosCliente['APELLIDO'] = $data['apellido'];
         $DatosCliente['TELEFONO'] = $data['telefono'];
-        $DatosCliente['DIRECCION'] = $data['direccion'];
         $DatosCliente['DNI'] = $data['dni'];
     }
     return $DatosCliente;
@@ -153,9 +150,6 @@ function Validar_Cliente(){
     }
     if (strlen($_POST['Apellido']) < 3) {
         $_SESSION['Mensaje'].='Debes ingresar un apellido con al menos 3 caracteres. <br />';
-    }
-    if (strlen($_POST['Direccion']) < 3) {
-        $_SESSION['Mensaje'].='Debes ingresar una direccion con al menos 3 caracteres. <br />';
     }
     if (strlen($_POST['Telefono']) < 10) {
         $_SESSION['Mensaje'].='Debes ingresar un telefono con al menos 10 caracteres. <br />';
@@ -177,7 +171,6 @@ function Modificar_Cliente($vConexion) {
     $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
     $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
     $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
-    $direccion = mysqli_real_escape_string($vConexion, $_POST['Direccion']);
     $dni = mysqli_real_escape_string($vConexion, $_POST['DNI']);
     $idCliente = mysqli_real_escape_string($vConexion, $_POST['IdCliente']);
 
@@ -185,7 +178,6 @@ function Modificar_Cliente($vConexion) {
     SET nombre = '$nombre',
     apellido = '$apellido',
     telefono = '$telefono',
-    direccion = '$direccion',
     dni = '$dni'
     WHERE idCliente = '$idCliente'";
 

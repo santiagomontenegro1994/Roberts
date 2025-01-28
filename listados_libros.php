@@ -124,7 +124,7 @@ $CantidadLibros = count($ListadoLibros);
                         <td class="small"><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
                         <td class="small"><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
                         <td class="small"><?php echo $ListadoLibros[$i]['MAYORISTA']; ?></td>
-                        <td class="small"><?php echo $ListadoLibros[$i]['PRECIO']; ?></td>
+                        <td class="small"><?php echo number_format($ListadoLibros[$i]['PRECIO'], 2); ?></td>
                         <td>
                         <!-- valido para que solo se puedan eliminar y modificar los personales -->
                         <?php if($ListadoLibros[$i]['MAYORISTA'] == 'Personal') {?>

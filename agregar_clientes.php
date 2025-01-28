@@ -70,13 +70,6 @@ if (!empty($_POST['BotonRegistrar'])) {
                   </div>
                 </div>
                 <div class="row mb-3">
-                  <label for="inputEmail3" class="col-sm-2 col-form-label">Direccion</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" name="Direccion" id="direccion"
-                    value="<?php echo !empty($_POST['Direccion']) ? $_POST['Direccion'] : ''; ?>">
-                  </div>
-                </div>
-                <div class="row mb-3">
                   <label for="inputEmail3" class="col-sm-2 col-form-label">Telefono</label>
                   <div class="col-sm-10">
                     <input type="number" class="form-control" name="Telefono" id="dtelefono"

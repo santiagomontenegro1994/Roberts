@@ -40,11 +40,10 @@ $MiConexion=ConexionBD();
             $dni = $_POST['dni_cliente'];
             $nombre = $_POST['nom_cliente'];
             $apellido = $_POST['ape_cliente'];
-            $direccion = $_POST['dir_cliente'];
             $telefono = $_POST['tel_cliente'];
 
-            $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, dni, direccion, telefono)
-                                                        VALUES ('$nombre' , '$apellido' , '$dni', '$direccion', '$telefono')");
+            $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, dni, telefono)
+                                                        VALUES ('$nombre' , '$apellido' , '$dni', '$telefono')");
 
 
             if($query_insert){ // si se ejecuto bien la insercion
@@ -112,8 +111,8 @@ $MiConexion=ConexionBD();
                                             <td>'.$data['titulo'].'</td>
                                             <td>'.$data['editorial'].'</td>
                                             <th>'.$data['cantidad'].'</th>
-                                            <td>'.$data['precio_pedido'].'</td>
-                                            <td>'.$precioTotal.'</td>
+                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                     <i class="bi bi-trash text-danger"></i></a>
@@ -124,7 +123,7 @@ $MiConexion=ConexionBD();
                     //genero la tabla con totales
                     $detalleTotales='<tr>
                                         <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.$subtotal.'</td>
+                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">DESCUENTO</td>
@@ -136,7 +135,7 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
                                         <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     
@@ -192,8 +191,8 @@ $MiConexion=ConexionBD();
                                             <td>'.$data['titulo'].'</td>
                                             <td>'.$data['editorial'].'</td>
                                             <th>'.$data['cantidad'].'</th>
-                                            <td>'.$data['precio_pedido'].'</td>
-                                            <td>'.$precioTotal.'</td>
+                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                     <i class="bi bi-trash text-danger"></i></a>
@@ -204,7 +203,7 @@ $MiConexion=ConexionBD();
                     //genero la tabla con totales
                     $detalleTotales='<tr>
                                         <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.$subtotal.'</td>
+                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">DESCUENTO</td>
@@ -216,7 +215,7 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
                                         <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     
@@ -265,8 +264,8 @@ $MiConexion=ConexionBD();
                                             <td>'.$data['titulo'].'</td>
                                             <td>'.$data['editorial'].'</td>
                                             <th>'.$data['cantidad'].'</th>
-                                            <td>'.$data['precio_pedido'].'</td>
-                                            <td>'.$precioTotal.'</td>
+                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                     <i class="bi bi-trash text-danger"></i></a>
@@ -277,7 +276,7 @@ $MiConexion=ConexionBD();
                     //genero la tabla con totales
                     $detalleTotales='<tr>
                                         <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.$subtotal.'</td>
+                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">DESCUENTO</td>
@@ -289,7 +288,7 @@ $MiConexion=ConexionBD();
                                     </tr>
                                     <tr>
                                         <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.$total.'</td>
+                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
                                         <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
                                     </tr>';
                     

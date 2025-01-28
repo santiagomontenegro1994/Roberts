@@ -87,7 +87,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     $('#nom_cliente').attr('disabled','disabled');
                     $('#ape_cliente').attr('disabled','disabled');
                     $('#tel_cliente').attr('disabled','disabled');
-                    $('#dir_cliente').attr('disabled','disabled');
 
                     //Ocultar boton agregar
                     $('.btn_new_cliente').slideUp();
