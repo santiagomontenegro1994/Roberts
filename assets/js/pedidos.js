@@ -122,11 +122,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 success: function(response){
                     if(response!='error'){ //valido que la respuesta no sea error
                         var info = JSON.parse(response);//guardo la informacion en info
+                        var precioConDosDecimales = parseFloat(info.precio).toFixed(2);
                         $('#txt_titulo').html(info.titulo); //paso los datos a las casillas
                         $('#txt_editorial').html(info.editorial);
-                        $('#txt_precio').html(info.precio);
+                        $('#txt_precio').html(precioConDosDecimales);
                         $('#txt_cantidad_libro').val('1');
-                        $('#txt_precio_total').html(info.precio);
+                        $('#txt_precio_total').html(precioConDosDecimales);
 
                         //activar Cantidad
                         $('#txt_cantidad_libro').removeAttr('disabled');
@@ -162,7 +163,8 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         e.preventDefault();
 
         var precio_total =$(this).val() * $('#txt_precio').html();//calculo el precio total
-        $('#txt_precio_total').html(precio_total); //se lo paso al campo
+        var precioConDosDecimales = parseFloat(precio_total).toFixed(2);
+        $('#txt_precio_total').html(precioConDosDecimales); //se lo paso al campo
 
         //Oculta el boton agregar si es menor que 1
         if($(this).val() < 1 || isNaN($(this).val()) ){
