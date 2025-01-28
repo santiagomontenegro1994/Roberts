@@ -9,7 +9,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         e.preventDefault();
         $('#nom_cliente').removeAttr('disabled');
         $('#ape_cliente').removeAttr('disabled');
-        $('#dir_cliente').removeAttr('disabled');
         $('#tel_cliente').removeAttr('disabled');
 
         $('#div_registro_cliente').slideDown();
@@ -36,7 +35,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     $('#idCliente').val('');
                     $('#nom_cliente').val('');
                     $('#ape_cliente').val('');
-                    $('#dir_cliente').val('');
                     $('#tel_cliente').val('');
                     //mostrar boton agregar
                     $('.btn_new_cliente').slideDown();
@@ -45,7 +43,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     $('#idCliente').val(data.idCliente);
                     $('#nom_cliente').val(data.nombre);
                     $('#ape_cliente').val(data.apellido);
-                    $('#dir_cliente').val(data.direccion);
                     $('#tel_cliente').val(data.telefono);
                     //Ocultar boton agregar
                     $('.btn_new_cliente').slideUp();
@@ -54,7 +51,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     $('#nom_cliente').attr('disabled','disabled');
                     $('#ape_cliente').attr('disabled','disabled');
                     $('#tel_cliente').attr('disabled','disabled');
-                    $('#dir_cliente').attr('disabled','disabled');
 
                     //Oculta boton guardar
                     $('#div_registro_cliente').slideUp();
