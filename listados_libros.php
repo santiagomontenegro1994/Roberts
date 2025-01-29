@@ -107,7 +107,7 @@ $CantidadLibros = count($ListadoLibros);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">#</th>
+                <th scope="col">ID</th>
                 <th scope="col">Código</th>
                 <th scope="col">Titulo</th>
                 <th scope="col">Editorial</th>
@@ -119,7 +119,7 @@ $CantidadLibros = count($ListadoLibros);
             <tbody>
                 <?php for ($i=0; $i<$CantidadLibros; $i++) { ?>
                     <tr>
-                        <th scope="row" class="small"><?php echo $i+1; ?></th>
+                        <td class="small"><?php echo $ListadoLibros[$i]['ID_LIBRO']; ?></td>
                         <td class="small"><?php echo $ListadoLibros[$i]['CODIGO']; ?></td>
                         <td class="small"><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
                         <td class="small"><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>

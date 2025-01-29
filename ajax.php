@@ -63,8 +63,11 @@ $MiConexion=ConexionBD();
 
                 $idLibro = $_POST['libro'];
 
-                $query = mysqli_query($MiConexion,"SELECT titulo, editorial, precio
-                 FROM librosleas WHERE idLibros LIKE '$idLibro'");
+                $query = mysqli_query($MiConexion, "SELECT titulo, editorial, precio FROM librosleas WHERE idLibros LIKE '$idLibro'
+                                   UNION
+                                   SELECT titulo, editorial, precio FROM librossbs WHERE idLibros LIKE '$idLibro'
+                                   UNION
+                                   SELECT titulo, editorial, precio FROM libros WHERE idLibros LIKE '$idLibro'");
 
                 mysqli_close($MiConexion);
 
@@ -160,15 +163,20 @@ $MiConexion=ConexionBD();
             }else{
                 
                 //genero el Query para que me devuelva los datos de detalle temp
-                $query = mysqli_query($MiConexion,"SELECT tmp.correlativo,
-                                                          tmp.cantidad,
-                                                          tmp.precio_pedido,
-                                                          tmp.idLibro,
-                                                          l.titulo,
-                                                          l.editorial
-                                                   FROM detalle_temp tmp
-                                                   INNER JOIN librosleas l
-                                                   WHERE tmp.idLibro = l.idLibros");
+                $query = mysqli_query($MiConexion,"SELECT 
+                                                        tmp.correlativo, 
+                                                        tmp.idLibro, 
+                                                        COALESCE(l.titulo, s.titulo, b.titulo) AS titulo,
+                                                        COALESCE(l.editorial, s.editorial, b.editorial) AS editorial,
+                                                        tmp.cantidad, 
+                                                        tmp.precio_pedido
+                                                    FROM detalle_temp tmp
+                                                    LEFT JOIN librosleas l ON tmp.idLibro = l.idLibros
+                                                    LEFT JOIN librossbs s ON tmp.idLibro = s.idLibros
+                                                    LEFT JOIN libros b ON tmp.idLibro = b.idLibros
+                                                    WHERE l.idLibros IS NOT NULL 
+                                                    OR s.idLibros IS NOT NULL 
+                                                    OR b.idLibros IS NOT NULL");
 
                 $result = mysqli_num_rows($query);
                 
