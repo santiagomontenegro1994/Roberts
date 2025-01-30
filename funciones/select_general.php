@@ -538,6 +538,53 @@ function ColorDeFila($vEstado) {
 
 }
 
+function Datos_Pedidos($conexion, $idPedido) {
+    $query = "SELECT p.idPedidoLibros AS ID_PEDIDO, c.nombre AS CLIENTE, p.fecha AS FECHA, p.precioTotal AS PRECIO_TOTAL, p.senia AS SENIA, p.descuento AS DESCUENTO, e.denominación AS ESTADO
+              FROM pedido_libros p
+              INNER JOIN clientes c ON p.idCliente = c.idCliente
+              INNER JOIN estado e ON p.idEstado = e.idEstado
+              WHERE p.idPedidoLibros = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idPedido);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
 
+function Detalles_Pedido($conexion, $idPedido) {
+    $query = "
+        SELECT 
+            d.idDetallePedido AS ID_DETALLE, 
+            COALESCE(l.titulo, leas.titulo, sbs.titulo) AS LIBRO, 
+            d.precio_pedido AS PRECIO, 
+            d.cantidad AS CANTIDAD, 
+            d.idEstado AS ESTADO
+        FROM detalle_pedido d
+        LEFT JOIN libros l ON d.idLibro = l.idLibros
+        LEFT JOIN librosleas leas ON d.idLibro = leas.idLibros
+        LEFT JOIN librossbs sbs ON d.idLibro = sbs.idLibros
+        WHERE d.id_pedido_libros = ?
+    ";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idPedido);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $detalles = array();
+    while ($row = $result->fetch_assoc()) {
+        $detalles[] = $row;
+    }
+    return $detalles;
+}
+
+function Modificar_Detalles_Pedido($conexion, $datos) {
+    error_log("Función Modificar_Detalles_Pedido ejecutándose."); // Depuración
+    foreach ($datos['estado_detalle'] as $idDetalle => $estado) {
+        $query = "UPDATE detalle_pedido SET idEstado = ? WHERE idDetallePedido = ?";
+        $stmt = $conexion->prepare($query);
+        $stmt->bind_param("ii", $estado, $idDetalle);
+        $stmt->execute();
+    }
+    return true;
+}
 
 ?>
