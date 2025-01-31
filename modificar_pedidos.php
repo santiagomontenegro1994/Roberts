@@ -47,11 +47,6 @@ if (!empty($_POST['BotonModificarPedido1'])) {
             </ol>
         </nav>
     </div><!-- End Page Title -->
-
-    
-            
-                <h5 class="card-title">Datos del Pedido</h5>
-
                 <!-- Mostrar mensajes de éxito o error -->
                 <?php if (!empty($_SESSION['Mensaje'])) { ?>
                     <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
@@ -62,23 +57,10 @@ if (!empty($_POST['BotonModificarPedido1'])) {
     <div class="section">
         <div class="card">
             <div class="card-body">
-                <div class="details">
-                    <div class="card-title">Nombre: <span id="nombreCliente" class="text-dark fs-5"><?php echo $DatosPedidoActual['CLIENTE'] ?></span></div>
-                </div>
-                <div>   
+                <div class="d-flex justify-content-between align-items-end w-100">
+                    <div class="card-title">Nombre: <span id="nombreCliente" class="text-dark fs-5"><?php echo $DatosPedidoActual['CLIENTE'] ?>, <?php echo $DatosPedidoActual['CLIENTE_A'] ?></span></div>
+   
                     <div class="card-title">Fecha: <span id="fecha" class="text-dark fs-5"><?php echo $DatosPedidoActual['FECHA'] ?></span></div>
-                </div>
-                
-                <div class="details">
-                    <h3 class="card-title">Precio</h3>
-                    <?php
-                    // Calcula el monto del descuento
-                    $monto_descuento = ($DatosPedidoActual['PRECIO_TOTAL'] * $DatosPedidoActual['DESCUENTO']) / 100;
-                    $saldo = ($DatosPedidoActual['PRECIO_TOTAL'] - $monto_descuento)-$DatosPedidoActual['SENIA']?>
-                    <div>Precio Total: $<span id="precioTotal"><?php echo $DatosPedidoActual['PRECIO_TOTAL'] ?></span></div>
-                    <div>Descuento: %<span id="sena"><?php echo $DatosPedidoActual['DESCUENTO'] ?></span></div>
-                    <div>Seña: $<span id="sena"><?php echo $DatosPedidoActual['SENIA'] ?></span></div>
-                    <div>Saldo: $<span id="saldo"><?php echo $saldo ?></span></div>
                 </div>
             </div>
         </div>
@@ -92,10 +74,11 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                     <input type='hidden' name="IdPedido" value="<?php echo $DatosPedidoActual['ID_PEDIDO']; ?>" />
                     <!-- Detalles del pedido -->
                     <h5 class="card-title">Detalles del Pedido</h5>
-                    <table class="table table-bordered">
+                    <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Libro</th>
+                                <th>Titulo</th>
+                                <th>Editorial</th>
                                 <th>Precio Unitario</th>
                                 <th>Cantidad</th>
                                 <th>Estado</th>
@@ -104,7 +87,8 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                         <tbody>
                             <?php foreach ($DetallesPedido as $detalle) { ?>
                                 <tr>
-                                    <td><?php echo $detalle['LIBRO']; ?></td>
+                                    <td><?php echo $detalle['LIBRO_T']; ?></td>
+                                    <td><?php echo $detalle['LIBRO_E']; ?></td>
                                     <td><?php echo $detalle['PRECIO']; ?></td>
                                     <td><?php echo $detalle['CANTIDAD']; ?></td>
                                     <td>
@@ -121,13 +105,46 @@ if (!empty($_POST['BotonModificarPedido1'])) {
 
                     <!-- Botones de acción -->
                     <div class="text-center">
-                      <button type="submit" class="btn btn-primary" value="Modificar" name="BotonModificarPedido1">Guardar Cambios</button>
-                        <a href="listados_pedidos.php" class="btn btn-success btn-info">Volver al Listado</a>
+                      <button type="submit" class="btn btn-primary btn-sm" value="Modificar" name="BotonModificarPedido1">Guardar Cambios</button>
+                        <a href="listados_pedidos.php" class="btn btn-success btn-info btn-sm">Volver al Listado</a>
                     </div>
                 </form><!-- End Horizontal Form -->
             </div>
         </div>
     </section>
+
+    <div class="section">
+        <div class="card">
+            <div class="card-footer text-end">
+                <div class="details">
+                    <table class="table w-auto ms-auto"> <!-- w-auto ajusta el ancho -->
+                        <tr>
+                            <td class="card-title">Precio Total:</td>
+                            <td class="text-dark fs-5">$<?php echo $DatosPedidoActual['PRECIO_TOTAL'] ?></td>
+                        </tr>
+                        <tr>
+                            <td class="card-title">Descuento:</td>
+                            <td class="text-dark fs-5">%<?php echo $DatosPedidoActual['DESCUENTO'] ?></td>
+                        </tr>
+                        <tr>
+                            <td class="card-title">Seña:</td>
+                            <td class="text-dark fs-5">$<?php echo $DatosPedidoActual['SENIA'] ?></td>
+                        </tr>
+                        <tr>
+                        <?php
+                            // Calcula el monto del descuento
+                            $monto_descuento = ($DatosPedidoActual['PRECIO_TOTAL'] * $DatosPedidoActual['DESCUENTO']) / 100;
+                            $saldo = ($DatosPedidoActual['PRECIO_TOTAL'] - $monto_descuento)-$DatosPedidoActual['SENIA']?>
+                            <td class="card-title">Saldo:</td>
+                            <td class="text-dark fs-5">$<?php echo $saldo ?></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </main><!-- End #main -->
 
 <?php
