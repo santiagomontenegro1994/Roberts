@@ -7,6 +7,9 @@ if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, re
 }
 
 require('encabezado.inc.php'); // Incluir encabezado
+
+//require ('barraLateral.inc.php'); //incluir barra lateral
+
 require_once 'funciones/conexion.php';
 require_once 'funciones/select_general.php';
 $MiConexion = ConexionBD();

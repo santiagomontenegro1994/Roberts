@@ -539,7 +539,7 @@ function ColorDeFila($vEstado) {
 }
 
 function Datos_Pedidos($conexion, $idPedido) {
-    $query = "SELECT p.idPedidoLibros AS ID_PEDIDO, c.nombre AS CLIENTE, c.apellido AS CLIENTE_A, p.fecha AS FECHA, p.precioTotal AS PRECIO_TOTAL, p.senia AS SENIA, p.descuento AS DESCUENTO, e.denominación AS ESTADO
+    $query = "SELECT p.idPedidoLibros AS ID_PEDIDO, c.nombre AS CLIENTE, c.apellido AS CLIENTE_A, c.telefono AS TELEFONO,p.fecha AS FECHA, p.precioTotal AS PRECIO_TOTAL, p.senia AS SENIA, p.descuento AS DESCUENTO, e.denominación AS ESTADO
               FROM pedido_libros p
               INNER JOIN clientes c ON p.idCliente = c.idCliente
               INNER JOIN estado e ON p.idEstado = e.idEstado

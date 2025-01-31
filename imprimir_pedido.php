@@ -18,8 +18,10 @@ $MiConexion = ConexionBD();
 require_once 'funciones/select_general.php';
 
 //voy a ir listando lo necesario para trabajar en este script: 
-//Guardo el ID_PEDIDO que pase.
-$DatosPedidoActual = Datos_Pedido($MiConexion , $_GET['ID_PEDIDO']);
+
+// Obtener los datos del pedido y sus detalles si se pasa el ID por GET
+$DatosPedidoActual = Datos_Pedidos($MiConexion, $_GET['ID_PEDIDO']);
+$DetallesPedido = Detalles_Pedido($MiConexion, $_GET['ID_PEDIDO']);
 
 //Empiezo a guardar el contenido en una variable
 ob_start();
@@ -31,36 +33,62 @@ ob_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprobante de Pedido de Libro</title>
+    <title>Comprobante de Pedido</title>
     <style>
         body { font-family: Arial, sans-serif; }
         .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; }
         .header, .footer { text-align: center; margin: 20px 0; }
         .details { margin: 20px 0; }
         .details div { margin: 5px 0; }
+        .text-end { text-align: right; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h2>Comprobante de Pedido de Libro</h2>
+            <h2>Comprobante de Pedido</h2>
             <p>Fecha: <span id="fecha"><?php echo $DatosPedidoActual['FECHA'] ?></span></p>
         </div>
         <div class="details">
             <h3>Datos del Cliente</h3>
-            <div>Nombre: <span id="nombreCliente"><?php echo $DatosPedidoActual['NOMBRE_CLIENTE'] ?></span></div>
-            <div>Teléfono: <span id="telefonoCliente"><?php echo $DatosPedidoActual['TELEFONO_CLIENTE'] ?></span></div>
+            <div>Nombre: <span id="nombreCliente"><?php echo $DatosPedidoActual['CLIENTE'] ?>, <?php echo $DatosPedidoActual['CLIENTE_A'] ?></span></div>
+            <div>Teléfono: <span id="telefonoCliente"><?php echo $DatosPedidoActual['TELEFONO'] ?></span></div>
         </div>
+
         <div class="details">
-            <h3>Datos del Libro</h3>
-            <div>Título: <span id="tituloLibro"><?php echo $DatosPedidoActual['TITULO'] ?></span></div>
-            <div>Autor: <span id="autorLibro"><?php echo $DatosPedidoActual['AUTOR'] ?></span></div>
+            <h3>Detalles del pedido</h3>
+            <table border="1" width="100%" cellpadding="5">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Editorial</th>
+                        <th>Precio Unitario</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($DetallesPedido as $detalle) { ?>
+                        <tr>
+                            <td><?php echo $detalle['LIBRO_T']; ?></td>
+                            <td><?php echo $detalle['LIBRO_E']; ?></td>
+                            <td>$<?php echo number_format($detalle['PRECIO'], 2); ?></td>
+                            <td><?php echo $detalle['CANTIDAD']; ?></td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
         </div>
+
         <div class="details">
             <h3>Precio</h3>
-            <?php $saldo = $DatosPedidoActual['PRECIO']-$DatosPedidoActual['SEÑA']?>
-            <div>Precio Total: $<span id="precioTotal"><?php echo $DatosPedidoActual['PRECIO'] ?></span></div>
-            <div>Seña: $<span id="sena"><?php echo $DatosPedidoActual['SEÑA'] ?></span></div>
+            <?php
+                // Calcula el monto del descuento
+                $monto_descuento = ($DatosPedidoActual['PRECIO_TOTAL'] * $DatosPedidoActual['DESCUENTO']) / 100;
+                $saldo = ($DatosPedidoActual['PRECIO_TOTAL'] - $monto_descuento)-$DatosPedidoActual['SENIA']
+            ?>
+            <div>Precio Total: $<span id="precioTotal"><?php echo $DatosPedidoActual['PRECIO_TOTAL'] ?></span></div>
+            <div>Descuento: %<span id="sena"><?php echo $DatosPedidoActual['DESCUENTO'] ?></span></div>
+            <div>Seña: $<span id="sena"><?php echo $DatosPedidoActual['SENIA'] ?></span></div>
             <div>Saldo: $<span id="saldo"><?php echo $saldo ?></span></div>
         </div>
         <div class="footer">
@@ -69,6 +97,7 @@ ob_start();
     </div>
 </body>
 </html>
+
 
 
 
