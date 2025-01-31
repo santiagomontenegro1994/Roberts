@@ -48,9 +48,8 @@ if (!empty($_POST['BotonModificarPedido1'])) {
         </nav>
     </div><!-- End Page Title -->
 
-    <section class="section">
-        <div class="card">
-            <div class="card-body">
+    
+            
                 <h5 class="card-title">Datos del Pedido</h5>
 
                 <!-- Mostrar mensajes de éxito o error -->
@@ -59,54 +58,38 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                         <?php echo $_SESSION['Mensaje']; ?>
                     </div>
                 <?php } ?>
+                <!-- Nuevo encabezado -->
+    <div class="section">
+        <div class="card">
+            <div class="card-body">
+                <div class="details">
+                    <div class="card-title">Nombre: <span id="nombreCliente" class="text-dark fs-5"><?php echo $DatosPedidoActual['CLIENTE'] ?></span></div>
+                </div>
+                <div>   
+                    <div class="card-title">Fecha: <span id="fecha" class="text-dark fs-5"><?php echo $DatosPedidoActual['FECHA'] ?></span></div>
+                </div>
+                
+                <div class="details">
+                    <h3 class="card-title">Precio</h3>
+                    <?php
+                    // Calcula el monto del descuento
+                    $monto_descuento = ($DatosPedidoActual['PRECIO_TOTAL'] * $DatosPedidoActual['DESCUENTO']) / 100;
+                    $saldo = ($DatosPedidoActual['PRECIO_TOTAL'] - $monto_descuento)-$DatosPedidoActual['SENIA']?>
+                    <div>Precio Total: $<span id="precioTotal"><?php echo $DatosPedidoActual['PRECIO_TOTAL'] ?></span></div>
+                    <div>Descuento: %<span id="sena"><?php echo $DatosPedidoActual['DESCUENTO'] ?></span></div>
+                    <div>Seña: $<span id="sena"><?php echo $DatosPedidoActual['SENIA'] ?></span></div>
+                    <div>Saldo: $<span id="saldo"><?php echo $saldo ?></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <section class="section">
+        <div class="card">
+            <div class="card-body">
                 <!-- Formulario para modificar el pedido -->
                 <form method='post'>
                     <input type='hidden' name="IdPedido" value="<?php echo $DatosPedidoActual['ID_PEDIDO']; ?>" />
-
-                    <!-- Datos del encabezado del pedido -->
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Cliente</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['CLIENTE']; ?>" readonly>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Fecha</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['FECHA']; ?>" readonly>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Seña</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['SENIA']; ?>" readonly>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Descuento</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['DESCUENTO']; ?>" readonly>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Precio Total</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['PRECIO_TOTAL']; ?>" readonly>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Estado</label>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" value="<?php echo $DatosPedidoActual['ESTADO']; ?>" readonly>
-                        </div>
-                    </div>
-
                     <!-- Detalles del pedido -->
                     <h5 class="card-title">Detalles del Pedido</h5>
                     <table class="table table-bordered">
