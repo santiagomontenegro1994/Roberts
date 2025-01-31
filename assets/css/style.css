@@ -11,6 +11,12 @@
   font-size: 0.8rem; /* Ajusta el tamaño del texto según necesites */
 }
 
+.table-purple {
+  background-color: #6f42c1; /* Puedes ajustar este valor hexadecimal para obtener el tono de morado que prefieras */
+  color: #fff; /* Cambia el color del texto si es necesario */
+}
+
+
 /*--------------------------------------------------------------
 # General
 --------------------------------------------------------------*/

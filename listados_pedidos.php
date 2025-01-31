@@ -112,7 +112,7 @@ $CantidadPedidos = count($ListadoPedidos);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">#</th>
+                <th scope="col">Nro.</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Cliente</th>
                 <th scope="col">Detalle</th>
@@ -138,7 +138,7 @@ $CantidadPedidos = count($ListadoPedidos);
                   ?>
                     
                     <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
-                        <th scope="row"><?php echo $i+1; ?></th>
+                        <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
                         <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
                         <td><?php echo $ListadoPedidos[$i]['CLIENTE_N'];?> ,
                         <?php echo $ListadoPedidos[$i]['CLIENTE_A'];?></td>
@@ -149,10 +149,10 @@ $CantidadPedidos = count($ListadoPedidos);
                         <td>$<?php echo number_format($saldo, 2); ?></td>
                         <td>
                           <!-- eliminar la consulta -->
-                          <a href="eliminar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                          <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             class="btn btn-success btn-danger" 
-                            title="Eliminar" 
-                            onclick="return confirm('Confirma eliminar este Pedido?');">
+                            title="anular" 
+                            onclick="return confirm('Confirma anular este Pedido?');">
                               <i class="fa fa-times"></i>
                           </a>
 

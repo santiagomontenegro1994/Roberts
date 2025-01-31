@@ -18,7 +18,7 @@ function Listar_Clientes($vConexion) {
     $Listado=array();
 
       //1) genero la consulta que deseo
-        $SQL = "SELECT * FROM clientes";
+        $SQL = "SELECT * FROM clientes WHERE idActivo=1";
 
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
         $rs = mysqli_query($vConexion, $SQL);
@@ -38,31 +38,6 @@ function Listar_Clientes($vConexion) {
     return $Listado;
 }
 
-function Listar_Clientes_Pedidos($vConexion) {
-
-    $Listado=array();
-
-      //1) genero la consulta que deseo
-        $SQL = "SELECT idCLiente , apellido , nombre
-        FROM clientes
-        ORDER BY apellido";
-
-        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
-        $rs = mysqli_query($vConexion, $SQL);
-        
-        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
-        $i=0;
-        while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID'] = $data['idCLiente'];
-            $Listado[$i]['APELLIDO'] = $data['apellido'];
-            $Listado[$i]['NOMBRE'] = $data['nombre'];
-            $i++;
-        }
-
-    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
-    return $Listado;
-}
-
 function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
     $Listado=array();
 
@@ -70,16 +45,16 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
         $sql = "SELECT * FROM clientes";
         switch ($criterio) { 
         case 'Nombre': 
-        $sql = "SELECT * FROM clientes WHERE nombre LIKE '%$parametro%'";
+        $sql = "SELECT * FROM clientes WHERE nombre LIKE '%$parametro%' AND idActivo = 1";
         break;
         case 'Apellido':
-        $sql = "SELECT * FROM clientes WHERE apellido LIKE '%$parametro%'";
+        $sql = "SELECT * FROM clientes WHERE apellido LIKE '%$parametro%' AND idActivo = 1";
         break;
         case 'Telefono':
-        $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%'";
+        $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = 1";
         break;
         case 'DNI':
-        $sql = "SELECT * FROM clientes WHERE dni LIKE '%$parametro%'";
+        $sql = "SELECT * FROM clientes WHERE dni LIKE '%$parametro%' AND idActivo = 1";
         break;
         }    
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
@@ -100,7 +75,7 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
     return $Listado;
 }
 
-function Eliminar_Cliente($vConexion , $vIdConsulta) {
+function Anular_Cliente($vConexion , $vIdConsulta) {
 
 
     //soy admin 
@@ -114,7 +89,8 @@ function Eliminar_Cliente($vConexion , $vIdConsulta) {
 
     if (!empty($data['idCliente']) ) {
         //si se cumple todo, entonces elimino:
-        mysqli_query($vConexion, "DELETE FROM clientes WHERE idCliente = $vIdConsulta");
+        mysqli_query($vConexion, "UPDATE clientes SET idActivo = 2 WHERE idCliente = $vIdConsulta");
+        
         return true;
 
     }else {
@@ -407,7 +383,7 @@ function Listar_Pedidos($vConexion) {
       //1) genero la consulta que deseo
         $SQL = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal,PL.descuento, PL.senia, E.denominación
         FROM pedido_libros PL, clientes C, estado E
-        WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado
+        WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado AND PL.idActivo=1
         ORDER BY PL.fecha DESC, C.nombre";
 
         //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
@@ -515,29 +491,6 @@ function Validar_Pedidos(){
     return $_SESSION['Mensaje'];
 }
 
-function ColorDeFila($vEstado) {
-    $Title='';
-    $Color=''; 
-
-    if ($vEstado=='Pendiente'){
-        //Estado pendiente
-        $Title='Pendiente de buscar';
-        $Color='table-danger'; 
-    
-    } else if ($vEstado == 'Listo para retirar'){
-        //Estado listo para retirar
-        $Title='Listo para retirar';
-        $Color='table-warning'; 
-    } else if ($vEstado=='Retirado'){
-        //Estado retirado
-        $Title='Retirado';
-        $Color='table-success'; 
-    }     
-    
-    return [$Title, $Color];
-
-}
-
 function Datos_Pedidos($conexion, $idPedido) {
     $query = "SELECT p.idPedidoLibros AS ID_PEDIDO, c.nombre AS CLIENTE, c.apellido AS CLIENTE_A, c.telefono AS TELEFONO,p.fecha AS FECHA, p.precioTotal AS PRECIO_TOTAL, p.senia AS SENIA, p.descuento AS DESCUENTO, e.denominación AS ESTADO
               FROM pedido_libros p
@@ -586,6 +539,55 @@ function Modificar_Detalles_Pedido($conexion, $datos) {
         $stmt->execute();
     }
     return true;
+}
+
+function Anular_Pedido($vConexion , $vIdConsulta) {
+ 
+        $SQL_MiConsulta="SELECT idPedidoLibros FROM pedido_libros 
+                        WHERE idPedidoLibros = $vIdConsulta ";
+   
+    
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idPedidoLibros']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE pedido_libros SET idActivo = 2 WHERE idPedidoLibros = $vIdConsulta");
+        
+        return true;
+
+    }else {
+        return false;
+    }
+    
+}
+
+function ColorDeFila($vEstado) {
+    $Title='';
+    $Color=''; 
+
+    if ($vEstado == 'Para pedir' || $vEstado == '4'){
+        //Estado pendiente
+        $Title='Pendiente de pedir';
+        $Color='table-danger'; 
+    
+    } else if ($vEstado == 'Pedido' || $vEstado == '3'){
+        //Estado listo para retirar
+        $Title='Pedido';
+        $Color='table-warning'; 
+    } else if ($vEstado=='Recibido' || $vEstado == '2'){
+        //Estado retirado
+        $Title='Recibido';
+        $Color='table-success'; 
+    } else if ($vEstado=='Entregado' || $vEstado == '1'){
+    //Estado retirado
+    $Title='Entregado';
+    $Color='table-primary'; 
+    }      
+    
+    return [$Title, $Color];
+
 }
 
 ?>

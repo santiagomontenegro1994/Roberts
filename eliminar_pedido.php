@@ -10,16 +10,15 @@
    
 
     require_once 'funciones/select_general.php';
-
-    if ( Anular_Cliente($MiConexion , $_GET['ID_CLIENTE']) != false ) {
-        $_SESSION['Mensaje'].='Se ha eliminado la consulta seleccionada';
+    echo '<script>console.log("entre");</script>';
+    if ( Anular_Pedido($MiConexion , $_GET['ID_PEDIDO']) != false ) {
+        $_SESSION['Mensaje'].='Se ha eliminado el pedido seleccionado';
         $_SESSION['Estilo']='success';
     }else {
-        $_SESSION['Mensaje'].='No se pudo borrar la consulta. <br /> ';
+        $_SESSION['Mensaje'].='No se pudo anular el pedido. <br /> ';
         $_SESSION['Estilo']='warning';
     }
-    
    
-    header('Location: listados_clientes.php');
+    header('Location: listados_pedidos.php');
     exit;
 ?>
