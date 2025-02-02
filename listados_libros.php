@@ -130,24 +130,20 @@ $CantidadLibros = count($ListadoLibros);
                         <?php if($ListadoLibros[$i]['MAYORISTA'] == 'Personal') {?>
                           <!-- eliminar la consulta -->
                           <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            class="btn btn-danger" 
                             title="Eliminar" 
                             onclick="return confirm('Confirma eliminar este libro?');">
-                              <i class="fa fa-times"></i>
-                          </a>
+                            <i class="bi bi-trash text-danger"></i></a>
 
                           <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            class="btn btn-warning" 
                             title="Modificar">
-                          <i class="bi bi-person-fill-slash"></i>
+                          <i class="bi bi-pencil-square text-warning"></i>
                           </a>
                         <?php }?>
 
                         <a href="#" 
-                          class="btn btn-primary" 
                           title="Agregar a pedido" 
                           onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
-                          <i class="bi bi-person-fill-slash"></i>
+                          <i class="bi bi-journal-plus text-succes"></i>
                         </a>
                           
                         </td>
