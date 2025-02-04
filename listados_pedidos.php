@@ -152,17 +152,17 @@ $CantidadPedidos = count($ListadoPedidos);
                           <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
                             title="anular" 
                             onclick="return confirm('Confirma anular este Pedido?');">
-                              <i class="bi bi-trash text-danger"></i>
+                              <i class="bi bi-trash-fill text-danger fs-5"></i>
                           </a>
 
                           <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
                             title="Modificar">
-                          <i class="bi bi-pencil-square text-warning"></i>
+                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
                           </a>
 
                           <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
                             title="Imprimir">
-                          <i class="bi bi-printer text-succes"></i>
+                          <i class="bi bi-printer-fill text-success fs-5"></i>
                           </a>
                       
                         </td>

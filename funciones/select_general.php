@@ -207,9 +207,21 @@ function Validar_Libros(){
 }
 
 function Datos_Libro($vConexion , $vIdLibro) {
+    
+    // Determinar en qué tabla está el ID
+    $tabla = null;
+    if (existeEnTabla($vConexion, 'libros', $vIdLibro)) {
+        $tabla = 'libros';
+    } elseif (existeEnTabla($vConexion, 'librosleas', $vIdLibro)) {
+        $tabla = 'librosleas';
+    } elseif (existeEnTabla($vConexion, 'librossbs', $vIdLibro)) {
+        $tabla = 'librossbs';
+    }
+
     $DatosLibro  =   array();
     //me aseguro que la consulta exista
-    $SQL = "SELECT * FROM libros 
+
+    $SQL = "SELECT * FROM $tabla 
             WHERE IdLibros = $vIdLibro";
 
     $rs = mysqli_query($vConexion, $SQL);
@@ -329,6 +341,17 @@ function Listar_Libros_Parametro($vConexion,$criterio,$parametro) {
     return $Listado;
 }
 
+// Función para verificar si un ID existe en una tabla
+function existeEnTabla($conexion, $tabla, $idLibro) {
+    $query = "SELECT COUNT(*) as count FROM $tabla WHERE idLibros = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idLibro);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return $row['count'] > 0;
+}
+
 function Modificar_Libros($vConexion) {
     $isbn = mysqli_real_escape_string($vConexion, $_POST['ISBN']);
     $autor = mysqli_real_escape_string($vConexion, $_POST['Autor']);
@@ -337,7 +360,17 @@ function Modificar_Libros($vConexion) {
     $precio = mysqli_real_escape_string($vConexion, $_POST['Precio']);
     $idLibro = mysqli_real_escape_string($vConexion, $_POST['IdLibro']);
 
-    $SQL_MiConsulta = "UPDATE libros 
+    // Determinar en qué tabla está el ID
+    $tabla = null;
+    if (existeEnTabla($MiConexion, 'libros', $idLibro)) {
+        $tabla = 'libros';
+    } elseif (existeEnTabla($MiConexion, 'librosleas', $idLibro)) {
+        $tabla = 'librosleas';
+    } elseif (existeEnTabla($MiConexion, 'librossbs', $idLibro)) {
+        $tabla = 'librossbs';
+    }
+
+    $SQL_MiConsulta = "UPDATE $tabla 
     SET isbn = '$isbn',
     titulo = '$titulo',
     autor = '$autor',

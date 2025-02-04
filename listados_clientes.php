@@ -133,12 +133,12 @@ $CantidadClientes = count($ListadoClientes);
                           <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
                             title="Eliminar" 
                             onclick="return confirm('Confirma eliminar este cliente?');">
-                              <i class="bi bi-trash text-danger"></i>
+                              <i class="bi bi-trash-fill text-danger fs-5"></i>
                           </a>
 
                           <a href="modificar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>"  
                             title="Modificar">
-                          <i class="bi bi-pencil-square text-warning"></i>
+                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
                           </a>
                       
                         </td>

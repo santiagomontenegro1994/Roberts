@@ -126,24 +126,25 @@ $CantidadLibros = count($ListadoLibros);
                         <td class="small"><?php echo $ListadoLibros[$i]['MAYORISTA']; ?></td>
                         <td class="small"><?php echo number_format($ListadoLibros[$i]['PRECIO'], 2); ?></td>
                         <td>
-                        <!-- valido para que solo se puedan eliminar y modificar los personales -->
+                        <!-- valido para que solo se puedan eliminar los personales -->
                         <?php if($ListadoLibros[$i]['MAYORISTA'] == 'Personal') {?>
                           <!-- eliminar la consulta -->
                           <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
                             title="Eliminar" 
                             onclick="return confirm('Confirma eliminar este libro?');">
-                            <i class="bi bi-trash text-danger"></i></a>
+                            <i class="bi bi-trash-fill text-danger fs-5"></i></a>
 
-                          <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            title="Modificar">
-                          <i class="bi bi-pencil-square text-warning"></i>
-                          </a>
                         <?php }?>
+
+                        <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
+                            title="Modificar">
+                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                        </a>
 
                         <a href="#" 
                           title="Agregar a pedido" 
                           onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
-                          <i class="bi bi-journal-plus text-succes"></i>
+                          <i class="bi bi-bag-plus-fill text-success fs-5"></i>
                         </a>
                           
                         </td>
