@@ -90,7 +90,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
                 <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
                 <td id="txt_precio">0.00</td>
                 <td id="txt_precio_total">0.00</td>
-                <td><a href="#" id="add_libro_pedido" class="text-success fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-success"></i> pedir</a></td>   
+                <td><a href="#" id="add_libro_pedido" class="text-success fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-success fs-5"></i> pedir</a></td>   
             </tr>
 
             <tr class="table-primary">

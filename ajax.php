@@ -118,7 +118,7 @@ $MiConexion=ConexionBD();
                                             <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash text-danger"></i></a>
+                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
                                             </td>   
                                         </tr>';
                     }
@@ -203,7 +203,7 @@ $MiConexion=ConexionBD();
                                             <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash text-danger"></i></a>
+                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
                                             </td>   
                                         </tr>';
                     }
@@ -276,7 +276,7 @@ $MiConexion=ConexionBD();
                                             <td>'.number_format($precioTotal, 2, '.', '').'</td>
                                             <td>
                                                 <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash text-danger"></i></a>
+                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
                                             </td>   
                                         </tr>';
                     }
