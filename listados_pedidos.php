@@ -8,7 +8,7 @@ if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no 
 
 require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('barraLateral.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
 //voy a necesitar la conexion: incluyo la funcion de Conexion.
 require_once 'funciones/conexion.php';
