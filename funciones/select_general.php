@@ -362,11 +362,11 @@ function Modificar_Libros($vConexion) {
 
     // Determinar en qué tabla está el ID
     $tabla = null;
-    if (existeEnTabla($MiConexion, 'libros', $idLibro)) {
+    if (existeEnTabla($vConexion, 'libros', $idLibro)) {
         $tabla = 'libros';
-    } elseif (existeEnTabla($MiConexion, 'librosleas', $idLibro)) {
+    } elseif (existeEnTabla($vConexion, 'librosleas', $idLibro)) {
         $tabla = 'librosleas';
-    } elseif (existeEnTabla($MiConexion, 'librossbs', $idLibro)) {
+    } elseif (existeEnTabla($vConexion, 'librossbs', $idLibro)) {
         $tabla = 'librossbs';
     }
 
