@@ -564,7 +564,6 @@ function Detalles_Pedido($conexion, $idPedido) {
 }
 
 function Modificar_Detalles_Pedido($conexion, $datos) {
-    error_log("Función Modificar_Detalles_Pedido ejecutándose."); // Depuración
     foreach ($datos['estado_detalle'] as $idDetalle => $estado) {
         $query = "UPDATE detalle_pedido SET idEstado = ? WHERE idDetallePedido = ?";
         $stmt = $conexion->prepare($query);

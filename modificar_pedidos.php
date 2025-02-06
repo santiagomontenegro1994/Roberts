@@ -82,9 +82,10 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                             <tr>
                                 <th>Titulo</th>
                                 <th>Editorial</th>
-                                <th>Precio Unitario</th>
-                                <th>Cantidad</th>
+                                <th>Precio</th>
+                                <th>Cant.</th>
                                 <th>Estado</th>
+                                <th>Prooveedor</th>
                             </tr>
                         </thead>
                         <tbody>
