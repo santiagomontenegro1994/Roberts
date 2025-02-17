@@ -63,7 +63,7 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                 <div class="d-flex justify-content-between align-items-end w-100">
                     <div class="card-title">Nombre: <span id="nombreCliente" class="text-dark fs-5"><?php echo $DatosPedidoActual['CLIENTE'] ?>, <?php echo $DatosPedidoActual['CLIENTE_A'] ?></span></div>
    
-                    <div class="card-title">Fecha: <span id="fecha" class="text-dark fs-5"><?php echo $DatosPedidoActual['FECHA'] ?></span></div>
+                    <div class="card-title">Fecha de Pedido: <span id="fecha" class="text-dark fs-5"><?php echo $DatosPedidoActual['FECHA'] ?></span></div>
                 </div>
             </div>
         </div>
