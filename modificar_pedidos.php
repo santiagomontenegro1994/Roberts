@@ -101,10 +101,10 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                                     <td><?php echo $detalle['CANTIDAD']; ?></td>
                                     <td>
                                         <select name="estado_detalle[<?php echo $detalle['ID_DETALLE']; ?>]" class="form-control">
-                                            <option value="1" <?php echo ($detalle['ESTADO'] == 1) ? 'selected' : ''; ?>>Entregado</option>
-                                            <option value="2" <?php echo ($detalle['ESTADO'] == 2) ? 'selected' : ''; ?>>Recibido</option>
-                                            <option value="3" <?php echo ($detalle['ESTADO'] == 3) ? 'selected' : ''; ?>>Pedido</option>
-                                            <option value="4" <?php echo ($detalle['ESTADO'] == 4) ? 'selected' : ''; ?>>Para pedir</option>
+                                            <option value="1" <?php echo ($detalle['ESTADO'] == 1) ? 'selected' : ''; ?>>ENTREGADO</option>
+                                            <option value="2" <?php echo ($detalle['ESTADO'] == 2) ? 'selected' : ''; ?>>RECIBIDO</option>
+                                            <option value="3" <?php echo ($detalle['ESTADO'] == 3) ? 'selected' : ''; ?>>PEDIDO</option>
+                                            <option value="4" <?php echo ($detalle['ESTADO'] == 4) ? 'selected' : ''; ?>>P/PEDIR</option>
                                         </select>
                                     </td>
                                 </tr>
