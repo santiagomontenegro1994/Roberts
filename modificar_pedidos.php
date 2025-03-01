@@ -17,6 +17,7 @@ $MiConexion = ConexionBD();
 // Array para almacenar los datos del pedido y sus detalles
 $DatosPedidoActual = array();
 $DetallesPedido = array();
+$proveedores = Listar_Proveedores($MiConexion);
 
 if (!empty($_POST['BotonModificarPedido1'])) {
     echo '<script>
@@ -85,16 +86,14 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                                 <th>Precio</th>
                                 <th>Cant.</th>
                                 <th>Estado</th>
-                                <th>Prooveedor</th>
+                                <th>Proveedor</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($DetallesPedido as $detalle) { 
-                                //Metodo para pintar las filas
-                                list($Title, $Color) = ColorDeFila($detalle['ESTADO']);?>
-
-
-                                <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                                // Método para pintar las filas
+                                list($Title, $Color) = ColorDeFila($detalle['ESTADO']); ?>
+                                <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                     <td><?php echo $detalle['LIBRO_T']; ?></td>
                                     <td><?php echo $detalle['LIBRO_E']; ?></td>
                                     <td><?php echo $detalle['PRECIO']; ?></td>
@@ -107,11 +106,20 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                                             <option value="4" <?php echo ($detalle['ESTADO'] == 4) ? 'selected' : ''; ?>>P/PEDIR</option>
                                         </select>
                                     </td>
+                                    <td>
+                                        <select name="proveedor_detalle[<?php echo $detalle['ID_DETALLE']; ?>]" class="form-control">
+                                            <?php foreach ($proveedores as $proveedor) { ?>
+                                                <option value="<?php echo $proveedor['ID_PROVEEDOR']; ?>" 
+                                                    <?php echo ($detalle['idProveedor'] == $proveedor['ID_PROVEEDOR']) ? 'selected' : ''; ?>>
+                                                    <?php echo $proveedor['NOMBRE']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </td>
                                 </tr>
                             <?php } ?>
                         </tbody>
                     </table>
-
                     <!-- Botones de acción -->
                     <div class="text-center">
                       <button type="submit" class="btn btn-primary btn-sm" value="Modificar" name="BotonModificarPedido1">Guardar Cambios</button>

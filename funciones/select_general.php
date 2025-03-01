@@ -51,6 +51,7 @@ function Listar_Clientes($vConexion) {
     //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
     return $Listado;
 }
+
 function Listar_Proveedores($vConexion) {
 
     $Listado=array();
@@ -698,7 +699,8 @@ function Detalles_Pedido($conexion, $idPedido) {
             COALESCE(l.editorial, leas.editorial, sbs.editorial) AS LIBRO_E,  
             d.precio_pedido AS PRECIO, 
             d.cantidad AS CANTIDAD, 
-            d.idEstado AS ESTADO
+            d.idEstado AS ESTADO,
+            d.idProveedor
         FROM detalle_pedido d
         LEFT JOIN libros l ON d.idLibro = l.idLibros
         LEFT JOIN librosleas leas ON d.idLibro = leas.idLibros
@@ -717,10 +719,20 @@ function Detalles_Pedido($conexion, $idPedido) {
 }
 
 function Modificar_Detalles_Pedido($conexion, $datos) {
+    // Verificar si existen los arrays 'estado_detalle' y 'proveedor_detalle' en $datos
+    if (!isset($datos['estado_detalle'])) {
+        return false; // Si no hay datos de estado, no se puede continuar
+    }
+
+    // Recorrer los detalles del pedido para actualizar el estado y el proveedor
     foreach ($datos['estado_detalle'] as $idDetalle => $estado) {
-        $query = "UPDATE detalle_pedido SET idEstado = ? WHERE idDetallePedido = ?";
+        // Obtener el proveedor seleccionado para este detalle (si existe)
+        $idProveedor = isset($datos['proveedor_detalle'][$idDetalle]) ? $datos['proveedor_detalle'][$idDetalle] : null;
+
+        // Actualizar el estado y el proveedor en la base de datos
+        $query = "UPDATE detalle_pedido SET idEstado = ?, idProveedor = ? WHERE idDetallePedido = ?";
         $stmt = $conexion->prepare($query);
-        $stmt->bind_param("ii", $estado, $idDetalle);
+        $stmt->bind_param("isi", $estado, $idProveedor, $idDetalle); // "isi" = int, string, int
         $stmt->execute();
     }
     return true;
