@@ -13,6 +13,20 @@ function InsertarClientes($vConexion){
     return true;
 }
 
+function InsertarProveedores($vConexion){
+    
+    $SQL_Insert="INSERT INTO proveedores (nombre, CUIT, contacto)
+    VALUES ('".$_POST['Nombre']."' , '".$_POST['CUIT']."', '".$_POST['Contacto']."')";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
 function Listar_Clientes($vConexion) {
 
     $Listado=array();
@@ -31,6 +45,29 @@ function Listar_Clientes($vConexion) {
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
             $Listado[$i]['DNI'] = $data['dni'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+function Listar_Proveedores($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT * FROM proveedores WHERE idActivo=1";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_PROVEEDOR'] = $data['idProveedor'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['CONTACTO'] = $data['contacto'];
+            $Listado[$i]['CUIT'] = $data['CUIT'];
             $i++;
         }
 
@@ -75,6 +112,39 @@ function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
     return $Listado;
 }
 
+function Listar_Proveedores_Parametro($vConexion,$criterio,$parametro) {
+    $Listado=array();
+
+      //1) genero la consulta que deseo segun el parametro
+        $sql = "SELECT * FROM proveedores";
+        switch ($criterio) { 
+        case 'Nombre': 
+        $sql = "SELECT * FROM proveedores WHERE nombre LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        case 'Contacto':
+        $sql = "SELECT * FROM proveedores WHERE contacto LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        case 'CUIT':
+        $sql = "SELECT * FROM proveedores WHERE CUIT LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        }    
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $sql);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_PROVEEDOR'] = $data['idProveedor'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['CONTACTO'] = $data['contacto'];
+            $Listado[$i]['CUIT'] = $data['CUIT'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
 function Anular_Cliente($vConexion , $vIdConsulta) {
 
 
@@ -90,6 +160,28 @@ function Anular_Cliente($vConexion , $vIdConsulta) {
     if (!empty($data['idCliente']) ) {
         //si se cumple todo, entonces elimino:
         mysqli_query($vConexion, "UPDATE clientes SET idActivo = 2 WHERE idCliente = $vIdConsulta");
+        
+        return true;
+
+    }else {
+        return false;
+    }
+    
+}
+
+function Anular_Proveedor($vConexion , $vIdConsulta) {
+
+        $SQL_MiConsulta="SELECT idProveedor FROM proveedores 
+                        WHERE idProveedor = $vIdConsulta ";
+   
+    
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idProveedor']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE proveedores SET idActivo = 2 WHERE idProveedor = $vIdConsulta");
         
         return true;
 
@@ -119,6 +211,25 @@ function Datos_Cliente($vConexion , $vIdCliente) {
 
 }
 
+function Datos_Proveedor($vConexion , $vIdProveedor) {
+    $DatosProveedor  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT * FROM proveedores
+            WHERE idProveedor = $vIdProveedor";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosProveedor['ID_PROVEEDOR'] = $data['idProveedor'];
+        $DatosProveedor['NOMBRE'] = $data['nombre'];
+        $DatosProveedor['CONTACTO'] = $data['contacto'];
+        $DatosProveedor['CUIT'] = $data['CUIT'];
+    }
+    return $DatosProveedor;
+
+}
+
 function Validar_Cliente(){
     $_SESSION['Mensaje']='';
     if (strlen($_POST['Nombre']) < 3) {
@@ -143,6 +254,28 @@ function Validar_Cliente(){
     return $_SESSION['Mensaje'];
 }
 
+function Validar_Proveedor(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['Nombre']) < 3) {
+        $_SESSION['Mensaje'].='Debes ingresar un nombre con al menos 3 caracteres. <br />';
+    }
+  
+    if (strlen($_POST['Contacto']) < 10) {
+        $_SESSION['Mensaje'].='Debes ingresar un contacto con al menos 10 caracteres. <br />';
+    }
+    if (strlen($_POST['CUIT']) < 8) {
+        $_SESSION['Mensaje'].='Debes ingresar un CUIT con al menos 8 caracteres. <br />';
+    }
+
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
 function Modificar_Cliente($vConexion) {
     $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
     $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
@@ -156,6 +289,26 @@ function Modificar_Cliente($vConexion) {
     telefono = '$telefono',
     dni = '$dni'
     WHERE idCliente = '$idCliente'";
+
+    if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    }else {
+        return false;
+    }
+    
+}
+
+function Modificar_Proveedor($vConexion) {
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
+    $contacto = mysqli_real_escape_string($vConexion, $_POST['Contacto']);
+    $cuit = mysqli_real_escape_string($vConexion, $_POST['CUIT']);
+    $idProveedor = mysqli_real_escape_string($vConexion, $_POST['IdProveedor']);
+
+    $SQL_MiConsulta = "UPDATE proveedores 
+    SET nombre = '$nombre',
+    contacto = '$contacto',
+    CUIT = '$cuit'
+    WHERE idProveedor = '$idProveedor'";
 
     if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
         return true;
