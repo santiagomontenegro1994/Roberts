@@ -719,9 +719,34 @@ function Detalles_Pedido($conexion, $idPedido) {
 }
 
 function Modificar_Detalles_Pedido($conexion, $datos) {
-    // Verificar si existen los arrays 'estado_detalle' y 'proveedor_detalle' en $datos
-    if (!isset($datos['estado_detalle'])) {
-        return false; // Si no hay datos de estado, no se puede continuar
+
+    // Obtener la seña actual de la tabla pedido_libros
+    $query = "SELECT senia FROM pedido_libros WHERE idPedidoLibros = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $datos['IdPedido']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $seniaActual = $row['senia']; // Seña actual
+
+    // Verificar si se envió una nueva seña
+    if (isset($datos['nueva_senia']) && $datos['nueva_senia'] !== '') {
+        // Validar que la seña sea un número válido y no negativo
+        if (!is_numeric($datos['nueva_senia']) || $datos['nueva_senia'] < 0) {
+            return "Error: La seña ingresada no es válida. Debe ser un número positivo.";
+        }
+
+        // Sumar la nueva seña a la seña actual
+        $nuevaSeniaTotal = $seniaActual + floatval($datos['nueva_senia']);
+
+        // Actualizar el campo senia en la tabla pedido_libros
+        $query = "UPDATE pedido_libros SET senia = ? WHERE idPedidoLibros = ?";
+        $stmt = $conexion->prepare($query);
+        $stmt->bind_param("di", $nuevaSeniaTotal, $datos['IdPedido']); // "di" = double, int
+        $stmt->execute();
+    } else {
+        // Si no se envió seña, se mantiene el valor actual
+        $nuevaSeniaTotal = $seniaActual; // Mantener el valor actual
     }
 
     // Recorrer los detalles del pedido para actualizar el estado y el proveedor
@@ -735,7 +760,8 @@ function Modificar_Detalles_Pedido($conexion, $datos) {
         $stmt->bind_param("isi", $estado, $idProveedor, $idDetalle); // "isi" = int, string, int
         $stmt->execute();
     }
-    return true;
+
+    return true; // Éxito
 }
 
 function Anular_Pedido($vConexion , $vIdConsulta) {

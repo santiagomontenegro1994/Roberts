@@ -523,4 +523,6 @@ function searchforDetalle(){
 
 
 
+
+
     

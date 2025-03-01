@@ -120,6 +120,17 @@ if (!empty($_POST['BotonModificarPedido1'])) {
                             <?php } ?>
                         </tbody>
                     </table>
+
+                    <!-- Campo para agregar más seña -->
+                    <div class="text-end">
+                        <div class="mb-2">
+                            <label for="nueva_senia" class="fw-bold fs-6">Agregar más seña:</label>
+                        </div>
+                        <div class="mb-2 d-flex justify-content-end">
+                            <input type="number" id="nueva_senia" name="nueva_senia" class="form-control w-25" min="0" step="0.01" placeholder="Monto de la seña" value="0">
+                        </div>
+                    </div>
+
                     <!-- Botones de acción -->
                     <div class="text-center">
                       <button type="submit" class="btn btn-primary btn-sm" value="Modificar" name="BotonModificarPedido1">Guardar Cambios</button>
