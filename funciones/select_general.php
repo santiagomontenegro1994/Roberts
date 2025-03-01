@@ -568,7 +568,7 @@ function Listar_Pedidos($vConexion) {
     $Listado=array();
 
       //1) genero la consulta que deseo
-        $SQL = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal,PL.descuento, PL.senia, E.denominación
+        $SQL = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal,PL.descuento, PL.senia, E.idEstado
         FROM pedido_libros PL, clientes C, estado E
         WHERE PL.idCliente=C.idCliente AND PL.idEstado=E.idEstado AND PL.idActivo=1
         ORDER BY PL.fecha DESC, C.nombre";
@@ -588,7 +588,7 @@ function Listar_Pedidos($vConexion) {
             $Listado[$i]['PRECIO'] = $data['precioTotal'];
             $Listado[$i]['DESCUENTO'] = $data['descuento'];
             $Listado[$i]['SEÑA'] = $data['senia'];
-            $Listado[$i]['ESTADO'] = $data['denominación'];
+            $Listado[$i]['ESTADO'] = $data['idEstado'];
 
             $i++;
         }
@@ -761,6 +761,41 @@ function Modificar_Detalles_Pedido($conexion, $datos) {
         $stmt->execute();
     }
 
+    // Obtener los estados de todos los detalles del pedido
+    $query = "SELECT idEstado FROM detalle_pedido WHERE id_pedido_libros = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $datos['IdPedido']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $estados = [];
+    while ($row = $result->fetch_assoc()) {
+        $estados[] = $row['idEstado'];
+    }
+
+    // Determinar el nuevo estado del pedido_libros
+    $nuevoEstadoPedido = 4; // Por defecto, asumimos que todos están entregados (estado 4)
+
+    // Verificar si hay al menos un detalle con estado 1 (para pedir)
+    if (in_array(1, $estados)) {
+        $nuevoEstadoPedido = 1;
+    }
+    // Si no hay detalles con estado 1, verificar si hay al menos uno con estado 2 (pedido)
+    elseif (in_array(2, $estados)) {
+        $nuevoEstadoPedido = 2;
+    }
+    // Si no hay detalles con estado 1 ni 2, verificar si hay al menos uno con estado 3 (recibido)
+    elseif (in_array(3, $estados)) {
+        $nuevoEstadoPedido = 3;
+    }
+    // Si todos los detalles tienen estado 4 (entregado), el estado ya es 4 por defecto
+
+    // Actualizar el estado del pedido_libros
+    $query = "UPDATE pedido_libros SET idEstado = ? WHERE idPedidoLibros = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("ii", $nuevoEstadoPedido, $datos['IdPedido']);
+    $stmt->execute();
+
     return true; // Éxito
 }
 
@@ -790,23 +825,23 @@ function ColorDeFila($vEstado) {
     $Title='';
     $Color=''; 
 
-    if ($vEstado == 'Para pedir' || $vEstado == '4'){
+    if ($vEstado == '4'){
         //Estado pendiente
-        $Title='Pendiente de pedir';
-        $Color='table-danger'; 
+        $Title='Entregado';
+        $Color='table-primary'; 
     
-    } else if ($vEstado == 'Pedido' || $vEstado == '3'){
+    } else if ($vEstado == '3'){
         //Estado listo para retirar
-        $Title='Pedido';
-        $Color='table-warning'; 
-    } else if ($vEstado=='Recibido' || $vEstado == '2'){
-        //Estado retirado
         $Title='Recibido';
         $Color='table-success'; 
-    } else if ($vEstado=='Entregado' || $vEstado == '1'){
+    } else if ($vEstado == '2'){
+        //Estado retirado
+        $Title='Pedido';
+        $Color='table-warning'; 
+    } else if ($vEstado == '1'){
     //Estado retirado
-    $Title='Entregado';
-    $Color='table-primary'; 
+    $Title='Para pedir';
+    $Color='table-danger'; 
     }      
     
     return [$Title, $Color];
