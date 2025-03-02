@@ -597,6 +597,62 @@ function Listar_Pedidos($vConexion) {
     return $Listado;
 }
 
+function Listar_Pedidos_Parametro($vConexion, $criterio, $parametro) {
+    $Listado = array();
+
+    // 1) Genero la consulta que deseo según el parámetro
+    switch ($criterio) {
+        case 'Fecha':
+            $whereClause = "WHERE PL.fecha LIKE '%$parametro%'";
+            break;
+        case 'Id':
+            $whereClause = "WHERE PL.idPedidoLibros LIKE '%$parametro%'";
+            break;
+        case 'Estado':
+            $whereClause = "WHERE E.idEstado LIKE '%$parametro%'";
+            break;
+        default:
+            $whereClause = "WHERE PL.idActivo = 1"; // Filtro por defecto
+            break;
+    }
+
+    // 2) Construyo la consulta SQL con el filtro dinámico
+    $sql = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal, PL.descuento, PL.senia, E.idEstado
+            FROM pedido_libros PL
+            INNER JOIN clientes C ON PL.idCliente = C.idCliente
+            INNER JOIN estado E ON PL.idEstado = E.idEstado
+            $whereClause
+            ORDER BY PL.fecha DESC, C.nombre";
+
+    // 3) Ejecuto la consulta
+    $rs = mysqli_query($vConexion, $sql);
+
+    // 4) Verifico si la consulta tuvo resultados
+    if (!$rs) {
+        die("Error en la consulta: " . mysqli_error($vConexion));
+    }
+
+    // 5) Recorro los resultados y los organizo en un array
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID'] = $data['idPedidoLibros'];
+        $Listado[$i]['CLIENTE_N'] = $data['nombre'];
+        $Listado[$i]['CLIENTE_A'] = $data['apellido'];
+        $Listado[$i]['FECHA'] = $data['fecha'];
+        $Listado[$i]['TITULO'] = 'en proceso'; // Campo pendiente de implementación
+        $Listado[$i]['EDITORIAL'] = 'en proceso'; // Campo pendiente de implementación
+        $Listado[$i]['PRECIO'] = $data['precioTotal'];
+        $Listado[$i]['DESCUENTO'] = $data['descuento'];
+        $Listado[$i]['SEÑA'] = $data['senia'];
+        $Listado[$i]['ESTADO'] = $data['idEstado'];
+
+        $i++;
+    }
+
+    // 6) Devuelvo el listado generado
+    return $Listado;
+}
+
 function Contar_Pedidos($vConexion, $id) {
     // Genero la consulta que deseo
     $SQL = "SELECT COUNT(*) AS total 

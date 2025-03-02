@@ -31,8 +31,8 @@ $CantidadPedidos = count($ListadoPedidos);
 
         $parametro = $_POST['parametro'];
         $criterio = $_POST['gridRadios'];
-        $ListadoLibros=Listar_Libros_Parametro($MiConexion,$criterio,$parametro);
-        $CantidadLibros = count($ListadoLibros);
+        $ListadoPedidos=Listar_Pedidos_Parametro($MiConexion,$criterio,$parametro);
+        $CantidadPedidos = count($ListadoPedidos);
 
 
 }
@@ -87,24 +87,21 @@ $CantidadPedidos = count($ListadoPedidos);
                         Fecha
                       </label>
                     </div>
+
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Cliente">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
                       <label class="form-check-label" for="gridRadios2">
-                        Cliente
+                      Id
                       </label>
                     </div>
-                    <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Titulo">
-                      <label class="form-check-label" for="gridRadios3">
-                        Titulo
-                    </div>
+
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
                       <label class="form-check-label" for="gridRadios4">
-                        Estado
+                        Estado(1, 2, 3 o 4)
                     </div>
                     
-                  </div>
+              </div>
               
           </div>
           </form>
@@ -112,7 +109,7 @@ $CantidadPedidos = count($ListadoPedidos);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">Nro.</th>
+                <th scope="col">Id</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Cliente</th>
                 <th scope="col">Detalle</th>
