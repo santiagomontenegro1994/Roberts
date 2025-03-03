@@ -14,6 +14,7 @@ function obtenerDetallesPorEstado($conexion, $estado) {
     // Consulta para librosleas
     $query_leas = "
         SELECT 
+            dp.id_pedido_libros, 
             dp.*, 
             pl.idCliente, 
             pl.fecha, 
@@ -36,6 +37,7 @@ function obtenerDetallesPorEstado($conexion, $estado) {
     // Consulta para librossbs
     $query_sbs = "
         SELECT 
+            dp.id_pedido_libros, 
             dp.*, 
             pl.idCliente, 
             pl.fecha, 
@@ -58,6 +60,7 @@ function obtenerDetallesPorEstado($conexion, $estado) {
     // Consulta para libros
     $query_libros = "
         SELECT 
+            dp.id_pedido_libros, 
             dp.*, 
             pl.idCliente, 
             pl.fecha, 
@@ -117,14 +120,45 @@ ob_start();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listado de Pedidos</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .container { max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; }
-        .header, .footer { text-align: center; margin: 20px 0; }
-        .details { margin: 20px 0; }
-        .details div { margin: 5px 0; }
-        .text-end { text-align: right; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 10px; 
+        }
+        .container { 
+            max-width: 100%; 
+            margin: auto; 
+            padding: 10px; 
+        }
+        .header, .footer { 
+            text-align: center; 
+            margin: 10px 0; 
+        }
+        .details { 
+            margin: 10px 0; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 10px; 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 4px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #f2f2f2; 
+        }
+        /* Estilos personalizados para las filas */
+        .table-danger {
+            background-color: #f8d7da; /* Rojo claro */
+        }
+        .table-warning {
+            background-color: #fff3cd; /* Amarillo claro */
+        }
+        .table-success {
+            background-color: #d4edda; /* Verde claro */
+        }
     </style>
 </head>
 <body>
@@ -139,6 +173,7 @@ ob_start();
             <table>
                 <thead>
                     <tr>
+                        <th>ID Pedido</th>
                         <th>Cliente</th>
                         <th>Teléfono</th>
                         <th>Fecha</th>
@@ -150,7 +185,8 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($detallesParaPedir as $detalle) { ?>
-                        <tr>
+                        <tr class="table-danger"> <!-- Usamos la clase personalizada -->
+                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
                             <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
                             <td><?php echo $detalle['telefono']; ?></td>
                             <td><?php echo $detalle['fecha']; ?></td>
@@ -170,6 +206,7 @@ ob_start();
             <table>
                 <thead>
                     <tr>
+                        <th>ID Pedido</th>
                         <th>Cliente</th>
                         <th>Teléfono</th>
                         <th>Fecha</th>
@@ -181,7 +218,8 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($detallesPedido as $detalle) { ?>
-                        <tr>
+                        <tr class="table-warning"> <!-- Usamos la clase personalizada -->
+                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
                             <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
                             <td><?php echo $detalle['telefono']; ?></td>
                             <td><?php echo $detalle['fecha']; ?></td>
@@ -201,6 +239,7 @@ ob_start();
             <table>
                 <thead>
                     <tr>
+                        <th>ID Pedido</th>
                         <th>Cliente</th>
                         <th>Teléfono</th>
                         <th>Fecha</th>
@@ -212,7 +251,8 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($detallesRecibido as $detalle) { ?>
-                        <tr>
+                        <tr class="table-success"> <!-- Usamos la clase personalizada -->
+                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
                             <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
                             <td><?php echo $detalle['telefono']; ?></td>
                             <td><?php echo $detalle['fecha']; ?></td>
