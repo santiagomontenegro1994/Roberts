@@ -1,304 +1,189 @@
 <?php
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
-    exit;
+if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
+  header('Location: cerrarsesion.php');
+  exit;
 }
 
+require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+
+require ('barraLateral.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+
+//voy a necesitar la conexion: incluyo la funcion de Conexion.
 require_once 'funciones/conexion.php';
+
+//genero una variable para usar mi conexion desde donde me haga falta
+//no envio parametros porque ya los tiene definidos por defecto
 $MiConexion = ConexionBD();
 
-// Función para obtener los detalles de los pedidos según el estado
-function obtenerDetallesPorEstado($conexion, $estado) {
-    // Consulta para librosleas
-    $query_leas = "
-        SELECT 
-            dp.id_pedido_libros, 
-            dp.*, 
-            pl.idCliente, 
-            pl.fecha, 
-            pl.precioTotal, 
-            pl.senia, 
-            pl.descuento, 
-            c.nombre, 
-            c.apellido, 
-            c.telefono,
-            leas.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor,
-            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
-        FROM detalle_pedido dp
-        JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
-        JOIN clientes c ON pl.idCliente = c.idCliente
-        JOIN librosleas leas ON dp.idLibro = leas.idLibros
-        JOIN proveedores prov ON dp.idProveedor = prov.idProveedor
-        WHERE dp.idEstado = ?
-    ";
+//ahora voy a llamar el script con la funcion que genera mi listado
+require_once 'funciones/select_general.php';
 
-    // Consulta para librossbs
-    $query_sbs = "
-        SELECT 
-            dp.id_pedido_libros, 
-            dp.*, 
-            pl.idCliente, 
-            pl.fecha, 
-            pl.precioTotal, 
-            pl.senia, 
-            pl.descuento, 
-            c.nombre, 
-            c.apellido, 
-            c.telefono,
-            sbs.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor,
-            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
-        FROM detalle_pedido dp
-        JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
-        JOIN clientes c ON pl.idCliente = c.idCliente
-        JOIN librossbs sbs ON dp.idLibro = sbs.idLibros
-        JOIN proveedores prov ON dp.idProveedor = prov.idProveedor
-        WHERE dp.idEstado = ?
-    ";
 
-    // Consulta para libros
-    $query_libros = "
-        SELECT 
-            dp.id_pedido_libros, 
-            dp.*, 
-            pl.idCliente, 
-            pl.fecha, 
-            pl.precioTotal, 
-            pl.senia, 
-            pl.descuento, 
-            c.nombre, 
-            c.apellido, 
-            c.telefono,
-            libros.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor,
-            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
-        FROM detalle_pedido dp
-        JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
-        JOIN clientes c ON pl.idCliente = c.idCliente
-        JOIN libros ON dp.idLibro = libros.idLibros
-        JOIN proveedores prov ON dp.idProveedor = prov.idProveedor
-        WHERE dp.idEstado = ?
-    ";
+//voy a ir listando lo necesario para trabajar en este script: 
+$ListadoPedidos = Listar_Pedidos($MiConexion);
+$CantidadPedidos = count($ListadoPedidos);
 
-    // Ejecutar las tres consultas y combinar los resultados
-    $resultados = [];
+  //estoy en condiciones de poder buscar segun el parametro
+  
+    if (!empty($_POST['BotonBuscar'])) {
 
-    // Consulta para librosleas
-    $stmt = $conexion->prepare($query_leas);
-    $stmt->bind_param("i", $estado);
-    $stmt->execute();
-    $resultados = array_merge($resultados, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+        $parametro = $_POST['parametro'];
+        $criterio = $_POST['gridRadios'];
+        $ListadoPedidos=Listar_Pedidos_Parametro($MiConexion,$criterio,$parametro);
+        $CantidadPedidos = count($ListadoPedidos);
 
-    // Consulta para librossbs
-    $stmt = $conexion->prepare($query_sbs);
-    $stmt->bind_param("i", $estado);
-    $stmt->execute();
-    $resultados = array_merge($resultados, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
 
-    // Consulta para libros
-    $stmt = $conexion->prepare($query_libros);
-    $stmt->bind_param("i", $estado);
-    $stmt->execute();
-    $resultados = array_merge($resultados, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
-
-    // Ordenar los resultados por id_pedido_libros
-    usort($resultados, function($a, $b) {
-        return $a['id_pedido_libros'] - $b['id_pedido_libros'];
-    });
-
-    return $resultados;
 }
 
-// Obtener los detalles de los pedidos para cada estado
-$detallesParaPedir = obtenerDetallesPorEstado($MiConexion, 1);
-$detallesPedido = obtenerDetallesPorEstado($MiConexion, 2);
-$detallesRecibido = obtenerDetallesPorEstado($MiConexion, 3);
 
-// Empiezo a guardar el contenido en una variable
-ob_start();
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listado de Pedidos</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            font-size: 10px; 
-        }
-        .container { 
-            max-width: 100%; 
-            margin: auto; 
-            padding: 10px; 
-        }
-        .header, .footer { 
-            text-align: center; 
-            margin: 10px 0; 
-        }
-        .details { 
-            margin: 10px 0; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 10px; 
-        }
-        th, td { 
-            border: 1px solid #ccc; 
-            padding: 4px; 
-            text-align: left; 
-        }
-        th { 
-            background-color: #f2f2f2; 
-        }
-        /* Estilos personalizados para las filas */
-        .table-danger {
-            background-color: #f8d7da; /* Rojo claro */
-        }
-        .table-warning {
-            background-color: #fff3cd; /* Amarillo claro */
-        }
-        .table-success {
-            background-color: #d4edda; /* Verde claro */
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Listado de Pedidos</h2>
-        </div>
 
-        <!-- Pedidos para pedir (Estado 1) -->
-        <div class="details">
-            <h3>Pedidos para Pedir (Estado 1)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID Pedido</th>
-                        <th>Cliente</th>
-                        <th>Teléfono</th>
-                        <th>Fecha</th>
-                        <th>Libro</th>
-                        <th>Proveedor</th>
-                        <th>Saldo Pedido</th> <!-- Nueva columna -->
-                        <th>Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($detallesParaPedir as $detalle) { ?>
-                        <tr class="table-danger"> <!-- Usamos la clase personalizada -->
-                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
-                            <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
-                            <td><?php echo $detalle['telefono']; ?></td>
-                            <td><?php echo $detalle['fecha']; ?></td>
-                            <td><?php echo $detalle['titulo_libro']; ?></td>
-                            <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
-                            <td><?php echo $detalle['cantidad']; ?></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-        </div>
 
-        <!-- Pedidos pedidos (Estado 2) -->
-        <div class="details">
-            <h3>Pedidos Pedidos (Estado 2)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID Pedido</th>
-                        <th>Cliente</th>
-                        <th>Teléfono</th>
-                        <th>Fecha</th>
-                        <th>Libro</th>
-                        <th>Proveedor</th>
-                        <th>Saldo Pedido</th> <!-- Nueva columna -->
-                        <th>Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($detallesPedido as $detalle) { ?>
-                        <tr class="table-warning"> <!-- Usamos la clase personalizada -->
-                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
-                            <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
-                            <td><?php echo $detalle['telefono']; ?></td>
-                            <td><?php echo $detalle['fecha']; ?></td>
-                            <td><?php echo $detalle['titulo_libro']; ?></td>
-                            <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
-                            <td><?php echo $detalle['cantidad']; ?></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-        </div>
+<main id="main" class="main">
 
-        <!-- Pedidos recibidos (Estado 3) -->
-        <div class="details">
-            <h3>Pedidos Recibidos (Estado 3)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID Pedido</th>
-                        <th>Cliente</th>
-                        <th>Teléfono</th>
-                        <th>Fecha</th>
-                        <th>Libro</th>
-                        <th>Proveedor</th>
-                        <th>Saldo Pedido</th> <!-- Nueva columna -->
-                        <th>Cantidad</th>
+<div class="pagetitle">
+  <h1>Listado Pedidos</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+      <li class="breadcrumb-item">Pedidos</li>
+      <li class="breadcrumb-item active">Listado Pedidos</li>
+    </ol>
+  </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    
+    <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Listado Pedidos</h5>
+          <?php if (!empty($_SESSION['Mensaje'])) { ?>
+            <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
+              <?php echo $_SESSION['Mensaje'] ?>
+            </div>
+          <?php } ?>
+
+          <Form method="POST">
+          <div class="row mb-4">
+            <label for="inputEmail3" class="col-sm-1 col-form-label">Buscar</label>
+              <div class="col-sm-3">
+                <input type="text" class="form-control" name="parametro" id="parametro">
+                </div>
+
+                <style> .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1.5; border-radius: 0.2rem; } </style>
+
+              <div class="col-sm-3 mt-2">
+                <button type="submit" class="btn btn-success btn-xs d-inline-block" value="buscar" name="BotonBuscar">Buscar</button>
+                <button type="submit" class="btn btn-danger btn-xs d-inline-block" value="limpiar" name="BotonLimpiar">Limpiar</button>
+                <a href="imprimir_listado.php">
+                          <i class="btn btn-primary btn-xs d-inline-block">Descargar</i>
+                          </a>
+              </div>
+              <div class="col-sm-5 mt-2">
+                    <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Fecha" checked>
+                      <label class="form-check-label" for="gridRadios1">
+                        Fecha
+                      </label>
+                    </div>
+
+                    <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
+                      <label class="form-check-label" for="gridRadios2">
+                      ID
+                      </label>
+                    </div>
+
+                    <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
+                      <label class="form-check-label" for="gridRadios4">
+                        Estado (1, 2, 3 o 4)
+                    </div>
+                    
+              </div>
+              
+          </div>
+          </form>
+          <!-- Table with stripped rows -->
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Cliente</th>
+                <th scope="col">Detalle</th>
+                <th scope="col">Precio</th>
+                <th scope="col">%Desc.</th>
+                <th scope="col">Seña</th>
+                <th scope="col">Saldo</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+                <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
+                  //cuento la cantidad de pedidos
+                  $cantidad = Contar_Pedidos($MiConexion,$ListadoPedidos[$i]['ID']);
+                  
+                  //Calculo el saldo
+                  // Calcular el monto del descuento
+                  $montoDescuento = $ListadoPedidos[$i]['PRECIO'] * ($ListadoPedidos[$i]['DESCUENTO'] / 100);
+                  $saldo=($ListadoPedidos[$i]['PRECIO']-$ListadoPedidos[$i]['SEÑA'])-$montoDescuento;
+
+                  //Metodo para pintar las filas
+                  list($Title, $Color) = ColorDeFila($ListadoPedidos[$i]['ESTADO']);
+                  ?>
+                    
+                    <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                        <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
+                        <td><?php echo $ListadoPedidos[$i]['CLIENTE_N'];?> ,
+                        <?php echo $ListadoPedidos[$i]['CLIENTE_A'];?></td>
+                        <td><?php echo $cantidad; ?> pedido/s</td>
+                        <td>$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
+                        <td class="text-center">%<?php echo $ListadoPedidos[$i]['DESCUENTO']; ?></td>
+                        <td>$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
+                        <td>$<?php echo number_format($saldo, 2); ?></td>
+                        <td>
+                          <!-- eliminar la consulta -->
+                          <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
+                            title="anular" 
+                            onclick="return confirm('Confirma anular este Pedido?');">
+                              <i class="bi bi-trash-fill text-danger fs-5"></i>
+                          </a>
+
+                          <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                            title="Modificar">
+                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                          </a>
+
+                          <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
+                            title="Imprimir">
+                          <i class="bi bi-printer-fill text-success fs-5"></i>
+                          </a>
+                      
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($detallesRecibido as $detalle) { ?>
-                        <tr class="table-success"> <!-- Usamos la clase personalizada -->
-                            <td><?php echo $detalle['id_pedido_libros']; ?></td>
-                            <td><?php echo $detalle['nombre'] . ' ' . $detalle['apellido']; ?></td>
-                            <td><?php echo $detalle['telefono']; ?></td>
-                            <td><?php echo $detalle['fecha']; ?></td>
-                            <td><?php echo $detalle['titulo_libro']; ?></td>
-                            <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
-                            <td><?php echo $detalle['cantidad']; ?></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
+                <?php } ?>
+            </tbody>
+          </table>
+          <!-- End Table with stripped rows -->
+
         </div>
     </div>
-</body>
-</html>
+ 
+</section>
+
+</main><!-- End #main -->
 
 <?php
-// Termino de guardar el contenido en una variable
-$html = ob_get_clean();
-
-// Creo la variable dompdf
-require_once 'libreria/dompdf/autoload.inc.php';
-use Dompdf\Dompdf;
-$dompdf = new Dompdf();
-
-// Activo las opciones para poder generar el PDF con imágenes
-$options = $dompdf->getOptions();
-$options->set(array('isRemoteEnable' => true));
-$dompdf->setOptions($options);
-
-// Le paso el $html en el que guardamos toda la lista
-$dompdf->loadHtml($html);
-
-// Seteo el papel en A4 vertical
-$dompdf->setPaper('A4', 'portrait');
-
-$dompdf->render();
-
-// Le indico el nombre del archivo y le doy true para que descargue
-$dompdf->stream("listado_pedidos.pdf", array("Attachment" => true));
+  $_SESSION['Mensaje']='';
+  require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
+
+
+</body>
+
+</html>

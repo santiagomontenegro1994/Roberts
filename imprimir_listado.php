@@ -25,7 +25,8 @@ function obtenerDetallesPorEstado($conexion, $estado) {
             c.apellido, 
             c.telefono,
             leas.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor
+            prov.nombre AS nombre_proveedor,
+            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
         FROM detalle_pedido dp
         JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
         JOIN clientes c ON pl.idCliente = c.idCliente
@@ -48,7 +49,8 @@ function obtenerDetallesPorEstado($conexion, $estado) {
             c.apellido, 
             c.telefono,
             sbs.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor
+            prov.nombre AS nombre_proveedor,
+            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
         FROM detalle_pedido dp
         JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
         JOIN clientes c ON pl.idCliente = c.idCliente
@@ -71,7 +73,8 @@ function obtenerDetallesPorEstado($conexion, $estado) {
             c.apellido, 
             c.telefono,
             libros.titulo AS titulo_libro,
-            prov.nombre AS nombre_proveedor
+            prov.nombre AS nombre_proveedor,
+            (pl.precioTotal - pl.senia) - (pl.precioTotal * pl.descuento / 100) AS saldo_pedido
         FROM detalle_pedido dp
         JOIN pedido_libros pl ON dp.id_pedido_libros = pl.idPedidoLibros
         JOIN clientes c ON pl.idCliente = c.idCliente
@@ -100,6 +103,11 @@ function obtenerDetallesPorEstado($conexion, $estado) {
     $stmt->bind_param("i", $estado);
     $stmt->execute();
     $resultados = array_merge($resultados, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+
+    // Ordenar los resultados por id_pedido_libros
+    usort($resultados, function($a, $b) {
+        return $a['id_pedido_libros'] - $b['id_pedido_libros'];
+    });
 
     return $resultados;
 }
@@ -179,7 +187,7 @@ ob_start();
                         <th>Fecha</th>
                         <th>Libro</th>
                         <th>Proveedor</th>
-                        <th>Precio Unitario</th>
+                        <th>Saldo Pedido</th> <!-- Nueva columna -->
                         <th>Cantidad</th>
                     </tr>
                 </thead>
@@ -192,7 +200,7 @@ ob_start();
                             <td><?php echo $detalle['fecha']; ?></td>
                             <td><?php echo $detalle['titulo_libro']; ?></td>
                             <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['precio_pedido'], 2); ?></td>
+                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
                             <td><?php echo $detalle['cantidad']; ?></td>
                         </tr>
                     <?php } ?>
@@ -212,7 +220,7 @@ ob_start();
                         <th>Fecha</th>
                         <th>Libro</th>
                         <th>Proveedor</th>
-                        <th>Precio Unitario</th>
+                        <th>Saldo Pedido</th> <!-- Nueva columna -->
                         <th>Cantidad</th>
                     </tr>
                 </thead>
@@ -225,7 +233,7 @@ ob_start();
                             <td><?php echo $detalle['fecha']; ?></td>
                             <td><?php echo $detalle['titulo_libro']; ?></td>
                             <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['precio_pedido'], 2); ?></td>
+                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
                             <td><?php echo $detalle['cantidad']; ?></td>
                         </tr>
                     <?php } ?>
@@ -245,7 +253,7 @@ ob_start();
                         <th>Fecha</th>
                         <th>Libro</th>
                         <th>Proveedor</th>
-                        <th>Precio Unitario</th>
+                        <th>Saldo Pedido</th> <!-- Nueva columna -->
                         <th>Cantidad</th>
                     </tr>
                 </thead>
@@ -258,7 +266,7 @@ ob_start();
                             <td><?php echo $detalle['fecha']; ?></td>
                             <td><?php echo $detalle['titulo_libro']; ?></td>
                             <td><?php echo $detalle['nombre_proveedor']; ?></td>
-                            <td>$<?php echo number_format($detalle['precio_pedido'], 2); ?></td>
+                            <td>$<?php echo number_format($detalle['saldo_pedido'], 2); ?></td> <!-- Mostrar saldo pedido -->
                             <td><?php echo $detalle['cantidad']; ?></td>
                         </tr>
                     <?php } ?>
