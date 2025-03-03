@@ -78,7 +78,9 @@ $CantidadPedidos = count($ListadoPedidos);
               <div class="col-sm-3 mt-2">
                 <button type="submit" class="btn btn-success btn-xs d-inline-block" value="buscar" name="BotonBuscar">Buscar</button>
                 <button type="submit" class="btn btn-danger btn-xs d-inline-block" value="limpiar" name="BotonLimpiar">Limpiar</button>
-                <button type="submit" class="btn btn-primary btn-xs d-inline-block" value="descargar" name="Descargar">Descargar</button>
+                <a href="imprimir_listado.php">
+                          <i class="btn btn-primary btn-xs d-inline-block">Descargar</i>
+                          </a>
               </div>
               <div class="col-sm-5 mt-2">
                     <div class="form-check form-check-inline small-text">
@@ -91,14 +93,14 @@ $CantidadPedidos = count($ListadoPedidos);
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
                       <label class="form-check-label" for="gridRadios2">
-                      Id
+                      ID
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
                       <label class="form-check-label" for="gridRadios4">
-                        Estado(1, 2, 3 o 4)
+                        Estado (1, 2, 3 o 4)
                     </div>
                     
               </div>
@@ -109,7 +111,7 @@ $CantidadPedidos = count($ListadoPedidos);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">Id</th>
+                <th scope="col">ID</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Cliente</th>
                 <th scope="col">Detalle</th>

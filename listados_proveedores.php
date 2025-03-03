@@ -107,7 +107,7 @@ $CantidadProveedores = count($ListadoProveedores);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">#</th>
+                <th scope="col">ID</th>
                 <th scope="col">Nombre</th>
                 <th scope="col">Contacto</th>
                 <th scope="col">CUIT</th>
@@ -117,7 +117,7 @@ $CantidadProveedores = count($ListadoProveedores);
             <tbody>
                 <?php for ($i=0; $i<$CantidadProveedores; $i++) { ?>
                     <tr>
-                        <th scope="row"><?php echo $i+1; ?></th>
+                    <td><?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?></td>
                         <td><?php echo $ListadoProveedores[$i]['NOMBRE']; ?></td>
                         <td><?php echo $ListadoProveedores[$i]['CONTACTO']; ?></td>
                         <td><?php echo $ListadoProveedores[$i]['CUIT']; ?></td>

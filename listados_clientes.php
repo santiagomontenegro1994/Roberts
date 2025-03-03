@@ -112,7 +112,7 @@ $CantidadClientes = count($ListadoClientes);
           <table class="table table-striped">
             <thead>
               <tr>
-                <th scope="col">#</th>
+                <th scope="col">ID</th>
                 <th scope="col">Nombre</th>
                 <th scope="col">Apellido</th>
                 <th scope="col">Telefono</th>
@@ -123,7 +123,7 @@ $CantidadClientes = count($ListadoClientes);
             <tbody>
                 <?php for ($i=0; $i<$CantidadClientes; $i++) { ?>
                     <tr>
-                        <th scope="row"><?php echo $i+1; ?></th>
+                        <td><?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['NOMBRE']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
                         <td><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
