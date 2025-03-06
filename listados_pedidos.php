@@ -91,6 +91,13 @@ $CantidadPedidos = count($ListadoPedidos);
                     </div>
 
                     <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Cliente">
+                      <label class="form-check-label" for="gridRadios2">
+                      Cliente
+                      </label>
+                    </div>
+
+                    <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
                       <label class="form-check-label" for="gridRadios2">
                       ID
