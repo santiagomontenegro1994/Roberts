@@ -611,6 +611,24 @@ function Listar_Pedidos_Parametro($vConexion, $criterio, $parametro) {
         case 'Estado':
             $whereClause = "WHERE E.idEstado LIKE '%$parametro%'";
             break;
+        case 'Cliente': // Nueva opción para buscar por nombre o apellido del cliente
+            $parametro = strtolower($parametro); // Convertir el parámetro a minúsculas
+            // Dividir el parámetro en nombre y apellido
+            $nombreApellido = explode(' ', $parametro);
+            if (count($nombreApellido) == 2) {
+                // Si se encuentran dos partes (nombre y apellido), buscar ambas combinaciones
+                $whereClause = "WHERE 
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') 
+                    OR 
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
+            } else {
+                // Si no se separan en dos palabras, buscar solo en uno de los campos
+                $whereClause = "WHERE 
+                    LOWER(C.nombre) LIKE '%$parametro%' 
+                    OR 
+                    LOWER(C.apellido) LIKE '%$parametro%'";
+            }
+            break;
         default:
             $whereClause = "WHERE PL.idActivo = 1"; // Filtro por defecto
             break;
