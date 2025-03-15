@@ -45,15 +45,34 @@ ob_start();
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .header, .footer {
-            text-align: center;
-            margin: 20px 0;
+        .header {
+            width: 100%;
+            margin-bottom: 20px;
         }
-        .header h2 {
+        .header img {
+            float: left; /* Logo a la izquierda */
+            max-width: 150px;
+            height: auto;
+            margin: 0;
+            padding: 0;
+        }
+        .header-text {
+            float: right; /* Texto a la derecha */
+            text-align: right; /* Alineación del texto a la derecha */
+            width: 70%; /* Ancho del texto */
+        }
+        .header-text h2 {
             color: #333;
-            margin-bottom: 10px;
+            margin: 0;
+            font-size: 24px;
+        }
+        .header-text p {
+            color: #777;
+            margin: 5px 0 0;
+            font-size: 14px;
         }
         .details {
+            clear: both; /* Limpia los floats */
             margin: 20px 0;
         }
         .details h3 {
@@ -68,35 +87,63 @@ ob_start();
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            font-size: 14px;
         }
         table th, table td {
-            padding: 10px;
+            padding: 8px;
             text-align: left;
             border: 1px solid #ddd;
         }
         table th {
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .text-right {
+            text-align: right;
         }
         .status {
             font-weight: bold;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
         }
         .status.entregado {
             color: green;
+            background-color: #e8f5e9;
         }
         .status.no-entregado {
             color: red;
+            background-color: #ffebee;
         }
         .footer p {
             color: #777;
             font-style: italic;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h2>Comprobante de Pedido</h2>
-            <p>Fecha: <span id="fecha"><?php echo $DatosPedidoActual['FECHA'] ?></span></p>
+            <!-- Logo a la izquierda -->
+            <?php
+            $ruta_imagen = 'assets/img/logo.png';
+            $tipo_imagen = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
+            $datos_imagen = file_get_contents($ruta_imagen);
+            $base64_imagen = 'data:image/' . $tipo_imagen . ';base64,' . base64_encode($datos_imagen);
+            ?>
+            <img src="<?php echo $base64_imagen; ?>" alt="Logo de la empresa">
+
+            <!-- Texto a la derecha -->
+            <div class="header-text">
+                <h2>Comprobante de Pedido</h2>
+                <p>Fecha: <span id="fecha"><?php echo $DatosPedidoActual['FECHA'] ?></span></p>
+            </div>
         </div>
         <div class="details">
             <h3>Datos del Cliente</h3>
@@ -111,8 +158,8 @@ ob_start();
                     <tr>
                         <th>Título</th>
                         <th>Editorial</th>
-                        <th>Precio Unitario</th>
-                        <th>Cantidad</th>
+                        <th class="text-right">Precio Unitario</th>
+                        <th class="text-right">Cantidad</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -121,8 +168,8 @@ ob_start();
                         <tr>
                             <td><?php echo $detalle['LIBRO_T']; ?></td>
                             <td><?php echo $detalle['LIBRO_E']; ?></td>
-                            <td>$<?php echo number_format($detalle['PRECIO'], 2); ?></td>
-                            <td><?php echo $detalle['CANTIDAD']; ?></td>
+                            <td class="text-right">$<?php echo number_format($detalle['PRECIO'], 2); ?></td>
+                            <td class="text-right"><?php echo $detalle['CANTIDAD']; ?></td>
                             <td>
                                 <?php if ($detalle['ESTADO'] == 4) { ?>
                                     <span class="status entregado">Entregado</span>
