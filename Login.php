@@ -80,16 +80,19 @@ if (!empty($_POST['BotonLogin'])) {
   <main>
     <div class="container">
 
-      <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+      <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center">
+
+        <div class="d-flex justify-content-center" >
+          <a href="index.php" class="logo d-flex align-items-center w-auto">
+            <img src="assets/img/Logo1.png" alt="" class="logo-custom">
+          </a>
+        </div><!-- End Logo -->
+
         <div class="container">
           <div class="row justify-content-center">
             <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
 
-              <div class="d-flex justify-content-center py-4">
-                <a href="index.php" class="logo d-flex align-items-center w-auto">
-                  <img src="assets/img/Logo1.png" alt="">
-                </a>
-              </div><!-- End Logo -->
+              
 
               <div class="card mb-3">
 
