@@ -1,0 +1,16 @@
+{
+  "name": "robertslibros",
+  "version": "1.0.0",
+  "description": "Aplicación Web para gestionar los pedidos de libros y clientes, leyendo y actualizando la base de datos de libros desde dos excel que cambia mensualmente",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "sass": "^1.86.0"
+  }
+}

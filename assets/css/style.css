@@ -4,6 +4,7 @@
 * Author: BootstrapMade.com
 * License: https://bootstrapmade.com/license/
 */
+<<<<<<< HEAD
 
 .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1.5; border-radius: 0.2rem; }
 
@@ -14,6 +15,27 @@
 .table-purple {
   background-color: #6f42c1; /* Puedes ajustar este valor hexadecimal para obtener el tono de morado que prefieras */
   color: #fff; /* Cambia el color del texto si es necesario */
+=======
+:root {
+  /* Colores principales */
+  --color-primary: #c293b2; /* Morado pastel */
+  --color-secondary: #a87a9d; /* Morado más oscuro */
+  --color-terciario: #c293b2a4; /* Morado más oscuro */
+  --color-secondary-dark: #8d5f7f80; /* Morado oscuro con transparencia */
+  --color-danger: #f44336; /* Rojo */
+  --color-success: #2eca6a; /* Verde */
+  --color-warning: #ff771d; /* Naranja */
+
+  /* Colores de texto */
+  --text-color: #333333; /* Texto oscuro */
+  --text-color-light: #ffffff; /* Texto claro */
+
+  /* Fondo */
+  --background-color: #f5f0f4; /* Fondo pastel claro */
+
+  /* Sombras */
+  --box-shadow: 0px 0 30px rgba(1, 41, 112, 0.1);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 
 
@@ -24,6 +46,7 @@
   scroll-behavior: smooth;
 }
 
+<<<<<<< HEAD
 body {
   font-family: "Open Sans", sans-serif;
   background: #f6f9ff;
@@ -32,11 +55,27 @@ body {
 
 a {
   color: #4154f1;
+=======
+
+body {
+  font-family: "Open Sans", sans-serif;
+  background-color: var(--color-secondary);
+  color: var(--text-color-light);
+  margin: 0; /* Elimina el margen predeterminado del body */
+}
+
+a {
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   text-decoration: none;
 }
 
 a:hover {
+<<<<<<< HEAD
   color: #717ff5;
+=======
+  color: var(--text-color);
+>>>>>>> 0515d34 (cambiando estilo visual)
   text-decoration: none;
 }
 
@@ -68,7 +107,11 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 24px;
   margin-bottom: 0;
   font-weight: 600;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 
 /*--------------------------------------------------------------
@@ -81,7 +124,11 @@ h1, h2, h3, h4, h5, h6 {
   right: 15px;
   bottom: 15px;
   z-index: 99999;
+<<<<<<< HEAD
   background: #4154f1;
+=======
+  background: var(--color-primary);
+>>>>>>> 0515d34 (cambiando estilo visual)
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -93,7 +140,11 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 0;
 }
 .back-to-top:hover {
+<<<<<<< HEAD
   background: #6776f4;
+=======
+  background: var(--color-primary);
+>>>>>>> 0515d34 (cambiando estilo visual)
   color: #fff;
 }
 .back-to-top.active {
@@ -123,7 +174,11 @@ h1, h2, h3, h4, h5, h6 {
   padding: 10px 25px;
 }
 .dropdown-menu .dropdown-footer a {
+<<<<<<< HEAD
   color: #444444;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   text-decoration: underline;
 }
 .dropdown-menu .dropdown-footer a:hover {
@@ -238,7 +293,11 @@ h1, h2, h3, h4, h5, h6 {
   padding: 20px 0 15px 0;
   font-size: 18px;
   font-weight: 500;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   font-family: "Poppins", sans-serif;
 }
 .card-title span {
@@ -247,7 +306,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
 }
 .card-body {
+<<<<<<< HEAD
   padding: 0 20px 20px 20px;
+=======
+  background-color: var(--color-terciario); /* Cambia este valor al color que desees */
+  padding: 0 20px 20px 20px; /* Mantén el padding que ya tenías */
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 
 .card-img-overlay {
@@ -280,7 +344,11 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: none;
 }
 .accordion-button:not(.collapsed) {
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   background-color: #f6f9ff;
 }
 
@@ -303,21 +371,36 @@ h1, h2, h3, h4, h5, h6 {
 .breadcrumb {
   font-size: 14px;
   font-family: "Nunito", sans-serif;
+<<<<<<< HEAD
   color: #899bbd;
   font-weight: 600;
 }
 .breadcrumb a {
   color: #899bbd;
+=======
+  color: var(--text-color-light);
+  font-weight: 600;
+}
+.breadcrumb a {
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   transition: 0.3s;
 }
 .breadcrumb a:hover {
   color: #51678f;
 }
 .breadcrumb .breadcrumb-item::before {
+<<<<<<< HEAD
   color: #899bbd;
 }
 .breadcrumb .active {
   color: #51678f;
+=======
+  color: var(--text-color-light);
+}
+.breadcrumb .active {
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   font-weight: 600;
 }
 
@@ -331,12 +414,21 @@ h1, h2, h3, h4, h5, h6 {
   color: #2c384e;
 }
 .nav-tabs-bordered .nav-link:hover, .nav-tabs-bordered .nav-link:focus {
+<<<<<<< HEAD
   color: #4154f1;
 }
 .nav-tabs-bordered .nav-link.active {
   background-color: #fff;
   color: #4154f1;
   border-bottom: 2px solid #4154f1;
+=======
+  color: var(--color-secondary);
+}
+.nav-tabs-bordered .nav-link.active {
+  background-color: #fff;
+  color: var(--color-secondary);
+  border-bottom: 2px solid var(--color-secondary);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 
 /*--------------------------------------------------------------
@@ -357,7 +449,11 @@ h1, h2, h3, h4, h5, h6 {
 .logo span {
   font-size: 26px;
   font-weight: 700;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   font-family: "Nunito", sans-serif;
 }
 
@@ -365,8 +461,13 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.5s;
   z-index: 997;
   height: 60px;
+<<<<<<< HEAD
   box-shadow: 0px 2px 20px rgba(1, 41, 112, 0.1);
   background-color: #fff;
+=======
+  box-shadow: 0px 2px 20px rgba(5, 5, 5, 0.1);
+  background-color: var(--color-primary);
+>>>>>>> 0515d34 (cambiando estilo visual)
   padding-left: 20px;
   /* Toggle Sidebar Button */
   /* Search Bar */
@@ -375,7 +476,11 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 32px;
   padding-left: 10px;
   cursor: pointer;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: #fff;
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .header .search-bar {
   min-width: 360px;
@@ -407,7 +512,11 @@ h1, h2, h3, h4, h5, h6 {
 .header .search-form input {
   border: 0;
   font-size: 14px;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color:var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   border: 1px solid rgba(1, 41, 112, 0.2);
   padding: 7px 38px 7px 8px;
   border-radius: 3px;
@@ -426,7 +535,11 @@ h1, h2, h3, h4, h5, h6 {
   background: none;
 }
 .header .search-form button i {
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 
 /*--------------------------------------------------------------
@@ -441,10 +554,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 .header-nav .nav-icon {
   font-size: 20px;
+<<<<<<< HEAD
   color: #012970;
 }
 .header-nav .nav-profile {
   color: #012970;
+=======
+  color: var(--text-color-light);
+}
+.header-nav .nav-profile {
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .header-nav .nav-profile img {
   max-height: 36px;
@@ -549,9 +669,15 @@ h1, h2, h3, h4, h5, h6 {
   padding: 20px;
   overflow-y: auto;
   scrollbar-width: thin;
+<<<<<<< HEAD
   scrollbar-color: #aab7cf transparent;
   box-shadow: 0px 0px 20px rgba(1, 41, 112, 0.1);
   background-color: #fff;
+=======
+  scrollbar-color: #a272a3 transparent;
+  box-shadow: var(--box-shadow);
+  background-color: var(--color-primary);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 @media (max-width: 1199px) {
   .sidebar {
@@ -611,15 +737,22 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   font-size: 15px;
   font-weight: 600;
+<<<<<<< HEAD
   color: #4154f1;
   transition: 0.3;
   background: #f6f9ff;
+=======
+  color: var(--text-color-light);
+  transition: 0.3;
+  background: var(--color-secondary-dark);
+>>>>>>> 0515d34 (cambiando estilo visual)
   padding: 10px 15px;
   border-radius: 4px;
 }
 .sidebar-nav .nav-link i {
   font-size: 16px;
   margin-right: 10px;
+<<<<<<< HEAD
   color: #4154f1;
 }
 .sidebar-nav .nav-link.collapsed {
@@ -635,6 +768,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 .sidebar-nav .nav-link:hover i {
   color: #4154f1;
+=======
+  color: var(--text-color-light);
+}
+.sidebar-nav .nav-link.collapsed {
+  color: #ffffff;
+  background: var(--color-secondary-dark);
+}
+.sidebar-nav .nav-link.collapsed i {
+  color: var(--text-color-light);
+}
+.sidebar-nav .nav-link:hover {
+  color: var(--text-color);
+  background: #f6f9ff;
+}
+.sidebar-nav .nav-link:hover i {
+  color: var(--text-color);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .sidebar-nav .nav-link .bi-chevron-down {
   margin-right: 0;
@@ -653,7 +803,11 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   font-size: 14px;
   font-weight: 600;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   transition: 0.3;
   padding: 10px 0 10px 40px;
   transition: 0.3s;
@@ -665,7 +819,11 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
 }
 .sidebar-nav .nav-content a:hover, .sidebar-nav .nav-content a.active {
+<<<<<<< HEAD
   color: #4154f1;
+=======
+  color: var(--text-color);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .sidebar-nav .nav-content a.active i {
   background-color: #4154f1;
@@ -795,11 +953,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 5px;
 }
 .dashboard .news h4 a {
+<<<<<<< HEAD
   color: #012970;
   transition: 0.3s;
 }
 .dashboard .news h4 a:hover {
   color: #4154f1;
+=======
+  color: var(--color-secondary-dark);
+  transition: 0.3s;
+}
+.dashboard .news h4 a:hover {
+  color: var(--color-secondary);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .dashboard .news p {
   font-size: 14px;
@@ -893,13 +1059,21 @@ h1, h2, h3, h4, h5, h6 {
 .profile .profile-card .social-links a {
   font-size: 20px;
   display: inline-block;
+<<<<<<< HEAD
   color: rgba(1, 41, 112, 0.5);
+=======
+  color: var(--color-secondary);
+>>>>>>> 0515d34 (cambiando estilo visual)
   line-height: 0;
   margin-right: 10px;
   transition: 0.3s;
 }
 .profile .profile-card .social-links a:hover {
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--color-secondary-dark);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .profile .profile-overview .row {
   margin-bottom: 20px;
@@ -1044,7 +1218,11 @@ h1, h2, h3, h4, h5, h6 {
 .error-404 h1 {
   font-size: 180px;
   font-weight: 700;
+<<<<<<< HEAD
   color: #4154f1;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
   margin-bottom: 0;
   line-height: 150px;
 }
@@ -1079,11 +1257,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 .footer .copyright {
   text-align: center;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }
 .footer .credits {
   padding-top: 5px;
   text-align: center;
   font-size: 13px;
+<<<<<<< HEAD
   color: #012970;
+=======
+  color: var(--text-color-light);
+>>>>>>> 0515d34 (cambiando estilo visual)
 }

@@ -1,0 +1,18 @@
+// assets/scss/custom.scss
+
+// 1. Define tus variables personalizadas
+$custom-primary: #BE1C93; // Morado
+
+// 2. Importa Bootstrap y pasa tus variables personalizadas
+@use "../../node_modules/bootstrap/scss/bootstrap" with (
+  $primary: $custom-primary,
+
+);
+
+// 3. Usa tus variables personalizadas en estilos adicionales
+.custom-class {
+    background-color: $custom-primary;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    color: white;
+}
