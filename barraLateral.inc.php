@@ -82,6 +82,24 @@
         </ul>
       </li><!-- End Pedido de Libros Nav -->
 
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#ventas-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-cash-stack"></i><span>Ventas</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="ventas-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="agregar_venta.php">
+              <i class="bi bi-circle"></i><span>Agregar</span>
+            </a>
+          </li>
+          <li>
+            <a href="listados_ventas.php">
+              <i class="bi bi-circle"></i><span>Listados</span>
+            </a>
+          </li>
+        </ul>
+      </li><!-- End Caja Nav -->
+
     </ul>
 
   </aside><!-- End Sidebar-->
