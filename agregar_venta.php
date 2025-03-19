@@ -47,27 +47,32 @@ if (!empty($_POST['BotonRegistrar'])) {
     <section class="section">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Agregar Venta</h5>
 
           <!-- Sección de Métodos de Pago -->
         <form method='post'>
-            <div class="text-center mb-4">
-                <h6>Seleccione el Método de Pago</h6>
-                <button type="button" class="btn btn-secondary mx-2 metodo-pago" value="Efectivo">Efectivo</button>
-                <button type="button" class="btn btn-secondary mx-2 metodo-pago" value="Tarjeta">Tarjeta</button>
-                <button type="button" class="btn btn-secondary mx-2 metodo-pago" value="Transferencia">Transferencia</button>
+            <div class="text-center mb-4 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
+                <a href="gestionar_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center">
+                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Efectivo">Efectivo</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Tarjeta">Tarjeta</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Transferencia">Transferencia</button>
             </div>
 
             <!-- Sección de Tipos de Servicio -->
-            <div class="text-center">
-                <h6>Seleccione el Tipo de Servicio</h6>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="BlancoNegro">Impresión Blanco y Negro</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="Color">Impresión a Color</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="Trabajos">Trabajos</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="Fotocopia">Fotocopia</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="Escaneo">Escaneo</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="Retiros">Retiros</button>
-                <button type="button" class="btn btn-secondary mx-2 tipo-servicio" value="VentasVarias">Ventas Varias</button>
+            <div class="text-center mb-4 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 card-title">Seleccione el Tipo de Servicio</h6>
+                <a href="gestionar_tipos_servicio.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Servicio</a>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center">
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="BlancoNegro">Impresión Blanco y Negro</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Color">Impresión a Color</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Trabajos">Trabajos</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Fotocopia">Fotocopia</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Escaneo">Escaneo</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Retiros">Retiros</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="VentasVarias">Ventas Varias</button>
             </div>
                 
 

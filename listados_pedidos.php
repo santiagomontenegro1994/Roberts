@@ -115,67 +115,65 @@ $CantidadPedidos = count($ListadoPedidos);
           </div>
           </form>
           <!-- Table with stripped rows -->
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Fecha</th>
-                <th scope="col">Cliente</th>
-                <th scope="col">Detalle</th>
-                <th scope="col">Precio</th>
-                <th scope="col">%Desc.</th>
-                <th scope="col">Seña</th>
-                <th scope="col">Saldo</th>
-                <th scope="col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Cliente</th>
+                  <th scope="col">Detalle</th>
+                  <th scope="col">Precio</th>
+                  <th scope="col">%Desc.</th>
+                  <th scope="col">Seña</th>
+                  <th scope="col">Saldo</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
                 <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
-                  //cuento la cantidad de pedidos
-                  $cantidad = Contar_Pedidos($MiConexion,$ListadoPedidos[$i]['ID']);
+                  // Calcular la cantidad de pedidos
+                  $cantidad = Contar_Pedidos($MiConexion, $ListadoPedidos[$i]['ID']);
                   
-                  //Calculo el saldo
-                  // Calcular el monto del descuento
+                  // Calcular el saldo
                   $montoDescuento = $ListadoPedidos[$i]['PRECIO'] * ($ListadoPedidos[$i]['DESCUENTO'] / 100);
-                  $saldo=($ListadoPedidos[$i]['PRECIO']-$ListadoPedidos[$i]['SEÑA'])-$montoDescuento;
+                  $saldo = ($ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA']) - $montoDescuento;
 
-                  //Metodo para pintar las filas
+                  // Obtener el color y título de la fila según el estado
                   list($Title, $Color) = ColorDeFila($ListadoPedidos[$i]['ESTADO']);
-                  ?>
-                    
-                    <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
-                        <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
-                        <td><?php echo $ListadoPedidos[$i]['CLIENTE_N'];?> ,
-                        <?php echo $ListadoPedidos[$i]['CLIENTE_A'];?></td>
-                        <td><?php echo $cantidad; ?> pedido/s</td>
-                        <td>$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
-                        <td class="text-center">%<?php echo $ListadoPedidos[$i]['DESCUENTO']; ?></td>
-                        <td>$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
-                        <td>$<?php echo number_format($saldo, 2); ?></td>
-                        <td>
-                          <!-- eliminar la consulta -->
-                          <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
-                            title="anular" 
-                            onclick="return confirm('Confirma anular este Pedido?');">
-                              <i class="bi bi-trash-fill text-danger fs-5"></i>
-                          </a>
+                ?>
+                  <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                    <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
+                    <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
+                    <td><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?>, <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
+                    <td><?php echo $cantidad; ?> pedido/s</td>
+                    <td>$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
+                    <td class="text-center">%<?php echo $ListadoPedidos[$i]['DESCUENTO']; ?></td>
+                    <td>$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
+                    <td>$<?php echo number_format($saldo, 2); ?></td>
+                    <td>
+                      <!-- Acciones -->
+                      <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                        title="Anular" 
+                        onclick="return confirm('Confirma anular este Pedido?');">
+                        <i class="bi bi-trash-fill text-danger fs-5"></i>
+                      </a>
 
-                          <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
-                            title="Modificar">
-                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
-                          </a>
+                      <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                        title="Modificar">
+                        <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                      </a>
 
-                          <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
-                            title="Imprimir">
-                          <i class="bi bi-printer-fill text-primary fs-5"></i>
-                          </a>
-                      
-                        </td>
-                    </tr>
+                      <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                        title="Imprimir">
+                        <i class="bi bi-printer-fill text-primary fs-5"></i>
+                      </a>
+                    </td>
+                  </tr>
                 <?php } ?>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
           <!-- End Table with stripped rows -->
 
         </div>

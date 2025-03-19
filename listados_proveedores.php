@@ -91,12 +91,12 @@ $CantidadProveedores = count($ListadoProveedores);
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Contacto">
                       <label class="form-check-label" for="gridRadios3">
-                        Contacto
+                    Contacto
                     </div>
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="CUIT">
                       <label class="form-check-label" for="gridRadios4">
-                        CUIT
+                    CUIT
                     </div>
                     
                   </div>
@@ -104,41 +104,42 @@ $CantidadProveedores = count($ListadoProveedores);
           </div>
           </form>
           <!-- Table with stripped rows -->
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Nombre</th>
-                <th scope="col">Contacto</th>
-                <th scope="col">CUIT</th>
-                <th scope="col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Nombre</th>
+                  <th scope="col">Contacto</th>
+                  <th scope="col">CUIT</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
                 <?php for ($i=0; $i<$CantidadProveedores; $i++) { ?>
-                    <tr>
+                  <tr>
                     <td><?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?></td>
-                        <td><?php echo $ListadoProveedores[$i]['NOMBRE']; ?></td>
-                        <td><?php echo $ListadoProveedores[$i]['CONTACTO']; ?></td>
-                        <td><?php echo $ListadoProveedores[$i]['CUIT']; ?></td>
-                        <td>
-                          <!-- eliminar la consulta -->
-                          <a href="eliminar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>" 
-                            title="Eliminar" 
-                            onclick="return confirm('Confirma eliminar este cliente?');">
-                              <i class="bi bi-trash-fill text-danger fs-5"></i>
-                          </a>
+                    <td><?php echo $ListadoProveedores[$i]['NOMBRE']; ?></td>
+                    <td><?php echo $ListadoProveedores[$i]['CONTACTO']; ?></td>
+                    <td><?php echo $ListadoProveedores[$i]['CUIT']; ?></td>
+                    <td>
+                      <!-- Acciones -->
+                      <a href="eliminar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>" 
+                        title="Eliminar" 
+                        onclick="return confirm('Confirma eliminar este proveedor?');">
+                        <i class="bi bi-trash-fill text-danger fs-5"></i>
+                      </a>
 
-                          <a href="modificar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>"  
-                            title="Modificar">
-                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
-                          </a>
-                      
-                        </td>
-                    </tr>
+                      <a href="modificar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>"  
+                        title="Modificar">
+                        <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                      </a>
+                    </td>
+                  </tr>
                 <?php } ?>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
           <!-- End Table with stripped rows -->
 
         </div>

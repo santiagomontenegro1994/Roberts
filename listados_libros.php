@@ -104,55 +104,54 @@ $CantidadLibros = count($ListadoLibros);
           </div>
           </form>
           <!-- Table with stripped rows -->
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Código</th>
-                <th scope="col">Titulo</th>
-                <th scope="col">Editorial</th>
-                <th scope="col">Mayorista</th>
-                <th scope="col">Precio</th>
-                <th scope="col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Código</th>
+                  <th scope="col">Titulo</th>
+                  <th scope="col">Editorial</th>
+                  <th scope="col">Mayorista</th>
+                  <th scope="col">Precio</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
                 <?php for ($i=0; $i<$CantidadLibros; $i++) { ?>
-                    <tr>
-                        <td class="small"><?php echo $ListadoLibros[$i]['ID_LIBRO']; ?></td>
-                        <td class="small"><?php echo $ListadoLibros[$i]['CODIGO']; ?></td>
-                        <td class="small"><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
-                        <td class="small"><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
-                        <td class="small"><?php echo $ListadoLibros[$i]['MAYORISTA']; ?></td>
-                        <td class="small"><?php echo number_format($ListadoLibros[$i]['PRECIO'], 2); ?></td>
-                        <td>
-                        <!-- valido para que solo se puedan eliminar los personales -->
-                        <?php if($ListadoLibros[$i]['MAYORISTA'] == 'Personal') {?>
-                          <!-- eliminar la consulta -->
-                          <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            title="Eliminar" 
-                            onclick="return confirm('Confirma eliminar este libro?');">
-                            <i class="bi bi-trash-fill text-danger fs-5"></i></a>
-
-                        <?php }?>
-
-                        <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
-                            title="Modificar">
-                          <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                  <tr>
+                    <td class="small"><?php echo $ListadoLibros[$i]['ID_LIBRO']; ?></td>
+                    <td class="small"><?php echo $ListadoLibros[$i]['CODIGO']; ?></td>
+                    <td class="small"><?php echo $ListadoLibros[$i]['TITULO']; ?></td>
+                    <td class="small"><?php echo $ListadoLibros[$i]['EDITORIAL']; ?></td>
+                    <td class="small"><?php echo $ListadoLibros[$i]['MAYORISTA']; ?></td>
+                    <td class="small"><?php echo number_format($ListadoLibros[$i]['PRECIO'], 2); ?></td>
+                    <td>
+                      <!-- valido para que solo se puedan eliminar los personales -->
+                      <?php if($ListadoLibros[$i]['MAYORISTA'] == 'Personal') { ?>
+                        <a href="eliminar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
+                          title="Eliminar" 
+                          onclick="return confirm('Confirma eliminar este libro?');">
+                          <i class="bi bi-trash-fill text-danger fs-5"></i>
                         </a>
+                      <?php } ?>
 
-                        <a href="#" 
-                          title="Agregar a pedido" 
-                          onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
-                          <i class="bi bi-bag-plus-fill text-primary fs-5"></i>
-                        </a>
-                          
-                        </td>
+                      <a href="modificar_libros.php?ID_LIBRO=<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>" 
+                          title="Modificar">
+                        <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                      </a>
 
-                    </tr>
+                      <a href="#" 
+                        title="Agregar a pedido" 
+                        onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
+                        <i class="bi bi-bag-plus-fill text-primary fs-5"></i>
+                      </a>
+                    </td>
+                  </tr>
                 <?php } ?>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
           <!-- End Table with stripped rows -->
           
         </div>

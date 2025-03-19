@@ -20,9 +20,6 @@ $DetallesPedido = array();
 $proveedores = Listar_Proveedores($MiConexion);
 
 if (!empty($_POST['BotonModificarPedido1'])) {
-    echo '<script>
-        console.log("El botón Modificar Pedido 1 fue presionado.");
-        </script>';
     // Validar y procesar la modificación del estado de los detalles
     if (Modificar_Detalles_Pedido($MiConexion, $_POST)) {
         $_SESSION['Mensaje'] = "El pedido se ha modificado correctamente!";
