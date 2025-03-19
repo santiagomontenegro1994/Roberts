@@ -82,21 +82,19 @@ if (!empty($_POST['BotonLogin'])) {
 
       <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center">
 
-        <div class="d-flex justify-content-center" >
-          <a href="index.php" class="logo d-flex align-items-center w-auto">
-            <img src="assets/img/Logo1.png" alt="" class="logo-custom">
-          </a>
-        </div><!-- End Logo -->
-
         <div class="container">
           <div class="row justify-content-center">
             <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
 
-              
-
               <div class="card mb-3">
 
                 <div class="card-body">
+
+                <div class="d-flex justify-content-center logo-container" >
+                  <a href="index.php" class="logo d-flex align-items-center w-auto logo-custom">
+                    <img src="assets/img/Logo1.png" alt="" class="logo-custom">
+                  </a>
+                </div><!-- End Logo -->
 
                   <div class="pt-4 pb-2">
                     <h5 class="card-title text-center pb-0 fs-4">Iniciar Sesion</h5>
@@ -125,7 +123,7 @@ if (!empty($_POST['BotonLogin'])) {
                       <div class="invalid-feedback">Porfavor ingrese su Contraseña!</div>
                     </div>
 
-                    <div class="col-12">
+                    <div class="text center">
                       <button class="btn btn-primary w-100" type="submit" value="Login" name="BotonLogin">Iniciar</button>
                     </div>
                   </form>

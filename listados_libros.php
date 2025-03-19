@@ -144,7 +144,7 @@ $CantidadLibros = count($ListadoLibros);
                         <a href="#" 
                           title="Agregar a pedido" 
                           onclick="agregarAPedido(<?php echo $ListadoLibros[$i]['ID_LIBRO']; ?>)">
-                          <i class="bi bi-bag-plus-fill text-success fs-5"></i>
+                          <i class="bi bi-bag-plus-fill text-primary fs-5"></i>
                         </a>
                           
                         </td>

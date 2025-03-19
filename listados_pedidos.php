@@ -168,7 +168,7 @@ $CantidadPedidos = count($ListadoPedidos);
 
                           <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"  
                             title="Imprimir">
-                          <i class="bi bi-printer-fill text-success fs-5"></i>
+                          <i class="bi bi-printer-fill text-primary fs-5"></i>
                           </a>
                       
                         </td>

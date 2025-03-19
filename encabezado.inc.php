@@ -49,7 +49,7 @@
 
     <div class="d-flex align-items-center justify-content-between">
       <a href="index.php" class="logo d-flex align-items-center" >
-        <img src="assets/img/logo.png" alt="Logo" height="100" width="auto">
+        <img src="assets/img/logo.png" alt="Logo">
       </a>
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->

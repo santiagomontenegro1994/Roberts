@@ -35,16 +35,13 @@
   scroll-behavior: smooth;
 }
 
-main{
-  background-image: url('http://localhost/RobertsLibros/assets/img/patron.png'); /* Imagen de fondo */
-  background-repeat: repeat; /* Repite la imagen */
-  background-size: auto; /* Tamaño automático */
-  background-position: center; /* Centra la imagen */
+html {
+  background-color: var(--color-terciario); /* Usando la variable CSS */
 }
+
+
 body {
   font-family: "Open Sans", sans-serif;
-  background-color: var(--color-secondary-ligth);
-  color: var(--text-color-dark);
   margin: 0; /* Elimina el margen predeterminado del body */
 }
 
@@ -62,14 +59,18 @@ h1, h2, h3, h4, h5, h6 {
   font-family: "Nunito", sans-serif;
 }
 
-.logo-custom {
-  width: 100px; /* Ajusta el tamaño según tus necesidades */
-  height: auto; /* Mantiene la proporción de la imagen */
-}
 
 /*--------------------------------------------------------------
 # Main
 --------------------------------------------------------------*/
+main {
+  background-image: url('http://localhost/RobertsLibros/assets/img/PatronFondo.svg'); /* Ruta a tu archivo SVG */
+  background-repeat: no-repeat; /* Evita que se repita */
+  background-attachment: fixed; /* Fija el fondo */
+  background-size: cover; /* Ajusta el tamaño para cubrir todo el área */
+  background-position: center; /* Centra la imagen */
+}
+
 #main {
   margin-top: 60px;
   padding: 20px 30px;
@@ -253,7 +254,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .card-header, .card-footer {
   border-color: #ebeef4;
-  background-color: #fff;
+  background-color: var(--color-terciario);
   color: #798eb3;
   padding: 15px;
 }
@@ -369,14 +370,31 @@ h1, h2, h3, h4, h5, h6 {
 --------------------------------------------------------------*/
 .logo {
   line-height: 1;
+  margin-left: 20px; /* Ajusta este valor según tus necesidades */
 }
+
+.logo img {
+  height: 45px; /* Altura de la imagen */
+  width: auto;   /* Ancho proporcional */
+}
+
+.logo-custom {
+  height: 45px; /* Mantiene la proporción de la imagen */
+  width: auto; /* Ajusta el tamaño según tus necesidades */
+  margin: 0px;
+}
+
+.logo-container{
+  margin-top: 20px; /* Ajusta este valor según tus necesidades */
+}
+
 @media (min-width: 1200px) {
   .logo {
     width: 280px;
   }
 }
 .logo img {
-  max-height: 26px;
+  max-height: 100px;
   margin-right: 6px;
 }
 .logo span {
@@ -390,12 +408,12 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.5s;
   z-index: 997;
   height: 60px;
-  box-shadow: 0px 2px 20px rgba(5, 5, 5, 0.1);
-  background-color: var(--color-secondary);
+  box-shadow: 0px 4px 30px rgba(5, 5, 5, 0.2); /* Sombra más pronunciada */
+  background: linear-gradient(to bottom, var(--color-secondary), var(--color-primary)); /* Degradado vertical */
+  border-bottom: 3px solid var(--color-secondary-dark); /* Borde inferior */
   padding-left: 20px;
-  /* Toggle Sidebar Button */
-  /* Search Bar */
 }
+
 .header .toggle-sidebar-btn {
   font-size: 32px;
   padding-left: 10px;
@@ -739,7 +757,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .dashboard .info-card h6 {
   font-size: 28px;
-  color: #012970;
+  color: var(--color-secondary);
   font-weight: 700;
   margin: 0;
   padding: 0;
@@ -1096,6 +1114,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*--------------------------------------------------------------
+# Login
+--------------------------------------------------------------*/
+
+.btn-primary {
+  background-color: #BE1C93 !important; /* Color morado */
+  border-color: #BE1C93 !important;
+}
+.btn-primary:hover {
+  background-color: #701959 !important; /* Color morado más oscuro */
+  border-color: #701959 !important;
+}
+
+/*--------------------------------------------------------------
 # Footer
 --------------------------------------------------------------*/
 .footer {
@@ -1103,6 +1134,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 14px;
   transition: all 0.3s;
   border-top: 1px solid #cddfff;
+  background-color: var(--color-terciario);
 }
 .footer .copyright {
   text-align: center;
