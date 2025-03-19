@@ -1,53 +1,46 @@
 <?php
+ob_start(); // Inicia el búfer de salida
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
-  exit;
+if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
+    header('Location: cerrarsesion.php');
+    exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
-
-//require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require('encabezado.inc.php'); // Incluir encabezado
+require('barraLateral.inc.php'); // Incluir barra lateral
 
 require_once 'funciones/conexion.php';
-$MiConexion=ConexionBD();
+$MiConexion = ConexionBD();
 
-//ahora voy a llamar el script gral para usar las funciones necesarias
 require_once 'funciones/select_general.php';
- 
-//este array contendra los datos de la consulta original, y cuando 
-//pulse el boton, mantendrá los datos ingresados hasta que se validen y se puedan modificar
-$DatosClienteActual=array();
+
+$DatosClienteActual = array();
 
 if (!empty($_POST['BotonModificarCliente'])) {
     Validar_Cliente();
 
-    if (empty($_SESSION['Mensaje'])) { //ya toque el boton modificar y el mensaje esta vacio...
-        
+    if (empty($_SESSION['Mensaje'])) { // Si no hay errores de validación
         if (Modificar_Cliente($MiConexion) != false) {
             $_SESSION['Mensaje'] = "Tu cliente se ha modificado correctamente!";
-            $_SESSION['Estilo']='success';
+            $_SESSION['Estilo'] = 'success';
             header('Location: listados_clientes.php');
             exit;
         }
-
-    }else {  //ya toque el boton modificar y el mensaje NO esta vacio...
-        $_SESSION['Estilo']='warning';
-        $DatosClienteActual['ID_CLIENTE'] = !empty($_POST['IdCliente']) ? $_POST['IdCliente'] :'';
-        $DatosClienteActual['NOMBRE'] = !empty($_POST['Nombre']) ? $_POST['Nombre'] :'';
-        $DatosClienteActual['APELLIDO'] = !empty($_POST['Apellido']) ? $_POST['Apellido'] :'';
-        $DatosClienteActual['DIRECCION'] = !empty($_POST['Direccion']) ? $_POST['Direccion'] :'';
-        $DatosClienteActual['TELEFONO'] = !empty($_POST['Telefono']) ? $_POST['Telefono'] :'';
-        $DatosClienteActual['DNI'] = !empty($_POST['DNI']) ? $_POST['DNI'] :'';
+    } else { // Si hay errores de validación
+        $_SESSION['Estilo'] = 'warning';
+        $DatosClienteActual['ID_CLIENTE'] = !empty($_POST['IdCliente']) ? $_POST['IdCliente'] : '';
+        $DatosClienteActual['NOMBRE'] = !empty($_POST['Nombre']) ? $_POST['Nombre'] : '';
+        $DatosClienteActual['APELLIDO'] = !empty($_POST['Apellido']) ? $_POST['Apellido'] : '';
+        $DatosClienteActual['DIRECCION'] = !empty($_POST['Direccion']) ? $_POST['Direccion'] : '';
+        $DatosClienteActual['TELEFONO'] = !empty($_POST['Telefono']) ? $_POST['Telefono'] : '';
+        $DatosClienteActual['DNI'] = !empty($_POST['DNI']) ? $_POST['DNI'] : '';
     }
-
-}else if (!empty($_GET['ID_CLIENTE'])) {
-    //verifico que traigo el nro de consulta por GET si todabia no toque el boton de Modificar
-    //busco los datos de esta consulta y los muestro
-    $DatosClienteActual = Datos_Cliente($MiConexion , $_GET['ID_CLIENTE']);
+} else if (!empty($_GET['ID_CLIENTE'])) {
+    $DatosClienteActual = Datos_Cliente($MiConexion, $_GET['ID_CLIENTE']);
 }
 
+ob_end_flush(); // Envía el contenido del búfer al navegador
 ?>
 
   <main id="main" class="main">

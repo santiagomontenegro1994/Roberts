@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Inicia el búfer de salida
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
@@ -7,8 +8,7 @@ if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no 
 }
 
 require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
-
-//require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
 require_once 'funciones/conexion.php';
 $MiConexion=ConexionBD();
@@ -45,7 +45,7 @@ if (!empty($_POST['BotonModificarProveedor'])) {
     //busco los datos de esta consulta y los muestro
     $DatosProveedorActual = Datos_Proveedor($MiConexion , $_GET['ID_PROVEEDOR']);
 }
-
+ob_end_flush(); // Envía el contenido del búfer al navegador
 ?>
 
   <main id="main" class="main">

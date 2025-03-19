@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Inicia el búfer de salida
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
@@ -7,8 +8,7 @@ if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, re
 }
 
 require('encabezado.inc.php'); // Incluir encabezado
-
-//require ('barraLateral.inc.php'); //incluir barra lateral
+require ('barraLateral.inc.php'); //incluir barra lateral
 
 require_once 'funciones/conexion.php';
 require_once 'funciones/select_general.php';
@@ -35,6 +35,7 @@ if (!empty($_POST['BotonModificarPedido1'])) {
     $DatosPedidoActual = Datos_Pedidos($MiConexion, $_GET['ID_PEDIDO']);
     $DetallesPedido = Detalles_Pedido($MiConexion, $_GET['ID_PEDIDO']);
 }
+ob_end_flush(); // Envía el contenido del búfer al navegador
 ?>
 
 <main id="main" class="main">
