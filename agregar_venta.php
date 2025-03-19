@@ -1,19 +1,21 @@
 <?php
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
-  exit;
+if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
+    header('Location: cerrarsesion.php');
+    exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
-
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
-
+require('encabezado.inc.php'); // Incluir encabezado
+require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
-$MiConexion=ConexionBD(); 
-
 require_once 'funciones/select_general.php';
+
+$MiConexion = ConexionBD();
+
+// Obtener los tipos de servicio desde la base de datos
+$TiposServicio = Listar_Tipos_Servicio($MiConexion);
+$TiposPagos = Listar_Tipos_Pagos($MiConexion);
 
 $Mensaje='';
 $Estilo='warning';
@@ -52,12 +54,14 @@ if (!empty($_POST['BotonRegistrar'])) {
         <form method='post'>
             <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
-                <a href="gestionar_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
+                <a href="listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
             </div>
             <div class="d-flex flex-wrap justify-content-center">
-                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Efectivo">Efectivo</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Tarjeta">Tarjeta</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="Transferencia">Transferencia</button>
+              <?php foreach ($TiposPagos as $tipo) { ?>
+                    <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="<?php echo $tipo['idTipoPago']; ?>">
+                        <?php echo $tipo['denominacion']; ?>
+                    </button>
+                <?php } ?>
             </div>
 
             <!-- Sección de Tipos de Servicio -->
@@ -66,13 +70,11 @@ if (!empty($_POST['BotonRegistrar'])) {
                 <a href="gestionar_tipos_servicio.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Servicio</a>
             </div>
             <div class="d-flex flex-wrap justify-content-center">
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="BlancoNegro">Impresión Blanco y Negro</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Color">Impresión a Color</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Trabajos">Trabajos</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Fotocopia">Fotocopia</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Escaneo">Escaneo</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="Retiros">Retiros</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="VentasVarias">Ventas Varias</button>
+                <?php foreach ($TiposServicio as $tipo) { ?>
+                    <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="<?php echo $tipo['idTipoServicio']; ?>">
+                        <?php echo $tipo['denominacion']; ?>
+                    </button>
+                <?php } ?>
             </div>
                 
 

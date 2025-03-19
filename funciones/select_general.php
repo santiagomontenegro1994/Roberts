@@ -922,4 +922,80 @@ function ColorDeFila($vEstado) {
 
 }
 
+function Listar_Tipos_Servicio($conexion) {
+    $sql = "SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposServicio = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposServicio[] = $fila;
+        }
+    }
+    return $tiposServicio;
+}
+
+function Listar_Tipos_Pagos($conexion) {
+    $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposPagos = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposPagos[] = $fila;
+        }
+    }
+    return $tiposPagos;
+}
+
+function Validar_Metodo_Pago(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['Denominacion']) < 1) {
+        $_SESSION['Mensaje'].='Debes agregar un metodo de pago';
+    }
+    
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function InsertarMetodoPago($vConexion){
+    
+    $SQL_Insert="INSERT INTO tipo_pago (denominacion)
+    VALUES ('".$_POST['Denominacion']."')";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
+function Anular_Metodo_Pago($vConexion , $vIdConsulta) {
+
+//soy admin 
+    $SQL_MiConsulta="SELECT idTipoPago FROM tipo_pago 
+                    WHERE idTipoPago = $vIdConsulta "; 
+
+$rs = mysqli_query($vConexion, $SQL_MiConsulta);
+    
+$data = mysqli_fetch_array($rs);
+
+if (!empty($data['idTipoPago']) ) {
+    //si se cumple todo, entonces elimino:
+    mysqli_query($vConexion, "UPDATE tipo_pago SET idActivo = 2 WHERE idTipoPago = $vIdConsulta");
+    
+    return true;
+
+}else {
+    return false;
+}
+
+}
 ?>
