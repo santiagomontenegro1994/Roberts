@@ -977,25 +977,56 @@ function InsertarMetodoPago($vConexion){
     return true;
 }
 
-function Anular_Metodo_Pago($vConexion , $vIdConsulta) {
-
-//soy admin 
+function Anular_Metodo_Pago($vConexion , $vIdConsulta) { 
     $SQL_MiConsulta="SELECT idTipoPago FROM tipo_pago 
                     WHERE idTipoPago = $vIdConsulta "; 
 
-$rs = mysqli_query($vConexion, $SQL_MiConsulta);
-    
-$data = mysqli_fetch_array($rs);
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
 
-if (!empty($data['idTipoPago']) ) {
-    //si se cumple todo, entonces elimino:
-    mysqli_query($vConexion, "UPDATE tipo_pago SET idActivo = 2 WHERE idTipoPago = $vIdConsulta");
-    
+    if (!empty($data['idTipoPago']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE tipo_pago SET idActivo = 2 WHERE idTipoPago = $vIdConsulta");
+        
     return true;
 
-}else {
-    return false;
+    }else {
+        return false;
+    }
+
 }
+
+function Modificar_Metodo_Pago($vConexion) {
+    $denominacion = mysqli_real_escape_string($vConexion, $_POST['Denominacion']);
+    $idMetodoPago = mysqli_real_escape_string($vConexion, $_POST['IdTipoPago']);
+
+    $SQL_MiConsulta = "UPDATE tipo_pago
+    SET denominacion = '$denominacion'
+    WHERE idTipoPago = '$idMetodoPago'"; 
+
+    if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    }else {
+        return false;
+    }
+    
+}
+
+function Datos_Metodo_Pago($vConexion , $vIdTipoPago) {
+    $DatosMetodoPago  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT * FROM tipo_pago 
+            WHERE idTipoPago = $vIdTipoPago";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosMetodoPago['IdTipoPago'] = $data['idTipoPago'];
+        $DatosMetodoPago['Denominacion'] = $data['denominacion'];
+    }
+    return $DatosMetodoPago;
 
 }
 ?>
