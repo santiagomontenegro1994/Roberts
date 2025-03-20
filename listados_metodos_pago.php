@@ -23,14 +23,14 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
 <main id="main" class="main">
 
 <div class="pagetitle d-flex justify-content-between align-items-center">
-  <h1>Listado Métodos de Pago</h1>
+  <h1>Listado Tipos de Pago</h1>
  </div>
 
 <nav>
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-    <li class="breadcrumb-item">Métodos de Pago</li>
-    <li class="breadcrumb-item active">Listado Métodos de Pago</li>
+    <li class="breadcrumb-item">Tipos de Pago</li>
+    <li class="breadcrumb-item active">Listado Tipos de Pago</li>
   </ol>
 </nav>
 
@@ -38,8 +38,8 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
     <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">Listado Métodos de Pago</h5>
-            <a href="agregar_metodo_pago.php" class="btn btn-primary btn-sm">Agregar Nuevo Método de Pago</a>
+            <h5 class="card-title mb-0">Listado Tipos de Pago</h5>
+            <a href="agregar_metodo_pago.php" class="btn btn-primary btn-sm">Agregar Nuevo Tipo de Pago</a>
           </div>
           <?php if (!empty($_SESSION['Mensaje'])) { ?>
             <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">

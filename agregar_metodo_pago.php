@@ -20,13 +20,12 @@ $Mensaje='';
 $Estilo='warning';
 if (!empty($_POST['BotonRegistrar'])) {
     //estoy en condiciones de poder validar los datos
-    $Mensaje=Validar_Metodo_Pago();
+    $Mensaje=Validar_Tipos_Pago();
     if (empty($Mensaje)) {
-        if (InsertarMetodoPago($MiConexion) != false) {
-            $Mensaje = 'Se ha registrado correctamente.';
-            $_POST = array(); 
-            $Estilo = 'success'; 
-            header('Location: listados_metodos_pago.php');
+        if (InsertarTipoPago($MiConexion) != false) {
+          $_SESSION['Mensaje'] = "Tu Metodo de pago se agrego correctamente!";
+          $_SESSION['Estilo'] = 'success';
+          header('Location: listados_metodos_pago.php');
             exit;
         }
     }
@@ -37,20 +36,20 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
   <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>Metodos de Pago</h1>
+      <h1>Tipos de Pago</h1>
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
           <li class="breadcrumb-item">Ventas</li>
           <li class="breadcrumb-item">Metodos de Pago</li>
-          <li class="breadcrumb-item active">Agregar Clientes</li>
+          <li class="breadcrumb-item active">Agregar Tipo de Pago</li>
         </ol>
       </nav>
     </div><!-- End Page Title -->
     <section class="section">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Agregar Metodo de Pago</h5>
+              <h5 class="card-title">Agregar Tipo de Pago</h5>
 
               <!-- Horizontal Form -->
               <form method='post'>

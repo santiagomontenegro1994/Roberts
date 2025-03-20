@@ -18,10 +18,10 @@ require_once 'funciones/select_general.php';
 $DatosMetodoPagoActual = array();
 
 if (!empty($_POST['BotonModificarCliente'])) {
-    Validar_Metodo_Pago();
+    Validar_Tipos_Pago();
 
     if (empty($_SESSION['Mensaje'])) { // Si no hay errores de validación
-        if (Modificar_Metodo_Pago($MiConexion) != false) {
+        if (Modificar_Tipo_Pago($MiConexion) != false) {
             $_SESSION['Mensaje'] = "Tu Metodo de pago se ha modificado correctamente!";
             $_SESSION['Estilo'] = 'success';
             header('Location: listados_metodos_pago.php');
@@ -33,7 +33,7 @@ if (!empty($_POST['BotonModificarCliente'])) {
         $DatosMetodoPagoActual['Denominacion'] = !empty($_POST['Denominacion']) ? $_POST['Denominacion'] : '';
     }
 } else if (!empty($_GET['idTipoPago'])) {
-    $DatosMetodoPagoActual = Datos_Metodo_Pago($MiConexion, $_GET['idTipoPago']);
+    $DatosMetodoPagoActual = Datos_Tipo_Pago($MiConexion, $_GET['idTipoPago']);
 }
 
 ob_end_flush(); // Envía el contenido del búfer al navegador

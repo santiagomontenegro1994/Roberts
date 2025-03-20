@@ -11,7 +11,7 @@
 
     require_once 'funciones/select_general.php';
 
-    if ( Anular_Metodo_Pago($MiConexion , $_GET['idTipoPago']) != false ) {
+    if ( Anular_Tipo_Pago($MiConexion , $_GET['idTipoPago']) != false ) {
         $_SESSION['Mensaje'].='Se ha eliminado la consulta seleccionada';
         $_SESSION['Estilo']='success';
     }else {

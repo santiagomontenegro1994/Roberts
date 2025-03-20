@@ -922,19 +922,6 @@ function ColorDeFila($vEstado) {
 
 }
 
-function Listar_Tipos_Servicio($conexion) {
-    $sql = "SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo = 1";
-    $resultado = mysqli_query($conexion, $sql);
-
-    $tiposServicio = array();
-    if ($resultado) {
-        while ($fila = mysqli_fetch_assoc($resultado)) {
-            $tiposServicio[] = $fila;
-        }
-    }
-    return $tiposServicio;
-}
-
 function Listar_Tipos_Pagos($conexion) {
     $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1";
     $resultado = mysqli_query($conexion, $sql);
@@ -948,7 +935,7 @@ function Listar_Tipos_Pagos($conexion) {
     return $tiposPagos;
 }
 
-function Validar_Metodo_Pago(){
+function Validar_Tipos_Pago(){
     $_SESSION['Mensaje']='';
     if (strlen($_POST['Denominacion']) < 1) {
         $_SESSION['Mensaje'].='Debes agregar un metodo de pago';
@@ -963,7 +950,7 @@ function Validar_Metodo_Pago(){
     return $_SESSION['Mensaje'];
 }
 
-function InsertarMetodoPago($vConexion){
+function InsertarTipoPago($vConexion){
     
     $SQL_Insert="INSERT INTO tipo_pago (denominacion)
     VALUES ('".$_POST['Denominacion']."')";
@@ -977,7 +964,7 @@ function InsertarMetodoPago($vConexion){
     return true;
 }
 
-function Anular_Metodo_Pago($vConexion , $vIdConsulta) { 
+function Anular_Tipo_Pago($vConexion , $vIdConsulta) { 
     $SQL_MiConsulta="SELECT idTipoPago FROM tipo_pago 
                     WHERE idTipoPago = $vIdConsulta "; 
 
@@ -997,7 +984,7 @@ function Anular_Metodo_Pago($vConexion , $vIdConsulta) {
 
 }
 
-function Modificar_Metodo_Pago($vConexion) {
+function Modificar_Tipo_Pago($vConexion) {
     $denominacion = mysqli_real_escape_string($vConexion, $_POST['Denominacion']);
     $idMetodoPago = mysqli_real_escape_string($vConexion, $_POST['IdTipoPago']);
 
@@ -1013,7 +1000,7 @@ function Modificar_Metodo_Pago($vConexion) {
     
 }
 
-function Datos_Metodo_Pago($vConexion , $vIdTipoPago) {
+function Datos_Tipo_Pago($vConexion , $vIdTipoPago) {
     $DatosMetodoPago  =   array();
     //me aseguro que la consulta exista
     $SQL = "SELECT * FROM tipo_pago 
@@ -1028,5 +1015,92 @@ function Datos_Metodo_Pago($vConexion , $vIdTipoPago) {
     }
     return $DatosMetodoPago;
 
+}
+
+function Listar_Tipos_Servicio($conexion) {
+    $sql = "SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposServicio = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposServicio[] = $fila;
+        }
+    }
+    return $tiposServicio;
+}
+
+function InsertarTipoServicio($vConexion) {
+    $SQL_Insert = "INSERT INTO tipo_servicio (denominacion)
+    VALUES ('" . $_POST['Denominacion'] . "')";
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
+function Modificar_Tipo_Servicio($vConexion) {
+    $denominacion = mysqli_real_escape_string($vConexion, $_POST['Denominacion']);
+    $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['IdTipoServicio']);
+
+    $SQL_MiConsulta = "UPDATE tipo_servicio
+    SET denominacion = '$denominacion'
+    WHERE idTipoServicio = '$idTipoServicio'";
+
+    if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function Anular_Tipo_Servicio($vConexion, $vIdConsulta) {
+    $SQL_MiConsulta = "SELECT idTipoServicio FROM tipo_servicio 
+                    WHERE idTipoServicio = $vIdConsulta";
+
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idTipoServicio'])) {
+        // Si se cumple todo, entonces desactivo:
+        mysqli_query($vConexion, "UPDATE tipo_servicio SET idActivo = 2 WHERE idTipoServicio = $vIdConsulta");
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function Validar_Tipos_Servicio() {
+    $_SESSION['Mensaje'] = '';
+    if (strlen($_POST['Denominacion']) < 1) {
+        $_SESSION['Mensaje'] .= 'Debes agregar un tipo de servicio.';
+    }
+
+    // Limpiar espacios y caracteres no deseados
+    foreach ($_POST as $Id => $Valor) {
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function Datos_Tipo_Servicio($vConexion, $vIdTipoServicio) {
+    $DatosTipoServicio = array();
+    // Asegurarse de que la consulta exista
+    $SQL = "SELECT * FROM tipo_servicio 
+            WHERE idTipoServicio = $vIdTipoServicio";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs);
+    if (!empty($data)) {
+        $DatosTipoServicio['IdTipoServicio'] = $data['idTipoServicio'];
+        $DatosTipoServicio['Denominacion'] = $data['denominacion'];
+    }
+    return $DatosTipoServicio;
 }
 ?>
