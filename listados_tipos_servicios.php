@@ -24,7 +24,6 @@ $CantidadTiposServicio = count($ListadoTiposServicio);
 
 <div class="pagetitle d-flex justify-content-between align-items-center">
   <h1>Listado Tipos de Servicios</h1>
-  <a href="agregar_tipo_servicio.php" class="btn btn-primary btn-sm">Agregar Nuevo Tipo de Servicio</a>
 </div>
 
 <nav>

@@ -87,9 +87,14 @@
             <i class="bi bi-cash-stack"></i><span>Ventas</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
         <ul id="ventas-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          <li>
+        <li>
             <a href="agregar_venta.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
+            </a>
+          </li>
+          <li>
+            <a href="planilla_caja.php">
+              <i class="bi bi-circle"></i><span>Planilla de Caja</span>
             </a>
           </li>
           <li>
