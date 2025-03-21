@@ -1098,7 +1098,7 @@ function Datos_Tipo_Servicio($vConexion, $vIdTipoServicio) {
 
     $data = mysqli_fetch_array($rs);
     if (!empty($data)) {
-        $DatosTipoServicio['IdTipoServicio'] = $data['idTipoServicio'];
+        $DatosTipoServicio['IdTipoServicio'] = $data['IdTipoServicio'];
         $DatosTipoServicio['Denominacion'] = $data['denominacion'];
     }
     return $DatosTipoServicio;
