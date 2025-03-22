@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
@@ -11,6 +12,29 @@ require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
 
 $MiConexion = ConexionBD();
+
+// Manejar la actualización de Caja Inicial
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $idCaja = $_POST['idCaja'];
+    $cajaInicial = $_POST['cajaInicial'];
+
+    // Validar los datos
+    if (!empty($idCaja) && is_numeric($cajaInicial)) {
+        // Actualizar el valor de Caja Inicial en la base de datos
+        $query = "UPDATE caja SET cajaInicial = ? WHERE idCaja = ?";
+        $stmt = $MiConexion->prepare($query);
+        $stmt->bind_param("di", $cajaInicial, $idCaja);
+
+        if ($stmt->execute()) {
+            header("Location: planilla_caja.php?mensaje=actualizado");
+            exit;
+        } else {
+            echo "Error al actualizar Caja Inicial: " . $MiConexion->error;
+        }
+    } else {
+        echo "Datos inválidos.";
+    }
+}
 
 // Obtener los datos de la tabla `caja`
 $queryCaja = "SELECT c.idCaja, c.Fecha, c.idTurno, c.cajaInicial
@@ -75,7 +99,13 @@ if (!$resultadoDetalleCaja) {
             <div class="card-body">
                 <h5 class="card-title">Resumen de Caja</h5>
 
-                <div class="row">
+                <?php if (isset($_GET['mensaje']) && $_GET['mensaje'] === 'actualizado') { ?>
+                    <div id="mensajeExito" class="alert alert-success" role="alert">
+                        ¡Caja Inicial actualizada correctamente!
+                    </div>
+                <?php } ?>
+
+                <div class="container">
                     <?php while ($fila = $resultadoCaja->fetch_assoc()) { 
                         $idCaja = $fila['idCaja'];
                         $cajaInicial = $fila['cajaInicial'];
@@ -84,24 +114,55 @@ if (!$resultadoDetalleCaja) {
                         $totalTarjeta = $totalesPorCaja[$idCaja]['totalTarjeta'] ?? 0;
                         $cajaFuerte = $totalEfectivo - $cajaInicial;
                     ?>
-                        <div class="col-md-4 mb-4">
-                            <div class="card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="card-title mb-0">Caja ID: <?php echo $idCaja; ?></h5>
+                        <div class="mb-4 border rounded p-3">
+                            <!-- Encabezado con datos alineados horizontalmente -->
+                            <div class="row mb-3">
+                                <div class="col-12 col-md-3">
+                                    <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
                                 </div>
-                                <div class="card-body">
-                                    <p class="card-text"><strong>Fecha:</strong> <?php echo $fila['Fecha']; ?></p>
-                                    <p class="card-text"><strong>Turno:</strong> <?php echo $fila['idTurno']; ?></p>
-                                    <p class="card-text"><strong>Total Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
-                                    <p class="card-text"><strong>Total Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
-                                    <p class="card-text"><strong>Total Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
-                                    <p class="card-text"><strong>Caja Inicial:</strong> $<?php echo number_format($cajaInicial, 2); ?></p>
-                                    <p class="card-text"><strong>Caja Fuerte:</strong> $<?php echo number_format($cajaFuerte, 2); ?></p>
+                                <div class="col-12 col-md-3">
+                                    <p><strong>Fecha:</strong> <?php echo $fila['Fecha']; ?></p>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <p><strong>Turno:</strong> <?php echo $fila['idTurno']; ?></p>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <form action="planilla_caja.php" method="POST" class="d-inline">
+                                        <input type="hidden" name="idCaja" value="<?php echo $idCaja; ?>">
+                                        <label for="cajaInicial_<?php echo $idCaja; ?>"><strong>Caja Inicial:</strong></label>
+                                        <input type="number" step="0.01" name="cajaInicial" id="cajaInicial_<?php echo $idCaja; ?>" 
+                                               value="<?php echo number_format($cajaInicial, 2, '.', ''); ?>" 
+                                               class="form-control d-inline w-auto">
+                                        <button type="submit" class="btn btn-primary btn-sm mt-2 mt-md-0">Actualizar</button>
+                                    </form>
                                 </div>
                             </div>
+
+                            <!-- Detalles de la Caja -->
+                            <div class="row">
+                                <div class="col-12 col-md-6">
+                                    <p><strong>Total Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
+                                    <p><strong>Total Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <p><strong>Total Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
+                                    <p><strong>Caja Fuerte:</strong> $<?php echo number_format($cajaFuerte, 2); ?></p>
+                                </div>
+                            </div>
+                            <hr>
                         </div>
                     <?php } ?>
                 </div>
+
+                <script>
+                    // Ocultar el mensaje después de 3 segundos
+                    setTimeout(function() {
+                        const mensaje = document.getElementById('mensajeExito');
+                        if (mensaje) {
+                            mensaje.style.display = 'none';
+                        }
+                    }, 3000); // 3000 milisegundos = 3 segundos
+                </script>
 
                 <h5 class="card-title mt-5">Detalles de Caja</h5>
 
@@ -156,6 +217,7 @@ if (!$resultadoDetalleCaja) {
 <?php
   $_SESSION['Mensaje']='';
   require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+  ob_end_flush();
 ?>
 
 </body>
