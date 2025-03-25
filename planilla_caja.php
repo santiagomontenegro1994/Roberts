@@ -78,7 +78,7 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
 $queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, ts.denominacion AS tipoServicio, dc.monto
                      FROM detalle_caja dc
                      JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                     JOIN tipo_servicio ts ON dc.IdTipoServicio = ts.idTipoServicio
+                     JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
                      ORDER BY dc.idDetalleCaja DESC";
 $resultadoDetalleCaja = $MiConexion->query($queryDetalleCaja);
 
@@ -97,8 +97,6 @@ if (!$resultadoDetalleCaja) {
     <section class="section">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Resumen de Caja</h5>
-
                 <?php if (isset($_GET['mensaje']) && $_GET['mensaje'] === 'actualizado') { ?>
                     <div id="mensajeExito" class="alert alert-success" role="alert">
                         ¡Caja Inicial actualizada correctamente!
@@ -114,43 +112,35 @@ if (!$resultadoDetalleCaja) {
                         $totalTarjeta = $totalesPorCaja[$idCaja]['totalTarjeta'] ?? 0;
                         $cajaFuerte = $totalEfectivo - $cajaInicial;
                     ?>
-                        <div class="mb-4 border rounded p-3">
                             <!-- Encabezado con datos alineados horizontalmente -->
-                            <div class="row mb-3">
-                                <div class="col-12 col-md-3">
-                                    <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
-                                </div>
-                                <div class="col-12 col-md-3">
-                                    <p><strong>Fecha:</strong> <?php echo $fila['Fecha']; ?></p>
-                                </div>
-                                <div class="col-12 col-md-3">
-                                    <p><strong>Turno:</strong> <?php echo $fila['idTurno']; ?></p>
-                                </div>
-                                <div class="col-12 col-md-3">
-                                    <form action="planilla_caja.php" method="POST" class="d-inline">
+                            <div class="row mt-2 align-items-center">
+                                <!-- Caja Inicial a la izquierda -->
+                                <div class="col-12 col-md-6 d-flex flex-wrap align-items-center">
+                                    <form action="planilla_caja.php" method="POST" class="d-inline d-flex flex-wrap align-items-center">
                                         <input type="hidden" name="idCaja" value="<?php echo $idCaja; ?>">
-                                        <label for="cajaInicial_<?php echo $idCaja; ?>"><strong>Caja Inicial:</strong></label>
+                                        <label for="cajaInicial_<?php echo $idCaja; ?>" class="me-2 mb-2 mb-md-0"><strong>Caja Inicial:</strong></label>
                                         <input type="number" step="0.01" name="cajaInicial" id="cajaInicial_<?php echo $idCaja; ?>" 
                                                value="<?php echo number_format($cajaInicial, 2, '.', ''); ?>" 
-                                               class="form-control d-inline w-auto">
-                                        <button type="submit" class="btn btn-primary btn-sm mt-2 mt-md-0">Actualizar</button>
+                                               class="form-control form-control-sm text-center w-auto me-2 mb-2 mb-md-0">
+                                        <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
                                     </form>
                                 </div>
-                            </div>
 
-                            <!-- Detalles de la Caja -->
-                            <div class="row">
-                                <div class="col-12 col-md-6">
-                                    <p><strong>Total Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
-                                    <p><strong>Total Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
+                                <!-- Caja ID -->
+                                <div class="col-12 col-md-2">
+                                    <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
                                 </div>
-                                <div class="col-12 col-md-6">
-                                    <p><strong>Total Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
-                                    <p><strong>Caja Fuerte:</strong> $<?php echo number_format($cajaFuerte, 2); ?></p>
+
+                                <!-- Turno -->
+                                <div class="col-12 col-md-2">
+                                    <p><strong>Turno:</strong> <?php echo $fila['idTurno']; ?></p>
+                                </div>
+
+                                <!-- Fecha -->
+                                <div class="col-12 col-md-2">
+                                    <p><strong>Fecha:</strong> <?php echo $fila['Fecha']; ?></p>
                                 </div>
                             </div>
-                            <hr>
-                        </div>
                     <?php } ?>
                 </div>
 
@@ -164,7 +154,12 @@ if (!$resultadoDetalleCaja) {
                     }, 3000); // 3000 milisegundos = 3 segundos
                 </script>
 
-                <h5 class="card-title mt-5">Detalles de Caja</h5>
+                <h5 class="card-title pb-0 d-flex justify-content-between align-items-center">
+                    Detalles de Caja
+                    <a href="agregar_venta.php" class="btn btn-success btn-sm">
+                        Agregar Venta
+                    </a>
+                </h5>
 
                 <!-- Tabla de Detalles de Caja -->
                 <div class="table-responsive">
@@ -206,6 +201,22 @@ if (!$resultadoDetalleCaja) {
                             <?php } ?>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Totales en un solo renglón -->
+                <div class="row mt-4 border-top pt-3">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <p><strong>Total Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <p><strong>Total Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <p><strong>Total Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <p><strong>Caja Fuerte:</strong> $<?php echo number_format($cajaFuerte, 2); ?></p>
+                    </div>
                 </div>
 
             </div>
