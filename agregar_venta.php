@@ -6,6 +6,13 @@ if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, re
     exit;
 }
 
+// Validar si hay una caja seleccionada
+if (empty($_SESSION['Id_Caja'])) {
+    die('<div class="alert alert-danger text-center mt-4">No hay caja seleccionada. Por favor, seleccione una caja antes de continuar.</div>');
+    header('Location: listados_caja.php');
+    exit;
+}
+
 require('encabezado.inc.php'); // Incluir encabezado
 require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
@@ -17,19 +24,40 @@ $MiConexion = ConexionBD();
 $TiposServicio = Listar_Tipos_Servicio($MiConexion);
 $TiposPagos = Listar_Tipos_Pagos($MiConexion);
 
-$Mensaje='';
-$Estilo='warning';
+$Mensaje = '';
+$Estilo = 'warning';
+
 if (!empty($_POST['BotonRegistrar'])) {
-    //estoy en condiciones de poder validar los datos
-    $Mensaje=Validar_Cliente();
-    if (empty($Mensaje)) {
-        if (InsertarClientes($MiConexion) != false) {
-            $Mensaje = 'Se ha registrado correctamente.';
-            $_POST = array(); 
-            $Estilo = 'success'; 
+    // Validar los datos del formulario
+    $idCaja = $_SESSION['Id_Caja'] ?? null;
+    $idTipoPago = $_POST['idTipoPago'] ?? null;
+    $idTipoServicio = $_POST['idTipoServicio'] ?? null;
+    $idUsuario = $_SESSION['Usuario_Id'] ?? null;
+    $monto = $_POST['ValorDinero'] ?? null;
+
+    if ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
+        // Insertar el detalle de venta en la base de datos
+        $query = "INSERT INTO detalle_venta (idCaja, idTipoPago, idTipoServicio, idUsuario, monto) 
+                  VALUES (?, ?, ?, ?, ?)";
+        $stmt = $MiConexion->prepare($query);
+        $stmt->bind_param("iiidf", $idCaja, $idTipoPago, $idTipoServicio, $idUsuario, $monto);
+
+        if ($stmt->execute()) {
+            $Mensaje = 'Detalle de venta registrado correctamente.';
+            $Estilo = 'success';
+        } else {
+            $Mensaje = 'Error al registrar el detalle de venta: ' . $stmt->error;
+            $Estilo = 'danger';
         }
+
+        $stmt->close();
+    } else {
+        $Mensaje = 'Por favor, complete todos los campos correctamente.';
+        $Estilo = 'warning';
     }
 }
+
+$MiConexion->close();
 
 ?>
 
@@ -51,17 +79,18 @@ if (!empty($_POST['BotonRegistrar'])) {
         <div class="card-body">
 
           <!-- Sección de Métodos de Pago -->
-        <form method='post'>
+        <form method="post">
             <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
                 <a href="listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
             </div>
             <div class="d-flex flex-wrap justify-content-center">
               <?php foreach ($TiposPagos as $tipo) { ?>
-                    <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" value="<?php echo $tipo['idTipoPago']; ?>">
+                    <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="<?php echo $tipo['idTipoPago']; ?>">
                         <?php echo $tipo['denominacion']; ?>
                     </button>
                 <?php } ?>
+                <input type="hidden" name="idTipoPago" id="idTipoPago">
             </div>
 
             <!-- Sección de Tipos de Servicio -->
@@ -71,10 +100,11 @@ if (!empty($_POST['BotonRegistrar'])) {
             </div>
             <div class="d-flex flex-wrap justify-content-center">
                 <?php foreach ($TiposServicio as $tipo) { ?>
-                    <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" value="<?php echo $tipo['idTipoServicio']; ?>">
+                    <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idTipoServicio']; ?>">
                         <?php echo $tipo['denominacion']; ?>
                     </button>
                 <?php } ?>
+                <input type="hidden" name="idTipoServicio" id="idTipoServicio">
             </div>
                 
 
@@ -92,7 +122,7 @@ if (!empty($_POST['BotonRegistrar'])) {
                 <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
                 <button type="reset" class="btn btn-secondary">Reset</button>
             </div>
-        <form><!-- End Horizontal Form -->
+        </form><!-- End Horizontal Form -->
         </div>
       </div>
 
@@ -114,6 +144,7 @@ require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro arc
             metodoPagoButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
             button.classList.remove('btn-secondary'); // Quitar estilo secundario
             button.classList.add('btn-primary'); // Agregar estilo seleccionado
+            document.getElementById('idTipoPago').value = button.getAttribute('data-id'); // Asignar valor al input hidden
         });
     });
 
@@ -125,6 +156,7 @@ require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro arc
             tipoServicioButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
             button.classList.remove('btn-secondary'); // Quitar estilo secundario
             button.classList.add('btn-primary'); // Agregar estilo seleccionado
+            document.getElementById('idTipoServicio').value = button.getAttribute('data-id'); // Asignar valor al input hidden
         });
     });
 </script>

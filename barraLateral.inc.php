@@ -98,7 +98,7 @@
             </a>
           </li>
           <li>
-            <a href="listados_ventas.php">
+            <a href="listados_caja.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
           </li>

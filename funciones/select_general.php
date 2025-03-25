@@ -1103,4 +1103,49 @@ function Datos_Tipo_Servicio($vConexion, $vIdTipoServicio) {
     }
     return $DatosTipoServicio;
 }
+
+function ObtenerInfoCaja($vConexion, $idCaja) {
+    $infoCaja = "Sin caja seleccionada";
+    
+    if (!empty($idCaja)) {
+        $query = "SELECT Fecha, idTurno FROM caja WHERE idCaja = ?";
+        $stmt = $vConexion->prepare($query);
+        $stmt->bind_param("i", $idCaja);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+
+        if ($resultado->num_rows > 0) {
+            $fila = $resultado->fetch_assoc();
+            $infoCaja = "Caja Actual: " . $fila['Fecha'] . " - Turno " . $fila['idTurno'];
+        }
+        
+        $stmt->close();
+    }
+    
+    return $infoCaja;
+}
+
+function Listar_Cajas($Conexion) {
+    $sql = "SELECT * FROM caja ORDER BY Fecha DESC";
+    $resultado = $Conexion->query($sql);
+    $Listado = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $Listado[] = $fila;
+    }
+    return $Listado;
+}
+
+function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
+    $sql = "SELECT * FROM caja WHERE $Criterio LIKE ? ORDER BY Fecha DESC";
+    $stmt = $Conexion->prepare($sql);
+    $Parametro = "%$Parametro%";
+    $stmt->bind_param("s", $Parametro);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    $Listado = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $Listado[] = $fila;
+    }
+    return $Listado;
+}
 ?>
