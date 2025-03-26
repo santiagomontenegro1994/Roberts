@@ -18,9 +18,6 @@ $MiConexion = ConexionBD();
 $TiposServicio = Listar_Tipos_Servicio($MiConexion);
 $TiposPagos = Listar_Tipos_Pagos($MiConexion);
 
-$Mensaje = '';
-$Estilo = 'warning';
-
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
     $idCaja = isset($_SESSION['Id_Caja']) ? (int)$_SESSION['Id_Caja'] : null;
@@ -31,33 +28,31 @@ if (!empty($_POST['BotonRegistrar'])) {
 
     // Verificar si $_SESSION['Id_Caja'] tiene contenido
     if (empty($idCaja)) {
-        $Mensaje = 'Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.';
-        $Estilo = 'danger';
+        $_SESSION['Mensaje'] = 'Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.';
+        $_SESSION['Estilo'] = 'danger';
     } elseif ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
         // Insertar el detalle de venta en la base de datos
         $query = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto) 
                   VALUES (?, ?, ?, ?, ?)";
         $stmt = $MiConexion->prepare($query);
-        
-        // Cambiar "iiidf" por "iiiid" (el monto es double, no float)
         $stmt->bind_param("iiiid", $idCaja, $idTipoPago, $idTipoServicio, $idUsuario, $monto);
 
         if ($stmt->execute()) {
-            $Mensaje = 'Detalle de venta registrado correctamente.';
-            $Estilo = 'success';
-            
+            $_SESSION['Mensaje'] = 'Detalle de venta registrado correctamente.';
+            $_SESSION['Estilo'] = 'success';
+
             // Redirigir para evitar reenvío del formulario
             header("Location: planilla_caja.php");
             exit;
         } else {
-            $Mensaje = 'Error al registrar el detalle de venta: ' . $stmt->error;
-            $Estilo = 'danger';
+            $_SESSION['Mensaje'] = 'Error al registrar el detalle de venta: ' . $stmt->error;
+            $_SESSION['Estilo'] = 'danger';
         }
 
         $stmt->close();
     } else {
-        $Mensaje = 'Por favor, complete todos los campos correctamente.';
-        $Estilo = 'warning';
+        $_SESSION['Mensaje'] = 'Por favor, complete todos los campos correctamente.';
+        $_SESSION['Estilo'] = 'warning';
     }
 }
 
