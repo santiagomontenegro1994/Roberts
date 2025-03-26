@@ -1148,4 +1148,18 @@ function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
     }
     return $Listado;
 }
+
+function Obtener_Info_Caja($Conexion, $idCaja) {
+    $sql = "SELECT Fecha, idTurno FROM caja WHERE idCaja = ?";
+    $stmt = $Conexion->prepare($sql);
+    $stmt->bind_param("i", $idCaja);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
+    if ($resultado->num_rows > 0) {
+        return $resultado->fetch_assoc();
+    }
+
+    return null; // Si no se encuentra la caja
+}
 ?>

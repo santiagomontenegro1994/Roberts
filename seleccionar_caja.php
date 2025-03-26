@@ -9,7 +9,7 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 
 // Verificar si se recibió un idCaja válido
 if (!empty($_GET['idCaja'])) {
-    $_SESSION['IdCaja'] = $_GET['idCaja']; // Asignar el idCaja a la sesión
+    $_SESSION['Id_Caja'] = $_GET['idCaja']; // Asignar el idCaja a la sesión
     $_SESSION['Mensaje'] = 'Caja seleccionada correctamente.';
     $_SESSION['Estilo'] = 'success';
 } else {

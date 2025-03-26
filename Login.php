@@ -21,7 +21,7 @@ if (!empty($_POST['BotonLogin'])) {
         $_SESSION['Usuario_Apellido']   =   $UsuarioLogueado['APELLIDO'];
         $_SESSION['Usuario_Nivel']      =   $UsuarioLogueado['NIVEL'];
         $_SESSION['Usuario_Id']         =   $UsuarioLogueado['ID'];
-        $_SESSION['IdCaja']            ='';
+        $_SESSION['Id_Caja']            ='';
         $_SESSION['Mensaje']            ='';
         $_SESSION['Estilo']             ='';
         $_SESSION['Descarga']            ='';

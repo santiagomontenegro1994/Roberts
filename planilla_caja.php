@@ -2,25 +2,31 @@
 ob_start();
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
+// Verificar primero si el usuario está logueado
+if (empty($_SESSION['Usuario_Nombre'])) {
     header('Location: cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php'); // Incluir encabezado
-require('barraLateral.inc.php'); // Incluir barra lateral
+require('encabezado.inc.php');
+require('barraLateral.inc.php');
 require_once 'funciones/conexion.php';
 
 $MiConexion = ConexionBD();
 
-// Manejar la actualización de Caja Inicial
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $idCaja = $_POST['idCaja'];
-    $cajaInicial = $_POST['cajaInicial'];
+// Verificar si la caja está seleccionada
+//if (!isset($_SESSION['Id_Caja']) || empty($_SESSION['Id_Caja'])) {
+//    die('<div class="alert alert-danger text-center mt-4">No hay caja seleccionada. Por favor, seleccione una caja antes de continuar.</div>');
+//}
 
-    // Validar los datos
-    if (!empty($idCaja) && is_numeric($cajaInicial)) {
-        // Actualizar el valor de Caja Inicial en la base de datos
+$idCaja = (int)$_SESSION['Id_Caja'];
+
+// Manejar la actualización de Caja Inicial
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idCaja'])){
+    $postIdCaja = (int)$_POST['idCaja'];
+    $cajaInicial = (float)$_POST['cajaInicial'];
+
+    if ($postIdCaja === $idCaja && is_numeric($cajaInicial)) {
         $query = "UPDATE caja SET cajaInicial = ? WHERE idCaja = ?";
         $stmt = $MiConexion->prepare($query);
         $stmt->bind_param("di", $cajaInicial, $idCaja);
@@ -29,64 +35,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: planilla_caja.php?mensaje=actualizado");
             exit;
         } else {
-            echo "Error al actualizar Caja Inicial: " . $MiConexion->error;
+            echo '<div class="alert alert-danger">Error al actualizar Caja Inicial: ' . $MiConexion->error . '</div>';
         }
     } else {
-        echo "Datos inválidos.";
+        echo '<div class="alert alert-danger">Datos inválidos o ID de caja no coincide</div>';
     }
 }
 
-// Obtener los datos de la tabla `caja`
+// Obtener los datos de la caja específica
 $queryCaja = "SELECT c.idCaja, c.Fecha, c.idTurno, c.cajaInicial
               FROM caja c
-              ORDER BY c.Fecha DESC";
-$resultadoCaja = $MiConexion->query($queryCaja);
+              WHERE c.idCaja = ?";
+$stmtCaja = $MiConexion->prepare($queryCaja);
+$stmtCaja->bind_param("i", $idCaja);
+$stmtCaja->execute();
+$resultadoCaja = $stmtCaja->get_result();
 
-// Calcular los totales dinámicamente
-$queryTotales = "SELECT dc.idCaja, tp.denominacion AS metodoPago, SUM(dc.monto) AS totalMonto
+if ($resultadoCaja->num_rows === 0) {
+    die('<div class="alert alert-danger text-center mt-4">No se encontró la caja con ID: ' . $idCaja . '</div>');
+}
+
+// Calcular los totales solo para esta caja
+$queryTotales = "SELECT tp.denominacion AS metodoPago, SUM(dc.monto) AS totalMonto
                  FROM detalle_caja dc
                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                 GROUP BY dc.idCaja, tp.denominacion";
-$resultadoTotales = $MiConexion->query($queryTotales);
+                 WHERE dc.idCaja = ?
+                 GROUP BY tp.denominacion";
+$stmtTotales = $MiConexion->prepare($queryTotales);
+$stmtTotales->bind_param("i", $idCaja);
+$stmtTotales->execute();
+$resultadoTotales = $stmtTotales->get_result();
 
-// Crear un array para almacenar los totales por caja
-$totalesPorCaja = [];
+$totalesPorCaja = [
+    'totalEfectivo' => 0,
+    'totalTransferencia' => 0,
+    'totalTarjeta' => 0,
+];
+
 while ($fila = $resultadoTotales->fetch_assoc()) {
-    $idCaja = $fila['idCaja'];
     $metodoPago = $fila['metodoPago'];
     $totalMonto = $fila['totalMonto'];
 
-    if (!isset($totalesPorCaja[$idCaja])) {
-        $totalesPorCaja[$idCaja] = [
-            'totalEfectivo' => 0,
-            'totalTransferencia' => 0,
-            'totalTarjeta' => 0,
-        ];
-    }
-
-    // Asignar los totales según el método de pago
     if ($metodoPago === 'Efectivo') {
-        $totalesPorCaja[$idCaja]['totalEfectivo'] = $totalMonto;
+        $totalesPorCaja['totalEfectivo'] = $totalMonto;
     } elseif ($metodoPago === 'Transferencia') {
-        $totalesPorCaja[$idCaja]['totalTransferencia'] = $totalMonto;
+        $totalesPorCaja['totalTransferencia'] = $totalMonto;
     } elseif ($metodoPago === 'Tarjeta') {
-        $totalesPorCaja[$idCaja]['totalTarjeta'] = $totalMonto;
+        $totalesPorCaja['totalTarjeta'] = $totalMonto;
     }
 }
 
-// Obtener los detalles de la tabla `detalle_caja`
-$queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, ts.denominacion AS tipoServicio, dc.monto
+// Obtener los detalles de la caja específica
+$queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
+                     ts.denominacion AS tipoServicio, dc.monto
                      FROM detalle_caja dc
                      JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                      JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
+                     WHERE dc.idCaja = ?
                      ORDER BY dc.idDetalleCaja DESC";
-$resultadoDetalleCaja = $MiConexion->query($queryDetalleCaja);
+$stmtDetalleCaja = $MiConexion->prepare($queryDetalleCaja);
+$stmtDetalleCaja->bind_param("i", $idCaja);
+$stmtDetalleCaja->execute();
+$resultadoDetalleCaja = $stmtDetalleCaja->get_result();
 
-// Verificar si la consulta de detalle_caja se ejecutó correctamente
 if (!$resultadoDetalleCaja) {
-    die("Error en la consulta de detalle_caja: " . $MiConexion->error);
+    die('<div class="alert alert-danger">Error en la consulta de detalle_caja: ' . $MiConexion->error . '</div>');
 }
+
+$filaCaja = $resultadoCaja->fetch_assoc();
+$cajaInicial = (float)$filaCaja['cajaInicial'];
+$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'];
+$totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
+$totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
+$cajaFuerte = $totalEfectivo - $cajaInicial;
 ?>
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilla de Caja</title>
+</head>
+
+<body>
 
 <main id="main" class="main">
 
@@ -104,44 +137,35 @@ if (!$resultadoDetalleCaja) {
                 <?php } ?>
 
                 <div class="container">
-                    <?php while ($fila = $resultadoCaja->fetch_assoc()) { 
-                        $idCaja = $fila['idCaja'];
-                        $cajaInicial = $fila['cajaInicial'];
-                        $totalEfectivo = $totalesPorCaja[$idCaja]['totalEfectivo'] ?? 0;
-                        $totalTransferencia = $totalesPorCaja[$idCaja]['totalTransferencia'] ?? 0;
-                        $totalTarjeta = $totalesPorCaja[$idCaja]['totalTarjeta'] ?? 0;
-                        $cajaFuerte = $totalEfectivo - $cajaInicial;
-                    ?>
-                            <!-- Encabezado con datos alineados horizontalmente -->
-                            <div class="row mt-2 align-items-center">
-                                <!-- Caja Inicial a la izquierda -->
-                                <div class="col-12 col-md-6 d-flex flex-wrap align-items-center">
-                                    <form action="planilla_caja.php" method="POST" class="d-inline d-flex flex-wrap align-items-center">
-                                        <input type="hidden" name="idCaja" value="<?php echo $idCaja; ?>">
-                                        <label for="cajaInicial_<?php echo $idCaja; ?>" class="me-2 mb-2 mb-md-0"><strong>Caja Inicial:</strong></label>
-                                        <input type="number" step="0.01" name="cajaInicial" id="cajaInicial_<?php echo $idCaja; ?>" 
-                                               value="<?php echo number_format($cajaInicial, 2, '.', ''); ?>" 
-                                               class="form-control form-control-sm text-center w-auto me-2 mb-2 mb-md-0">
-                                        <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
-                                    </form>
-                                </div>
+                    <!-- Encabezado con datos alineados horizontalmente -->
+                    <div class="row mt-2 align-items-center">
+                        <!-- Caja Inicial a la izquierda -->
+                        <div class="col-12 col-md-6 d-flex flex-wrap align-items-center">
+                            <form action="planilla_caja.php" method="POST" class="d-inline d-flex flex-wrap align-items-center">
+                                <input type="hidden" name="idCaja" value="<?php echo $idCaja; ?>">
+                                <label for="cajaInicial" class="me-2 mb-2 mb-md-0"><strong>Caja Inicial:</strong></label>
+                                <input type="number" step="0.01" name="cajaInicial" id="cajaInicial" 
+                                       value="<?php echo number_format($cajaInicial, 2, '.', ''); ?>" 
+                                       class="form-control form-control-sm text-center w-auto me-2 mb-2 mb-md-0">
+                                <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
+                            </form>
+                        </div>
 
-                                <!-- Caja ID -->
-                                <div class="col-12 col-md-2">
-                                    <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
-                                </div>
+                        <!-- Caja ID -->
+                        <div class="col-12 col-md-2">
+                            <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
+                        </div>
 
-                                <!-- Turno -->
-                                <div class="col-12 col-md-2">
-                                    <p><strong>Turno:</strong> <?php echo $fila['idTurno']; ?></p>
-                                </div>
+                        <!-- Turno -->
+                        <div class="col-12 col-md-2">
+                            <p><strong>Turno:</strong> <?php echo $filaCaja['idTurno']; ?></p>
+                        </div>
 
-                                <!-- Fecha -->
-                                <div class="col-12 col-md-2">
-                                    <p><strong>Fecha:</strong> <?php echo $fila['Fecha']; ?></p>
-                                </div>
-                            </div>
-                    <?php } ?>
+                        <!-- Fecha -->
+                        <div class="col-12 col-md-2">
+                            <p><strong>Fecha:</strong> <?php echo $filaCaja['Fecha']; ?></p>
+                        </div>
+                    </div>
                 </div>
 
                 <script>
@@ -151,7 +175,7 @@ if (!$resultadoDetalleCaja) {
                         if (mensaje) {
                             mensaje.style.display = 'none';
                         }
-                    }, 3000); // 3000 milisegundos = 3 segundos
+                    }, 3000);
                 </script>
 
                 <h5 class="card-title pb-0 d-flex justify-content-between align-items-center">
@@ -182,7 +206,7 @@ if (!$resultadoDetalleCaja) {
                                     <td><?php echo $fila['idCaja']; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
                                     <td><?php echo $fila['tipoServicio']; ?></td>
-                                    <td><?php echo $_SESSION['Usuario_Nombre']; ?></td> <!-- Usuario desde la sesión -->
+                                    <td><?php echo $_SESSION['Usuario_Nombre']; ?></td>
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
                                     <td>
                                         <!-- Acciones -->
@@ -227,10 +251,9 @@ if (!$resultadoDetalleCaja) {
 
 <?php
   $_SESSION['Mensaje']='';
-  require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+  require ('footer.inc.php');
   ob_end_flush();
 ?>
 
 </body>
-
 </html>

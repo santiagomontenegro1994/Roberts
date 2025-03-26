@@ -2,9 +2,13 @@
 require_once 'funciones/conexion.php';
 require_once 'funciones/select_general.php';
 
-// Obtener información de la caja
+// Obtener información de la caja seleccionada
 $MiConexion = ConexionBD();
-$cajaActual = ObtenerInfoCaja($MiConexion, $_SESSION['Id_Caja'] ?? null);
+$cajaSeleccionada = null;
+
+if (!empty($_SESSION['Id_Caja'])) {
+    $cajaSeleccionada = Obtener_Info_Caja($MiConexion, $_SESSION['Id_Caja']);
+}
 $MiConexion->close();
 ?>
 <!DOCTYPE html>
@@ -28,7 +32,7 @@ $MiConexion->close();
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link
-    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i"
     rel="stylesheet">
 
   <!-- Bootstrap personalizado -->
@@ -65,10 +69,16 @@ $MiConexion->close();
 
     <nav class="header-nav ms-auto">
         <ul class="d-flex align-items-center">
-            <!-- Caja Actual -->
+            <!-- Mostrar información de la caja seleccionada -->
             <li class="nav-item me-3">
                 <span class="badge bg-primary text-white px-3 py-2">
-                    <?php echo $cajaActual; ?>
+                    <?php
+                    if ($cajaSeleccionada) {
+                        echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['idTurno'];
+                    } else {
+                        echo "Sin caja seleccionada";
+                    }
+                    ?>
                 </span>
             </li>
 

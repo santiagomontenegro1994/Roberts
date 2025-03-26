@@ -1,20 +1,14 @@
 <?php
+ob_start();
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
+if (empty($_SESSION['Usuario_Nombre'])) {
     header('Location: cerrarsesion.php');
     exit;
 }
 
-// Validar si hay una caja seleccionada
-if (empty($_SESSION['Id_Caja'])) {
-    die('<div class="alert alert-danger text-center mt-4">No hay caja seleccionada. Por favor, seleccione una caja antes de continuar.</div>');
-    header('Location: listados_caja.php');
-    exit;
-}
-
-require('encabezado.inc.php'); // Incluir encabezado
-require('barraLateral.inc.php'); // Incluir barra lateral
+require('encabezado.inc.php');
+require('barraLateral.inc.php');
 require_once 'funciones/conexion.php';
 require_once 'funciones/select_general.php';
 
@@ -28,23 +22,33 @@ $Mensaje = '';
 $Estilo = 'warning';
 
 if (!empty($_POST['BotonRegistrar'])) {
-    // Validar los datos del formulario
-    $idCaja = $_SESSION['Id_Caja'] ?? null;
-    $idTipoPago = $_POST['idTipoPago'] ?? null;
-    $idTipoServicio = $_POST['idTipoServicio'] ?? null;
-    $idUsuario = $_SESSION['Usuario_Id'] ?? null;
-    $monto = $_POST['ValorDinero'] ?? null;
+    // Validar y limpiar los datos del formulario
+    $idCaja = isset($_SESSION['Id_Caja']) ? (int)$_SESSION['Id_Caja'] : null;
+    $idTipoPago = isset($_POST['idTipoPago']) ? (int)$_POST['idTipoPago'] : null;
+    $idTipoServicio = isset($_POST['idTipoServicio']) ? (int)$_POST['idTipoServicio'] : null;
+    $idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : null;
+    $monto = isset($_POST['ValorDinero']) ? (float)$_POST['ValorDinero'] : null;
 
-    if ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
+    // Verificar si $_SESSION['Id_Caja'] tiene contenido
+    if (empty($idCaja)) {
+        $Mensaje = 'Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.';
+        $Estilo = 'danger';
+    } elseif ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
         // Insertar el detalle de venta en la base de datos
-        $query = "INSERT INTO detalle_venta (idCaja, idTipoPago, idTipoServicio, idUsuario, monto) 
+        $query = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto) 
                   VALUES (?, ?, ?, ?, ?)";
         $stmt = $MiConexion->prepare($query);
-        $stmt->bind_param("iiidf", $idCaja, $idTipoPago, $idTipoServicio, $idUsuario, $monto);
+        
+        // Cambiar "iiidf" por "iiiid" (el monto es double, no float)
+        $stmt->bind_param("iiiid", $idCaja, $idTipoPago, $idTipoServicio, $idUsuario, $monto);
 
         if ($stmt->execute()) {
             $Mensaje = 'Detalle de venta registrado correctamente.';
             $Estilo = 'success';
+            
+            // Redirigir para evitar reenvío del formulario
+            header("Location: planilla_caja.php");
+            exit;
         } else {
             $Mensaje = 'Error al registrar el detalle de venta: ' . $stmt->error;
             $Estilo = 'danger';
@@ -58,7 +62,7 @@ if (!empty($_POST['BotonRegistrar'])) {
 }
 
 $MiConexion->close();
-
+ob_end_flush(); // Envía el contenido del búfer al navegador
 ?>
 
   <main id="main" class="main">
@@ -160,6 +164,10 @@ require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro arc
         });
     });
 </script>
+
+<?php
+ob_end_flush();
+?>
 
 </body>
 
