@@ -28,8 +28,11 @@ if (!empty($_POST['BotonRegistrar'])) {
 
     // Verificar si $_SESSION['Id_Caja'] tiene contenido
     if (empty($idCaja)) {
-        $_SESSION['Mensaje'] = 'Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.';
-        $_SESSION['Estilo'] = 'danger';
+        echo "<script>
+            alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.');
+            window.location.href = 'index.php'; // Cambia esto si necesitas redirigir a otra página
+        </script>";
+        exit;
     } elseif ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
         // Insertar el detalle de venta en la base de datos
         $query = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto) 
@@ -167,3 +170,4 @@ ob_end_flush();
 </body>
 
 </html>
+```php

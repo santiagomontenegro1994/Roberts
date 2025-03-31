@@ -52,7 +52,11 @@ $stmtCaja->execute();
 $resultadoCaja = $stmtCaja->get_result();
 
 if ($resultadoCaja->num_rows === 0) {
-    die('<div class="alert alert-danger text-center mt-4">No se encontró la caja con ID: ' . $idCaja . '</div>');
+    echo "<script>
+        alert('No hay caja seleccionada, seleccione una caja antes de entrar a la planilla de caja');
+        window.location.href = 'index.php'; // Cambia 'menu_principal.php' por la ruta correcta al menú
+    </script>";
+    exit;
 }
 
 // Calcular los totales solo para esta caja
