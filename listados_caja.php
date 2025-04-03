@@ -42,7 +42,10 @@ if (!empty($_POST['BotonBuscar'])) {
 <section class="section">
     <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Listado de Cajas</h5>
+          <h5 class="card-title d-flex justify-content-between align-items-center">
+            Listado de Cajas
+            <a href="agregar_caja.php" class="btn btn-primary btn-sm">Agregar Caja</a>
+          </h5>
           <?php if (!empty($_SESSION['Mensaje'])) { ?>
             <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
               <?php echo $_SESSION['Mensaje']; ?>
