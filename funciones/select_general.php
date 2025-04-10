@@ -1150,7 +1150,10 @@ function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
 }
 
 function Obtener_Info_Caja($Conexion, $idCaja) {
-    $sql = "SELECT Fecha, idTurno FROM caja WHERE idCaja = ?";
+    $sql = "SELECT c.Fecha, t.denominacion AS Turno 
+            FROM caja c
+            INNER JOIN turnos t ON c.idTurno = t.idTurno
+            WHERE c.idCaja = ?";
     $stmt = $Conexion->prepare($sql);
     $stmt->bind_param("i", $idCaja);
     $stmt->execute();
@@ -1161,5 +1164,29 @@ function Obtener_Info_Caja($Conexion, $idCaja) {
     }
 
     return null; // Si no se encuentra la caja
+}
+
+function Listar_Turnos($Conexion) {
+    $sql = "SELECT * FROM turnos";
+    $resultado = $Conexion->query($sql);
+    $Listado = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $Listado[] = $fila;
+    }
+    return $Listado;
+}
+
+function InsertarCaja($vConexion, $Fecha, $idTurno, $cajaInicial) {
+    // Crear la consulta SQL para insertar una nueva caja
+    $SQL_Insert = "INSERT INTO caja (Fecha, idTurno, cajaInicial) 
+                   VALUES ('$Fecha', $idTurno, $cajaInicial)";
+
+    // Ejecutar la consulta
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        // Si surge un error, finalizo la ejecución del script con un mensaje
+        die('<h4>Error al intentar insertar la caja: ' . mysqli_error($vConexion) . '</h4>');
+    }
+
+    return true; // Retornar true si la inserción fue exitosa
 }
 ?>

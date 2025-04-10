@@ -30,7 +30,7 @@ if (!empty($_POST['BotonRegistrar'])) {
     if (empty($idCaja)) {
         echo "<script>
             alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.');
-            window.location.href = 'index.php'; // Cambia esto si necesitas redirigir a otra página
+            window.location.href = 'index.php';
         </script>";
         exit;
     } elseif ($idCaja && $idTipoPago && $idTipoServicio && $idUsuario && $monto > 0) {
@@ -82,6 +82,13 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 
           <!-- Sección de Métodos de Pago -->
         <form method="post">
+            <?php if (!empty($_SESSION['Mensaje'])) { ?>
+                <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissible fade show" role="alert">
+                    <?php echo $_SESSION['Mensaje']; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); // Limpiar el mensaje después de mostrarlo ?>
+            <?php } ?>
             <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
                 <a href="listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
@@ -170,4 +177,3 @@ ob_end_flush();
 </body>
 
 </html>
-```php

@@ -140,6 +140,17 @@ $cajaFuerte = $totalEfectivo - $cajaInicial;
                     </div>
                 <?php } ?>
 
+                <?php if (!empty($_SESSION['Mensaje'])) { ?>
+                    <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissible fade show" role="alert">
+                        <?php echo $_SESSION['Mensaje']; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php 
+                    // Vaciar los valores después de mostrarlos
+                    unset($_SESSION['Mensaje'], $_SESSION['Estilo']); 
+                    ?>
+                <?php } ?>
+
                 <div class="container">
                     <!-- Encabezado con datos alineados horizontalmente -->
                     <div class="row mt-2 align-items-center">

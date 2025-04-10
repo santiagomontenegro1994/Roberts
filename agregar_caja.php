@@ -14,43 +14,27 @@ $MiConexion = ConexionBD();
 require_once 'funciones/select_general.php';
 
 // Obtener los turnos disponibles desde la base de datos
-$Turnos = [];
-$queryTurnos = "SELECT idTurno, denominacion FROM turnos";
-$resultadoTurnos = $MiConexion->query($queryTurnos);
-if ($resultadoTurnos) {
-    while ($fila = $resultadoTurnos->fetch_assoc()) {
-        $Turnos[] = $fila;
-    }
-}
-
-$Mensaje = '';
-$Estilo = 'warning';
+$Turnos = Listar_Turnos($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
     $Fecha = !empty($_POST['Fecha']) ? $_POST['Fecha'] : null;
     $idTurno = !empty($_POST['idTurno']) ? (int)$_POST['idTurno'] : null;
-    $cajaInicial = !empty($_POST['cajaInicial']) ? (float)$_POST['cajaInicial'] : null;
+    $cajaInicial = !empty($_POST['cajaInicial']) ? (int)$_POST['cajaInicial'] : null;
 
     if ($Fecha && $idTurno && $cajaInicial >= 0) {
-        // Insertar la nueva caja en la base de datos
-        $query = "INSERT INTO caja (Fecha, idTurno, cajaInicial) VALUES (?, ?, ?)";
-        $stmt = $MiConexion->prepare($query);
-        $stmt->bind_param("sid", $Fecha, $idTurno, $cajaInicial);
-
-        if ($stmt->execute()) {
-            $Mensaje = 'La caja se ha registrado correctamente.';
-            $Estilo = 'success';
+        // Llamar a la función para insertar la caja
+        if (InsertarCaja($MiConexion, $Fecha, $idTurno, $cajaInicial)) {
+            $_SESSION['Mensaje'] = 'La caja se ha registrado correctamente.';
+            $_SESSION['Estilo'] = 'success';
             $_POST = array(); // Limpiar los datos del formulario
         } else {
-            $Mensaje = 'Error al registrar la caja: ' . $stmt->error;
-            $Estilo = 'danger';
+            $_SESSION['Mensaje'] = 'Error al registrar la caja.';
+            $_SESSION['Estilo'] = 'danger';
         }
-
-        $stmt->close();
     } else {
-        $Mensaje = 'Por favor, complete todos los campos correctamente.';
-        $Estilo = 'warning';
+        $_SESSION['Mensaje'] = 'Por favor, complete todos los campos correctamente.';
+        $_SESSION['Estilo'] = 'warning';
     }
 }
 
@@ -78,10 +62,12 @@ $MiConexion->close();
 
                 <!-- Formulario -->
                 <form method="post">
-                    <?php if (!empty($Mensaje)) { ?>
-                        <div class="alert alert-<?php echo $Estilo; ?> alert-dismissable">
-                            <?php echo $Mensaje; ?>
+                    <?php if (!empty($_SESSION['Mensaje'])) { ?>
+                        <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissible fade show" role="alert">
+                            <?php echo $_SESSION['Mensaje']; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
+                        <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); // Limpiar el mensaje después de mostrarlo ?>
                     <?php } ?>
 
                     <div class="row mb-3">
@@ -118,6 +104,7 @@ $MiConexion->close();
                     <div class="text-center">
                         <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
                         <button type="reset" class="btn btn-secondary">Reset</button>
+                        <a href="listados_caja.php" class="btn btn-info">Volver a Listado</a>
                     </div>
                 </form><!-- End Formulario -->
 

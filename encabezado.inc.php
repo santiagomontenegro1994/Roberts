@@ -74,7 +74,7 @@ $MiConexion->close();
                 <span class="badge bg-primary text-white px-3 py-2">
                     <?php
                     if ($cajaSeleccionada) {
-                        echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['idTurno'];
+                        echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['Turno'];
                     } else {
                         echo "Sin caja seleccionada";
                     }
