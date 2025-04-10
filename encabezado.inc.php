@@ -58,34 +58,35 @@ $MiConexion->close();
 <body>
 
   <!-- ======= Header ======= -->
-  <header id="header" class="header fixed-top d-flex align-items-center">
+  <header id="header" class="header fixed-top d-flex align-items-center justify-content-between px-3">
 
-    <div class="d-flex align-items-center justify-content-between">
+    <!-- Logo -->
+    <div class="d-flex align-items-center">
         <a href="index.php" class="logo d-flex align-items-center">
-            <img src="assets/img/logo.png" alt="Logo">
+            <img src="assets/img/logo.png" alt="Logo" class="img-fluid me-2">
         </a>
-        <i class="bi bi-list toggle-sidebar-btn"></i>
+        <i class="bi bi-list toggle-sidebar-btn ms-3"></i>
     </div><!-- End Logo -->
 
+    <!-- Información de la caja seleccionada -->
+    <div class="d-flex align-items-center justify-content-center flex-column flex-md-row mx-auto">
+        <span class="badge bg-primary text-white px-3 py-2 text-wrap text-center caja-seleccionada">
+            <?php
+            if ($cajaSeleccionada) {
+                echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['Turno'];
+            } else {
+                echo "Sin caja seleccionada";
+            }
+            ?>
+        </span>
+    </div>
+
+    <!-- Usuario -->
     <nav class="header-nav ms-auto">
         <ul class="d-flex align-items-center">
-            <!-- Mostrar información de la caja seleccionada -->
-            <li class="nav-item me-3">
-                <span class="badge bg-primary text-white px-3 py-2">
-                    <?php
-                    if ($cajaSeleccionada) {
-                        echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['Turno'];
-                    } else {
-                        echo "Sin caja seleccionada";
-                    }
-                    ?>
-                </span>
-            </li>
-
-            <!-- Usuario -->
             <li class="nav-item dropdown pe-3">
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-                    <img src="assets/img/user.jpg" alt="Profile" class="rounded-circle">
+                    <img src="assets/img/user.jpg" alt="Profile" class="rounded-circle img-fluid me-2">
                     <span class="d-none d-md-block dropdown-toggle ps-2"><?php echo $_SESSION['Usuario_Nombre'] . ' ' . $_SESSION['Usuario_Apellido']; ?></span>
                 </a><!-- End Profile Image Icon -->
 

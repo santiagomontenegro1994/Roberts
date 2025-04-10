@@ -1017,17 +1017,16 @@ function Datos_Tipo_Pago($vConexion , $vIdTipoPago) {
 
 }
 
-function Listar_Tipos_Servicio($conexion) {
-    $sql = "SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo = 1";
-    $resultado = mysqli_query($conexion, $sql);
+function Listar_Tipos_Servicios($vConexion) {
+    $SQL = "SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo = 1";
+    $rs = mysqli_query($vConexion, $SQL);
 
-    $tiposServicio = array();
-    if ($resultado) {
-        while ($fila = mysqli_fetch_assoc($resultado)) {
-            $tiposServicio[] = $fila;
-        }
+    $tiposServicios = array();
+    while ($row = mysqli_fetch_assoc($rs)) {
+        $tiposServicios[] = $row;
     }
-    return $tiposServicio;
+
+    return $tiposServicios;
 }
 
 function InsertarTipoServicio($vConexion) {
@@ -1189,4 +1188,95 @@ function InsertarCaja($vConexion, $Fecha, $idTurno, $cajaInicial) {
 
     return true; // Retornar true si la inserción fue exitosa
 }
+
+function Anular_Venta($vConexion, $vIdConsulta) {
+    // Verificar si el registro existe en la tabla detalle_caja
+    $SQL_MiConsulta = "SELECT idDetalleCaja FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
+
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idDetalleCaja'])) {
+        // Si el registro existe, eliminarlo
+        $SQL_Delete = "DELETE FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
+        if (mysqli_query($vConexion, $SQL_Delete)) {
+            return true; // Eliminación exitosa
+        } else {
+            return false; // Error al eliminar
+        }
+    } else {
+        return false; // No se encontró el registro
+    }
+}
+
+function Modificar_Venta($vConexion) {
+    $idDetalleCaja = mysqli_real_escape_string($vConexion, $_POST['idDetalleCaja']);
+    $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
+    $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
+    $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['idTipoServicio']);
+    $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
+    $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
+
+    $SQL_MiConsulta = "UPDATE detalle_caja
+                       SET idCaja = '$idCaja',
+                           idTipoPago = '$idTipoPago',
+                           idTipoServicio = '$idTipoServicio',
+                           idUsuario = '$idUsuario',
+                           monto = '$monto'
+                       WHERE idDetalleCaja = '$idDetalleCaja'";
+
+    if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true; // Modificación exitosa
+    } else {
+        return false; // Error al modificar
+    }
+}
+
+function Validar_Venta() {
+    $_SESSION['Mensaje'] = '';
+
+    if (empty($_POST['idCaja'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar una caja. <br />';
+    }
+    if (empty($_POST['idTipoPago'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
+    }
+    if (empty($_POST['idTipoServicio'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de servicio. <br />';
+    }
+    if (empty($_POST['idUsuario'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un usuario. <br />';
+    }
+    if (empty($_POST['Monto']) || !is_numeric($_POST['Monto']) || $_POST['Monto'] <= 0) {
+        $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido. <br />';
+    }
+
+    // Limpiar espacios y caracteres no deseados
+    foreach ($_POST as $Id => $Valor) {
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function Datos_Venta($vConexion, $vIdDetalleCaja) {
+    $SQL = "SELECT * FROM detalle_caja WHERE idDetalleCaja = $vIdDetalleCaja";
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_assoc($rs);
+    if (!empty($data)) {
+        return array(
+            'idDetalleCaja' => $data['idDetalleCaja'],
+            'idCaja' => $data['idCaja'],
+            'idTipoPago' => $data['idTipoPago'],
+            'idTipoServicio' => $data['idTipoServicio'], // Asegúrate de incluir este campo
+            'Monto' => $data['monto']
+        );
+    }
+
+    return array();
+}
+
 ?>

@@ -225,13 +225,13 @@ $cajaFuerte = $totalEfectivo - $cajaInicial;
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
                                     <td>
                                         <!-- Acciones -->
-                                        <a href="eliminar_detalle_caja.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
+                                        <a href="eliminar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
                                            title="Anular" 
                                            onclick="return confirm('¿Confirma anular este detalle de caja?');">
                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
                                         </a>
 
-                                        <a href="modificar_detalle_caja.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
+                                        <a href="modificar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
                                            title="Modificar">
                                             <i class="bi bi-pencil-fill text-warning fs-5"></i>
                                         </a>

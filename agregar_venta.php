@@ -15,7 +15,7 @@ require_once 'funciones/select_general.php';
 $MiConexion = ConexionBD();
 
 // Obtener los tipos de servicio desde la base de datos
-$TiposServicio = Listar_Tipos_Servicio($MiConexion);
+$TiposServicio = Listar_Tipos_Servicios($MiConexion);
 $TiposPagos = Listar_Tipos_Pagos($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {

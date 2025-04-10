@@ -578,6 +578,18 @@ main {
   background-color: #f6f9ff;
 }
 
+.caja-seleccionada {
+  font-size: 0.9rem; /* Tamaño de texto más pequeño */
+  padding: 0.5rem 1rem; /* Reducir el padding */
+}
+
+@media (max-width: 576px) { /* Para pantallas pequeñas (mobile) */
+  .caja-seleccionada {
+      font-size: 0.6rem; /* Reducir aún más el tamaño del texto */
+      padding: 0.2rem 0.7rem; /* Ajustar el padding */
+      margin: 0.2rem 0.7rem; /* Ajustar el padding */
+  }
+}
 /*--------------------------------------------------------------
 # Sidebar
 --------------------------------------------------------------*/
