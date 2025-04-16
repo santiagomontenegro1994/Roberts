@@ -91,10 +91,11 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
 
 // Obtener los detalles de la caja específica
 $queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
-                     ts.denominacion AS tipoServicio, dc.monto
+                     ts.denominacion AS tipoServicio, u.usuario, dc.monto
                      FROM detalle_caja dc
                      JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                      JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
+                     JOIN usuarios u ON dc.idUsuario = u.idUsuario
                      WHERE dc.idCaja = ?
                      ORDER BY dc.idDetalleCaja DESC";
 $stmtDetalleCaja = $MiConexion->prepare($queryDetalleCaja);
@@ -111,7 +112,7 @@ $cajaInicial = (float)$filaCaja['cajaInicial'];
 $totalEfectivo = (float)$totalesPorCaja['totalEfectivo'];
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaFuerte = $totalEfectivo - $cajaInicial;
+$cajaFuerte = $totalEfectivo ;
 ?>
 
 <!DOCTYPE html>
@@ -206,7 +207,6 @@ $cajaFuerte = $totalEfectivo - $cajaInicial;
                         <thead>
                             <tr>
                                 <th>ID Detalle</th>
-                                <th>ID Caja</th>
                                 <th>Método de Pago</th>
                                 <th>Tipo de Servicio</th>
                                 <th>Usuario</th>
@@ -218,10 +218,9 @@ $cajaFuerte = $totalEfectivo - $cajaInicial;
                             <?php while ($fila = $resultadoDetalleCaja->fetch_assoc()) { ?>
                                 <tr>
                                     <td><?php echo $fila['idDetalleCaja']; ?></td>
-                                    <td><?php echo $fila['idCaja']; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
                                     <td><?php echo $fila['tipoServicio']; ?></td>
-                                    <td><?php echo $_SESSION['Usuario_Nombre']; ?></td>
+                                    <td><?php echo $fila['usuario']; ?></td>
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
                                     <td>
                                         <!-- Acciones -->

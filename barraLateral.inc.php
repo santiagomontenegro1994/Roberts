@@ -93,6 +93,11 @@
             </a>
           </li>
           <li>
+            <a href="retirar_caja.php">
+              <i class="bi bi-circle"></i><span>Retirar</span>
+            </a>
+          </li>
+          <li>
             <a href="planilla_caja.php">
               <i class="bi bi-circle"></i><span>Planilla de Caja</span>
             </a>
