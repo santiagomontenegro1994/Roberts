@@ -97,45 +97,61 @@ ob_end_flush();
                 <input type="hidden" name="idTipoPago" id="idTipoPago">
             </div>
 
-            <!-- Sección de Tipos de Retiro -->
-            <div class="text-center mb-4 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
-            </div>
-            <div class="d-flex flex-wrap justify-content-center">
-                <div class="dropdown mx-2 my-2">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProveedores" data-bs-toggle="dropdown" aria-expanded="false">
-                        Proveedores
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownProveedores">
-                        <?php foreach ($Proveedores as $proveedor) { ?>
-                            <li><a class="dropdown-item tipo-servicio" data-id="<?php echo $proveedor['idProveedor']; ?>"><?php echo $proveedor['nombre']; ?></a></li>
-                        <?php } ?>
-                    </ul>
+            <div class="container">
+                <!-- Sección de Tipos de Retiro -->
+                <div class="text-center mb-4">
+                    <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
                 </div>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="3">Sueldos</button>
-                <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="4">Etc.</button>
-                <input type="hidden" name="idTipoServicio" id="idTipoServicio">
+                <div class="row justify-content-center mb-4">
+                    <!-- Select de Proveedores -->
+                    <div class="col-auto">
+                        <select class="form-select btn btn-secondary text-start" name="idProveedor" id="idProveedor" style="width: 120px;">
+                            <option value="" selected disabled>Proveedor</option>
+                            <?php foreach ($Proveedores as $proveedor) { ?>
+                                <option value="<?php echo $proveedor['ID_PROVEEDOR']; ?>">
+                                    <?php echo $proveedor['NOMBRE']; ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                    <!-- Botones de Sueldos y Etc. -->
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="3">Sueldos</button>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="4">Etc.</button>
+                    </div>
+                </div>
             </div>
+            <input type="hidden" name="idTipoServicio" id="idTipoServicio">
 
             <!-- Campo para ingresar el valor de dinero -->
-            <div class="text-center mt-4">
-                <label for="valorDinero" class="form-label">Ingrese el Valor de Dinero</label>
-                <div class="input-group w-50 mx-auto">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control text-center" id="valorDinero" name="ValorDinero" placeholder="0" min="0" step="1">
+            <div class="row justify-content-center mb-4">
+                <div class="col-md-6 text-center">
+                    <label for="valorDinero" class="form-label">Ingrese el Valor de Dinero</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control text-center" id="valorDinero" name="ValorDinero" placeholder="0" min="0" step="1">
+                    </div>
                 </div>
             </div>
 
             <!-- Campo para observaciones -->
-            <div class="text-center mt-4">
-                <label for="observaciones" class="form-label">Observaciones</label>
-                <textarea class="form-control w-50 mx-auto" id="observaciones" name="Observaciones" rows="3" placeholder="Ingrese comentarios u observaciones"></textarea>
+            <div class="row justify-content-center mb-4">
+                <div class="col-md-6 text-center">
+                    <label for="observaciones" class="form-label">Observaciones</label>
+                    <textarea class="form-control" id="observaciones" name="Observaciones" rows="3" placeholder="Ingrese comentarios u observaciones"></textarea>
+                </div>
             </div>
 
             <!-- Botones de registrar o reset -->
-            <div class="text-center mt-4">
-                <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Registrar Retiro</button>
-                <button type="reset" class="btn btn-secondary">Reset</button>
+            <div class="row justify-content-center">
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Registrar Retiro</button>
+                </div>
+                <div class="col-auto">
+                    <button type="reset" class="btn btn-secondary">Reset</button>
+                </div>
             </div>
         </form><!-- End Horizontal Form -->
         </div>
@@ -167,6 +183,58 @@ ob_end_flush();
             button.classList.remove('btn-secondary');
             button.classList.add('btn-primary');
             document.getElementById('idTipoServicio').value = button.getAttribute('data-id');
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectProveedor = document.getElementById('idProveedor');
+        const tipoServicioButtons = document.querySelectorAll('.tipo-servicio');
+        const hiddenInput = document.getElementById('idTipoServicio');
+
+        // Manejar la selección del proveedor en el select
+        selectProveedor.addEventListener('change', function () {
+            // Cambiar el color del select a primary si se selecciona un proveedor
+            selectProveedor.classList.remove('btn-secondary');
+            selectProveedor.classList.add('btn-primary');
+
+            // Deshabilitar los botones de los lados
+            tipoServicioButtons.forEach(button => {
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-secondary');
+                button.disabled = true;
+            });
+
+            // Limpiar el valor del campo oculto
+            hiddenInput.value = '';
+        });
+
+        // Manejar la selección de los botones de los lados
+        tipoServicioButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                // Cambiar el color del botón seleccionado a primary
+                tipoServicioButtons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                });
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-primary');
+
+                // Deshabilitar el select y restablecer su color
+                selectProveedor.value = '';
+                selectProveedor.classList.remove('btn-primary');
+                selectProveedor.classList.add('btn-secondary');
+                selectProveedor.disabled = true;
+
+                // Actualizar el valor del campo oculto
+                hiddenInput.value = this.getAttribute('data-id');
+            });
+        });
+
+        // Habilitar el select si se hace clic fuera de los botones
+        document.addEventListener('click', function (e) {
+            if (!e.target.classList.contains('tipo-servicio')) {
+                selectProveedor.disabled = false;
+            }
         });
     });
 </script>
