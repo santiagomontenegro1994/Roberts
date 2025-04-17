@@ -59,7 +59,6 @@ if (!empty($_POST['BotonRegistrar'])) {
 }
 
 $MiConexion->close();
-ob_end_flush();
 ?>
 
 <main id="main" class="main">
@@ -240,6 +239,7 @@ ob_end_flush();
 </script>
 
 <?php
+require('footer.inc.php'); // Incluir footer
 ob_end_flush();
 ?>
 

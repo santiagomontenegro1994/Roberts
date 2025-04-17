@@ -71,16 +71,16 @@ $MiConexion->close();
                     <?php } ?>
 
                     <div class="row mb-3">
-                        <label for="Fecha" class="col-sm-2 col-form-label">Fecha</label>
-                        <div class="col-sm-10">
+                        <!-- Campo de Fecha -->
+                        <div class="col-md-6">
+                            <label for="Fecha" class="form-label">Fecha</label>
                             <input type="date" class="form-control" name="Fecha" id="Fecha"
                                 value="<?php echo !empty($_POST['Fecha']) ? $_POST['Fecha'] : ''; ?>" required>
                         </div>
-                    </div>
 
-                    <div class="row mb-3">
-                        <label for="idTurno" class="col-sm-2 col-form-label">Turno</label>
-                        <div class="col-sm-10">
+                        <!-- Campo de Turno -->
+                        <div class="col-md-6">
+                            <label for="idTurno" class="form-label">Turno</label>
                             <select class="form-control" name="idTurno" id="idTurno" required>
                                 <option value="">Seleccione un turno</option>
                                 <?php foreach ($Turnos as $turno) { ?>

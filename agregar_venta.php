@@ -115,7 +115,6 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 <?php } ?>
                 <input type="hidden" name="idTipoServicio" id="idTipoServicio">
             </div>
-                
 
             <!-- Campo para ingresar el valor de dinero -->
             <div class="text-center mt-4">
@@ -123,6 +122,14 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 <div class="input-group w-50 mx-auto">
                     <span class="input-group-text">$</span>
                     <input type="number" class="form-control text-center" id="valorDinero" name="ValorDinero" placeholder="0" min="0" step="1">
+                </div>
+            </div>
+
+            <!-- Campo para observaciones -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-md-6 text-center">
+                    <label for="observaciones" class="form-label">Observaciones</label>
+                    <textarea class="form-control" id="observaciones" name="Observaciones" rows="3" placeholder="Ingrese comentarios u observaciones"></textarea>
                 </div>
             </div>
 
