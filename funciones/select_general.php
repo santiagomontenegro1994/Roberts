@@ -1176,17 +1176,140 @@ function Listar_Turnos($Conexion) {
 }
 
 function InsertarCaja($vConexion, $Fecha, $idTurno, $cajaInicial) {
-    // Crear la consulta SQL para insertar una nueva caja
-    $SQL_Insert = "INSERT INTO caja (Fecha, idTurno, cajaInicial) 
-                   VALUES ('$Fecha', $idTurno, $cajaInicial)";
 
-    // Ejecutar la consulta
-    if (!mysqli_query($vConexion, $SQL_Insert)) {
-        // Si surge un error, finalizo la ejecución del script con un mensaje
-        die('<h4>Error al intentar insertar la caja: ' . mysqli_error($vConexion) . '</h4>');
+    // Verificar si ya existe una caja para la misma fecha y turno
+    $SQL_Verificar = "SELECT COUNT(*) AS total FROM caja WHERE DATE(Fecha) = '$Fecha' AND idTurno = $idTurno";
+    $resultado = mysqli_query($vConexion, $SQL_Verificar);
+
+    if (!$resultado) {
+        return [
+            'success' => false,
+            'message' => 'Error al verificar caja existente: ' . mysqli_error($vConexion),
+            'style' => 'danger'
+        ];
     }
 
-    return true; // Retornar true si la inserción fue exitosa
+    $data = mysqli_fetch_assoc($resultado);
+    $total = isset($data['total']) ? (int)$data['total'] : 0;
+
+    if ($total > 0) {
+        return [
+            'success' => false,
+            'message' => 'Error: Ya existe una caja para esta fecha y turno.',
+            'style' => 'warning'
+        ];
+    }
+
+    // Ejecutar la inserción
+    $SQL_Insert = "INSERT INTO caja (Fecha, idTurno, cajaInicial) VALUES ('$Fecha', $idTurno, $cajaInicial)";
+    $resultado_insert = mysqli_query($vConexion, $SQL_Insert);
+
+    if (!$resultado_insert) {
+        return [
+            'success' => false,
+            'message' => 'Error al intentar insertar la caja: ' . mysqli_error($vConexion),
+            'style' => 'danger'
+        ];
+    }
+
+    return [
+        'success' => true,
+        'message' => 'Caja insertada correctamente.',
+        'style' => 'success'
+    ];
+}
+
+function Validar_Caja(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['Fecha']) < 1) {
+        $_SESSION['Mensaje'].='Debes seleccionar una fecha. <br />';
+    }
+    if (strlen($_POST['idTurno']) < 1) {
+        $_SESSION['Mensaje'].='Debes seleccionar un turno. <br />';
+    }
+    if (strlen($_POST['cajaIncial']) < 0) {
+        $_SESSION['Mensaje'].='Debes pober una caja inicial. <br />';
+    }
+    
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function Datos_Caja($vConexion, $vIdCaja) {
+    $DatosCaja = array();
+    // Asegurarse de que la consulta exista
+    $SQL = "SELECT * FROM caja WHERE idCaja = $vIdCaja";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs);
+    if (!empty($data)) {
+        $DatosCaja['IDCAJA'] = $data['idCaja'];
+        $DatosCaja['FECHA'] = $data['Fecha'];
+        $DatosCaja['IDTURNO'] = $data['idTurno'];
+        $DatosCaja['CAJA_INICIAL'] = $data['cajaInicial'];
+    }
+    return $DatosCaja;
+}
+
+function Modificar_Caja($vConexion) {
+    $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
+    $Fecha = mysqli_real_escape_string($vConexion, $_POST['Fecha']);
+    $idTurno = mysqli_real_escape_string($vConexion, $_POST['idTurno']);
+    $cajaInicial = mysqli_real_escape_string($vConexion, $_POST['cajaInicial']);
+
+    // Verificar si ya existe una caja para la misma fecha y turno, excluyendo la caja actual
+    $SQL_Verificar = "SELECT COUNT(*) AS total 
+                      FROM caja 
+                      WHERE DATE(Fecha) = '$Fecha' 
+                      AND idTurno = $idTurno 
+                      AND idCaja != $idCaja";
+    $resultado = mysqli_query($vConexion, $SQL_Verificar);
+
+    if (!$resultado) {
+        return [
+            'success' => false,
+            'message' => 'Error al verificar caja existente: ' . mysqli_error($vConexion),
+            'style' => 'danger'
+        ];
+    }
+
+    $data = mysqli_fetch_assoc($resultado);
+    $total = isset($data['total']) ? (int)$data['total'] : 0;
+
+    if ($total > 0) {
+        return [
+            'success' => false,
+            'message' => 'Error: Ya existe una caja para esta fecha y turno.',
+            'style' => 'warning'
+        ];
+    }
+
+    // Ejecutar la modificación
+    $SQL_MiConsulta = "UPDATE caja
+                       SET Fecha = '$Fecha',
+                           idTurno = $idTurno,
+                           cajaInicial = $cajaInicial
+                       WHERE idCaja = $idCaja";
+
+    if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return [
+            'success' => true,
+            'message' => 'La caja se ha modificado correctamente.',
+            'style' => 'success'
+        ];
+    } else {
+        return [
+            'success' => false,
+            'message' => 'Error al intentar modificar la caja: ' . mysqli_error($vConexion),
+            'style' => 'danger'
+        ];
+    }
 }
 
 function Anular_Venta($vConexion, $vIdConsulta) {

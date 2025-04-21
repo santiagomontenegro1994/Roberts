@@ -24,14 +24,11 @@ if (!empty($_POST['BotonRegistrar'])) {
 
     if ($Fecha && $idTurno && $cajaInicial >= 0) {
         // Llamar a la función para insertar la caja
-        if (InsertarCaja($MiConexion, $Fecha, $idTurno, $cajaInicial)) {
-            $_SESSION['Mensaje'] = 'La caja se ha registrado correctamente.';
-            $_SESSION['Estilo'] = 'success';
-            $_POST = array(); // Limpiar los datos del formulario
-        } else {
-            $_SESSION['Mensaje'] = 'Error al registrar la caja.';
-            $_SESSION['Estilo'] = 'danger';
-        }
+        $resultado = InsertarCaja($MiConexion, $Fecha, $idTurno, $cajaInicial);
+
+        // Manejar el resultado de la función
+        $_SESSION['Mensaje'] = $resultado['message'];
+        $_SESSION['Estilo'] = $resultado['style'];
     } else {
         $_SESSION['Mensaje'] = 'Por favor, complete todos los campos correctamente.';
         $_SESSION['Estilo'] = 'warning';
