@@ -43,8 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idCaja'])){
 }
 
 // Obtener los datos de la caja específica
-$queryCaja = "SELECT c.idCaja, c.Fecha, c.idTurno, c.cajaInicial
+$queryCaja = "SELECT c.idCaja, c.Fecha, turnos.denominacion, c.cajaInicial
               FROM caja c
+              JOIN turnos ON c.idTurno = turnos.idTurno
               WHERE c.idCaja = ?";
 $stmtCaja = $MiConexion->prepare($queryCaja);
 $stmtCaja->bind_param("i", $idCaja);
@@ -91,7 +92,7 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
 
 // Obtener los detalles de la caja específica
 $queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
-                     ts.denominacion AS tipoServicio, u.usuario, dc.monto
+                     ts.denominacion AS tipoServicio, u.usuario, dc.monto, dc.observaciones
                      FROM detalle_caja dc
                      JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                      JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
@@ -174,7 +175,7 @@ $cajaFuerte = $totalEfectivo ;
 
                         <!-- Turno -->
                         <div class="col-12 col-md-2">
-                            <p><strong>Turno:</strong> <?php echo $filaCaja['idTurno']; ?></p>
+                            <p><strong>Turno:</strong> <?php echo $filaCaja['denominacion']; ?></p>
                         </div>
 
                         <!-- Fecha -->
@@ -211,6 +212,7 @@ $cajaFuerte = $totalEfectivo ;
                                 <th>Tipo de Servicio</th>
                                 <th>Usuario</th>
                                 <th>Monto</th>
+                                <th>Observaciones</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -222,6 +224,7 @@ $cajaFuerte = $totalEfectivo ;
                                     <td><?php echo $fila['tipoServicio']; ?></td>
                                     <td><?php echo $fila['usuario']; ?></td>
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
+                                    <td><?php echo $fila['observaciones']; ?></td>
                                     <td>
                                         <!-- Acciones -->
                                         <a href="eliminar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 

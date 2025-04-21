@@ -1312,6 +1312,27 @@ function Modificar_Caja($vConexion) {
     }
 }
 
+function Anular_Caja($vConexion, $vIdCaja) {
+    // Verificar si la caja existe
+    $SQL_MiConsulta = "SELECT idCaja FROM caja WHERE idCaja = $vIdCaja";
+
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idCaja'])) {
+        // Si la caja existe, eliminarla
+        $SQL_Delete = "DELETE FROM caja WHERE idCaja = $vIdCaja";
+        if (mysqli_query($vConexion, $SQL_Delete)) {
+            return true; // Eliminación exitosa
+        } else {
+            return false; // Error al eliminar
+        }
+    } else {
+        return false; // No se encontró la caja
+    }
+}
+
 function Anular_Venta($vConexion, $vIdConsulta) {
     // Verificar si el registro existe en la tabla detalle_caja
     $SQL_MiConsulta = "SELECT idDetalleCaja FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
@@ -1400,6 +1421,29 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
     }
 
     return array();
+}
+
+function InsertarVenta($vConexion) {
+    // Preparar los valores para la inserción
+    $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
+    $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
+    $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['idTipoServicio']);
+    $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
+    $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
+    $idTipoOperacion = mysqli_real_escape_string($vConexion, $_POST['idTipoOperacion']);
+    $observaciones = !empty($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
+
+    // Construir la consulta SQL
+    $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto, idTipoOperacion, observaciones)
+                   VALUES ('$idCaja', '$idTipoPago', '$idTipoServicio', '$idUsuario', '$monto', '$idTipoOperacion', " . 
+                   ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+
+    // Ejecutar la consulta
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        die('<h4>Error al intentar insertar la venta: ' . mysqli_error($vConexion) . '</h4>');
+    }
+
+    return true;
 }
 
 ?>

@@ -99,12 +99,12 @@
           </li>
           <li>
             <a href="planilla_caja.php">
-              <i class="bi bi-circle"></i><span>Planilla de Caja</span>
+              <i class="bi bi-circle"></i><span>Planilla de Caja Actual</span>
             </a>
           </li>
           <li>
             <a href="listados_caja.php">
-              <i class="bi bi-circle"></i><span>Listados</span>
+              <i class="bi bi-circle"></i><span>Listados de cajas</span>
             </a>
           </li>
         </ul>
