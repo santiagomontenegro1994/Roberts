@@ -123,7 +123,7 @@ $cajaInicial = (float)$filaCaja['cajaInicial'];
 $totalEfectivo = (float)$totalesPorCaja['totalEfectivo'] + $cajaInicial; // Sumar la caja inicial al total efectivo
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaFuerte = $totalEfectivo - $cajaInicial; // Restar la caja inicial al total efectivo
+$cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja inicial al total efectivo
 ?>
 
 <!DOCTYPE html>

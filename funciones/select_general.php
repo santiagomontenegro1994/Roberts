@@ -1411,7 +1411,7 @@ function Validar_Venta() {
     if (empty($_POST['idTipoPago'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
     }
-    if (empty($_POST['idTipoServicio'])) {
+    if (empty($_POST['idDetalle'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de servicio. <br />';
     }
     if (empty($_POST['Monto']) || !is_numeric($_POST['Monto']) || $_POST['Monto'] <= 0) {

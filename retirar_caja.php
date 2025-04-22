@@ -19,33 +19,34 @@ $Proveedores = Listar_Proveedores($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
-    $_POST['idCaja'] = isset($_SESSION['Id_Caja']) ? (int)$_SESSION['Id_Caja'] : null;
-    $_POST['idTipoPago'] = isset($_POST['idTipoPago']) ? (int)$_POST['idTipoPago'] : null;
-    $_POST['idDetalle'] = isset($_POST['idDetalle']) ? (int)$_POST['idDetalle'] : null;
-    $_POST['idUsuario'] = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : null;
-    $_POST['Monto'] = isset($_POST['ValorDinero']) ? (float)$_POST['ValorDinero'] : null;
-    $_POST['idTipoOperacion'] = isset($_POST['idTipoOperacion']) ? (int)$_POST['idTipoOperacion'] : null;
-    $_POST['Observaciones'] = isset($_POST['Observaciones']) ? trim($_POST['Observaciones']) : null;
+    Validar_Venta();
 
-    if (empty($_POST['idCaja'])) {
-        echo "<script>
-            alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar el retiro.');
-            window.location.href = 'index.php';
-        </script>";
-        exit;
-    }
+    // Asignar el mensaje de validación a una variable local
+    $Mensaje = $_SESSION['Mensaje'];
+    $Estilo = 'danger'; // Estilo para mensajes de error
 
-    // Llamar al método InsertarVenta
-    if (InsertarVenta($MiConexion)) {
-        $_SESSION['Mensaje'] = 'Retiro registrado correctamente.';
-        $_SESSION['Estilo'] = 'success';
+    // Si no hay errores, proceder con la inserción
+    if (empty($Mensaje)) {
+        if (empty($_POST['idCaja'])) {
+            echo "<script>
+                alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar el retiro.');
+                window.location.href = 'index.php';
+            </script>";
+            exit;
+        }
 
-        // Redirigir para evitar reenvío del formulario
-        header("Location: planilla_caja.php");
-        exit;
-    } else {
-        $_SESSION['Mensaje'] = 'Error al registrar el retiro.';
-        $_SESSION['Estilo'] = 'danger';
+        // Llamar al método InsertarVenta
+        if (InsertarVenta($MiConexion)) {
+            $_SESSION['Mensaje'] = 'Retiro registrado correctamente.';
+            $_SESSION['Estilo'] = 'success';
+
+            // Redirigir para evitar reenvío del formulario
+            header("Location: planilla_caja.php");
+            exit;
+        } else {
+            $_SESSION['Mensaje'] = 'Error al registrar el retiro.';
+            $_SESSION['Estilo'] = 'danger';
+        }
     }
 }
 
@@ -71,13 +72,16 @@ $MiConexion->close();
 
           <!-- Sección de Métodos de Retiro -->
         <form method="post">
-            <?php if (!empty($_SESSION['Mensaje'])) { ?>
-                <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissible fade show" role="alert">
-                    <?php echo $_SESSION['Mensaje']; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <?php if (!empty($Mensaje)) { ?>
+                <div class="alert alert-<?php echo $Estilo; ?> alert-dismissable">
+                <?php echo $Mensaje; ?>
                 </div>
-                <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); ?>
+                <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); // Limpiar el mensaje después de mostrarlo ?>
             <?php } ?>
+
+            <!-- Campo oculto para idCaja -->
+            <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
+
             <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 card-title">Seleccione el Método de Retiro</h6>
             </div>
@@ -93,18 +97,10 @@ $MiConexion->close();
                     <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
                 </div>
                 <div class="row justify-content-center mb-4">
-                    <!-- Select de Proveedores -->
+                    <!-- Botones de Proveedor, Sueldos y Etc. -->
                     <div class="col-auto">
-                        <select class="form-select btn btn-secondary text-start" name="idProveedor" id="idProveedor" style="width: 120px;">
-                            <option value="" selected disabled>Proveedor</option>
-                            <?php foreach ($Proveedores as $proveedor) { ?>
-                                <option value="<?php echo $proveedor['ID_PROVEEDOR']; ?>">
-                                    <?php echo $proveedor['NOMBRE']; ?>
-                                </option>
-                            <?php } ?>
-                        </select>
+                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="1">Proveedores</button>
                     </div>
-                    <!-- Botones de Sueldos y Etc. -->
                     <div class="col-auto">
                         <button type="button" class="btn btn-secondary tipo-servicio" data-id="2">Sueldos</button>
                     </div>
@@ -121,7 +117,7 @@ $MiConexion->close();
                     <label for="valorDinero" class="form-label">Ingrese el Valor de Dinero</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="number" class="form-control text-center" id="valorDinero" name="ValorDinero" placeholder="0" min="0" step="1">
+                        <input type="number" class="form-control text-center" id="Monto" name="Monto" placeholder="0" min="0" step="1">
                     </div>
                 </div>
             </div>

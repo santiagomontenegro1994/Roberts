@@ -105,7 +105,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
                         <?php foreach ($TiposServicio as $tipo) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idDetalle']; ?>">
+                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idTipoServicio']; ?>">
                                 <?php echo $tipo['denominacion']; ?>
                             </button>
                         <?php } ?>

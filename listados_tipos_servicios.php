@@ -15,7 +15,7 @@ $MiConexion = ConexionBD();
 require_once 'funciones/select_general.php';
 
 // Obtener los tipos de servicios desde la base de datos
-$ListadoTiposServicio = Listar_Tipos_Servicio($MiConexion);
+$ListadoTiposServicio = Listar_Tipos_Servicios($MiConexion);
 $CantidadTiposServicio = count($ListadoTiposServicio);
 
 ?>
