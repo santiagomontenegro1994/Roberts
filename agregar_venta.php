@@ -20,29 +20,35 @@ $TiposPagos = Listar_Tipos_Pagos($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
-    $_POST['idCaja'] = isset($_SESSION['Id_Caja']) ? (int)$_SESSION['Id_Caja'] : null;
-    $_POST['idUsuario'] = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : null;
+    Validar_Venta();
 
-    // Verificar si $_SESSION['Id_Caja'] tiene contenido
-    if (empty($_POST['idCaja'])) {
-        echo "<script>
-            alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.');
-            window.location.href = 'index.php';
-        </script>";
-        exit;
-    }
+    // Asignar el mensaje de validación a una variable local
+    $Mensaje = $_SESSION['Mensaje'];
+    $Estilo = 'danger'; // Estilo para mensajes de error
 
-    // Llamar al método InsertarVenta
-    if (InsertarVenta($MiConexion)) {
-        $_SESSION['Mensaje'] = 'Detalle de venta registrado correctamente.';
-        $_SESSION['Estilo'] = 'success';
+    // Si no hay errores, proceder con la inserción
+    if (empty($Mensaje)) {
+        // Verificar si $_SESSION['Id_Caja'] tiene contenido
+        if (empty($_SESSION['Id_Caja'])) {
+            echo "<script>
+                alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar la venta.');
+                window.location.href = 'index.php';
+            </script>";
+            exit;
+        }
 
-        // Redirigir para evitar reenvío del formulario
-        header("Location: planilla_caja.php");
-        exit;
-    } else {
-        $_SESSION['Mensaje'] = 'Error al registrar el detalle de venta.';
-        $_SESSION['Estilo'] = 'danger';
+        // Llamar al método InsertarVenta
+        if (InsertarVenta($MiConexion)) {
+            $_SESSION['Mensaje'] = 'Detalle de venta registrado correctamente.';
+            $_SESSION['Estilo'] = 'success';
+
+            // Redirigir para evitar reenvío del formulario
+            header("Location: planilla_caja.php");
+            exit;
+        } else {
+            $_SESSION['Mensaje'] = 'Error al registrar el detalle de venta.';
+            $_SESSION['Estilo'] = 'danger';
+        }
     }
 }
 
@@ -69,13 +75,16 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 
                 <!-- Sección de Métodos de Pago -->
                 <form method="post">
-                    <?php if (!empty($_SESSION['Mensaje'])) { ?>
-                        <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissible fade show" role="alert">
-                            <?php echo $_SESSION['Mensaje']; ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <?php if (!empty($Mensaje)) { ?>
+                        <div class="alert alert-<?php echo $Estilo; ?> alert-dismissable">
+                        <?php echo $Mensaje; ?>
                         </div>
                         <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); // Limpiar el mensaje después de mostrarlo ?>
                     <?php } ?>
+
+                    <!-- Campo oculto para idCaja -->
+                    <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
+
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
                         <a href="listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
@@ -169,5 +178,4 @@ ob_end_flush();
 ?>
 
 </body>
-
 </html>

@@ -11,13 +11,18 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require('encabezado.inc.php');
 require('barraLateral.inc.php');
 require_once 'funciones/conexion.php';
+require_once 'funciones/select_general.php';
 
 $MiConexion = ConexionBD();
 
 // Verificar si la caja está seleccionada
-//if (!isset($_SESSION['Id_Caja']) || empty($_SESSION['Id_Caja'])) {
-//    die('<div class="alert alert-danger text-center mt-4">No hay caja seleccionada. Por favor, seleccione una caja antes de continuar.</div>');
-//}
+if (!isset($_SESSION['Id_Caja']) || empty($_SESSION['Id_Caja'])) {
+    echo "<script>
+        alert('No hay caja seleccionada, seleccione una caja antes de entrar a la planilla de caja');
+        window.location.href = 'index.php';
+    </script>";
+    exit;
+}
 
 $idCaja = (int)$_SESSION['Id_Caja'];
 
@@ -54,8 +59,8 @@ $resultadoCaja = $stmtCaja->get_result();
 
 if ($resultadoCaja->num_rows === 0) {
     echo "<script>
-        alert('No hay caja seleccionada, seleccione una caja antes de entrar a la planilla de caja');
-        window.location.href = 'index.php'; // Cambia 'menu_principal.php' por la ruta correcta al menú
+        alert('No se encontró la caja seleccionada');
+        window.location.href = 'index.php';
     </script>";
     exit;
 }
@@ -64,7 +69,7 @@ if ($resultadoCaja->num_rows === 0) {
 $queryTotales = "SELECT tp.denominacion AS metodoPago, SUM(dc.monto) AS totalMonto
                  FROM detalle_caja dc
                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                 WHERE dc.idCaja = ?
+                 WHERE dc.idCaja = ? AND (tp.denominacion != 'Efectivo' OR dc.idTipoOperacion = 1)
                  GROUP BY tp.denominacion";
 $stmtTotales = $MiConexion->prepare($queryTotales);
 $stmtTotales->bind_param("i", $idCaja);
@@ -90,30 +95,48 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     }
 }
 
-// Obtener los detalles de la caja específica
-$queryDetalleCaja = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
-                     ts.denominacion AS tipoServicio, u.usuario, dc.monto, dc.observaciones
-                     FROM detalle_caja dc
-                     JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                     JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
-                     JOIN usuarios u ON dc.idUsuario = u.idUsuario
-                     WHERE dc.idCaja = ?
-                     ORDER BY dc.idDetalleCaja DESC";
-$stmtDetalleCaja = $MiConexion->prepare($queryDetalleCaja);
-$stmtDetalleCaja->bind_param("i", $idCaja);
-$stmtDetalleCaja->execute();
-$resultadoDetalleCaja = $stmtDetalleCaja->get_result();
+// Calcular el total de retiros para esta caja
+$queryRetiros = "SELECT SUM(monto) AS totalRetiros
+                 FROM detalle_caja
+                 WHERE idCaja = ? AND idTipoOperacion = 2";
+$stmtRetiros = $MiConexion->prepare($queryRetiros);
+$stmtRetiros->bind_param("i", $idCaja);
+$stmtRetiros->execute();
+$resultadoRetiros = $stmtRetiros->get_result();
 
-if (!$resultadoDetalleCaja) {
-    die('<div class="alert alert-danger">Error en la consulta de detalle_caja: ' . $MiConexion->error . '</div>');
+$totalRetiros = 0;
+if ($filaRetiros = $resultadoRetiros->fetch_assoc()) {
+    $totalRetiros = (float)$filaRetiros['totalRetiros'];
+}
+
+// Obtener los detalles de la caja específica
+$queryDetalles = "SELECT dc.idDetalleCaja, tp.denominacion AS metodoPago, 
+                         ts.denominacion AS tipoServicio, 
+                         u.nombre AS usuario, dc.monto, dc.observaciones
+                  FROM detalle_caja dc
+                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                  JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
+                  JOIN usuarios u ON dc.idUsuario = u.idUsuario
+                  WHERE dc.idCaja = ?
+                  ORDER BY dc.idDetalleCaja";
+                  
+$stmtDetalles = $MiConexion->prepare($queryDetalles);
+$stmtDetalles->bind_param("i", $idCaja);
+$stmtDetalles->execute();
+$resultadoDetalleCaja = $stmtDetalles->get_result();
+
+// Almacenar todos los detalles en un array para poder usarlos múltiples veces
+$detalles = [];
+while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
+    $detalles[] = $fila;
 }
 
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
-$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'];
+$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'] + $cajaInicial; // Sumar la caja inicial al total efectivo
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaFuerte = $totalEfectivo ;
+$cajaFuerte = $totalEfectivo - $cajaInicial; // Restar la caja inicial al total efectivo
 ?>
 
 <!DOCTYPE html>
@@ -148,15 +171,12 @@ $cajaFuerte = $totalEfectivo ;
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     <?php 
-                    // Vaciar los valores después de mostrarlos
                     unset($_SESSION['Mensaje'], $_SESSION['Estilo']); 
                     ?>
                 <?php } ?>
 
                 <div class="container">
-                    <!-- Encabezado con datos alineados horizontalmente -->
                     <div class="row mt-2 align-items-center">
-                        <!-- Caja Inicial a la izquierda -->
                         <div class="col-12 col-md-6 d-flex flex-wrap align-items-center">
                             <form action="planilla_caja.php" method="POST" class="d-inline d-flex flex-wrap align-items-center">
                                 <input type="hidden" name="idCaja" value="<?php echo $idCaja; ?>">
@@ -168,17 +188,14 @@ $cajaFuerte = $totalEfectivo ;
                             </form>
                         </div>
 
-                        <!-- Caja ID -->
                         <div class="col-12 col-md-2">
                             <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
                         </div>
 
-                        <!-- Turno -->
                         <div class="col-12 col-md-2">
                             <p><strong>Turno:</strong> <?php echo $filaCaja['denominacion']; ?></p>
                         </div>
 
-                        <!-- Fecha -->
                         <div class="col-12 col-md-2">
                             <p><strong>Fecha:</strong> <?php echo $filaCaja['Fecha']; ?></p>
                         </div>
@@ -186,7 +203,6 @@ $cajaFuerte = $totalEfectivo ;
                 </div>
 
                 <script>
-                    // Ocultar el mensaje después de 3 segundos
                     setTimeout(function() {
                         const mensaje = document.getElementById('mensajeExito');
                         if (mensaje) {
@@ -196,7 +212,7 @@ $cajaFuerte = $totalEfectivo ;
                 </script>
 
                 <h5 class="card-title pb-0 d-flex justify-content-between align-items-center">
-                    Detalles de Caja
+                    Detalles de Caja (<?php echo count($detalles); ?> registros)
                     <a href="agregar_venta.php" class="btn btn-success btn-sm">
                         Agregar Venta
                     </a>
@@ -217,7 +233,7 @@ $cajaFuerte = $totalEfectivo ;
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($fila = $resultadoDetalleCaja->fetch_assoc()) { ?>
+                            <?php foreach ($detalles as $fila) { ?>
                                 <tr>
                                     <td><?php echo $fila['idDetalleCaja']; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
@@ -226,13 +242,11 @@ $cajaFuerte = $totalEfectivo ;
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
                                     <td><?php echo $fila['observaciones']; ?></td>
                                     <td>
-                                        <!-- Acciones -->
                                         <a href="eliminar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
                                            title="Anular" 
                                            onclick="return confirm('¿Confirma anular este detalle de caja?');">
                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
                                         </a>
-
                                         <a href="modificar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
                                            title="Modificar">
                                             <i class="bi bi-pencil-fill text-warning fs-5"></i>
@@ -244,18 +258,25 @@ $cajaFuerte = $totalEfectivo ;
                     </table>
                 </div>
 
-                <!-- Totales en un solo renglón -->
+                <!-- Totales -->
                 <div class="row mt-4 border-top pt-3">
                     <div class="col-12 col-md-6 col-lg-3">
-                        <p><strong>Total Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
+                        <p><strong>T. Efectivo:</strong> $<?php echo number_format($totalEfectivo, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
-                        <p><strong>Total Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
+                        <p><strong>T. Transferencia:</strong> $<?php echo number_format($totalTransferencia, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
-                        <p><strong>Total Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
+                        <p><strong>T. Tarjeta:</strong> $<?php echo number_format($totalTarjeta, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3">
+                        <p><strong>T. Retiros:</strong> $<?php echo number_format($totalRetiros, 2); ?></p>
+                    </div>
+                </div>
+
+                <!-- Caja Fuerte -->
+                <div class="row mt-3">
+                    <div class="col-12 text-center">
                         <p><strong>Caja Fuerte:</strong> $<?php echo number_format($cajaFuerte, 2); ?></p>
                     </div>
                 </div>
@@ -267,10 +288,10 @@ $cajaFuerte = $totalEfectivo ;
 </main>
 
 <?php
-  $_SESSION['Mensaje']='';
-  require ('footer.inc.php');
-  ob_end_flush();
+require('footer.inc.php');
+ob_end_flush();
 ?>
 
 </body>
 </html>
+``` 

@@ -1257,6 +1257,28 @@ function Datos_Caja($vConexion, $vIdCaja) {
     return $DatosCaja;
 }
 
+function ObtenerDetallesCaja($vConexion, $idCaja) {
+    $query = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
+                     ts.denominacion AS tipoServicio, u.usuario, dc.monto, dc.observaciones
+              FROM detalle_caja dc
+              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
+              JOIN usuarios u ON dc.idUsuario = u.idUsuario
+              WHERE dc.idCaja = ?
+              ORDER BY dc.idDetalleCaja DESC";
+
+    $stmt = $vConexion->prepare($query);
+    $stmt->bind_param("i", $idCaja);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
+    if (!$resultado) {
+        die('<div class="alert alert-danger">Error en la consulta de detalle_caja: ' . $vConexion->error . '</div>');
+    }
+
+    return $resultado;
+}
+
 function Modificar_Caja($vConexion) {
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $Fecha = mysqli_real_escape_string($vConexion, $_POST['Fecha']);
@@ -1380,17 +1402,11 @@ function Modificar_Venta($vConexion) {
 function Validar_Venta() {
     $_SESSION['Mensaje'] = '';
 
-    if (empty($_POST['idCaja'])) {
-        $_SESSION['Mensaje'] .= 'Debes seleccionar una caja. <br />';
-    }
     if (empty($_POST['idTipoPago'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
     }
     if (empty($_POST['idTipoServicio'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de servicio. <br />';
-    }
-    if (empty($_POST['idUsuario'])) {
-        $_SESSION['Mensaje'] .= 'Debes seleccionar un usuario. <br />';
     }
     if (empty($_POST['Monto']) || !is_numeric($_POST['Monto']) || $_POST['Monto'] <= 0) {
         $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido. <br />';
@@ -1428,14 +1444,22 @@ function InsertarVenta($vConexion) {
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
     $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['idTipoServicio']);
-    $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
+    $idUsuario = isset($_SESSION['Usuario_Id']) ? mysqli_real_escape_string($vConexion, $_SESSION['Usuario_Id']) : null;
     $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
     $idTipoOperacion = mysqli_real_escape_string($vConexion, $_POST['idTipoOperacion']);
     $observaciones = !empty($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
 
+    // Si idTipoOperacion es 3, establecer idCaja como 0
+    $idCaja = ($idTipoOperacion == 3) ? "0" : "'$idCaja'";
+
+    // Verificar que el idUsuario no sea nulo
+    if ($idUsuario === null) {
+        die('<h4>Error: No se encontró un usuario en la sesión.</h4>');
+    }
+
     // Construir la consulta SQL
     $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto, idTipoOperacion, observaciones)
-                   VALUES ('$idCaja', '$idTipoPago', '$idTipoServicio', '$idUsuario', '$monto', '$idTipoOperacion', " . 
+                   VALUES ($idCaja, '$idTipoPago', '$idTipoServicio', '$idUsuario', '$monto', '$idTipoOperacion', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
 
     // Ejecutar la consulta
