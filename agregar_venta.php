@@ -105,11 +105,11 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
                         <?php foreach ($TiposServicio as $tipo) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idTipoServicio']; ?>">
+                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idDetalle']; ?>">
                                 <?php echo $tipo['denominacion']; ?>
                             </button>
                         <?php } ?>
-                        <input type="hidden" name="idTipoServicio" id="idTipoServicio">
+                        <input type="hidden" name="idDetalle" id="idDetalle">
                     </div>
 
                     <!-- Campo para ingresar el valor de dinero -->
@@ -168,7 +168,7 @@ require ('footer.inc.php'); // Incluir el footer
             tipoServicioButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
             button.classList.remove('btn-secondary'); // Quitar estilo secundario
             button.classList.add('btn-primary'); // Agregar estilo seleccionado
-            document.getElementById('idTipoServicio').value = button.getAttribute('data-id'); // Asignar valor al input hidden
+            document.getElementById('idDetalle').value = button.getAttribute('data-id'); // Asignar valor al input hidden
         });
     });
 </script>

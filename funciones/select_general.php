@@ -1258,12 +1258,18 @@ function Datos_Caja($vConexion, $vIdCaja) {
 }
 
 function ObtenerDetallesCaja($vConexion, $idCaja) {
-    $query = "SELECT dc.idDetalleCaja, dc.idCaja, tp.denominacion AS metodoPago, 
-                     ts.denominacion AS tipoServicio, u.usuario, dc.monto, dc.observaciones
+    $query = "SELECT dc.idDetalleCaja, dc.idTipoOperacion, dc.idCaja, tp.denominacion AS metodoPago, 
+                     CASE 
+                         WHEN dc.idTipoOperacion = 2 AND tr.denominacion IS NOT NULL THEN tr.denominacion
+                         WHEN ts.denominacion IS NOT NULL THEN ts.denominacion
+                         ELSE 'No especificado'
+                     END AS detalle,
+                     u.usuario, dc.monto, dc.observaciones
               FROM detalle_caja dc
               JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-              JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
               JOIN usuarios u ON dc.idUsuario = u.idUsuario
+              LEFT JOIN tipo_servicio ts ON (dc.idTipoServicio = ts.idTipoServicio AND dc.idTipoOperacion != 2)
+              LEFT JOIN tipo_retiro tr ON (dc.idTipoRetiro = tr.idTipoRetiro AND dc.idTipoOperacion = 2)
               WHERE dc.idCaja = ?
               ORDER BY dc.idDetalleCaja DESC";
 
@@ -1443,7 +1449,9 @@ function InsertarVenta($vConexion) {
     // Preparar los valores para la inserción
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
-    $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['idTipoServicio']);
+    $idTipoServicio = null; // Inicializar idTipoServicio como null
+    $idTipoRetiro = null; // Inicializar idTipoRetiro como null
+    $idDetalle = mysqli_real_escape_string($vConexion, $_POST['idDetalle']);
     $idUsuario = isset($_SESSION['Usuario_Id']) ? mysqli_real_escape_string($vConexion, $_SESSION['Usuario_Id']) : null;
     $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
     $idTipoOperacion = mysqli_real_escape_string($vConexion, $_POST['idTipoOperacion']);
@@ -1452,14 +1460,23 @@ function InsertarVenta($vConexion) {
     // Si idTipoOperacion es 3, establecer idCaja como 0
     $idCaja = ($idTipoOperacion == 3) ? "0" : "'$idCaja'";
 
+    // Si idTipoOperacion es 2, usar idDetalle como idTipoRetiro
+    if ($idTipoOperacion == 2) {
+        $idTipoRetiro = $idDetalle;
+        $idTipoServicio = "NULL"; // Asegurarse de que idTipoServicio sea NULL
+    } else {
+        $idTipoServicio = $idDetalle;
+        $idTipoRetiro = "NULL"; // Asegurarse de que idTipoRetiro sea NULL si no es operación 2
+    }
+
     // Verificar que el idUsuario no sea nulo
     if ($idUsuario === null) {
         die('<h4>Error: No se encontró un usuario en la sesión.</h4>');
     }
 
     // Construir la consulta SQL
-    $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idUsuario, monto, idTipoOperacion, observaciones)
-                   VALUES ($idCaja, '$idTipoPago', '$idTipoServicio', '$idUsuario', '$monto', '$idTipoOperacion', " . 
+    $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idTipoRetiro, idUsuario, monto, idTipoOperacion, observaciones)
+                   VALUES ($idCaja, '$idTipoPago', $idTipoServicio, $idTipoRetiro, '$idUsuario', '$monto', '$idTipoOperacion', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
 
     // Ejecutar la consulta

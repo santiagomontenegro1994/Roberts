@@ -21,7 +21,7 @@ if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
     $_POST['idCaja'] = isset($_SESSION['Id_Caja']) ? (int)$_SESSION['Id_Caja'] : null;
     $_POST['idTipoPago'] = isset($_POST['idTipoPago']) ? (int)$_POST['idTipoPago'] : null;
-    $_POST['idTipoServicio'] = isset($_POST['idTipoServicio']) ? (int)$_POST['idTipoServicio'] : null;
+    $_POST['idDetalle'] = isset($_POST['idDetalle']) ? (int)$_POST['idDetalle'] : null;
     $_POST['idUsuario'] = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : null;
     $_POST['Monto'] = isset($_POST['ValorDinero']) ? (float)$_POST['ValorDinero'] : null;
     $_POST['idTipoOperacion'] = isset($_POST['idTipoOperacion']) ? (int)$_POST['idTipoOperacion'] : null;
@@ -106,14 +106,14 @@ $MiConexion->close();
                     </div>
                     <!-- Botones de Sueldos y Etc. -->
                     <div class="col-auto">
-                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="3">Sueldos</button>
+                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="2">Sueldos</button>
                     </div>
                     <div class="col-auto">
-                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="4">Etc.</button>
+                        <button type="button" class="btn btn-secondary tipo-servicio" data-id="3">Etc.</button>
                     </div>
                 </div>
             </div>
-            <input type="hidden" name="idTipoServicio" id="idTipoServicio">
+            <input type="hidden" name="idDetalle" id="idDetalle">
 
             <!-- Campo para ingresar el valor de dinero -->
             <div class="row justify-content-center mb-4">
@@ -173,7 +173,7 @@ $MiConexion->close();
             button.addEventListener('click', () => {
                 tipoServicioButtons.forEach(btn => btn.classList.remove('btn-primary'));
                 button.classList.add('btn-primary');
-                document.getElementById('idTipoServicio').value = button.getAttribute('data-id');
+                document.getElementById('idDetalle').value = button.getAttribute('data-id');
             });
         });
     });

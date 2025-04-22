@@ -109,21 +109,8 @@ if ($filaRetiros = $resultadoRetiros->fetch_assoc()) {
     $totalRetiros = (float)$filaRetiros['totalRetiros'];
 }
 
-// Obtener los detalles de la caja específica
-$queryDetalles = "SELECT dc.idDetalleCaja, tp.denominacion AS metodoPago, 
-                         ts.denominacion AS tipoServicio, 
-                         u.nombre AS usuario, dc.monto, dc.observaciones
-                  FROM detalle_caja dc
-                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                  JOIN tipo_servicio ts ON dc.idTipoServicio = ts.idTipoServicio
-                  JOIN usuarios u ON dc.idUsuario = u.idUsuario
-                  WHERE dc.idCaja = ?
-                  ORDER BY dc.idDetalleCaja";
-                  
-$stmtDetalles = $MiConexion->prepare($queryDetalles);
-$stmtDetalles->bind_param("i", $idCaja);
-$stmtDetalles->execute();
-$resultadoDetalleCaja = $stmtDetalles->get_result();
+// Obtener los detalles de la caja específica usando la función
+$resultadoDetalleCaja = ObtenerDetallesCaja($MiConexion, $idCaja);
 
 // Almacenar todos los detalles en un array para poder usarlos múltiples veces
 $detalles = [];
@@ -225,7 +212,7 @@ $cajaFuerte = $totalEfectivo - $cajaInicial; // Restar la caja inicial al total 
                             <tr>
                                 <th>ID Detalle</th>
                                 <th>Método de Pago</th>
-                                <th>Tipo de Servicio</th>
+                                <th>Detalle</th>
                                 <th>Usuario</th>
                                 <th>Monto</th>
                                 <th>Observaciones</th>
@@ -237,7 +224,7 @@ $cajaFuerte = $totalEfectivo - $cajaInicial; // Restar la caja inicial al total 
                                 <tr>
                                     <td><?php echo $fila['idDetalleCaja']; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
-                                    <td><?php echo $fila['tipoServicio']; ?></td>
+                                    <td><?php echo $fila['detalle']; ?></td>
                                     <td><?php echo $fila['usuario']; ?></td>
                                     <td>$<?php echo number_format($fila['monto'], 2); ?></td>
                                     <td><?php echo $fila['observaciones']; ?></td>
@@ -294,4 +281,3 @@ ob_end_flush();
 
 </body>
 </html>
-``` 
