@@ -69,49 +69,48 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
     
     <!-- Table with stripped rows -->
     <div class="card">
-    <div class="card-body">
-        <h5 class="card-title mr-2">Datos del Pedido</h5>
-    <table class="table table-striped">
-        <thead>
-            <tr class="table-primary">
-            <th scope="col" class="col-2 text-truncate" style="max-width: 50px;">ID</th>
-            <th scope="col" class="col-5">Titulo</th>
-            <th scope="col" class="col-3">Editorial</th>
-            <th scope="col" class="col-2">Cantidad</th>
-            <th scope="col" class="col-2">Precio</th>
-            <th scope="col" class="col-5">Precio_Total</th>
-            <th scope="col" class="col-6">Accion</th>
-            </tr>
-              
-            <tr class=""  data-bs-toggle="tooltip" data-bs-placement="left" >
-                <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control form-control-sm w-75"></th>
-                <td id="txt_titulo">-</td>
-                <td id="txt_editorial">-</td>
-                <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
-                <td id="txt_precio">0.00</td>
-                <td id="txt_precio_total">0.00</td>
-                <td><a href="#" id="add_libro_pedido" class="text-primary fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-primary fs-5"></i> pedir</a></td>   
-            </tr>
-
-            <tr class="table-primary">
-                <th scope="col">ID</th>
-                <th scope="col">Titulo</th>
-                <th scope="col">Editorial</th>
-                <th scope="col" class="col-2">Cantidad</th>
-                <th scope="col">Precio</th>
-                <th scope="col">Precio total</th>
-                <th scope="col">Accion</th>
-            </tr>
-        </thead>
-        <tbody id="detalleVenta"> 
-        <!-- CONTENIDO AJAX-->
-        </tbody>
-
-        <tfoot id="detalleTotal">
-        <!-- CONTENIDO AJAX-->
-        </tfoot>
-    </table>
-    </div>
+        <div class="card-body">
+            <h5 class="card-title mr-2">Datos del Pedido</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr class="table-primary">
+                            <th scope="col" class="col-2 text-truncate" style="max-width: 50px;">ID</th>
+                            <th scope="col" class="col-5">Titulo</th>
+                            <th scope="col" class="col-3">Editorial</th>
+                            <th scope="col" class="col-2">Cantidad</th>
+                            <th scope="col" class="col-2">Precio</th>
+                            <th scope="col" class="col-5">Precio_Total</th>
+                            <th scope="col" class="col-6">Accion</th>
+                        </tr>
+                        <tr class="" data-bs-toggle="tooltip" data-bs-placement="left">
+                            <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control form-control-sm w-75"></th>
+                            <td id="txt_titulo">-</td>
+                            <td id="txt_editorial">-</td>
+                            <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
+                            <td id="txt_precio">0.00</td>
+                            <td id="txt_precio_total">0.00</td>
+                            <td><a href="#" id="add_libro_pedido" class="text-primary fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-primary fs-5"></i> pedir</a></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <th scope="col">ID</th>
+                            <th scope="col">Titulo</th>
+                            <th scope="col">Editorial</th>
+                            <th scope="col" class="col-2">Cantidad</th>
+                            <th scope="col">Precio</th>
+                            <th scope="col">Precio total</th>
+                            <th scope="col">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalleVenta">
+                        <!-- CONTENIDO AJAX-->
+                    </tbody>
+                    <tfoot id="detalleTotal">
+                        <!-- CONTENIDO AJAX-->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
     </div>
     <div class="d-flex justify-content-center align-items-center"> 
         <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido">Anular</a> 

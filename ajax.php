@@ -109,38 +109,47 @@ $MiConexion=ConexionBD();
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla  .='<tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                            <th>'.$data['idLibro'].'</th>
-                                            <td>'.$data['titulo'].'</td>
-                                            <td>'.$data['editorial'].'</td>
-                                            <th>'.$data['cantidad'].'</th>
-                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
-                                            <td>
-                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
-                                            </td>   
-                                        </tr>';
+                        $detalleTabla = '<div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                                    <th>'.$data['idLibro'].'</th>
+                                                    <td>'.$data['titulo'].'</td>
+                                                    <td>'.$data['editorial'].'</td>
+                                                    <th>'.$data['cantidad'].'</th>
+                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <td>
+                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                        </a>
+                                                    </td>   
+                                                </tr>
+                                            </table>
+                                        </div>';
                     }
 
                     //genero la tabla con totales
-                    $detalleTotales='<tr>
-                                        <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">DESCUENTO</td>
-                                        <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
-                                    </tr>';
+                    $detalleTotales = '<div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">DESCUENTO</td>
+                                                <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">SEÑA</td>
+                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">TOTAL</td>
+                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
+                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                            </tr>
+                                        </table>
+                                    </div>';
                     
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
@@ -194,38 +203,47 @@ $MiConexion=ConexionBD();
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla  .='<tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                            <th>'.$data['idLibro'].'</th>
-                                            <td>'.$data['titulo'].'</td>
-                                            <td>'.$data['editorial'].'</td>
-                                            <th>'.$data['cantidad'].'</th>
-                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
-                                            <td>
-                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
-                                            </td>   
-                                        </tr>';
+                        $detalleTabla = '<div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                                    <th>'.$data['idLibro'].'</th>
+                                                    <td>'.$data['titulo'].'</td>
+                                                    <td>'.$data['editorial'].'</td>
+                                                    <th>'.$data['cantidad'].'</th>
+                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <td>
+                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                        </a>
+                                                    </td>   
+                                                </tr>
+                                            </table>
+                                        </div>';
                     }
 
                     //genero la tabla con totales
-                    $detalleTotales='<tr>
-                                        <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">DESCUENTO</td>
-                                        <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
-                                    </tr>';
+                    $detalleTotales = '<div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">DESCUENTO</td>
+                                                <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">SEÑA</td>
+                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">TOTAL</td>
+                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
+                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                            </tr>
+                                        </table>
+                                    </div>';
                     
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
@@ -267,38 +285,47 @@ $MiConexion=ConexionBD();
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla  .='<tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                            <th>'.$data['idLibro'].'</th>
-                                            <td>'.$data['titulo'].'</td>
-                                            <td>'.$data['editorial'].'</td>
-                                            <th>'.$data['cantidad'].'</th>
-                                            <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                            <td>'.number_format($precioTotal, 2, '.', '').'</td>
-                                            <td>
-                                                <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
-                                                    <i class="bi bi-trash-fill text-danger fs-5"></i></a>
-                                            </td>   
-                                        </tr>';
+                        $detalleTabla = '<div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                                    <th>'.$data['idLibro'].'</th>
+                                                    <td>'.$data['titulo'].'</td>
+                                                    <td>'.$data['editorial'].'</td>
+                                                    <th>'.$data['cantidad'].'</th>
+                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
+                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <td>
+                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                        </a>
+                                                    </td>   
+                                                </tr>
+                                            </table>
+                                        </div>';
                     }
 
                     //genero la tabla con totales
-                    $detalleTotales='<tr>
-                                        <td colspan="5" class="text-end">SUBTOTAL</td>
-                                        <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">DESCUENTO</td>
-                                        <td colspan="5" class="text-end"><input type="text" id="descuentoPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">SEÑA</td>
-                                        <td colspan="5" class="text-end"><input type="number" id="seniaPedido" value="0" min="1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5" class="text-end">TOTAL</td>
-                                        <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                        <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
-                                    </tr>';
+                    $detalleTotales = '<div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">DESCUENTO</td>
+                                                <td colspan="5" class="text-end"><input type="text" id="descuentoPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">SEÑA</td>
+                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedido" value="0" min="1"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">TOTAL</td>
+                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
+                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                            </tr>
+                                        </table>
+                                    </div>';
                     
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
