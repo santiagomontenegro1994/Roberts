@@ -94,7 +94,7 @@ if (!empty($_POST['BotonBuscar'])) {
                   <tr>
                     <td><?php echo $ListadoCajas[$i]['idCaja']; ?></td>
                     <td><?php echo $ListadoCajas[$i]['Fecha']; ?></td>
-                    <td><?php echo $ListadoCajas[$i]['idTurno']; ?></td>
+                    <td><?php echo $ListadoCajas[$i]['denominacion']; ?></td>
                     <td>$<?php echo number_format($ListadoCajas[$i]['cajaInicial'], 2); ?></td>
                     <td>
                       <!-- Botón Eliminar -->

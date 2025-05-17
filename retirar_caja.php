@@ -88,6 +88,7 @@ $MiConexion->close();
             <div class="d-flex flex-wrap justify-content-center">
                 <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="1">Efectivo</button>
                 <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="2">Banco</button>
+                <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="3">Caja de Seguridad</button>
                 <input type="hidden" name="idTipoPago" id="idTipoPago">
             </div>
 

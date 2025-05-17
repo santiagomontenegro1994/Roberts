@@ -1125,17 +1125,26 @@ function ObtenerInfoCaja($vConexion, $idCaja) {
 }
 
 function Listar_Cajas($Conexion) {
-    $sql = "SELECT * FROM caja ORDER BY Fecha DESC";
-    $resultado = $Conexion->query($sql);
-    $Listado = [];
-    while ($fila = $resultado->fetch_assoc()) {
-        $Listado[] = $fila;
-    }
-    return $Listado;
+$sql = "SELECT caja.*, turnos.denominacion 
+        FROM caja 
+        LEFT JOIN turnos ON caja.idTurno = turnos.idTurno 
+        ORDER BY caja.Fecha DESC";
+        
+$resultado = $Conexion->query($sql);
+$Listado = [];
+while ($fila = $resultado->fetch_assoc()) {
+    $Listado[] = $fila;
+}
+return $Listado;
 }
 
 function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
-    $sql = "SELECT * FROM caja WHERE $Criterio LIKE ? ORDER BY Fecha DESC";
+    $sql = "SELECT caja.*, turnos.denominacion 
+            FROM caja 
+            LEFT JOIN turnos ON caja.idTurno = turnos.idTurno 
+            WHERE caja.$Criterio LIKE ? 
+            ORDER BY caja.Fecha DESC";
+    
     $stmt = $Conexion->prepare($sql);
     $Parametro = "%$Parametro%";
     $stmt->bind_param("s", $Parametro);
@@ -1485,6 +1494,25 @@ function InsertarVenta($vConexion) {
     }
 
     return true;
+}
+
+function ColorDeFilaCaja($vTipoOperacion) {
+    $Title='';
+    $Color=''; 
+
+    if ($vTipoOperacion===1){
+        //Es una entrada
+        $Title='Entrada';
+        $Color='table-success'; 
+    
+    } else if ($vTipoOperacion===2){
+        //Es una salida
+        $Title='Salida';
+        $Color='table-danger'; 
+    }
+        
+    return [$Title, $Color];
+
 }
 
 ?>
