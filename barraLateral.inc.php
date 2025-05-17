@@ -82,7 +82,7 @@
             </a>
           </li>
         </ul>
-      </li>Pedido de Libros Nav -->
+      </li> Pedido de Libros Nav -->
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#ventas-nav" data-bs-toggle="collapse" href="#">

@@ -221,7 +221,10 @@ $cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja i
                         </thead>
                         <tbody>
                             <?php foreach ($detalles as $fila) { ?>
-                                <tr>
+
+                                <?php list($Title, $Color) = ColorDeFilaCaja($fila['idTipoOperacion']);?>
+
+                                <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                     <td><?php echo $fila['idDetalleCaja']; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
                                     <td><?php echo $fila['detalle']; ?></td>

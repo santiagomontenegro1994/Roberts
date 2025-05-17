@@ -1487,4 +1487,23 @@ function InsertarVenta($vConexion) {
     return true;
 }
 
+function ColorDeFilaCaja($vTipoOperacion) {
+    $Title='';
+    $Color=''; 
+
+    if ($vTipoOperacion===1){
+        //Es una entrada
+        $Title='Entrada';
+        $Color='table-success'; 
+    
+    } else if ($vTipoOperacion===2){
+        //Es una salida
+        $Title='Salida';
+        $Color='table-danger'; 
+    }
+        
+    return [$Title, $Color];
+
+}
+
 ?>
