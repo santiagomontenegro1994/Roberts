@@ -1,15 +1,15 @@
 <?php
     session_start();
     if (empty($_SESSION['Usuario_Nombre']) ) {
-        header('Location: cerrarsesion.php');
+        header('Location: ../core/cerrarsesion.php');
         exit;
     }
     
-    require_once 'funciones/conexion.php';
+    require_once '../funciones/conexion.php';
     $MiConexion = ConexionBD();
    
 
-    require_once 'funciones/select_general.php';
+    require_once '../funciones/select_general.php';
 
     if ( Anular_Cliente($MiConexion , $_GET['ID_CLIENTE']) != false ) {
         $_SESSION['Mensaje'].='Se ha eliminado la consulta seleccionada';
@@ -20,6 +20,6 @@
     }
     
    
-    header('Location: listados_clientes.php');
+    header('Location: ../imprenta_clientes/listados_clientes.php');
     exit;
 ?>

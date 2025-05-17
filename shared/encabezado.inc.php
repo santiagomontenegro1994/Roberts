@@ -1,6 +1,6 @@
 <?php
-require_once 'funciones/conexion.php';
-require_once 'funciones/select_general.php';
+require_once '../funciones/conexion.php';
+require_once '../funciones/select_general.php';
 
 // Obtener información de la caja seleccionada
 $MiConexion = ConexionBD();
@@ -26,8 +26,8 @@ $MiConexion->close();
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
   <!-- Favicons -->
-  <link href="assets/img/favicono.png" rel="icon">
-  <link href="assets/img/apple-touch-icono.png" rel="apple-touch-icon">
+  <link href="../assets/img/favicono.png" rel="icon">
+  <link href="../assets/img/apple-touch-icono.png" rel="apple-touch-icon">
 
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
@@ -36,16 +36,16 @@ $MiConexion->close();
     rel="stylesheet">
 
   <!-- Bootstrap personalizado -->
-  <link href="assets/css/custom.css" rel="stylesheet">
+  <link href="../assets/css/custom.css" rel="stylesheet">
 
   <!-- Vendor CSS Files 
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="../assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
   
 
   <!-- Template Main CSS File -->
-  <link href="assets/css/style.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
 
   <!-- =======================================================
   * Template Name: NiceAdmin - v2.2.2
@@ -63,7 +63,7 @@ $MiConexion->close();
     <!-- Logo -->
     <div class="d-flex align-items-center">
         <a href="index.php" class="logo d-flex align-items-center">
-            <img src="assets/img/logo.png" alt="Logo" class="img-fluid me-2">
+            <img src="../assets/img/logo.png" alt="Logo" class="img-fluid me-2">
         </a>
         <i class="bi bi-list toggle-sidebar-btn ms-3"></i>
     </div><!-- End Logo -->
@@ -86,7 +86,7 @@ $MiConexion->close();
         <ul class="d-flex align-items-center">
             <li class="nav-item dropdown pe-3">
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-                    <img src="assets/img/user.jpg" alt="Profile" class="rounded-circle img-fluid me-2">
+                    <img src="../assets/img/user.jpg" alt="Profile" class="rounded-circle img-fluid me-2">
                     <span class="d-none d-md-block dropdown-toggle ps-2"><?php echo $_SESSION['Usuario_Nombre'] . ' ' . $_SESSION['Usuario_Apellido']; ?></span>
                 </a><!-- End Profile Image Icon -->
 

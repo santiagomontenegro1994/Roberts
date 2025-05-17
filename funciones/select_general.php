@@ -1,22 +1,8 @@
 <?php
 function InsertarClientes($vConexion){
     
-    $SQL_Insert="INSERT INTO clientes (nombre, apellido, dni, telefono)
-    VALUES ('".$_POST['Nombre']."' , '".$_POST['Apellido']."' , '".$_POST['DNI']."', '".$_POST['Telefono']."')";
-
-
-    if (!mysqli_query($vConexion, $SQL_Insert)) {
-        //si surge un error, finalizo la ejecucion del script con un mensaje
-        die('<h4>Error al intentar insertar el registro.</h4>');
-    }
-
-    return true;
-}
-
-function InsertarProveedores($vConexion){
-    
-    $SQL_Insert="INSERT INTO proveedores (nombre, CUIT, contacto)
-    VALUES ('".$_POST['Nombre']."' , '".$_POST['CUIT']."', '".$_POST['Contacto']."')";
+    $SQL_Insert="INSERT INTO clientes (nombre, apellido, telefono)
+    VALUES ('".$_POST['Nombre']."' , '".$_POST['Apellido']."' , '".$_POST['Telefono']."')";
 
 
     if (!mysqli_query($vConexion, $SQL_Insert)) {
@@ -44,7 +30,115 @@ function Listar_Clientes($vConexion) {
             $Listado[$i]['NOMBRE'] = $data['nombre'];
             $Listado[$i]['APELLIDO'] = $data['apellido'];
             $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $Listado[$i]['DNI'] = $data['dni'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
+function Anular_Cliente($vConexion , $vIdConsulta) {
+
+
+    //soy admin 
+        $SQL_MiConsulta="SELECT idCliente FROM clientes 
+                        WHERE idCliente = $vIdConsulta ";
+   
+    
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idCliente']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE clientes SET idActivo = 2 WHERE idCliente = $vIdConsulta");
+        
+        return true;
+
+    }else {
+        return false;
+    }
+    
+}
+
+function Datos_Cliente($vConexion , $vIdCliente) {
+    $DatosCliente  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT * FROM clientes 
+            WHERE idCliente = $vIdCliente";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosCliente['ID_CLIENTE'] = $data['idCliente'];
+        $DatosCliente['NOMBRE'] = $data['nombre'];
+        $DatosCliente['APELLIDO'] = $data['apellido'];
+        $DatosCliente['TELEFONO'] = $data['telefono'];
+    }
+    return $DatosCliente;
+
+}
+
+function Validar_Cliente(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['Nombre']) < 3) {
+        $_SESSION['Mensaje'].='Debes ingresar un nombre con al menos 3 caracteres. <br />';
+    }
+    if (strlen($_POST['Telefono']) < 10) {
+        $_SESSION['Mensaje'].='Debes ingresar un telefono con al menos 10 caracteres. <br />';
+    }
+
+    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    return $_SESSION['Mensaje'];
+}
+
+function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
+    $Listado=array();
+
+      //1) genero la consulta que deseo segun el parametro
+        $sql = "";
+        switch ($criterio) { 
+            case 'Nombre': 
+        // Divide el parámetro en partes (nombre y apellido)
+        $partes = explode(' ', trim($parametro));
+        $nombre = isset($partes[0]) ? $partes[0] : '';
+        $apellido = isset($partes[1]) ? $partes[1] : '';
+        
+        if ($nombre && $apellido) {
+            // Si hay nombre y apellido (ej: "karen ba")
+            $sql = "SELECT * FROM clientes 
+                    WHERE (nombre LIKE '$nombre%' AND apellido LIKE '$apellido%') 
+                    AND idActivo = 1";
+        } else {
+            // Si solo hay un término (ej: "baz")
+            $sql = "SELECT * FROM clientes 
+                    WHERE (nombre LIKE '%$parametro%' OR apellido LIKE '%$parametro%') 
+                    AND idActivo = 1";
+        }
+        break;
+        case 'idCliente':
+        $sql = "SELECT * FROM clientes WHERE idCliente LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        case 'Telefono':
+        $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        }    
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $sql);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['APELLIDO'] = $data['apellido'];
+            $Listado[$i]['TELEFONO'] = $data['telefono'];
             $i++;
         }
 
@@ -76,41 +170,18 @@ function Listar_Proveedores($vConexion) {
     return $Listado;
 }
 
-function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
-    $Listado=array();
+function InsertarProveedores($vConexion){
+    
+    $SQL_Insert="INSERT INTO proveedores (nombre, CUIT, contacto)
+    VALUES ('".$_POST['Nombre']."' , '".$_POST['CUIT']."', '".$_POST['Contacto']."')";
 
-      //1) genero la consulta que deseo segun el parametro
-        $sql = "SELECT * FROM clientes";
-        switch ($criterio) { 
-        case 'Nombre': 
-        $sql = "SELECT * FROM clientes WHERE nombre LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        case 'Apellido':
-        $sql = "SELECT * FROM clientes WHERE apellido LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        case 'Telefono':
-        $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        case 'DNI':
-        $sql = "SELECT * FROM clientes WHERE dni LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        }    
-        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
-        $rs = mysqli_query($vConexion, $sql);
-        
-        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
-        $i=0;
-        while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
-            $Listado[$i]['NOMBRE'] = $data['nombre'];
-            $Listado[$i]['APELLIDO'] = $data['apellido'];
-            $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $Listado[$i]['DNI'] = $data['dni'];
-            $i++;
-        }
 
-    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
-    return $Listado;
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
 }
 
 function Listar_Proveedores_Parametro($vConexion,$criterio,$parametro) {
@@ -146,30 +217,6 @@ function Listar_Proveedores_Parametro($vConexion,$criterio,$parametro) {
     return $Listado;
 }
 
-function Anular_Cliente($vConexion , $vIdConsulta) {
-
-
-    //soy admin 
-        $SQL_MiConsulta="SELECT idCliente FROM clientes 
-                        WHERE idCliente = $vIdConsulta ";
-   
-    
-    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
-        
-    $data = mysqli_fetch_array($rs);
-
-    if (!empty($data['idCliente']) ) {
-        //si se cumple todo, entonces elimino:
-        mysqli_query($vConexion, "UPDATE clientes SET idActivo = 2 WHERE idCliente = $vIdConsulta");
-        
-        return true;
-
-    }else {
-        return false;
-    }
-    
-}
-
 function Anular_Proveedor($vConexion , $vIdConsulta) {
 
         $SQL_MiConsulta="SELECT idProveedor FROM proveedores 
@@ -192,26 +239,6 @@ function Anular_Proveedor($vConexion , $vIdConsulta) {
     
 }
 
-function Datos_Cliente($vConexion , $vIdCliente) {
-    $DatosCliente  =   array();
-    //me aseguro que la consulta exista
-    $SQL = "SELECT * FROM clientes 
-            WHERE idCliente = $vIdCliente";
-
-    $rs = mysqli_query($vConexion, $SQL);
-
-    $data = mysqli_fetch_array($rs) ;
-    if (!empty($data)) {
-        $DatosCliente['ID_CLIENTE'] = $data['idCliente'];
-        $DatosCliente['NOMBRE'] = $data['nombre'];
-        $DatosCliente['APELLIDO'] = $data['apellido'];
-        $DatosCliente['TELEFONO'] = $data['telefono'];
-        $DatosCliente['DNI'] = $data['dni'];
-    }
-    return $DatosCliente;
-
-}
-
 function Datos_Proveedor($vConexion , $vIdProveedor) {
     $DatosProveedor  =   array();
     //me aseguro que la consulta exista
@@ -229,30 +256,6 @@ function Datos_Proveedor($vConexion , $vIdProveedor) {
     }
     return $DatosProveedor;
 
-}
-
-function Validar_Cliente(){
-    $_SESSION['Mensaje']='';
-    if (strlen($_POST['Nombre']) < 3) {
-        $_SESSION['Mensaje'].='Debes ingresar un nombre con al menos 3 caracteres. <br />';
-    }
-    if (strlen($_POST['Apellido']) < 3) {
-        $_SESSION['Mensaje'].='Debes ingresar un apellido con al menos 3 caracteres. <br />';
-    }
-    if (strlen($_POST['Telefono']) < 10) {
-        $_SESSION['Mensaje'].='Debes ingresar un telefono con al menos 10 caracteres. <br />';
-    }
-    if (strlen($_POST['DNI']) < 8) {
-        $_SESSION['Mensaje'].='Debes ingresar un DNI con al menos 8 caracteres. <br />';
-    }
-
-    //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
-    foreach($_POST as $Id=>$Valor){
-        $_POST[$Id] = trim($_POST[$Id]);
-        $_POST[$Id] = strip_tags($_POST[$Id]);
-    }
-
-    return $_SESSION['Mensaje'];
 }
 
 function Validar_Proveedor(){

@@ -2,13 +2,13 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
 
 ?>
@@ -61,7 +61,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
   </main><!-- End #main -->
 
   <?php
-require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 
 ?>
 

@@ -2,23 +2,23 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
 //voy a necesitar la conexion: incluyo la funcion de Conexion.
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 
 //genero una variable para usar mi conexion desde donde me haga falta
 //no envio parametros porque ya los tiene definidos por defecto
 $MiConexion = ConexionBD();
 
 //ahora voy a llamar el script con la funcion que genera mi listado
-require_once 'funciones/select_general.php';
+require_once '../funciones/select_general.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 
@@ -48,7 +48,7 @@ $CantidadClientes = count($ListadoClientes);
   <h1>Listado Clientes</h1>
   <nav>
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+      <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
       <li class="breadcrumb-item">Clientes</li>
       <li class="breadcrumb-item active">Listado Clientes</li>
     </ol>
@@ -88,20 +88,14 @@ $CantidadClientes = count($ListadoClientes);
                       </label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Apellido">
-                      <label class="form-check-label" for="gridRadios2">
-                        Apellido
-                      </label>
-                    </div>
-                    <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Telefono">
                       <label class="form-check-label" for="gridRadios3">
-                        Tel.
+                        Telefono
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="DNI">
-                      <label class="form-check-label" for="gridRadios4">
-                        DNI
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="idCliente">
+                      <label class="form-check-label" for="gridRadios3">
+                        ID
                     </div>
                     
                   </div>
@@ -115,9 +109,7 @@ $CantidadClientes = count($ListadoClientes);
                 <tr>
                   <th scope="col">ID</th>
                   <th scope="col">Nombre</th>
-                  <th scope="col">Apellido</th>
                   <th scope="col">Telefono</th>
-                  <th scope="col">DNI</th>
                   <th scope="col">Acciones</th>
                 </tr>
               </thead>
@@ -125,10 +117,8 @@ $CantidadClientes = count($ListadoClientes);
                 <?php for ($i=0; $i<$CantidadClientes; $i++) { ?>
                   <tr>
                     <td><?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?></td>
-                    <td><?php echo $ListadoClientes[$i]['NOMBRE']; ?></td>
-                    <td><?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
+                    <td><?php echo $ListadoClientes[$i]['NOMBRE']; ?> <?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
                     <td><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
-                    <td><?php echo $ListadoClientes[$i]['DNI']; ?></td>
                     <td>
                       <!-- eliminar la consulta -->
                       <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
@@ -158,7 +148,7 @@ $CantidadClientes = count($ListadoClientes);
 
 <?php
   $_SESSION['Mensaje']='';
-  require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+  require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
 

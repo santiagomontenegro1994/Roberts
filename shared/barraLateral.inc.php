@@ -16,12 +16,12 @@
         </a>
         <ul id="clientes-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="agregar_clientes.php">
+            <a href="../imprenta_clientes/agregar_clientes.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
-            <a href="listados_clientes.php">
+            <a href="../imprenta_clientes/listados_clientes.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
           </li>
@@ -34,12 +34,12 @@
         </a>
         <ul id="proveedores-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="agregar_proveedores.php">
+            <a href="../imprenta_proveedores/agregar_proveedores.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
-            <a href="listados_proveedores.php">
+            <a href="../imprenta_proveedores/listados_proveedores.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
           </li>
@@ -85,27 +85,45 @@
       </li> Pedido de Libros Nav -->
 
       <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#pedidos-trabajos-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-bag"></i><span>Pedidos de Trabajos</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="pedidos-trabajos-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="../imprenta_trabajos/agregar_pedido_trabajo.php">
+              <i class="bi bi-circle"></i><span>Agregar</span>
+            </a>
+          </li>
+          <li>
+            <a href="../imprenta_trabajos/listados_pedidos_trabajos.php">
+              <i class="bi bi-circle"></i><span>Listados</span>
+            </a>
+          </li>
+        </ul>
+      </li> <!-- End Pedido de Libros Nav -->
+
+      <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#ventas-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-cash-stack"></i><span>Ventas</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
         <ul id="ventas-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
         <li>
-            <a href="agregar_venta.php">
+            <a href="../imprenta_caja/agregar_venta.php">
               <i class="bi bi-circle"></i><span>Agregar</span>
             </a>
           </li>
           <li>
-            <a href="retirar_caja.php">
+            <a href="../imprenta_caja/retirar_caja.php">
               <i class="bi bi-circle"></i><span>Retirar</span>
             </a>
           </li>
           <li>
-            <a href="planilla_caja.php">
+            <a href="../imprenta_caja/planilla_caja.php">
               <i class="bi bi-circle"></i><span>Planilla de Caja Actual</span>
             </a>
           </li>
           <li>
-            <a href="listados_caja.php">
+            <a href="../imprenta_caja/listados_caja.php">
               <i class="bi bi-circle"></i><span>Listados de cajas</span>
             </a>
           </li>

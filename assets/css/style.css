@@ -64,7 +64,7 @@ h1, h2, h3, h4, h5, h6 {
 # Main
 --------------------------------------------------------------*/
 main {
-  background-image: url('http://localhost/RobertsLibros/assets/img/PatronFondo.svg'); /* Ruta a tu archivo SVG */
+  background-image: url('http://localhost/Roberts/assets/img/PatronFondo.svg'); /* Ruta a tu archivo SVG */
   background-repeat: no-repeat; /* Evita que se repita */
   background-attachment: fixed; /* Fija el fondo */
   background-size: cover; /* Ajusta el tamaño para cubrir todo el área */
@@ -606,7 +606,7 @@ main {
   scrollbar-width: thin;
   scrollbar-color: #a272a3 transparent;
   box-shadow: var(--box-shadow);
-  background-image: url('http://localhost/RobertsLibros/assets/img/patron.png'); /* Ruta absoluta */
+  background-image: url('http://localhost/Roberts/assets/img/patron.png'); /* Ruta absoluta */
   background-size: auto; /* Tamaño automático del patrón */
 }
 
