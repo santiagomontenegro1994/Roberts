@@ -46,6 +46,7 @@
         </ul>
       </li><!-- End Proveedores Nav -->
 
+      <!--
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#libros-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-journal-text"></i><span>Libros</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -62,8 +63,9 @@
             </a>
           </li>
         </ul>
-      </li><!-- End Libros Nav -->
+      </li> Libros Nav -->
 
+      <!--
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#pedidos-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-bag"></i><span>Pedidos de Libros</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -80,7 +82,7 @@
             </a>
           </li>
         </ul>
-      </li><!-- End Pedido de Libros Nav -->
+      </li>Pedido de Libros Nav -->
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#ventas-nav" data-bs-toggle="collapse" href="#">
