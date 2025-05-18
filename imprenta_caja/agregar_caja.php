@@ -11,7 +11,7 @@ require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/select_general.php';
+require_once 'funciones/imprenta.php';
 
 // Obtener los turnos disponibles desde la base de datos
 $Turnos = Listar_Turnos($MiConexion);

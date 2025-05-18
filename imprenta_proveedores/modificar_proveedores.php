@@ -3,18 +3,18 @@ ob_start(); // Inicia el búfer de salida
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 $MiConexion=ConexionBD();
 
 //ahora voy a llamar el script gral para usar las funciones necesarias
-require_once 'funciones/select_general.php';
+require_once '../funciones/imprenta.php';
  
 //este array contendra los datos de la consulta original, y cuando 
 //pulse el boton, mantendrá los datos ingresados hasta que se validen y se puedan modificar
@@ -54,7 +54,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
       <h1>Proveedores</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+          <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
           <li class="breadcrumb-item">Proveedores</li>
           <li class="breadcrumb-item active">Modificar Proveedor</li>
         </ol>
@@ -114,7 +114,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 
 <?php
     $_SESSION['Mensaje']='';
-    require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+    require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
 

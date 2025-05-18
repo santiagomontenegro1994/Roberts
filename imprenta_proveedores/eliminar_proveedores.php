@@ -1,15 +1,15 @@
 <?php
     session_start();
     if (empty($_SESSION['Usuario_Nombre']) ) {
-        header('Location: cerrarsesion.php');
+        header('Location: ../core/cerrarsesion.php');
         exit;
     }
     
-    require_once 'funciones/conexion.php';
+    require_once '../funciones/conexion.php';
     $MiConexion = ConexionBD();
    
 
-    require_once 'funciones/select_general.php';
+    require_once '../funciones/imprenta.php';
 
     if ( Anular_Proveedor($MiConexion , $_GET['ID_PROVEEDOR']) != false ) {
         $_SESSION['Mensaje'].='Se ha eliminado la consulta seleccionada';

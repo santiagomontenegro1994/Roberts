@@ -3,7 +3,7 @@ session_start();
 
 // Verificar si el usuario está logueado
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 

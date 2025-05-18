@@ -2,23 +2,23 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
 //voy a necesitar la conexion: incluyo la funcion de Conexion.
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 
 //genero una variable para usar mi conexion desde donde me haga falta
 //no envio parametros porque ya los tiene definidos por defecto
 $MiConexion = ConexionBD();
 
 //ahora voy a llamar el script con la funcion que genera mi listado
-require_once 'funciones/select_general.php';
+require_once '../funciones/imprenta.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 
@@ -48,7 +48,7 @@ $CantidadProveedores = count($ListadoProveedores);
   <h1>Listado Proveedores</h1>
   <nav>
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+      <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
       <li class="breadcrumb-item">Proveedores</li>
       <li class="breadcrumb-item active">Listado Proveedores</li>
     </ol>
@@ -151,7 +151,7 @@ $CantidadProveedores = count($ListadoProveedores);
 
 <?php
   $_SESSION['Mensaje']='';
-  require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+  require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
 

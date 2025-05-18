@@ -8,7 +8,7 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once 'funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/select_general.php';
+require_once 'funciones/imprenta.php';
 
 // Llamar a la función para eliminar una caja
 if (Anular_Caja($MiConexion, $_GET['idCaja']) != false) {

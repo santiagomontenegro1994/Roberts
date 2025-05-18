@@ -12,7 +12,7 @@ require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/select_general.php';
+require_once 'funciones/imprenta.php';
 
 // Obtener los métodos de pago desde la base de datos
 $ListadoMetodosPago = Listar_Tipos_Pagos($MiConexion);

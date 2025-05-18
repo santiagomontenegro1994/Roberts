@@ -13,7 +13,7 @@ require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta sec
 require_once '../funciones/conexion.php';
 $MiConexion=ConexionBD(); 
 
-require_once '../funciones/select_general.php';
+require_once '../funciones/imprenta.php';
 
 $Mensaje='';
 $Estilo='warning';

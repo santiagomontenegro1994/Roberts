@@ -10,7 +10,7 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require('encabezado.inc.php');
 require('barraLateral.inc.php');
 require_once 'funciones/conexion.php';
-require_once 'funciones/select_general.php';
+require_once 'funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 

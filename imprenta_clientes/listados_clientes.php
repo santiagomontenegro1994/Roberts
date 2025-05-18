@@ -18,7 +18,7 @@ require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
 //ahora voy a llamar el script con la funcion que genera mi listado
-require_once '../funciones/select_general.php';
+require_once '../funciones/imprenta.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 

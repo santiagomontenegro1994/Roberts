@@ -9,7 +9,7 @@
     $MiConexion = ConexionBD();
    
 
-    require_once '../funciones/select_general.php';
+    require_once '../funciones/imprenta.php';
 
     if ( Anular_Cliente($MiConexion , $_GET['ID_CLIENTE']) != false ) {
         $_SESSION['Mensaje'].='Se ha eliminado la consulta seleccionada';

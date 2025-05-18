@@ -12,7 +12,7 @@ require('barraLateral.inc.php'); // Incluir barra lateral
 require_once 'funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/select_general.php';
+require_once 'funciones/imprenta.php';
 
 // Obtener los tipos de servicios desde la base de datos
 $ListadoTiposServicio = Listar_Tipos_Servicios($MiConexion);
