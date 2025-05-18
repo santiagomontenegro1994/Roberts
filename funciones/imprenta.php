@@ -1,15 +1,27 @@
 <?php
-function InsertarClientes($vConexion){
+function InsertarClientes($vConexion) {
+    // 1. Primero verificamos si el teléfono ya existe
+    $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
+    $SQL_Check = "SELECT idCliente FROM clientes WHERE telefono = '$telefono' LIMIT 1";
     
-    $SQL_Insert="INSERT INTO clientes (nombre, apellido, telefono)
-    VALUES ('".$_POST['Nombre']."' , '".$_POST['Apellido']."' , '".$_POST['Telefono']."')";
-
-
+    $resultado = mysqli_query($vConexion, $SQL_Check);
+    
+    if (mysqli_num_rows($resultado) > 0) {
+        // Si existe un cliente con ese teléfono, retornamos un error
+        return "Ya existe un cliente registrado con este número de teléfono";
+    }
+    
+    // 2. Si no existe, procedemos con la inserción
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
+    $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
+    
+    $SQL_Insert = "INSERT INTO clientes (nombre, apellido, telefono)
+                  VALUES ('$nombre', '$apellido', '$telefono')";
+    
     if (!mysqli_query($vConexion, $SQL_Insert)) {
-        //si surge un error, finalizo la ejecucion del script con un mensaje
         die('<h4>Error al intentar insertar el registro.</h4>');
     }
-
+    
     return true;
 }
 

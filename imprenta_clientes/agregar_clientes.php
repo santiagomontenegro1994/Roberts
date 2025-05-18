@@ -18,13 +18,16 @@ require_once '../funciones/imprenta.php';
 $Mensaje='';
 $Estilo='warning';
 if (!empty($_POST['BotonRegistrar'])) {
-    //estoy en condiciones de poder validar los datos
-    $Mensaje=Validar_Cliente();
+    $Mensaje = Validar_Cliente();
     if (empty($Mensaje)) {
-        if (InsertarClientes($MiConexion) != false) {
+        $resultado = InsertarClientes($MiConexion);
+        if ($resultado === true) {
             $Mensaje = 'Se ha registrado correctamente.';
             $_POST = array(); 
-            $Estilo = 'success'; 
+            $Estilo = 'success';
+        } else {
+            $Mensaje = $resultado; // Aquí recibirá el mensaje de error de duplicado
+            $Estilo = 'danger';
         }
     }
 }

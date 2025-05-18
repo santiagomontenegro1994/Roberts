@@ -41,7 +41,7 @@ require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta sec
 
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Telefono</label>
-                <input type="number" class="form-control form-control-sm"  name="tel_cliente_imprenta" id="dni_cliente_imprenta">
+                <input type="number" class="form-control form-control-sm"  name="tel_cliente_imprenta" id="tel_cliente_imprenta">
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Nombre</label>
@@ -49,7 +49,7 @@ require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta sec
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Apellido</label>
-                <input type="text" class="form-control form-control-sm"  name="ape_cliente_imprenta" id="ape_cliente_imprenta" disabled required>
+                <input type="text" class="form-control form-control-sm"  name="ape_cliente_imprenta" id="ape_cliente_imprenta" disabled>
             </div>
 
             <div class="text-center" id="div_registro_cliente_imprenta" style="display: none;">

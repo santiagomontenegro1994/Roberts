@@ -10,13 +10,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         $('#nom_cliente_imprenta').removeAttr('disabled');
         $('#ape_cliente_imprenta').removeAttr('disabled');
 
-        $('#div_registro_cliente').slideDown();
+        $('#div_registro_cliente_imprenta').slideDown();
 
     });
 
-
     //Buscar clientes
-    $('#dni_cliente_imprenta').keyup(function(e){ //cada vez que teclean un valor se activa
+    $('#tel_cliente_imprenta').keyup(function(e){ //cada vez que teclean un valor se activa
         e.preventDefault(); //evito que se recargue
 
         var cl = $(this).val(); //capturo lo que se teclea en cl
@@ -65,7 +64,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     $('#formularioClientePedidoImprenta').submit(function(e){
         e.preventDefault();
         $.ajax({
-            url: 'ajax.php',
+            url: '../shared/ajax_imprenta.php',
             type: "POST",
             async : true,
             data: $('#formularioClientePedidoImprenta').serialize(), //le paso todos los elementos del formulario
@@ -78,13 +77,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     //Bloquea campos
                     $('#nom_cliente').attr('disabled','disabled');
                     $('#ape_cliente').attr('disabled','disabled');
-                    $('#tel_cliente').attr('disabled','disabled');
 
                     //Ocultar boton agregar
                     $('.btn_new_cliente_imprenta').slideUp();
 
                     //Ocultar boton guardar
-                    $('#div_registro_cliente').slideUp();
+                    $('#div_registro_cliente_imprenta').slideUp();
                 }
             },
             error: function(error){

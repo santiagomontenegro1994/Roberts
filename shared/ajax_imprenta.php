@@ -34,16 +34,15 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //registrar Cliente Pedidos
-        if($_POST['action'] == 'addCliente'){
+        //registrar Cliente Pedidos Imprenta
+        if($_POST['action'] == 'addCliente_imprenta'){
             
-            $dni = $_POST['dni_cliente'];
-            $nombre = $_POST['nom_cliente'];
-            $apellido = $_POST['ape_cliente'];
-            $telefono = $_POST['tel_cliente'];
+            $nombre = $_POST['nom_cliente_imprenta'];
+            $apellido = $_POST['ape_cliente_imprenta'];
+            $telefono = $_POST['tel_cliente_imprenta'];
 
-            $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, dni, telefono)
-                                                        VALUES ('$nombre' , '$apellido' , '$dni', '$telefono')");
+            $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, telefono)
+                                                        VALUES ('$nombre' , '$apellido' ,'$telefono')");
 
 
             if($query_insert){ // si se ejecuto bien la insercion
