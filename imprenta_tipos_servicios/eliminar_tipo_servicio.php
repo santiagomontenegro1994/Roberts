@@ -1,14 +1,14 @@
 <?php
 session_start();
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/imprenta.php';
+require_once '../funciones/imprenta.php';
 
 // Cambiar de Anular_Tipo_Pago a Anular_Tipo_Servicio
 if (Anular_Tipo_Servicio($MiConexion, $_GET['idTipoServicio']) != false) {

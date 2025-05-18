@@ -3,14 +3,14 @@ ob_start();
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php');
-require('barraLateral.inc.php');
-require_once 'funciones/conexion.php';
-require_once 'funciones/imprenta.php';
+require('../shared/encabezado.inc.php');
+require('../shared/barraLateral.inc.php');
+require_once '../funciones/conexion.php';
+require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
@@ -62,7 +62,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
         <h1>Ventas</h1>
         <nav>
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+                <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
                 <li class="breadcrumb-item">Ventas</li>
                 <li class="breadcrumb-item active">Agregar Venta</li>
             </ol>
@@ -144,7 +144,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 </main><!-- End #main -->
 
 <?php
-require ('footer.inc.php'); // Incluir el footer
+require ('../shared/footer.inc.php'); // Incluir el footer
 ?>
 
 <script>

@@ -3,18 +3,18 @@ ob_start(); // Inicia el búfer de salida
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 $MiConexion=ConexionBD(); 
 
-require_once 'funciones/imprenta.php';
+require_once '../funciones/imprenta.php';
 
 $Mensaje='';
 $Estilo='warning';
@@ -79,7 +79,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
   </main><!-- End #main -->
 
   <?php
-require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 
 ?>
 

@@ -2,14 +2,14 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php'); // Incluir encabezado
-require('barraLateral.inc.php'); // Incluir barra lateral
-require_once 'funciones/conexion.php';
-require_once 'funciones/imprenta.php';
+require('../shared/encabezado.inc.php'); // Incluir encabezado
+require('../shared/barraLateral.inc.php'); // Incluir barra lateral
+require_once '../funciones/conexion.php';
+require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
@@ -32,7 +32,7 @@ if (!empty($_POST['BotonBuscar'])) {
   <h1>Listado de Cajas</h1>
   <nav>
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="index.php">Menú</a></li>
+      <li class="breadcrumb-item"><a href="../core/index.php">Menú</a></li>
       <li class="breadcrumb-item">Cajas</li>
       <li class="breadcrumb-item active">Listado de Cajas</li>
     </ol>
@@ -132,5 +132,5 @@ if (!empty($_POST['BotonBuscar'])) {
 
 <?php
   $_SESSION['Mensaje'] = '';
-  require('footer.inc.php'); // Incluir footer
+  require('../shared/footer.inc.php'); // Incluir footer
 ?>

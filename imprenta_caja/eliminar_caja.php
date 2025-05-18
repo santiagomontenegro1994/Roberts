@@ -1,14 +1,14 @@
 <?php
 session_start();
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/imprenta.php';
+require_once '../funciones/imprenta.php';
 
 // Llamar a la función para eliminar una caja
 if (Anular_Caja($MiConexion, $_GET['idCaja']) != false) {

@@ -2,24 +2,24 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
-  header('Location: cerrarsesion.php');
+  header('Location: ../core/cerrarsesion.php');
   exit;
 }
 
-require ('encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
+require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta seccionados en otro archivo
 
-require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
+require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
 ?>
 
 <main id="main" class="main">
 
 <div class="pagetitle">
-  <h1>Pedidos</h1>
+  <h1>Pedidos de Trabajos</h1>
   <nav>
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-      <li class="breadcrumb-item">Pedidos</li>
+      <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
+      <li class="breadcrumb-item">Pedidos de Trabajos</li>
       <li class="breadcrumb-item active">Agregar Pedido</li>
     </ol>
   </nav>
@@ -30,36 +30,29 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
         <div class="card-body">
             <div class="d-flex justify-content-start align-items-center"> 
                 <h5 class="card-title mr-2">Datos de Cliente</h5> 
-                <a href="#" class="btn btn-primary btn-sm m-2 btn_new_cliente">Nuevo Cliente</a>
+                <a href="#" class="btn btn-primary btn-sm m-2 btn_new_cliente_imprenta">Nuevo Cliente</a>
             </div>
 
 <!-- Horizontal Form -->
-        <form class="row g-1" id="formularioClientePedido" name="form_new_cliente_pedido">
+        <form class="row g-1" id="formularioClientePedidoImprenta" name="form_new_cliente_pedido">
 
-            <input type="hidden" name="action" value="addCliente">
-            <input type="hidden" name="idCliente" id="idCliente">
+            <input type="hidden" name="action" value="addCliente_imprenta">
+            <input type="hidden" name="idCliente_imprenta" id="idCliente_imprenta">
 
             <div class="col-md-4 mb-1">
-                <label for="fecha" class="form-label">DNI</label>
-                <input type="number" class="form-control form-control-sm"  name="dni_cliente" id="dni_cliente">
+                <label for="fecha" class="form-label">Telefono</label>
+                <input type="number" class="form-control form-control-sm"  name="tel_cliente_imprenta" id="dni_cliente_imprenta">
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Nombre</label>
-                <input type="text" class="form-control form-control-sm"  name="nom_cliente" id="nom_cliente" disabled required>
+                <input type="text" class="form-control form-control-sm"  name="nom_cliente_imprenta" id="nom_cliente_imprenta" disabled required>
             </div>
             <div class="col-md-4 mb-1">
                 <label for="fecha" class="form-label">Apellido</label>
-                <input type="text" class="form-control form-control-sm"  name="ape_cliente" id="ape_cliente" disabled required>
-            </div>
-            <div class="col-md-12 d-flex justify-content-center">
-                <div class="col-md-6 mb-1 d-flex align-items-center">
-                    <label for="tel_cliente" class="form-label me-2">Telefono</label>
-                    <input type="number" class="form-control form-control-sm" name="tel_cliente" id="tel_cliente" disabled required>
-                </div>
+                <input type="text" class="form-control form-control-sm"  name="ape_cliente_imprenta" id="ape_cliente_imprenta" disabled required>
             </div>
 
-
-            <div class="text-center" id="div_registro_cliente" style="display: none;">
+            <div class="text-center" id="div_registro_cliente_imprenta" style="display: none;">
                 <button type="submit" class="btn btn-primary">Registrar</button>
             </div>
         </form>
@@ -128,7 +121,7 @@ require ('barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados e
 
 <?php
 $_SESSION['Mensaje']='';
-require ('footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
 

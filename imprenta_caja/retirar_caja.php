@@ -3,14 +3,14 @@ ob_start();
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php');
-require('barraLateral.inc.php');
-require_once 'funciones/conexion.php';
-require_once 'funciones/imprenta.php';
+require('../shared/encabezado.inc.php');
+require('../shared/barraLateral.inc.php');
+require_once '../funciones/conexion.php';
+require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
@@ -30,7 +30,7 @@ if (!empty($_POST['BotonRegistrar'])) {
         if (empty($_POST['idCaja'])) {
             echo "<script>
                 alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar el retiro.');
-                window.location.href = 'index.php';
+                window.location.href = '../core/index.php';
             </script>";
             exit;
         }
@@ -177,6 +177,6 @@ $MiConexion->close();
 </script>
 
 <?php
-require('footer.inc.php');
+require('../shared/footer.inc.php');
 ob_end_flush();
 ?>

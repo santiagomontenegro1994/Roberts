@@ -4,14 +4,14 @@ session_start();
 
 // Verificar primero si el usuario está logueado
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php');
-require('barraLateral.inc.php');
-require_once 'funciones/conexion.php';
-require_once 'funciones/imprenta.php';
+require('../shared/encabezado.inc.php');
+require('../shared/barraLateral.inc.php');
+require_once '../funciones/conexion.php';
+require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
@@ -19,7 +19,7 @@ $MiConexion = ConexionBD();
 if (!isset($_SESSION['Id_Caja']) || empty($_SESSION['Id_Caja'])) {
     echo "<script>
         alert('No hay caja seleccionada, seleccione una caja antes de entrar a la planilla de caja');
-        window.location.href = 'index.php';
+        window.location.href = '../core/index.php';
     </script>";
     exit;
 }
@@ -60,7 +60,7 @@ $resultadoCaja = $stmtCaja->get_result();
 if ($resultadoCaja->num_rows === 0) {
     echo "<script>
         alert('No se encontró la caja seleccionada');
-        window.location.href = 'index.php';
+        window.location.href = '../core/index.php';
     </script>";
     exit;
 }
@@ -278,7 +278,7 @@ $cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja i
 </main>
 
 <?php
-require('footer.inc.php');
+require('../shared/footer.inc.php');
 ob_end_flush();
 ?>
 

@@ -320,44 +320,6 @@ function Modificar_Proveedor($vConexion) {
     
 }
 
-// Función para verificar si un ID existe en una tabla
-function existeEnTabla($conexion, $tabla, $idLibro) {
-    $query = "SELECT COUNT(*) as count FROM $tabla WHERE idLibros = ?";
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("i", $idLibro);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    return $row['count'] > 0;
-}
-
-function ColorDeFila($vEstado) {
-    $Title='';
-    $Color=''; 
-
-    if ($vEstado == '4'){
-        //Estado pendiente
-        $Title='Entregado';
-        $Color='table-primary'; 
-    
-    } else if ($vEstado == '3'){
-        //Estado listo para retirar
-        $Title='Recibido';
-        $Color='table-success'; 
-    } else if ($vEstado == '2'){
-        //Estado retirado
-        $Title='Pedido';
-        $Color='table-warning'; 
-    } else if ($vEstado == '1'){
-    //Estado retirado
-    $Title='Para pedir';
-    $Color='table-danger'; 
-    }      
-    
-    return [$Title, $Color];
-
-}
-
 function Listar_Tipos_Pagos($conexion) {
     $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1";
     $resultado = mysqli_query($conexion, $sql);

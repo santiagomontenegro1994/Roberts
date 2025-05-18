@@ -2,17 +2,17 @@
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) { // Si el usuario no está logueado, redirigir
-    header('Location: cerrarsesion.php');
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-require('encabezado.inc.php'); // Incluir encabezado
-require('barraLateral.inc.php'); // Incluir barra lateral
+require('../shared/encabezado.inc.php'); // Incluir encabezado
+require('../shared/barraLateral.inc.php'); // Incluir barra lateral
 
-require_once 'funciones/conexion.php';
+require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-require_once 'funciones/imprenta.php';
+require_once '../funciones/imprenta.php';
 
 // Obtener los tipos de servicios desde la base de datos
 $ListadoTiposServicio = Listar_Tipos_Servicios($MiConexion);
@@ -28,7 +28,7 @@ $CantidadTiposServicio = count($ListadoTiposServicio);
 
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
+    <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
     <li class="breadcrumb-item">Tipos de Servicios</li>
     <li class="breadcrumb-item active">Listado Tipos de Servicios</li>
   </ol>
@@ -95,7 +95,7 @@ $CantidadTiposServicio = count($ListadoTiposServicio);
 
 <?php
   $_SESSION['Mensaje'] = '';
-  require('footer.inc.php'); // Incluir footer
+  require('../shared/footer.inc.php'); // Incluir footer
 ?>
 
 </body>
