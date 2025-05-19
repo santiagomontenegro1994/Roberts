@@ -57,30 +57,6 @@ $MiConexion=ConexionBD();
 
         }
 
-        //Buscar libro
-        if($_POST['action'] == 'infoLibro'){
-
-                $idLibro = $_POST['libro'];
-
-                $query = mysqli_query($MiConexion, "SELECT titulo, editorial, precio FROM librosleas WHERE idLibros LIKE '$idLibro'
-                                   UNION
-                                   SELECT titulo, editorial, precio FROM librossbs WHERE idLibros LIKE '$idLibro'
-                                   UNION
-                                   SELECT titulo, editorial, precio FROM libros WHERE idLibros LIKE '$idLibro'");
-
-                mysqli_close($MiConexion);
-
-                $result = mysqli_num_rows($query);
-                if($result > 0){
-                    $data = mysqli_fetch_assoc($query);
-                    echo json_encode($data,JSON_UNESCAPED_UNICODE);
-                    exit;
-                }
-                echo 'error';
-                exit;
-            
-        }
-
         //Agregar libro al detalle temporal
         if($_POST['action'] == 'agregarLibroDetalle'){
             if(empty($_POST['producto']) || empty($_POST['cantidad'])){

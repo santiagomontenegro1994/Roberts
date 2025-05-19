@@ -10,6 +10,14 @@ require ('../shared/encabezado.inc.php'); //Aca uso el encabezado que esta secci
 
 require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta seccionados en otro archivo
 
+require_once '../funciones/conexion.php';
+$MiConexion=ConexionBD();
+
+require_once '../funciones/imprenta.php';
+
+$estados = Datos_Estados_Trabajo($MiConexion);
+$trabajos = Datos_Trabajos($MiConexion);
+$proveedores = Listar_Proveedores($MiConexion);
 ?>
 
 <main id="main" class="main">
@@ -60,51 +68,108 @@ require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta sec
         </div>
     </div>   
     
-    <!-- Table with stripped rows -->
+    <!-- Datos del pedido -->
     <div class="card">
         <div class="card-body">
             <h5 class="card-title mr-2">Datos del Pedido</h5>
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr class="table-primary">
-                            <th scope="col" class="col-2 text-truncate" style="max-width: 50px;">ID</th>
-                            <th scope="col" class="col-5">Titulo</th>
-                            <th scope="col" class="col-3">Editorial</th>
-                            <th scope="col" class="col-2">Cantidad</th>
-                            <th scope="col" class="col-2">Precio</th>
-                            <th scope="col" class="col-5">Precio_Total</th>
-                            <th scope="col" class="col-6">Accion</th>
-                        </tr>
-                        <tr class="" data-bs-toggle="tooltip" data-bs-placement="left">
-                            <th><input type="text" name="txtIdLibro" id="txtIdLibro" class="form-control form-control-sm w-75"></th>
-                            <td id="txt_titulo">-</td>
-                            <td id="txt_editorial">-</td>
-                            <th><input type="text" name="txt_cantidad_libro" id="txt_cantidad_libro" value="0" min="1" class="form-control form-control-sm w-50" disabled></th>
-                            <td id="txt_precio">0.00</td>
-                            <td id="txt_precio_total">0.00</td>
-                            <td><a href="#" id="add_libro_pedido" class="text-primary fw-bold" style="display: none;"><i class="bi bi-bag-plus-fill text-primary fs-5"></i> pedir</a></td>
-                        </tr>
-                        <tr class="table-primary">
-                            <th scope="col">ID</th>
-                            <th scope="col">Titulo</th>
-                            <th scope="col">Editorial</th>
-                            <th scope="col" class="col-2">Cantidad</th>
-                            <th scope="col">Precio</th>
-                            <th scope="col">Precio total</th>
-                            <th scope="col">Accion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detalleVenta">
-                        <!-- CONTENIDO AJAX-->
-                    </tbody>
-                    <tfoot id="detalleTotal">
-                        <!-- CONTENIDO AJAX-->
-                    </tfoot>
-                </table>
+            
+            <!-- Primera fila: Estado, Trabajo y Descripción -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="estado_pedido" class="form-label">Estado del Pedido</label>
+                    <select class="form-select" id="estado_pedido" name="estado_pedido" required>
+                        <?php foreach ($estados as $estado): ?>
+                            <option value="<?= $estado['idEstado'] ?>">
+                                <?= htmlspecialchars($estado['denominacion']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="estado_pedido" class="form-label">Trabajo</label>
+                    <select class="form-select" id="tipo_trabajo" name="tipo_trabajo" required>
+                        <?php foreach ($trabajos as $trabajo): ?>
+                            <option value="<?= $trabajo['idTipoTrabajo'] ?>" 
+                            <?= ($trabajo['idTipoTrabajo'] == 6) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($trabajo['denominacion']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <input type="text" class="form-control" id="descripcion" name="descripcion" 
+                        placeholder="Detalles del trabajo" value="">
+                </div>
             </div>
+            
+            <!-- Segunda fila: Precio, Seña y Fecha/Hora -->
+            <div class="row mb-3">
+
+                <div class="col-md-4">
+                    <label for="estado_pedido" class="form-label">Enviado a</label>
+                    <select class="form-select" id="enviado" name="enviado" required>
+                        <?php foreach ($proveedores as $proveedor): ?>
+                            <option value="<?= $proveedor['ID_PROVEEDOR'] ?>"
+                                <?= ($proveedor['ID_PROVEEDOR'] == 7) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($proveedor['NOMBRE']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fecha Entrega</label>
+                    <input type="date" class="form-control" id="fecha_entrega_date" 
+                        min="<?= date('Y-m-d') ?>">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Hora Entrega</label>
+                    <select class="form-select" id="hora_entrega">
+                        <option value="08:30">8:30</option>
+                        <option value="09:00">9:00</option>
+                        <option value="09:30">9:30</option>
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="11:30">11:30</option>
+                        <option value="12:00">12:00</option>
+                        <option value="12:30">12:30</option>
+                        <option value="16:00">16:00</option>
+                        <option value="16:30">16:30</option>
+                        <option value="17:00">17:00</option>
+                        <option value="17:30">17:30</option>
+                        <option value="18:00">18:00</option>
+                        <option value="18:30">18:30</option>
+                        <option value="19:00">19:00</option>
+                        <option value="19:30">19:30</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3">
+
+                <div class="col-md-6">
+                    <label for="precio" class="form-label">Precio ($)</label>
+                    <input type="number" class="form-control" id="precio" name="precio" 
+                        step="0.01" min="0" value="0.00">
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="senia" class="form-label">Seña ($)</label>
+                    <input type="number" class="form-control" id="senia" name="senia" 
+                        step="0.01" min="0" value="0.00">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center mt-3">
+                <a href="#" class="btn btn-primary btn-sm m-2" id="btn_agregar_pedido">Agregar a pedido</a>
+            </div> 
         </div>
     </div>
+
     <div class="d-flex justify-content-center align-items-center"> 
         <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido">Anular</a> 
         <a href="#" class="btn btn-primary btn-sm m-2"id="btn_new_pedido" style="display: none;">Crear Pedido</a>
@@ -113,10 +178,6 @@ require ('../shared/barraLateral.inc.php'); //Aca uso el encabezaso que esta sec
 
 </section>            
             
-        
-
-
-
 </main><!-- End #main -->
 
 <?php
@@ -124,12 +185,24 @@ $_SESSION['Mensaje']='';
 require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
 ?>
 
-
-<script type="text/javascript">//script para traer el detalle de pedido
-    $(document).ready(function(){ //se ejecuta despues que se cargue todo el documento
-        searchforDetalle();
+<script>
+$(document).ready(function() {
+    // Configurar el input datetime-local
+    const fechaInput = document.getElementById('fecha_entrega');
+    
+    // Establecer fecha mínima como hoy
+    const hoy = new Date();
+    const fechaMinima = hoy.toISOString().slice(0, 16);
+    fechaInput.min = fechaMinima;
+    
+    // Validar al cambiar el valor
+    fechaInput.addEventListener('change', function() {
+        validarFechaHora(this);
     });
-
+    
+    // Script para traer el detalle de pedido
+    searchforDetalle();
+});
 </script>
 
 </body>

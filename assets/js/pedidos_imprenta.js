@@ -93,76 +93,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Buscar Libro
-    $('#txtIdLibro').keyup(function(e){
-        e.preventDefault();
-
-        var lb  = $(this).val(); //capturo lo que se teclea en libro
-        var action = 'infoLibro';
-
-        if(lb!= ''){ //si la variable es diferente de vacio ejecuto el ajax
-
-            $.ajax({
-                url: 'ajax.php',
-                type: "POST",
-                async : true,
-                data: {action:action,libro:lb}, 
-    
-                success: function(response){
-                    if(response!='error'){ //valido que la respuesta no sea error
-                        var info = JSON.parse(response);//guardo la informacion en info
-                        var precioConDosDecimales = parseFloat(info.precio).toFixed(2);
-                        $('#txt_titulo').html(info.titulo); //paso los datos a las casillas
-                        $('#txt_editorial').html(info.editorial);
-                        $('#txt_precio').html(precioConDosDecimales);
-                        $('#txt_cantidad_libro').val('1');
-                        $('#txt_precio_total').html(precioConDosDecimales);
-
-                        //activar Cantidad
-                        $('#txt_cantidad_libro').removeAttr('disabled');
-
-                        //mostrar boton agregar
-                        $('#add_libro_pedido').slideDown();
-                    }else{
-                        $('#txt_titulo').html('-'); 
-                        $('#txt_editorial').html('-');
-                        $('#txt_precio').html('0.00');
-                        $('#txt_cantidad_libro').val('0');
-                        $('#txt_precio_total').html('0.00');
-
-                        //bloquear Cantidad
-                        $('#txt_cantidad_libro').attr('disabled','disabled');
-
-                        //ocultar boton agregar
-                        $('#add_libro_pedido').slideUp();
-                    }
-                },
-                error: function(error){
-                    console.log('Error:', error);
-                }
-    
-            });
-        }
-       
-
-    });
-
-    //Validar cantidad de libro antes de agregar
-    $('#txt_cantidad_libro').keyup(function(e){
-        e.preventDefault();
-
-        var precio_total =$(this).val() * $('#txt_precio').html();//calculo el precio total
-        var precioConDosDecimales = parseFloat(precio_total).toFixed(2);
-        $('#txt_precio_total').html(precioConDosDecimales); //se lo paso al campo
-
-        //Oculta el boton agregar si es menor que 1
-        if($(this).val() < 1 || isNaN($(this).val()) ){
-            $('#add_libro_pedido').slideUp();
-        }else{
-            $('#add_libro_pedido').slideDown();
-        }
-    });
-
     // Evento keyup para recalcular el total restando la seña
     $(document).on('keyup', '#seniaPedido', function (e) {
         e.preventDefault();
@@ -194,45 +124,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     
             // Mostrar u ocultar el botón según el total restante
             if (precio_total < 0) {
-                $('#btn_new_pedido').hide();
-            } else {
-                $('#btn_new_pedido').show();
-            }
-        }
-     
-    });
-
-     // Evento keyup para recalcular el total restando el descuento
-     $(document).on('keyup', '#descuentoPedido', function (e) {
-        e.preventDefault();
-        
-        var senia = $('#seniaPedido').val();
-
-        if (senia !== null && !isNaN(senia) && parseFloat(senia) > 0) {
-
-            var descuentoCalculado = $('#total_pedido_original').html() * ($(this).val() / 100);
-            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
-
-            var precio_total = totalConDescuento - senia;//calculo el precio total
-
-            // Actualizar el total restante en el DOM
-            $('#total_pedido').text(precio_total.toFixed(2));
-    
-            // Mostrar u ocultar el botón según el total restante
-            if (precio_total < 0) {
-                $('#btn_new_pedido').hide();
-            } else {
-                $('#btn_new_pedido').show();
-            }
-        }else{
-
-            var descuentoCalculado = $('#total_pedido_original').html() * ($(this).val() / 100);
-            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
-            // Actualizar el total restante en el DOM
-            $('#total_pedido').text(totalConDescuento.toFixed(2));
-    
-            // Mostrar u ocultar el botón según el total restante
-            if (totalConDescuento < 0) {
                 $('#btn_new_pedido').hide();
             } else {
                 $('#btn_new_pedido').show();
@@ -366,8 +257,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
 
     });
-
-    
 
 });
 

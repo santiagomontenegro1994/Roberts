@@ -915,4 +915,42 @@ function ColorDeFilaCaja($vTipoOperacion) {
 
 }
 
+function Datos_Estados_Trabajo($vConexion) {
+    $estados = array();
+    
+    $SQL = "SELECT idEstado, denominacion FROM estado_trabajo ORDER BY idEstado";
+    $rs = mysqli_query($vConexion, $SQL);
+    
+    if (!$rs) {
+        die("Error en la consulta: " . mysqli_error($vConexion));
+    }
+    
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $estados[] = $data; // Agrega todos los estados al array
+    }
+    
+    mysqli_free_result($rs);
+    return $estados;
+}
+
+function Datos_Trabajos($vConexion) {
+    $trabajos = array();
+    
+    // Consulta corregida: WHERE antes de ORDER BY
+    $SQL = "SELECT idTipoTrabajo, denominacion FROM tipo_trabajo WHERE idActivo = 1 ORDER BY denominacion";
+    
+    $rs = mysqli_query($vConexion, $SQL);
+    
+    if (!$rs) {
+        die("Error en la consulta: " . mysqli_error($vConexion));
+    }
+    
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $trabajos[] = $data;
+    }
+    
+    mysqli_free_result($rs);
+    return $trabajos;
+}
+
 ?>
