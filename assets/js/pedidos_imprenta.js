@@ -132,7 +132,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
      
     });
 
-    //Agregar producto al detalle temporal
+    //Agregar trabajo al detalle temporal de trabajos
     $('#add_trabajo_pedido').click(function(e){
         e.preventDefault();
         // Verificar que todos los campos requeridos tengan valores
@@ -191,7 +191,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Anular pedido
+    //Anular pedido-------------------------
     $('#btn_anular_pedido').click(function(e){
         e.preventDefault();
 
@@ -220,7 +220,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Confirmar pedido
+    //Confirmar pedido------------------------------
     $('#btn_new_pedido').click(function(e){
         e.preventDefault();
         
@@ -268,7 +268,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
 });
 
-//Agrega libro a pedido desde la lista de libros(fuera del ready)
+//Agrega libro a pedido desde la lista de libros(fuera del ready)------------------------
 function agregarAPedido(idLibro) {
     // Solicitar la cantidad
     var cantidad = prompt("Ingrese la cantidad:");
@@ -326,13 +326,13 @@ function agregarAPedido(idLibro) {
     }
 }
 
-//funcion para eliminar el detalle del pedido(fuera del ready)
-function del_libro_detalle(correlativo){
-    var action ='delProductoDetalle';
+//funcion para eliminar el detalle del pedido Trabajo(fuera del ready)
+function del_trabajo_detalle(correlativo){
+    var action ='delProductoDetalleTrabajo';
     var id_detalle =correlativo;
 
     $.ajax({
-        url: 'ajax.php',
+        url: '../shared/ajax_imprenta.php',
         type: "POST",
         async : true,
         data: {action:action,id_detalle:id_detalle}, 
@@ -340,8 +340,8 @@ function del_libro_detalle(correlativo){
         success: function(response){
             if(response!='error'){
                 var info = JSON.parse(response);
-                $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
-                $('#detalleTotal').html(info.totales);
+                $('#detalleVentaTrabajo').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                $('#detalleTotalTrabajo').html(info.totales);
 
                 //ponemos todos los valores por defecto
                 $('#txtIdLibro').val('');
@@ -351,17 +351,11 @@ function del_libro_detalle(correlativo){
                 $('#txt_cantidad_libro').val('0');
                 $('#txt_precio_total').html('0.00');
 
-                //bloquear Cantidad
-                $('#txt_cantidad_libro').attr('disabled','disabled');
-
-                //ocultar boton agregar
-                $('#add_libro_pedido').slideUp();
 
             }else{//si trae un error colocamos todo en blanco
-                $('#detalleVenta').html('');
-                $('#detalleTotal').html('');
+                $('#detalleVentaTrabajo').html('');
+                $('#detalleTotalTrabajo').html('');
             }
-            viewProcesar();//llamo la funcion para ver si oculto el boton
         },
         error: function(error){
             console.log('Error:', error);
@@ -371,7 +365,7 @@ function del_libro_detalle(correlativo){
 
 }
 
-//funcion para mostrar u ocultar boton de registrar pedido(fuera del ready)
+//funcion para mostrar u ocultar boton de registrar pedido(fuera del ready)----------------------
 function viewProcesar(){
     if($('#detalleVenta tr').length > 0){
         $('#btn_new_pedido').show();
@@ -381,9 +375,9 @@ function viewProcesar(){
 
 }
 
-//funcion para mostrar siempre el detalle del pedido(fuera del ready)
-function searchforDetalle(){
-    var action = 'searchforDetalle';
+//funcion para mostrar siempre el detalle del pedido de trabajos(fuera del ready)
+function searchforDetalleTrabajo(){
+    var action = 'searchforDetalleTrabajo';
 
     $.ajax({
         url: '../shared/ajax_imprenta.php',
@@ -395,8 +389,8 @@ function searchforDetalle(){
 
             if(response != 'error'){//validamos que la respuesta no sea error
                 var info = JSON.parse(response);//convertimos en JSON a un objeto
-                $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
-                $('#detalleTotal').html(info.totales);
+                $('#detalleVentaTrabajo').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                $('#detalleTotalTrabajo').html(info.totales);
 
             }else{
                 console.log('no data');

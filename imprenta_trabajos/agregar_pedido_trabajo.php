@@ -204,7 +204,7 @@ require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados e
 $(document).ready(function() {
     
     // Script para traer el detalle de pedido
-    searchforDetalle();
+    searchforDetalleTrabajo();
 });
 </script>
 

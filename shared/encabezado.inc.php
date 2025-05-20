@@ -104,7 +104,7 @@ $MiConexion->close();
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="cerrarsesion.php">
+                        <a class="dropdown-item d-flex align-items-center" href="../core/cerrarsesion.php">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Cerrar sesión</span>
                         </a>

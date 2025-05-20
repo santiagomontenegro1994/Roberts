@@ -57,7 +57,7 @@ $MiConexion=ConexionBD();
 
         }
 
-        //Agregar libro al detalle temporal
+        //Agregar trabajo al detalle temporal de trabajos
         if($_POST['action'] == 'agregarTrabajoDetalle'){
 
                 //si no vienen vacios creo variables y les paso los datos
@@ -87,7 +87,7 @@ $MiConexion=ConexionBD();
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla = '<div class="table-responsive">
+                        $detalleTabla .= '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr data-bs-toggle="tooltip" data-bs-placement="left">
                                                     <th>'.$data['estado_trabajo'].'</th>
@@ -97,7 +97,7 @@ $MiConexion=ConexionBD();
                                                     <th>'.$data['horaEntrega'].'</th>
                                                     <th>'.$data['precio'].'</th>
                                                     <td>
-                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
                                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
                                                         </a>
                                                     </td>   
@@ -139,26 +139,32 @@ $MiConexion=ConexionBD();
         }
 
         //muestra datos del detalle temp
-        if($_POST['action'] == 'searchforDetalle'){
+        if($_POST['action'] == 'searchforDetalleTrabajo'){
             if(empty($_POST['action'])){
                 echo 'error';//...
             }else{
+                $usuario = $_SESSION['Usuario_Id'];
                 
                 //genero el Query para que me devuelva los datos de detalle temp
                 $query = mysqli_query($MiConexion,"SELECT 
                                                         tmp.correlativo, 
-                                                        tmp.idLibro, 
-                                                        COALESCE(l.titulo, s.titulo, b.titulo) AS titulo,
-                                                        COALESCE(l.editorial, s.editorial, b.editorial) AS editorial,
-                                                        tmp.cantidad, 
-                                                        tmp.precio_pedido
-                                                    FROM detalle_temp tmp
-                                                    LEFT JOIN librosleas l ON tmp.idLibro = l.idLibros
-                                                    LEFT JOIN librossbs s ON tmp.idLibro = s.idLibros
-                                                    LEFT JOIN libros b ON tmp.idLibro = b.idLibros
-                                                    WHERE l.idLibros IS NOT NULL 
-                                                    OR s.idLibros IS NOT NULL 
-                                                    OR b.idLibros IS NOT NULL");
+                                                        et.denominacion AS estado_trabajo,
+                                                        tt.denominacion AS tipo_trabajo,
+                                                        p.nombre AS proveedor,
+                                                        tmp.fechaEntrega, 
+                                                        tmp.horaEntrega, 
+                                                        tmp.precio 
+                                                    FROM 
+                                                        detalle_temp_trabajos tmp
+                                                    LEFT JOIN 
+                                                        estado_trabajo et ON tmp.idEstadoTrabajo = et.idEstado
+                                                    LEFT JOIN 
+                                                        tipo_trabajo tt ON tmp.idTrabajo = tt.idTipoTrabajo
+                                                    LEFT JOIN 
+                                                        proveedores p ON tmp.idProveedor = p.idProveedor
+                                                    WHERE 
+                                                        tmp.idUsuario = $usuario
+                                                    ORDER BY tmp.correlativo;");
 
                 $result = mysqli_num_rows($query);
                 
@@ -171,22 +177,22 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query)){
-                        $precioTotal = round($data['cantidad'] * $data['precio_pedido'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla = '<div class="table-responsive">
+                        $detalleTabla .= '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['idLibro'].'</th>
-                                                    <td>'.$data['titulo'].'</td>
-                                                    <td>'.$data['editorial'].'</td>
-                                                    <th>'.$data['cantidad'].'</th>
-                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <th>'.$data['estado_trabajo'].'</th>
+                                                    <td>'.$data['tipo_trabajo'].'</td>
+                                                    <td>'.$data['proveedor'].'</td>
+                                                    <th>'.$data['fechaEntrega'].'</th>
+                                                    <th>'.$data['horaEntrega'].'</th>
+                                                    <th>'.$data['precio'].'</th>
                                                     <td>
-                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
                                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
                                                         </a>
                                                     </td>   
@@ -201,10 +207,6 @@ $MiConexion=ConexionBD();
                                             <tr>
                                                 <td colspan="5" class="text-end">SUBTOTAL</td>
                                                 <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">DESCUENTO</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
@@ -232,15 +234,16 @@ $MiConexion=ConexionBD();
 
         }
 
-        //elimina datos del detalle temp
-        if($_POST['action'] == 'delProductoDetalle'){
+        //elimina datos del detalle temp Trabajo
+        if($_POST['action'] == 'delProductoDetalleTrabajo'){
             if(empty($_POST['id_detalle'])){
                 echo 'error';//si viene vacio retorna error
             }else{
                 $id_detalle = $_POST['id_detalle'];
+                $usuario = $_SESSION['Usuario_Id'];
 
                 //llamo al procedimiento almacenado para eliminar un detalle temp
-                $query_detalle_temp = mysqli_query($MiConexion,"CALL del_detalle_temp($id_detalle)");
+                $query_detalle_temp = mysqli_query($MiConexion,"CALL del_detalle_temp_trabajos($id_detalle,$usuario)");
                 $result = mysqli_num_rows($query_detalle_temp);
                 
                 
@@ -253,22 +256,22 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['cantidad'] * $data['precio_pedido'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla = '<div class="table-responsive">
+                        $detalleTabla .= '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['idLibro'].'</th>
-                                                    <td>'.$data['titulo'].'</td>
-                                                    <td>'.$data['editorial'].'</td>
-                                                    <th>'.$data['cantidad'].'</th>
-                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <th>'.$data['estado_trabajo'].'</th>
+                                                    <td>'.$data['tipo_trabajo'].'</td>
+                                                    <td>'.$data['proveedor'].'</td>
+                                                    <th>'.$data['fechaEntrega'].'</th>
+                                                    <th>'.$data['horaEntrega'].'</th>
+                                                    <th>'.$data['precio'].'</th>
                                                     <td>
-                                                        <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
+                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
                                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
                                                         </a>
                                                     </td>   
@@ -283,10 +286,6 @@ $MiConexion=ConexionBD();
                                             <tr>
                                                 <td colspan="5" class="text-end">SUBTOTAL</td>
                                                 <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">DESCUENTO</td>
-                                                <td colspan="5" class="text-end"><input type="text" id="descuentoPedido" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
@@ -313,7 +312,7 @@ $MiConexion=ConexionBD();
             exit;
         }
         
-        //anular pedido
+        //anular pedido --------------------------
         if($_POST['action'] == 'anularVenta'){
 
             $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp");
@@ -327,7 +326,7 @@ $MiConexion=ConexionBD();
 
         }
 
-        //confirmar pedido
+        //confirmar pedido -------------------
         if($_POST['action'] == 'procesarVenta'){
             $codCliente = $_POST['codCliente'];
             $senia = $_POST['senia'];
