@@ -133,25 +133,37 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     });
 
     //Agregar producto al detalle temporal
-    $('#add_libro_pedido').click(function(e){
+    $('#add_trabajo_pedido').click(function(e){
         e.preventDefault();
-        if($('#txt_cantidad_libro').val() > 0){
+        // Verificar que todos los campos requeridos tengan valores
+        if ($('#estado_trabajo').val() && 
+            $('#tipo_trabajo').val() &&  
+            $('#enviado').val() && 
+            $('#fecha_entrega_date').val() && 
+            $('#hora_entrega').val() && 
+            $('#precio').val() > 0) {
+            // Todos los campos tienen valores, puedes proceder
 
-            var codlibro = $('#txtIdLibro').val();
-            var cantidad = $('#txt_cantidad_libro').val();
-            var action = 'agregarLibroDetalle';
+            var estado = $('#estado_trabajo').val();
+            var trabajo = $('#tipo_trabajo').val(); 
+            var enviado = $('#enviado').val();
+            var fecha = $('#fecha_entrega_date').val();
+            var hora = $('#hora_entrega').val();
+            var precio = $('#precio').val();
+
+            var action = 'agregarTrabajoDetalle';
 
             $.ajax({
-                url: 'ajax.php',
+                url: '../shared/ajax_imprenta.php',
                 type: "POST",
                 async : true,
-                data: {action:action,producto:codlibro,cantidad:cantidad}, 
+                data: {action:action,estado:estado,trabajo:trabajo,enviado:enviado,fecha:fecha,hora:hora,precio:precio}, 
     
                 success: function(response){
                     if(response != 'error'){//validamos que la respuesta no sea error
                         var info = JSON.parse(response);//convertimos en JSON a un objeto
-                        $('#detalleVenta').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
-                        $('#detalleTotal').html(info.totales);
+                        $('#detalleVentaTrabajo').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
+                        $('#detalleTotalTrabajo').html(info.totales);
 
                         //ponemos todos los valores por defecto
                         $('#txtIdLibro').val('');
@@ -161,16 +173,9 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                         $('#txt_cantidad_libro').val('0');
                         $('#txt_precio_total').html('0.00');
 
-                        //bloquear Cantidad
-                        $('#txt_cantidad_libro').attr('disabled','disabled');
-
-                        //ocultar boton agregar
-                        $('#add_libro_pedido').slideUp();
-
                     }else{
                         console.log('no data');
                     }
-                    viewProcesar();//llamo la funcion para ver si oculto el boton
 
                 },
                 error: function(error){
@@ -178,9 +183,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 }
     
             });
-
-
+        } else {
+            // Mostrar mensaje de error o alerta
+            alert('Por favor complete todos los campos requeridos');
+            return false;
         }
+
     });
 
     //Anular pedido

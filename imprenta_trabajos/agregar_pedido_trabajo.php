@@ -76,8 +76,8 @@ $proveedores = Listar_Proveedores($MiConexion);
             <!-- Primera fila: Estado, Trabajo y Descripción -->
             <div class="row mb-3">
                 <div class="col-md-4">
-                    <label for="estado_pedido" class="form-label">Estado del Pedido</label>
-                    <select class="form-select" id="estado_pedido" name="estado_pedido" required>
+                    <label for="estado_trabajo" class="form-label">Estado del Pedido</label>
+                    <select class="form-select" id="estado_trabajo" name="estado_trabajo" required>
                         <?php foreach ($estados as $estado): ?>
                             <option value="<?= $estado['idEstado'] ?>">
                                 <?= htmlspecialchars($estado['denominacion']) ?>
@@ -87,7 +87,7 @@ $proveedores = Listar_Proveedores($MiConexion);
                 </div>
                 
                 <div class="col-md-4">
-                    <label for="estado_pedido" class="form-label">Trabajo</label>
+                    <label for="tipo_trabajo" class="form-label">Trabajo</label>
                     <select class="form-select" id="tipo_trabajo" name="tipo_trabajo" required>
                         <?php foreach ($trabajos as $trabajo): ?>
                             <option value="<?= $trabajo['idTipoTrabajo'] ?>" 
@@ -109,7 +109,7 @@ $proveedores = Listar_Proveedores($MiConexion);
             <div class="row mb-3">
 
                 <div class="col-md-4">
-                    <label for="estado_pedido" class="form-label">Enviado a</label>
+                    <label for="enviado" class="form-label">Enviado a</label>
                     <select class="form-select" id="enviado" name="enviado" required>
                         <?php foreach ($proveedores as $proveedor): ?>
                             <option value="<?= $proveedor['ID_PROVEEDOR'] ?>"
@@ -157,19 +157,34 @@ $proveedores = Listar_Proveedores($MiConexion);
                         step="0.01" min="0" value="0.00">
                 </div>
                 
-                <div class="col-md-6">
-                    <label for="senia" class="form-label">Seña ($)</label>
-                    <input type="number" class="form-control" id="senia" name="senia" 
-                        step="0.01" min="0" value="0.00">
-                </div>
             </div>
 
             <div class="d-flex justify-content-center mt-3">
-                <a href="#" class="btn btn-primary btn-sm m-2" id="btn_agregar_pedido">Agregar a pedido</a>
+                <a href="#" id="add_trabajo_pedido" class="text-primary fw-bold" ><i class="bi bi-journal-plus"></i> agregar a Pedido</a>
             </div> 
         </div>
     </div>
-
+    <div class="table-responsive">
+     <table class="table table-striped">
+        <thead>
+            <tr class="table-primary">
+                <th scope="col">Estado</th>
+                <th scope="col">Trabajo</th>
+                <th scope="col">Enviado a</th>
+                <th scope="col">Fecha Entrega</th>
+                <th scope="col">Hora Entrega</th>
+                <th scope="col">Precio</th>
+                <th scope="col">Accion</th>
+            </tr>
+        </thead>
+            <tbody id="detalleVentaTrabajo">
+                <!-- CONTENIDO AJAX-->
+            </tbody>
+            <tfoot id="detalleTotalTrabajo">
+                <!-- CONTENIDO AJAX-->
+            </tfoot>
+    </table>           
+    </div>
     <div class="d-flex justify-content-center align-items-center"> 
         <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido">Anular</a> 
         <a href="#" class="btn btn-primary btn-sm m-2"id="btn_new_pedido" style="display: none;">Crear Pedido</a>
@@ -187,18 +202,6 @@ require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados e
 
 <script>
 $(document).ready(function() {
-    // Configurar el input datetime-local
-    const fechaInput = document.getElementById('fecha_entrega');
-    
-    // Establecer fecha mínima como hoy
-    const hoy = new Date();
-    const fechaMinima = hoy.toISOString().slice(0, 16);
-    fechaInput.min = fechaMinima;
-    
-    // Validar al cambiar el valor
-    fechaInput.addEventListener('change', function() {
-        validarFechaHora(this);
-    });
     
     // Script para traer el detalle de pedido
     searchforDetalle();

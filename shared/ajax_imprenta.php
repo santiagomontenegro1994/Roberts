@@ -58,16 +58,19 @@ $MiConexion=ConexionBD();
         }
 
         //Agregar libro al detalle temporal
-        if($_POST['action'] == 'agregarLibroDetalle'){
-            if(empty($_POST['producto']) || empty($_POST['cantidad'])){
-                echo 'error';//si producto o cantidad vienen vacios devuelve error
-            }else{
+        if($_POST['action'] == 'agregarTrabajoDetalle'){
+
                 //si no vienen vacios creo variables y les paso los datos
-                $idlibro = $_POST['producto'];
-                $cantidad = $_POST['cantidad'];
+                $estado = $_POST['estado'];
+                $trabajo = $_POST['trabajo'];
+                $enviado = $_POST['enviado'];
+                $fecha = $_POST['fecha'];
+                $hora = $_POST['hora'];
+                $precio = $_POST['precio'];
+                $usuario = $_SESSION['Usuario_Id'];
 
                 //llamo al procedimiento almacenado y le paso los datos
-                $query_detalle_temp = mysqli_query($MiConexion,"CALL add_detalle_temp($idlibro,$cantidad)");
+                $query_detalle_temp = mysqli_query($MiConexion,"CALL add_detalle_temp_trabajos($estado,$trabajo,$enviado,'$fecha','$hora',$precio,$usuario)");
                 $result = mysqli_num_rows($query_detalle_temp);
                 
                 //Declaro variables que voy a usar
@@ -79,7 +82,7 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['cantidad'] * $data['precio_pedido'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
@@ -87,12 +90,12 @@ $MiConexion=ConexionBD();
                         $detalleTabla = '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['idLibro'].'</th>
-                                                    <td>'.$data['titulo'].'</td>
-                                                    <td>'.$data['editorial'].'</td>
-                                                    <th>'.$data['cantidad'].'</th>
-                                                    <td>'.number_format($data['precio_pedido'], 2, '.', '').'</td>
-                                                    <td>'.number_format($precioTotal, 2, '.', '').'</td>
+                                                    <th>'.$data['estado_trabajo'].'</th>
+                                                    <td>'.$data['tipo_trabajo'].'</td>
+                                                    <td>'.$data['proveedor'].'</td>
+                                                    <th>'.$data['fechaEntrega'].'</th>
+                                                    <th>'.$data['horaEntrega'].'</th>
+                                                    <th>'.$data['precio'].'</th>
                                                     <td>
                                                         <a href="#" onclick="event.preventDefault();del_libro_detalle('.$data['correlativo'].');">
                                                             <i class="bi bi-trash-fill text-danger fs-5"></i>
@@ -109,10 +112,6 @@ $MiConexion=ConexionBD();
                                             <tr>
                                                 <td colspan="5" class="text-end">SUBTOTAL</td>
                                                 <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">DESCUENTO</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="descuentoPedido" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
@@ -135,7 +134,6 @@ $MiConexion=ConexionBD();
                     echo 'error';
                 }
                 mysqli_close($MiConexion);
-            }
             exit;
 
         }
