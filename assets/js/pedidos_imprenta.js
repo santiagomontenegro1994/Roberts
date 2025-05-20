@@ -191,17 +191,17 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Anular pedido-------------------------
-    $('#btn_anular_pedido').click(function(e){
+    //Anular pedido trabajo
+    $('#btn_anular_pedido_trabajo').click(function(e){
         e.preventDefault();
 
-        var rows =$('#detalleVenta tr').length;//cuantas filas tiene detalle venta
+        var rows =$('#detalleVentaTrabajo tr').length;//cuantas filas tiene detalle venta
 
         if(rows > 0){// si hay productos en el detalle                                                                                                                                  
-            var action = 'anularVenta';
+            var action = 'anularPedidoTrabajo';
 
             $.ajax({
-                url: 'ajax.php',
+                url: '../shared/ajax_imprenta.php',
                 type: "POST",
                 async : true,
                 data: {action:action}, 
@@ -220,28 +220,26 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     });
 
-    //Confirmar pedido------------------------------
-    $('#btn_new_pedido').click(function(e){
+    //Confirmar pedido trabajo
+    $('#btn_new_pedido_trabajo').click(function(e){
         e.preventDefault();
         
-        var rows =$('#detalleVenta tr').length;//cuantas filas tiene detalle venta
+        var rows =$('#detalleVentaTrabajo tr').length;//cuantas filas tiene detalle venta
 
         if(rows > 0){// si hay productos en el detalle                                                                                                                                  
-            var action = 'procesarVenta';
+            var action = 'procesarPedidoTrabajo';
             var codCliente = $('#idCliente').val();
-            var senia = $('#seniaPedido').val();
-            var descuento = $('#descuentoPedido').val();
-
+            var senia = $('#seniaPedidoImprenta').val();
             
             if(codCliente == null || codCliente == ''){
                 alert('Falta agregar cliente');
             }else{
 
                 $.ajax({
-                    url: 'ajax.php',
+                    url: '../shared/ajax_imprenta.php',
                     type: "POST",
                     async : true,
-                    data: {action:action,codCliente:codCliente,senia:senia,descuento:descuento}, 
+                    data: {action:action,codCliente:codCliente,senia:senia}, 
         
                     success: function(response){
                         

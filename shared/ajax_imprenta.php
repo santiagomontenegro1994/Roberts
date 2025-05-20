@@ -115,7 +115,7 @@ $MiConexion=ConexionBD();
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
+                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedidoImprenta" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">TOTAL</td>
@@ -210,7 +210,7 @@ $MiConexion=ConexionBD();
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedido" value="0" min="1"></td>
+                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedidoImprenta" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">TOTAL</td>
@@ -289,7 +289,7 @@ $MiConexion=ConexionBD();
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedido" value="0" min="1"></td>
+                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">TOTAL</td>
@@ -312,10 +312,12 @@ $MiConexion=ConexionBD();
             exit;
         }
         
-        //anular pedido --------------------------
-        if($_POST['action'] == 'anularVenta'){
+        //anular pedido trabajo
+        if($_POST['action'] == 'anularPedidoTrabajo'){
 
-            $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp");
+            $usuario = $_SESSION['Usuario_Id'];
+
+            $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
             mysqli_close($MiConexion);
             if($query_del){
                 echo 'ok';
@@ -327,16 +329,16 @@ $MiConexion=ConexionBD();
         }
 
         //confirmar pedido -------------------
-        if($_POST['action'] == 'procesarVenta'){
-            $codCliente = $_POST['codCliente'];
+        if($_POST['action'] == 'procesarPedidoTrabajo'){
+            $codCliente = $_POST['idCliente_imprenta'];
             $senia = $_POST['senia'];
-            $descuento = $_POST['descuento'];
+            $usuario = $_SESSION['Usuario_Id'];
 
-                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp");
+                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp WHERE idUsuario = $usuario");
                 $result = mysqli_num_rows($query); //vemos si detalle temp tiene algo
 
                 if($result > 0){
-                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_venta($codCliente,$senia,$descuento)");
+                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_pedido_trabajo($codCliente,$senia,$usuario)");
                     $result_detalle = mysqli_num_rows($query_procesar);
                     //devuelve 0 cuando no encuentra registros
                     if($result_detalle > 0){

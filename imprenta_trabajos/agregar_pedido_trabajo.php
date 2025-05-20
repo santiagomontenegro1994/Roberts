@@ -160,7 +160,7 @@ $proveedores = Listar_Proveedores($MiConexion);
             </div>
 
             <div class="d-flex justify-content-center mt-3">
-                <a href="#" id="add_trabajo_pedido" class="text-primary fw-bold" ><i class="bi bi-journal-plus"></i> agregar a Pedido</a>
+                <a href="#" id="add_trabajo_pedido" class="text-primary fw-bold" ><i class="bi bi-arrow-down-circle-fill"></i> Agregar a Pedido</a>
             </div> 
         </div>
     </div>
@@ -186,8 +186,8 @@ $proveedores = Listar_Proveedores($MiConexion);
     </table>           
     </div>
     <div class="d-flex justify-content-center align-items-center"> 
-        <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido">Anular</a> 
-        <a href="#" class="btn btn-primary btn-sm m-2"id="btn_new_pedido" style="display: none;">Crear Pedido</a>
+        <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido_trabajo">Anular</a> 
+        <a href="#" class="btn btn-primary btn-sm m-2"id="btn_new_pedido_trabajo">Crear Pedido</a>
     </div>
           <!-- End Table with stripped rows -->
 
