@@ -94,42 +94,18 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     });
 
     // Evento keyup para recalcular el total restando la seña
-    $(document).on('keyup', '#seniaPedido', function (e) {
+    $(document).on('keyup', '#seniaPedidoImprenta', function(e) {
         e.preventDefault();
         
-        var descuento = $('#descuentoPedido').val();
-
-        if (descuento !== null && !isNaN(descuento) && parseFloat(descuento) > 0) {
-
-            var descuentoCalculado = $('#total_pedido_original').html() * (descuento / 100);
-            var totalConDescuento = $('#total_pedido_original').html() - descuentoCalculado;
-
-            var precio_total = totalConDescuento - $(this).val();//calculo el precio total
-
-            // Actualizar el total restante en el DOM
-            $('#total_pedido').text(precio_total.toFixed(2));
-    
-            // Mostrar u ocultar el botón según el total restante
-            if (precio_total < 0) {
-                $('#btn_new_pedido').hide();
-            } else {
-                $('#btn_new_pedido').show();
-            }
-        }else{
-            var precio_total =$('#total_pedido_original').html() - $(this).val();//calculo el precio total
-            console.log("entre");
-            console.log(descuento);
-            // Actualizar el total restante en el DOM
-            $('#total_pedido').text(precio_total.toFixed(2));
-    
-            // Mostrar u ocultar el botón según el total restante
-            if (precio_total < 0) {
-                $('#btn_new_pedido').hide();
-            } else {
-                $('#btn_new_pedido').show();
-            }
-        }
-     
+        // Obtener valores y convertirlos a números
+        var totalOriginal = parseFloat($('#total_pedido_original').text());
+        var senia = parseFloat($(this).val()) || 0; // Si no es un número válido, usar 0
+        
+        // Calcular el precio total
+        var precio_total = totalOriginal - senia;
+        
+        // Actualizar el total restante en el DOM
+        $('#total_pedido').text(precio_total.toFixed(2));
     });
 
     //Agregar trabajo al detalle temporal de trabajos
@@ -140,8 +116,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             $('#tipo_trabajo').val() &&  
             $('#enviado').val() && 
             $('#fecha_entrega_date').val() && 
-            $('#hora_entrega').val() && 
-            $('#precio').val() > 0) {
+            $('#hora_entrega').val()) {
             // Todos los campos tienen valores, puedes proceder
 
             var estado = $('#estado_trabajo').val();
@@ -149,7 +124,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             var enviado = $('#enviado').val();
             var fecha = $('#fecha_entrega_date').val();
             var hora = $('#hora_entrega').val();
-            var precio = $('#precio').val();
+            var precio = $('#precio').val() || '0'; // Si está vacío, asigna '0'
 
             var action = 'agregarTrabajoDetalle';
 
