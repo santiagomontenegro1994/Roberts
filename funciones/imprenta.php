@@ -953,4 +953,41 @@ function Datos_Trabajos($vConexion) {
     return $trabajos;
 }
 
+function Listar_Pedidos_Trabajos($vConexion) {
+
+    $Listado = array();
+
+    // 1) Consulta adaptada a pedido_trabajos y estado_trabajo
+    $SQL = "SELECT C.nombre, C.apellido, PT.idPedidoTrabajos, PT.fecha, PT.precioTotal, PT.senia, ET.idEstado, US.usuario, ET.denominacion AS estado_nombre
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            WHERE PT.idActivo = 1
+            ORDER BY PT.idPedidoTrabajos DESC";
+
+    // 2) Ejecutar la consulta
+    $rs = mysqli_query($vConexion, $SQL);
+
+    // 3) Organizar el resultado en un array
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID'] = $data['idPedidoTrabajos'];
+        $Listado[$i]['CLIENTE_N'] = $data['nombre'];
+        $Listado[$i]['CLIENTE_A'] = $data['apellido'];
+        $Listado[$i]['FECHA'] = $data['fecha'];
+        $Listado[$i]['TITULO'] = 'en proceso'; // Puedes cambiar esto si tienes el dato
+        $Listado[$i]['EDITORIAL'] = 'en proceso'; // Puedes cambiar esto si tienes el dato
+        $Listado[$i]['PRECIO'] = $data['precioTotal'];
+        $Listado[$i]['SEÑA'] = $data['senia'];
+        $Listado[$i]['ESTADO'] = $data['idEstado'];
+        $Listado[$i]['USUARIO'] = $data['usuario'];
+        $Listado[$i]['ESTADO_NOMBRE'] = $data['estado_nombre'];
+        $i++;
+    }
+
+    // Devolver el listado generado
+    return $Listado;
+}
+
 ?>

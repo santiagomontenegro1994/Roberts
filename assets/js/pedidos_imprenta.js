@@ -73,10 +73,10 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             {
                 if(response != 'error'){
                     //Agregar id al input hiden
-                    $('#idCliente').val(response);
+                    $('#idCliente_imprenta').val(response);
                     //Bloquea campos
-                    $('#nom_cliente').attr('disabled','disabled');
-                    $('#ape_cliente').attr('disabled','disabled');
+                    $('#nom_cliente_imprenta').attr('disabled','disabled');
+                    $('#ape_cliente_imprenta').attr('disabled','disabled');
 
                     //Ocultar boton agregar
                     $('.btn_new_cliente_imprenta').slideUp();
@@ -199,44 +199,40 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     $('#btn_new_pedido_trabajo').click(function(e){
         e.preventDefault();
         
-        var rows =$('#detalleVentaTrabajo tr').length;//cuantas filas tiene detalle venta
+        var rows = $('#detalleVentaTrabajo tr').length; //cuantas filas tiene detalle venta
 
-        if(rows > 0){// si hay productos en el detalle                                                                                                                                  
-            var action = 'procesarPedidoTrabajo';
-            var codCliente = $('#idCliente_imprenta').val();
-            var senia = $('#seniaPedidoImprenta').val();
-            
-            if(codCliente == null || codCliente == ''){
-                alert('Falta agregar cliente');
-            }else{
-
-                $.ajax({
-                    url: '../shared/ajax_imprenta.php',
-                    type: "POST",
-                    async : true,
-                    data: {action:action,codCliente:codCliente,senia:senia}, 
-        
-                    success: function(response){
-                        
-                        if(response!='error'){// si se genero el pedido
-
-                            // var info = JSON.parse(response);
-                            // console.log(info);
-                            alert('Pedido generado correctamente');
-                            location.reload();//refresca toda la pagina
-                        }else{
-                            console.log('no data');
-                        }
-                    },
-                    error: function(error){
-
-                    }
-                });    
-
-            }
-
+        if(rows <= 0) { // Si NO hay trabajos en el detalle
+            alert('No hay trabajos agregados en el pedido');
+            return false; // Detenemos la ejecución
         }
-
+        
+        // Si hay productos en el detalle                                                                                                                                  
+        var action = 'procesarPedidoTrabajo';
+        var codCliente = $('#idCliente_imprenta').val();
+        var senia = $('#seniaPedidoImprenta').val();
+        
+        if(codCliente == null || codCliente == ''){
+            alert('Falta agregar cliente');
+        } else {
+            $.ajax({
+                url: '../shared/ajax_imprenta.php',
+                type: "POST",
+                async: true,
+                data: {action: action, codCliente: codCliente, senia: senia}, 
+        
+                success: function(response){
+                    if(response != 'error'){ // si se genero el pedido
+                        alert('Pedido generado correctamente');
+                        location.reload(); // refresca toda la pagina
+                    } else {
+                        console.log('no data');
+                    }
+                },
+                error: function(error){
+                    console.log('Error:', error);
+                }
+            });    
+        }
     });
 
 });
