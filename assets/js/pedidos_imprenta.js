@@ -203,7 +203,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
         if(rows > 0){// si hay productos en el detalle                                                                                                                                  
             var action = 'procesarPedidoTrabajo';
-            var codCliente = $('#idCliente').val();
+            var codCliente = $('#idCliente_imprenta').val();
             var senia = $('#seniaPedidoImprenta').val();
             
             if(codCliente == null || codCliente == ''){

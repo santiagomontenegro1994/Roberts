@@ -115,7 +115,7 @@ $MiConexion=ConexionBD();
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedidoImprenta" value="0" min="1"></td>
+                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">TOTAL</td>
@@ -210,7 +210,7 @@ $MiConexion=ConexionBD();
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="text" id="seniaPedidoImprenta" value="0" min="1"></td>
+                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
                                             </tr>
                                             <tr>
                                                 <td colspan="5" class="text-end">TOTAL</td>
@@ -330,11 +330,11 @@ $MiConexion=ConexionBD();
 
         //confirmar pedido -------------------
         if($_POST['action'] == 'procesarPedidoTrabajo'){
-            $codCliente = $_POST['idCliente_imprenta'];
+            $codCliente = $_POST['codCliente'];
             $senia = $_POST['senia'];
             $usuario = $_SESSION['Usuario_Id'];
 
-                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp WHERE idUsuario = $usuario");
+                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
                 $result = mysqli_num_rows($query); //vemos si detalle temp tiene algo
 
                 if($result > 0){
