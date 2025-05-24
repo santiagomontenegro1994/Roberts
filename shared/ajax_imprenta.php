@@ -82,7 +82,7 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
@@ -177,7 +177,7 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query)){
-                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
@@ -256,7 +256,7 @@ $MiConexion=ConexionBD();
                 if($result > 0){//si tiene algo el result
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['precio'] * $data['precio'], 2);//calculo el precio total con 2 decimales
+                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
                         $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
                         $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
 
