@@ -1007,9 +1007,11 @@ function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
             $nombreApellido = explode(' ', $parametro);
             if (count($nombreApellido) == 2) {
                 $whereClause = "WHERE 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') 
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' 
+                    AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') 
                     OR 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' 
+                    AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
             } else {
                 $whereClause = "WHERE 
                     LOWER(C.nombre) LIKE '%$parametro%' 
@@ -1017,13 +1019,26 @@ function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
                     LOWER(C.apellido) LIKE '%$parametro%'";
             }
             break;
+        case 'Telefono': // Nuevo caso para búsqueda por teléfono
+            $whereClause = "WHERE C.telefono LIKE '%$parametro%'";
+            break;
         default:
             $whereClause = "WHERE PT.idActivo = 1";
             break;
     }
 
     // 2) Construir la consulta SQL con el filtro dinámico
-    $SQL = "SELECT C.nombre, C.apellido, PT.idPedidoTrabajos, PT.fecha, PT.precioTotal, PT.senia, ET.idEstado, US.usuario, ET.denominacion AS estado_nombre
+    $SQL = "SELECT 
+                C.nombre, 
+                C.apellido, 
+                C.telefono,
+                PT.idPedidoTrabajos, 
+                PT.fecha, 
+                PT.precioTotal, 
+                PT.senia, 
+                ET.idEstado, 
+                US.usuario, 
+                ET.denominacion AS estado_nombre
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
@@ -1058,77 +1073,26 @@ function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
     return $Listado;
 }
 
-function Listar_Pedidos_Parametrosss($vConexion, $criterio, $parametro) {
-    $Listado = array();
+function Anular_Pedidos_Trabajo($vConexion, $vIdConsulta) {
 
-    // 1) Genero la consulta que deseo según el parámetro
-    switch ($criterio) {
-        case 'Fecha':
-            $whereClause = "WHERE PL.fecha LIKE '%$parametro%'";
-            break;
-        case 'Id':
-            $whereClause = "WHERE PL.idPedidoLibros LIKE '%$parametro%'";
-            break;
-        case 'Estado':
-            $whereClause = "WHERE E.idEstado LIKE '%$parametro%'";
-            break;
-        case 'Cliente': // Nueva opción para buscar por nombre o apellido del cliente
-            $parametro = strtolower($parametro); // Convertir el parámetro a minúsculas
-            // Dividir el parámetro en nombre y apellido
-            $nombreApellido = explode(' ', $parametro);
-            if (count($nombreApellido) == 2) {
-                // Si se encuentran dos partes (nombre y apellido), buscar ambas combinaciones
-                $whereClause = "WHERE 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') 
-                    OR 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
-            } else {
-                // Si no se separan en dos palabras, buscar solo en uno de los campos
-                $whereClause = "WHERE 
-                    LOWER(C.nombre) LIKE '%$parametro%' 
-                    OR 
-                    LOWER(C.apellido) LIKE '%$parametro%'";
-            }
-            break;
-        default:
-            $whereClause = "WHERE PL.idActivo = 1"; // Filtro por defecto
-            break;
+    //soy admin 
+        $SQL_MiConsulta="SELECT idPedidoTrabajos FROM pedido_trabajos  
+                        WHERE idPedidoTrabajos = $vIdConsulta ";
+   
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($vIdConsulta) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE pedido_trabajos SET idActivo = 2 WHERE idPedidoTrabajos = $vIdConsulta");
+        
+        return true;
+
+    }else {
+        return false;
     }
-
-    // 2) Construyo la consulta SQL con el filtro dinámico
-    $sql = "SELECT C.nombre, C.apellido, PL.idPedidoLibros, PL.fecha, PL.precioTotal, PL.descuento, PL.senia, E.idEstado
-            FROM pedido_libros PL
-            INNER JOIN clientes C ON PL.idCliente = C.idCliente
-            INNER JOIN estado E ON PL.idEstado = E.idEstado
-            $whereClause
-            ORDER BY PL.fecha DESC, C.nombre";
-
-    // 3) Ejecuto la consulta
-    $rs = mysqli_query($vConexion, $sql);
-
-    // 4) Verifico si la consulta tuvo resultados
-    if (!$rs) {
-        die("Error en la consulta: " . mysqli_error($vConexion));
-    }
-
-    // 5) Recorro los resultados y los organizo en un array
-    $i = 0;
-    while ($data = mysqli_fetch_array($rs)) {
-        $Listado[$i]['ID'] = $data['idPedidoLibros'];
-        $Listado[$i]['CLIENTE_N'] = $data['nombre'];
-        $Listado[$i]['CLIENTE_A'] = $data['apellido'];
-        $Listado[$i]['FECHA'] = $data['fecha'];
-        $Listado[$i]['TITULO'] = 'en proceso'; // Campo pendiente de implementación
-        $Listado[$i]['EDITORIAL'] = 'en proceso'; // Campo pendiente de implementación
-        $Listado[$i]['PRECIO'] = $data['precioTotal'];
-        $Listado[$i]['DESCUENTO'] = $data['descuento'];
-        $Listado[$i]['SEÑA'] = $data['senia'];
-        $Listado[$i]['ESTADO'] = $data['idEstado'];
-
-        $i++;
-    }
-
-    // 6) Devuelvo el listado generado
-    return $Listado;
+    
 }
+
 ?>

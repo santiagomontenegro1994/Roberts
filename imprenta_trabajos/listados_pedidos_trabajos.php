@@ -114,7 +114,7 @@ $CantidadPedidos = count($ListadoPedidos);
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
                       <label class="form-check-label" for="gridRadios4">
-                        Estado (1, 2, 3 o 4)
+                        Estado
                     </div>
                     
               </div>
