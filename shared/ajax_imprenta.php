@@ -59,83 +59,104 @@ $MiConexion=ConexionBD();
 
         //Agregar trabajo al detalle temporal de trabajos
         if($_POST['action'] == 'agregarTrabajoDetalle'){
+            header('Content-Type: application/json');
+            $arrayData = array(
+                'detalle' => '',
+                'totales' => '',
+                'error' => ''
+            );
 
-                //si no vienen vacios creo variables y les paso los datos
-                $estado = $_POST['estado'];
-                $trabajo = $_POST['trabajo'];
-                $enviado = $_POST['enviado'];
-                $fecha = $_POST['fecha'];
-                $hora = $_POST['hora'];
-                $precio = $_POST['precio'];
-                $usuario = $_SESSION['Usuario_Id'];
-
-                //llamo al procedimiento almacenado y le paso los datos
-                $query_detalle_temp = mysqli_query($MiConexion,"CALL add_detalle_temp_trabajos($estado,$trabajo,$enviado,'$fecha','$hora',$precio,$usuario)");
-                $result = mysqli_num_rows($query_detalle_temp);
-                
-                //Declaro variables que voy a usar
-                $detalleTabla='';
-                $subtotal=0;
-                $total=0;
-                $arrayData=array();
-
-                if($result > 0){//si tiene algo el result
-                    //recorro todos los detalle_temp
-                    while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
-                        $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
-                        $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
-
-                        //concateno cada una de las tablas del detalle con los datos correspondientes
-                        $detalleTabla .= '<div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['estado_trabajo'].'</th>
-                                                    <td>'.$data['tipo_trabajo'].'</td>
-                                                    <td>'.$data['proveedor'].'</td>
-                                                    <th>'.$data['fechaEntrega'].'</th>
-                                                    <th>'.$data['horaEntrega'].'</th>
-                                                    <th>'.$data['precio'].'</th>
-                                                    <td>
-                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
-                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
-                                                        </a>
-                                                    </td>   
-                                                </tr>
-                                            </table>
-                                        </div>';
+            try {
+                // Validar parámetros requeridos
+                $required = ['estado', 'trabajo', 'enviado', 'fecha', 'hora'];
+                foreach($required as $field) {
+                    if(empty($_POST[$field])) {
+                        throw new Exception("Campo requerido faltante: $field");
                     }
+                }
 
-                    //genero la tabla con totales
-                    $detalleTotales = '<div class="table-responsive">
+                // Asignar y sanitizar valores
+                $estado = intval($_POST['estado']);
+                $trabajo = intval($_POST['trabajo']);
+                $enviado = intval($_POST['enviado']);
+                $fecha = mysqli_real_escape_string($MiConexion, $_POST['fecha']);
+                $hora = mysqli_real_escape_string($MiConexion, $_POST['hora']);
+                $precio = floatval($_POST['precio']);
+                $descripcion = mysqli_real_escape_string($MiConexion, $_POST['descripcion'] ?? '');
+                $usuario = intval($_SESSION['Usuario_Id']);
+
+                // Llamar al procedimiento almacenado
+                $query = mysqli_query($MiConexion, 
+                    "CALL add_detalle_temp_trabajos(
+                        $estado, 
+                        $trabajo, 
+                        $enviado, 
+                        '$fecha', 
+                        '$hora', 
+                        $precio, 
+                        $usuario, 
+                        '$descripcion'
+                    )");
+
+                if(!$query) {
+                    throw new Exception("Error en base de datos: " . mysqli_error($MiConexion));
+                }
+
+                // Procesar resultados
+                $detalleTabla = '';
+                $subtotal = 0;
+                $total = 0;
+                
+                while($data = mysqli_fetch_assoc($query)) {
+                    $precioTotal = round($data['precio'], 2);
+                    $subtotal += $precioTotal;
+                    $total += $precioTotal;
+
+                    $detalleTabla .= '<div class="table-responsive">
                                         <table class="table table-striped">
                                             <tr>
-                                                <td colspan="5" class="text-end">SUBTOTAL</td>
-                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">TOTAL</td>
-                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                                <th>'.$data['estado_trabajo'].'</th>
+                                                <td>'.$data['tipo_trabajo'].'</td>
+                                                <td>'.$data['proveedor'].'</td>
+                                                <th>'.$data['fechaEntrega'].'</th>
+                                                <th>'.$data['horaEntrega'].'</th>
+                                                <th>'.number_format($data['precio'], 2).'</th>
+                                                <td>
+                                                    <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
+                                                        <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                    </a>
+                                                </td>   
                                             </tr>
                                         </table>
                                     </div>';
-                    
-                    $arrayData['detalle'] = $detalleTabla;
-                    $arrayData['totales'] = $detalleTotales;
-
-                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);//retorno en formato JSON
-
-                }else{
-                    echo 'error';
                 }
-                mysqli_close($MiConexion);
-            exit;
 
+                $detalleTotales = '<div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                <td>'.number_format($subtotal, 2).'</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">SEÑA</td>
+                                                <td><input type="number" id="seniaPedidoImprenta" value="0" min="0"></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-end">TOTAL</td>
+                                                <td>'.number_format($total, 2).'</td>
+                                            </tr>
+                                        </table>
+                                    </div>';
+
+                $arrayData['detalle'] = $detalleTabla;
+                $arrayData['totales'] = $detalleTotales;
+
+            } catch (Exception $e) {
+                $arrayData['error'] = $e->getMessage();
+            }
+
+            echo json_encode($arrayData, JSON_UNESCAPED_UNICODE);
+            exit;
         }
 
         //muestra datos del detalle temp

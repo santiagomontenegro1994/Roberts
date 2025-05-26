@@ -111,59 +111,50 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     //Agregar trabajo al detalle temporal de trabajos
     $('#add_trabajo_pedido').click(function(e){
         e.preventDefault();
-        // Verificar que todos los campos requeridos tengan valores
-        if ($('#estado_trabajo').val() && 
-            $('#tipo_trabajo').val() &&  
-            $('#enviado').val() && 
-            $('#fecha_entrega_date').val() && 
-            $('#hora_entrega').val()) {
-            // Todos los campos tienen valores, puedes proceder
+        const camposRequeridos = ['#estado_trabajo', '#tipo_trabajo', '#enviado', '#fecha_entrega_date', '#hora_entrega'];
+        const camposValidos = camposRequeridos.every(selector => $(selector).val().trim() !== '');
 
-            var estado = $('#estado_trabajo').val();
-            var trabajo = $('#tipo_trabajo').val(); 
-            var enviado = $('#enviado').val();
-            var fecha = $('#fecha_entrega_date').val();
-            var hora = $('#hora_entrega').val();
-            var precio = $('#precio').val() || '0'; // Si está vacío, asigna '0'
-
-            var action = 'agregarTrabajoDetalle';
-
-            $.ajax({
-                url: '../shared/ajax_imprenta.php',
-                type: "POST",
-                async : true,
-                data: {action:action,estado:estado,trabajo:trabajo,enviado:enviado,fecha:fecha,hora:hora,precio:precio}, 
-    
-                success: function(response){
-                    if(response != 'error'){//validamos que la respuesta no sea error
-                        var info = JSON.parse(response);//convertimos en JSON a un objeto
-                        $('#detalleVentaTrabajo').html(info.detalle);//pasamos el codigo a #detalle_venta y totales
-                        $('#detalleTotalTrabajo').html(info.totales);
-
-                        //ponemos todos los valores por defecto
-                        $('#txtIdLibro').val('');
-                        $('#txt_titulo').html('-'); 
-                        $('#txt_editorial').html('-');
-                        $('#txt_precio').html('0.00');
-                        $('#txt_cantidad_libro').val('0');
-                        $('#txt_precio_total').html('0.00');
-
-                    }else{
-                        console.log('no data');
-                    }
-
-                },
-                error: function(error){
-                    console.log('Error:', error);
-                }
-    
-            });
-        } else {
-            // Mostrar mensaje de error o alerta
-            alert('Por favor complete todos los campos requeridos');
-            return false;
+        if (!camposValidos) {
+            alert('Complete todos los campos requeridos');
+            return;
         }
 
+        const formData = {
+            action: 'agregarTrabajoDetalle',
+            estado: $('#estado_trabajo').val(),
+            trabajo: $('#tipo_trabajo').val(),
+            enviado: $('#enviado').val(),
+            fecha: $('#fecha_entrega_date').val(),
+            hora: $('#hora_entrega').val(),
+            precio: $('#precio').val() || '0',
+            descripcion: $('#descripcion').val()
+        };
+
+        $.ajax({
+            url: '../shared/ajax_imprenta.php',
+            type: 'POST',
+            dataType: 'json',
+            data: formData,
+            success: function(response){
+                if(response.error) {
+                    console.error('Error del servidor:', response.error);
+                    alert('Error: ' + response.error);
+                    return;
+                }
+                
+                $('#detalleVentaTrabajo').html(response.detalle);
+                $('#detalleTotalTrabajo').html(response.totales);
+                
+                // Resetear campos
+                $('.form-control').val('');
+                $('.preview-field').html('-');
+            },
+            error: function(xhr, status, error){
+                console.error('AJAX Error:', status, error);
+                console.error('Server Response:', xhr.responseText);
+                alert('Error de conexión. Ver consola para detalles.');
+            }
+        });
     });
 
     //Anular pedido trabajo

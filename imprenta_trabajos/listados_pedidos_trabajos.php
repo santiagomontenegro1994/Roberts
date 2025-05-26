@@ -162,7 +162,7 @@ $CantidadPedidos = count($ListadoPedidos);
           <td><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
           <td>
             <!-- Acciones -->
-            <a href="eliminar_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+            <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
               title="Anular" 
               onclick="return confirm('Confirma anular este Pedido?');">
               <i class="bi bi-trash-fill text-danger fs-5"></i>
@@ -173,7 +173,7 @@ $CantidadPedidos = count($ListadoPedidos);
               <i class="bi bi-pencil-fill text-warning fs-5"></i>
             </a>
 
-            <a href="imprimir_pedido.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+            <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
               title="Imprimir">
               <i class="bi bi-printer-fill text-primary fs-5"></i>
             </a>

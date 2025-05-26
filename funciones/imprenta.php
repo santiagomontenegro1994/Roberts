@@ -1095,4 +1095,60 @@ function Anular_Pedidos_Trabajo($vConexion, $vIdConsulta) {
     
 }
 
+function Datos_Pedido_Trabajo($conexion, $idPedido) {
+    $sql = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.precioTotal,
+                PT.senia,
+                C.nombre AS CLIENTE,
+                C.apellido AS CLIENTE_A,
+                C.telefono AS TELEFONO
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            WHERE PT.idPedidoTrabajos = " . intval($idPedido) . " LIMIT 1";
+    $rs = mysqli_query($conexion, $sql);
+    $data = mysqli_fetch_assoc($rs);
+
+    // Adaptar nombres para el PDF
+    return array(
+        'ID' => $data['idPedidoTrabajos'],
+        'FECHA' => $data['fecha'],
+        'PRECIO_TOTAL' => $data['precioTotal'],
+        'SENIA' => $data['senia'],
+        'CLIENTE' => $data['CLIENTE'],
+        'CLIENTE_A' => $data['CLIENTE_A'],
+        'TELEFONO' => $data['TELEFONO']
+    );
+}
+
+function Detalles_Pedido_Trabajo($conexion, $idPedido) {
+    $sql = "SELECT 
+                DT.idDetalleTrabajo,
+                TT.denominacion AS TRABAJO,
+                DT.descripcion AS DESCRIPCION,
+                DT.fechaEntrega AS FECHA_ENTREGA,
+                DT.horaEntrega AS HORA_ENTREGA,
+                DT.precio AS PRECIO,
+                ET.denominacion AS ESTADO
+            FROM detalle_trabajos DT
+            INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+            INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
+            WHERE DT.id_pedido_trabajos = " . intval($idPedido) . " AND DT.idActivo = 1";
+    $rs = mysqli_query($conexion, $sql);
+
+    $detalles = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $detalles[] = array(
+            'TRABAJO' => $data['TRABAJO'],
+            'DESCRIPCION' => $data['DESCRIPCION'],
+            'FECHA_ENTREGA' => $data['FECHA_ENTREGA'],
+            'HORA_ENTREGA' => $data['HORA_ENTREGA'],
+            'PRECIO' => $data['PRECIO'],
+            'ESTADO' => $data['ESTADO']
+        );
+    }
+    return $detalles;
+}
+
 ?>
