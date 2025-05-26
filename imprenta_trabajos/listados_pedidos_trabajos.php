@@ -31,7 +31,7 @@ $CantidadPedidos = count($ListadoPedidos);
 
         $parametro = $_POST['parametro'];
         $criterio = $_POST['gridRadios'];
-        $ListadoPedidos=Listar_Pedidos_Parametro($MiConexion,$criterio,$parametro);
+        $ListadoPedidos=Listar_Pedidos_Trabajo_Parametro($MiConexion,$criterio,$parametro);
         $CantidadPedidos = count($ListadoPedidos);
 
 
