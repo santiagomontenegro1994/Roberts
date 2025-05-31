@@ -1103,9 +1103,13 @@ function Datos_Pedido_Trabajo($conexion, $idPedido) {
                 PT.senia,
                 C.nombre AS CLIENTE,
                 C.apellido AS CLIENTE_A,
-                C.telefono AS TELEFONO
+                C.telefono AS TELEFONO,
+                E.denominacion AS ESTADO,
+                E.idEstado AS ESTADO_ID,
+                C.idCliente 
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_trabajo E ON PT.idEstado = E.idEstado
             WHERE PT.idPedidoTrabajos = " . intval($idPedido) . " LIMIT 1";
     $rs = mysqli_query($conexion, $sql);
     $data = mysqli_fetch_assoc($rs);
@@ -1116,8 +1120,11 @@ function Datos_Pedido_Trabajo($conexion, $idPedido) {
         'FECHA' => $data['fecha'],
         'PRECIO_TOTAL' => $data['precioTotal'],
         'SENIA' => $data['senia'],
+        'CLIENTE_ID' => $data['idCliente'],
         'CLIENTE' => $data['CLIENTE'],
         'CLIENTE_A' => $data['CLIENTE_A'],
+        'ESTADO' => $data['ESTADO'],
+        'ESTADO_ID' => $data['ESTADO_ID'],
         'TELEFONO' => $data['TELEFONO']
     );
 }
@@ -1126,6 +1133,7 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
     $sql = "SELECT 
                 DT.idDetalleTrabajo,
                 TT.denominacion AS TRABAJO,
+                P.nombre AS PROVEEDOR,
                 DT.descripcion AS DESCRIPCION,
                 DT.fechaEntrega AS FECHA_ENTREGA,
                 DT.horaEntrega AS HORA_ENTREGA,
@@ -1133,7 +1141,8 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
                 ET.denominacion AS ESTADO
             FROM detalle_trabajos DT
             INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
-            INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
+            INNER JOIN estado_trabajo ET ON DT.idProveedor = ET.idEstado
+            INNER JOIN proveedores P ON DT.idProveedor = P.idProveedor
             WHERE DT.id_pedido_trabajos = " . intval($idPedido) . " AND DT.idActivo = 1";
     $rs = mysqli_query($conexion, $sql);
 
@@ -1141,14 +1150,175 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
     while ($data = mysqli_fetch_assoc($rs)) {
         $detalles[] = array(
             'TRABAJO' => $data['TRABAJO'],
+            'ID_DETALLE' => $data['idDetalleTrabajo'],
             'DESCRIPCION' => $data['DESCRIPCION'],
             'FECHA_ENTREGA' => $data['FECHA_ENTREGA'],
             'HORA_ENTREGA' => $data['HORA_ENTREGA'],
             'PRECIO' => $data['PRECIO'],
+            'PROVEEDOR' => $data['PROVEEDOR'],
             'ESTADO' => $data['ESTADO']
         );
     }
     return $detalles;
+}
+
+function Listar_Detalles_Pedido($conexion, $idPedido) {
+    $query = "SELECT * FROM detalle_trabajos WHERE id_pedido_trabajos = ? AND idActivo = 1";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idPedido);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    
+    $detalles = array();
+    while ($fila = $resultado->fetch_assoc()) {
+        $detalles[] = $fila;
+    }
+    return $detalles;
+}
+
+function Validar_Pedido_Trabajo() {
+    $_SESSION['Mensaje'] = '';
+    
+    if (empty($_POST['Cliente'])) {
+        $_SESSION['Mensaje'] .= "Debe seleccionar un cliente.<br>";
+    }
+    
+    if (empty($_POST['Fecha'])) {
+        $_SESSION['Mensaje'] .= "Debe ingresar una fecha.<br>";
+    }
+    
+    if (!is_numeric($_POST['PrecioTotal']) || $_POST['PrecioTotal'] <= 0) {
+        $_SESSION['Mensaje'] .= "El precio total debe ser un número positivo.<br>";
+    }
+    
+    if (!is_numeric($_POST['Senia']) || $_POST['Senia'] < 0) {
+        $_SESSION['Mensaje'] .= "La seña debe ser un número positivo o cero.<br>";
+    }
+    
+    if (empty($_POST['Estado'])) {
+        $_SESSION['Mensaje'] .= "Debe seleccionar un estado.<br>";
+    }
+}
+
+function Modificar_Pedido_Trabajo($conexion) {
+    $query = "UPDATE pedido_trabajos SET 
+              idCliente = ?, 
+              fecha = ?, 
+              precioTotal = ?, 
+              senia = ?, 
+              idEstado = ? 
+              WHERE idPedidoTrabajos = ?";
+    
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("isddii", 
+        $_POST['Cliente'],
+        $_POST['Fecha'],
+        $_POST['PrecioTotal'],
+        $_POST['Senia'],
+        $_POST['Estado'],
+        $_POST['IdPedido']
+    );
+    
+    return $stmt->execute();
+}
+
+function Actualizar_Precio_Total($conexion, $idPedido) {
+    $query = "SELECT SUM(precio) as total FROM detalle_trabajos 
+              WHERE id_pedido_trabajos = ? AND idActivo = 1";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idPedido);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    $total = $resultado->fetch_assoc()['total'];
+    
+    $query = "UPDATE pedido_trabajos SET precioTotal = ? WHERE idPedidoTrabajos = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("di", $total, $idPedido);
+    return $stmt->execute();
+}
+
+function Agregar_Detalle_Trabajo($conexion, $idPedido, $datos) {
+    $query = "INSERT INTO detalle_trabajos 
+              (id_pedido_trabajos, idTrabajo, idProveedor, fechaEntrega, horaEntrega, precio, descripcion, idEstadoTrabajo) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("iiissdsi", 
+        $idPedido,
+        $datos['idTrabajo'],
+        $datos['idProveedor'],
+        $datos['fechaEntrega'],
+        $datos['horaEntrega'],
+        $datos['precio'],
+        $datos['descripcion'],
+        $datos['idEstadoTrabajo']
+    );
+    
+    if ($stmt->execute()) {
+        Actualizar_Precio_Total($conexion, $idPedido);
+        return true;
+    }
+    return false;
+}
+
+function Editar_Detalle_Trabajo($conexion, $idDetalle, $datos) {
+    $query = "UPDATE detalle_trabajos SET 
+              idTrabajo = ?, 
+              idProveedor = ?, 
+              fechaEntrega = ?, 
+              horaEntrega = ?, 
+              precio = ?, 
+              descripcion = ?, 
+              idEstadoTrabajo = ? 
+              WHERE idDetalleTrabajo = ?";
+    
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("iissdsii", 
+        $datos['idTrabajo'],
+        $datos['idProveedor'],
+        $datos['fechaEntrega'],
+        $datos['horaEntrega'],
+        $datos['precio'],
+        $datos['descripcion'],
+        $datos['idEstadoTrabajo'],
+        $idDetalle
+    );
+    
+    if ($stmt->execute()) {
+        Actualizar_Precio_Total($conexion, $datos['id_pedido_trabajos']);
+        return true;
+    }
+    return false;
+}
+
+function Eliminar_Detalle_Trabajo($conexion, $idDetalle) {
+    // Eliminación lógica
+    $query = "UPDATE detalle_trabajos SET idActivo = 0 WHERE idDetalleTrabajo = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idDetalle);
+    
+    if ($stmt->execute()) {
+        // Obtener el id_pedido_trabajos para actualizar el precio total
+        $query = "SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
+        $stmt = $conexion->prepare($query);
+        $stmt->bind_param("i", $idDetalle);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+        $idPedido = $resultado->fetch_assoc()['id_pedido_trabajos'];
+        
+        Actualizar_Precio_Total($conexion, $idPedido);
+        return true;
+    }
+    return false;
+}
+
+function Datos_Detalle_Trabajo($conexion, $idDetalle) {
+    $query = "SELECT * FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idDetalle);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    return $resultado->fetch_assoc();
 }
 
 ?>

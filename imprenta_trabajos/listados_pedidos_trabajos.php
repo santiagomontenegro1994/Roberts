@@ -168,7 +168,7 @@ $CantidadPedidos = count($ListadoPedidos);
               <i class="bi bi-trash-fill text-danger fs-5"></i>
             </a>
 
-            <a href="modificar_pedidos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+            <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
               title="Modificar">
               <i class="bi bi-pencil-fill text-warning fs-5"></i>
             </a>
