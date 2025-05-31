@@ -28,7 +28,7 @@ ob_start();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Comprobante de Pedido de Trabajo</title>
+    <title>Comprobante de Trabajo N°</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
         .container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border: 1px solid #ddd; border-radius: 8px; }
@@ -62,7 +62,7 @@ ob_start();
 
             <!-- Texto a la derecha -->
             <div class="header-text">
-                <h2>Comprobante de Pedido de Trabajo</h2>
+                <h2>Pedido de Trabajo N° <?php echo $_GET['ID_PEDIDO']; ?> </h2>
                 <p>Fecha: <span><?php echo $DatosPedidoActual['FECHA']; ?></span></p>
             </div>
         </div>
@@ -108,7 +108,13 @@ ob_start();
             <div>Saldo: $<span><?php echo number_format($saldo, 2); ?></span></div>
         </div>
         <div class="footer">
-            <p>Gracias por su pedido</p>
+            <div class="contact-info">
+                <p><strong>Contactos:</strong></p>
+                <p>Email: imprentaroberts@gmail.com</p>
+                <p>WhatsApp: 351 3525107</p>
+                <p>Laprida 25 - Villa Allende</p>
+            </div>
+            <p class="thank-you">Gracias por su pedido</p>
         </div>
     </div>
 </body>
