@@ -1121,6 +1121,32 @@ function Anular_Pedidos_Trabajo($vConexion, $vIdConsulta) {
     
 }
 
+function Validar_Pedido_Trabajo() {
+    $_SESSION['Mensaje'] = '';
+    
+    if (empty($_POST['Cliente'])) {
+        $_SESSION['Mensaje'] .= "Debe seleccionar un cliente.<br>";
+    }
+    
+    if (empty($_POST['Fecha'])) {
+        $_SESSION['Mensaje'] .= "Debe ingresar una fecha.<br>";
+    }
+    
+    if (!is_numeric($_POST['PrecioTotal']) || $_POST['PrecioTotal'] <= 0) {
+        $_SESSION['Mensaje'] .= "El precio total debe ser un número positivo.<br>";
+    }
+    
+    if (!is_numeric($_POST['Senia']) || $_POST['Senia'] < 0) {
+        $_SESSION['Mensaje'] .= "La seña debe ser un número positivo o cero.<br>";
+    }
+    
+    if (empty($_POST['Estado'])) {
+        $_SESSION['Mensaje'] .= "Debe seleccionar un estado.<br>";
+    }
+}
+
+//------------------------------------------------------MODIFICAR PEDIDO DE TRABAJO------------------------------------------------------
+
 function Datos_Pedido_Trabajo($conexion, $idPedido) {
     
     // Validar y sanear el ID del pedido para seguridad
@@ -1220,6 +1246,51 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
     return $detalles;
 }
 
+function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia){
+    // Validación adicional de parámetros
+    if ($idPedido <= 0) {
+        error_log("ID de pedido inválido: $idPedido");
+        return false;
+    }
+    
+    if ($nuevaSenia < 0) {
+        error_log("Intento de establecer seña negativa: $nuevaSenia");
+        return false;
+    }
+
+    try {
+        // Iniciar transacción para mayor seguridad
+        $conexion->begin_transaction();
+
+        $query = "UPDATE pedido_trabajos SET senia = ? WHERE idPedidoTrabajos = ?";
+        $stmt = $conexion->prepare($query);
+        
+        if (!$stmt) {
+            error_log("Error al preparar la consulta: " . $conexion->error);
+            $conexion->rollback();
+            return false;
+        }
+        
+        $stmt->bind_param('di', $nuevaSenia, $idPedido);
+        $resultado = $stmt->execute();
+        $stmt->close();
+        
+        if (!$resultado) {
+            error_log("Error al ejecutar la actualización: " . $conexion->error);
+            $conexion->rollback();
+            return false;
+        }
+        
+        $conexion->commit();
+        return true;
+        
+    } catch (Exception $e) {
+        error_log("Excepción al modificar seña: " . $e->getMessage());
+        $conexion->rollback();
+        return false;
+    }
+}
+
 function Listar_Detalles_Pedido($conexion, $idPedido) {
     $query = "SELECT * FROM detalle_trabajos WHERE id_pedido_trabajos = ? AND idActivo = 1";
     $stmt = $conexion->prepare($query);
@@ -1232,67 +1303,6 @@ function Listar_Detalles_Pedido($conexion, $idPedido) {
         $detalles[] = $fila;
     }
     return $detalles;
-}
-
-function Validar_Pedido_Trabajo() {
-    $_SESSION['Mensaje'] = '';
-    
-    if (empty($_POST['Cliente'])) {
-        $_SESSION['Mensaje'] .= "Debe seleccionar un cliente.<br>";
-    }
-    
-    if (empty($_POST['Fecha'])) {
-        $_SESSION['Mensaje'] .= "Debe ingresar una fecha.<br>";
-    }
-    
-    if (!is_numeric($_POST['PrecioTotal']) || $_POST['PrecioTotal'] <= 0) {
-        $_SESSION['Mensaje'] .= "El precio total debe ser un número positivo.<br>";
-    }
-    
-    if (!is_numeric($_POST['Senia']) || $_POST['Senia'] < 0) {
-        $_SESSION['Mensaje'] .= "La seña debe ser un número positivo o cero.<br>";
-    }
-    
-    if (empty($_POST['Estado'])) {
-        $_SESSION['Mensaje'] .= "Debe seleccionar un estado.<br>";
-    }
-}
-
-function Modificar_Pedido_Trabajo($conexion) {
-    $query = "UPDATE pedido_trabajos SET 
-              idCliente = ?, 
-              fecha = ?, 
-              precioTotal = ?, 
-              senia = ?, 
-              idEstado = ? 
-              WHERE idPedidoTrabajos = ?";
-    
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("isddii", 
-        $_POST['Cliente'],
-        $_POST['Fecha'],
-        $_POST['PrecioTotal'],
-        $_POST['Senia'],
-        $_POST['Estado'],
-        $_POST['IdPedido']
-    );
-    
-    return $stmt->execute();
-}
-
-function Actualizar_Precio_Total($conexion, $idPedido) {
-    $query = "SELECT SUM(precio) as total FROM detalle_trabajos 
-              WHERE id_pedido_trabajos = ? AND idActivo = 1";
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("i", $idPedido);
-    $stmt->execute();
-    $resultado = $stmt->get_result();
-    $total = $resultado->fetch_assoc()['total'];
-    
-    $query = "UPDATE pedido_trabajos SET precioTotal = ? WHERE idPedidoTrabajos = ?";
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("di", $total, $idPedido);
-    return $stmt->execute();
 }
 
 function Agregar_Detalle_Trabajo($conexion, $idPedido, $datos) {
