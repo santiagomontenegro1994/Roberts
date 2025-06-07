@@ -957,119 +957,145 @@ function Listar_Pedidos_Trabajos($vConexion) {
 
     $Listado = array();
 
-    // 1) Consulta adaptada a pedido_trabajos y estado_trabajo
-    $SQL = "SELECT C.nombre, C.apellido, PT.idPedidoTrabajos, PT.fecha, PT.precioTotal, PT.senia, ET.idEstado, US.usuario, ET.denominacion AS estado_nombre
-            FROM pedido_trabajos PT
-            INNER JOIN clientes C ON PT.idCliente = C.idCliente
-            INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
-            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
-            WHERE PT.idActivo = 1
-            ORDER BY PT.idPedidoTrabajos DESC";
-
-    // 2) Ejecutar la consulta
-    $rs = mysqli_query($vConexion, $SQL);
-
-    // 3) Organizar el resultado en un array
-    $i = 0;
-    while ($data = mysqli_fetch_array($rs)) {
-        $Listado[$i]['ID'] = $data['idPedidoTrabajos'];
-        $Listado[$i]['CLIENTE_N'] = $data['nombre'];
-        $Listado[$i]['CLIENTE_A'] = $data['apellido'];
-        $Listado[$i]['FECHA'] = $data['fecha'];
-        $Listado[$i]['PRECIO'] = $data['precioTotal'];
-        $Listado[$i]['SEÑA'] = $data['senia'];
-        $Listado[$i]['ESTADO'] = $data['idEstado'];
-        $Listado[$i]['USUARIO'] = $data['usuario'];
-        $Listado[$i]['ESTADO_NOMBRE'] = $data['estado_nombre'];
-        $i++;
-    }
-
-    // Devolver el listado generado
-    return $Listado;
-}
-
-function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
-    $Listado = array();
-
-    // 1) Generar el WHERE según el criterio
-    switch ($criterio) {
-        case 'Fecha':
-            $whereClause = "WHERE PT.fecha LIKE '%$parametro%'";
-            break;
-        case 'Id':
-            $whereClause = "WHERE PT.idPedidoTrabajos LIKE '%$parametro%'";
-            break;
-        case 'Estado':
-            $whereClause = "WHERE ET.denominacion LIKE '%$parametro%'";
-            break;
-        case 'Cliente':
-            $parametro = strtolower($parametro);
-            $nombreApellido = explode(' ', $parametro);
-            if (count($nombreApellido) == 2) {
-                $whereClause = "WHERE 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' 
-                    AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') 
-                    OR 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' 
-                    AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
-            } else {
-                $whereClause = "WHERE 
-                    LOWER(C.nombre) LIKE '%$parametro%' 
-                    OR 
-                    LOWER(C.apellido) LIKE '%$parametro%'";
-            }
-            break;
-        case 'Telefono': // Nuevo caso para búsqueda por teléfono
-            $whereClause = "WHERE C.telefono LIKE '%$parametro%'";
-            break;
-        default:
-            $whereClause = "WHERE PT.idActivo = 1";
-            break;
-    }
-
-    // 2) Construir la consulta SQL con el filtro dinámico
     $SQL = "SELECT 
                 C.nombre, 
                 C.apellido, 
-                C.telefono,
                 PT.idPedidoTrabajos, 
                 PT.fecha, 
-                PT.precioTotal, 
                 PT.senia, 
                 ET.idEstado, 
                 US.usuario, 
-                ET.denominacion AS estado_nombre
+                ET.denominacion AS estado_nombre,
+                COALESCE(SUM(DT.precio), 0) AS precio_total,  -- Sumamos los precios de detalle_trabajos
+                COUNT(DT.idDetalleTrabajo) AS cantidad_trabajos  -- Contamos los trabajos asociados
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
             INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
-            $whereClause
-            ORDER BY PT.fecha DESC, C.nombre";
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos  -- JOIN con la tabla correcta
+            WHERE PT.idActivo = 1
+            GROUP BY PT.idPedidoTrabajos, C.nombre, C.apellido, PT.fecha, PT.senia, ET.idEstado, US.usuario, ET.denominacion
+            ORDER BY PT.idPedidoTrabajos DESC";
 
-    // 3) Ejecutar la consulta
     $rs = mysqli_query($vConexion, $SQL);
 
-    // 4) Verificar si la consulta tuvo resultados
     if (!$rs) {
         die("Error en la consulta: " . mysqli_error($vConexion));
     }
 
-    // 5) Recorro los resultados y los organizo en un array
     $i = 0;
-    while ($data = mysqli_fetch_array($rs)) {
+    while ($data = mysqli_fetch_assoc($rs)) {
         $Listado[$i]['ID'] = $data['idPedidoTrabajos'];
         $Listado[$i]['CLIENTE_N'] = $data['nombre'];
         $Listado[$i]['CLIENTE_A'] = $data['apellido'];
         $Listado[$i]['FECHA'] = $data['fecha'];
-        $Listado[$i]['PRECIO'] = $data['precioTotal'];
+        $Listado[$i]['PRECIO'] = $data['precio_total'];  // Precio total sumado
         $Listado[$i]['SEÑA'] = $data['senia'];
         $Listado[$i]['ESTADO'] = $data['idEstado'];
         $Listado[$i]['USUARIO'] = $data['usuario'];
         $Listado[$i]['ESTADO_NOMBRE'] = $data['estado_nombre'];
+        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['cantidad_trabajos'];  // N° de trabajos
         $i++;
     }
 
-    // 6) Devuelvo el listado generado
+    return $Listado;
+}
+
+function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
+    
+    $Listado = array();
+
+    // 1) Generar el WHERE según el criterio de búsqueda
+    $whereClause = "";
+    switch ($criterio) {
+        case 'Fecha':
+            // Se busca en la fecha del pedido principal
+            $whereClause = "WHERE PT.fecha LIKE '%$parametro%'";
+            break;
+        case 'Id':
+            // Se busca por el ID del pedido principal
+            $whereClause = "WHERE PT.idPedidoTrabajos LIKE '%$parametro%'";
+            break;
+        case 'Estado':
+            // Se busca por la denominación del estado del trabajo
+            $whereClause = "WHERE ET.denominacion LIKE '%$parametro%'";
+            break;
+        case 'Cliente':
+            // Búsqueda flexible por nombre y/o apellido del cliente
+            $parametro = strtolower($parametro);
+            $nombreApellido = explode(' ', $parametro);
+            if (count($nombreApellido) >= 2) {
+                // Si se ingresan dos palabras, busca combinaciones de nombre y apellido
+                $whereClause = "WHERE 
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') OR 
+                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
+            } else {
+                // Si es una sola palabra, busca en nombre o apellido
+                $whereClause = "WHERE 
+                    LOWER(C.nombre) LIKE '%$parametro%' OR LOWER(C.apellido) LIKE '%$parametro%'";
+            }
+            break;
+        case 'Telefono':
+            // Búsqueda por el teléfono del cliente
+            $whereClause = "WHERE C.telefono LIKE '%$parametro%'";
+            break;
+        default:
+            // Por defecto, si no hay criterio, muestra solo los pedidos activos
+            $whereClause = "WHERE PT.idActivo = 1";
+            break;
+    }
+
+    // 2) Construir la consulta SQL principal
+    // Se incorpora el LEFT JOIN y las funciones de agregación (SUM y COUNT)
+    $SQL = "SELECT 
+                C.nombre, 
+                C.apellido,
+                C.telefono,
+                PT.idPedidoTrabajos, 
+                PT.fecha, 
+                PT.senia, 
+                ET.idEstado, 
+                US.usuario, 
+                ET.denominacion AS estado_nombre,
+                COALESCE(SUM(DT.precio), 0) AS precio_total,
+                COUNT(DT.idDetalleTrabajo) AS cantidad_trabajos
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos
+            $whereClause
+            GROUP BY PT.idPedidoTrabajos, C.nombre, C.apellido, C.telefono, PT.fecha, PT.senia, ET.idEstado, US.usuario, ET.denominacion
+            ORDER BY PT.idPedidoTrabajos DESC";
+
+    // 3) Ejecutar la consulta
+    $rs = mysqli_query($vConexion, $SQL);
+
+    // 4) Manejo de errores en la consulta
+    if (!$rs) {
+        // Es buena práctica registrar el error en lugar de solo mostrarlo
+        error_log("Error en la consulta SQL: " . mysqli_error($vConexion));
+        die("Ocurrió un error al obtener los datos. Por favor, intente más tarde.");
+    }
+
+    // 5) Recorrer los resultados y almacenarlos en el array
+    $i = 0;
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $Listado[$i]['ID'] = $data['idPedidoTrabajos'];
+        $Listado[$i]['CLIENTE_N'] = $data['nombre'];
+        $Listado[$i]['CLIENTE_A'] = $data['apellido'];
+        $Listado[$i]['TELEFONO'] = $data['telefono']; // Se añade el teléfono al resultado
+        $Listado[$i]['FECHA'] = $data['fecha'];
+        $Listado[$i]['PRECIO'] = $data['precio_total']; // Se usa el precio calculado
+        $Listado[$i]['SEÑA'] = $data['senia'];
+        $Listado[$i]['ESTADO'] = $data['idEstado'];
+        $Listado[$i]['USUARIO'] = $data['usuario'];
+        $Listado[$i]['ESTADO_NOMBRE'] = $data['estado_nombre'];
+        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['cantidad_trabajos']; // Se añade la cantidad de trabajos
+        $i++;
+    }
+
+    // 6) Devolver el listado final
     return $Listado;
 }
 
@@ -1096,29 +1122,61 @@ function Anular_Pedidos_Trabajo($vConexion, $vIdConsulta) {
 }
 
 function Datos_Pedido_Trabajo($conexion, $idPedido) {
+    
+    // Validar y sanear el ID del pedido para seguridad
+    $idPedidoSeguro = intval($idPedido);
+
+    // Consulta SQL modificada para calcular el precio total
     $sql = "SELECT 
                 PT.idPedidoTrabajos,
                 PT.fecha,
-                PT.precioTotal,
                 PT.senia,
                 C.nombre AS CLIENTE,
                 C.apellido AS CLIENTE_A,
                 C.telefono AS TELEFONO,
                 E.denominacion AS ESTADO,
                 E.idEstado AS ESTADO_ID,
-                C.idCliente 
-            FROM pedido_trabajos PT
-            INNER JOIN clientes C ON PT.idCliente = C.idCliente
-            INNER JOIN estado_trabajo E ON PT.idEstado = E.idEstado
-            WHERE PT.idPedidoTrabajos = " . intval($idPedido) . " LIMIT 1";
+                C.idCliente,
+                -- Se calcula el precio total sumando los detalles del pedido
+                COALESCE(SUM(DT.precio), 0) AS precioTotalCalculado
+            FROM 
+                pedido_trabajos PT
+            INNER JOIN 
+                clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN 
+                estado_trabajo E ON PT.idEstado = E.idEstado
+            LEFT JOIN 
+                -- Se une con detalle_trabajos para poder sumar los precios
+                detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos
+            WHERE 
+                PT.idPedidoTrabajos = $idPedidoSeguro
+            GROUP BY
+                -- Agrupamos para que SUM() funcione sobre un único pedido
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre,
+                C.apellido,
+                C.telefono,
+                E.denominacion,
+                E.idEstado,
+                C.idCliente";
+
     $rs = mysqli_query($conexion, $sql);
+    
+    if (!$rs || mysqli_num_rows($rs) == 0) {
+        // Si no hay resultado, devuelve null o un array vacío para evitar errores
+        return null;
+    }
+
     $data = mysqli_fetch_assoc($rs);
 
-    // Adaptar nombres para el PDF
+    // Retornamos el array con el PRECIO_TOTAL usando el valor calculado
+    // Los nombres de las claves se mantienen para que el código del PDF no se rompa.
     return array(
         'ID' => $data['idPedidoTrabajos'],
         'FECHA' => $data['fecha'],
-        'PRECIO_TOTAL' => $data['precioTotal'],
+        'PRECIO_TOTAL' => $data['precioTotalCalculado'], // ¡Usamos el valor calculado aquí!
         'SENIA' => $data['senia'],
         'CLIENTE_ID' => $data['idCliente'],
         'CLIENTE' => $data['CLIENTE'],
