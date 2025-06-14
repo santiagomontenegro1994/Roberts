@@ -11,29 +11,33 @@ if (empty($_SESSION['Usuario_Nombre'])) {
     exit;
 }
 
-// Obtener datos del formulario
+// Obtener datos del formulario - ahora de GET y POST
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
 $idDetalle = $_GET['id'] ?? $_POST['idDetalle'] ?? 0;
-
-// Obtener ID del pedido - para eliminación viene por GET
 $idPedido = $_GET['ID_PEDIDO'] ?? $_POST['IdPedido'] ?? 0;
 
 // Validar acción y IDs
 if (!in_array($accion, ['agregar', 'editar', 'eliminar'])) {
-    $_SESSION['Mensaje'] = 'Acción no válida';
+    $_SESSION['Mensaje'] = 'Acción no válida: ' . $accion;
     $_SESSION['Estilo'] = 'danger';
     header('Location: listados_pedidos_trabajos.php');
     exit;
 }
 
 // Validación específica para eliminación
-if ($accion === 'eliminar') {
-    if ($idDetalle <= 0 || $idPedido <= 0) {
-        $_SESSION['Mensaje'] = 'Parámetros inválidos para eliminación';
-        $_SESSION['Estilo'] = 'danger';
-        header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
-        exit;
-    }
+if ($accion === 'eliminar' && ($idDetalle <= 0 || $idPedido <= 0)) {
+    $_SESSION['Mensaje'] = 'Parámetros inválidos para eliminación';
+    $_SESSION['Estilo'] = 'danger';
+    header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
+    exit;
+}
+
+// Validación específica para agregar
+if ($accion === 'agregar' && $idPedido <= 0) {
+    $_SESSION['Mensaje'] = 'ID de pedido inválido para agregar trabajo';
+    $_SESSION['Estilo'] = 'danger';
+    header('Location: listados_pedidos_trabajos.php');
+    exit;
 }
 
 $conexion = ConexionBD();
@@ -53,13 +57,9 @@ $datos = [
     'horaEntrega' => $_POST['horaEntrega'] ?? '',
     'descripcion' => $_POST['descripcion'] ?? '',
     'idProveedor' => $_POST['idProveedor'] ?? 0,
-    'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0
+    'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
+    'id_pedido_trabajos' => $idPedido
 ];
-
-// Para acciones de agregar, necesitamos el ID del pedido
-if ($accion === 'agregar') {
-    $datos['id_pedido_trabajos'] = $idPedido;
-}
 
 // Procesar la acción
 $resultado = Procesar_Detalle_Trabajo($conexion, $accion, $datos);
@@ -68,11 +68,13 @@ if ($resultado) {
     $_SESSION['Mensaje'] = 'Operación realizada correctamente';
     $_SESSION['Estilo'] = 'success';
 } else {
-    $_SESSION['Mensaje'] = 'Error al procesar el detalle: ' . ($conexion->error ?? 'Error desconocido');
+    $error = $conexion->error ?? 'Error desconocido';
+    $_SESSION['Mensaje'] = 'Error al procesar el detalle: ' . $error;
     $_SESSION['Estilo'] = 'danger';
+    error_log("Error en procesar_detalle: $error");
 }
 
 // Redireccionar de vuelta a la página del pedido
-header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
+header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido&refresh=" . time());
 exit;
 ?>

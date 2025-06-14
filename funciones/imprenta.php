@@ -1225,10 +1225,16 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
                 ET.denominacion AS ESTADO
             FROM detalle_trabajos DT
             INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
-            INNER JOIN estado_trabajo ET ON DT.idProveedor = ET.idEstado
+            INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
             INNER JOIN proveedores P ON DT.idProveedor = P.idProveedor
             WHERE DT.id_pedido_trabajos = " . intval($idPedido) . " AND DT.idActivo = 1";
+    
     $rs = mysqli_query($conexion, $sql);
+    
+    if (!$rs) {
+        error_log("Error en consulta Detalles_Pedido_Trabajo: " . mysqli_error($conexion));
+        return array();
+    }
 
     $detalles = array();
     while ($data = mysqli_fetch_assoc($rs)) {

@@ -235,36 +235,91 @@ ob_end_flush();
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!-- Contenido del modal para agregar detalle -->
                 <form id="formAgregarDetalle" action="procesar_detalle.php" method="post">
                     <input type="hidden" name="accion" value="agregar">
                     <input type="hidden" name="idPedido" value="<?php echo $IdPedidoParaJs; ?>">
                     
+                    <!-- Primera fila: Estado, Trabajo y Descripción -->
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="trabajo" class="form-label">Trabajo</label>
-                            <select class="form-select" id="trabajo" name="trabajo" required>
-                                <option value="" selected disabled>Seleccione un trabajo</option>
-                                <!-- Opciones de trabajos -->
+                        <div class="col-md-4">
+                            <label for="estado_trabajo" class="form-label">Estado</label>
+                            <select class="form-select" id="estado_trabajo" name="idEstadoTrabajo" required>
+                                <?php 
+                                $estados = Datos_Estados_Trabajo($MiConexion);
+                                foreach ($estados as $estado): ?>
+                                    <option value="<?php echo $estado['idEstado']; ?>">
+                                        <?php echo htmlspecialchars($estado['denominacion']); ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label for="precio" class="form-label">Precio</label>
-                            <input type="number" step="0.01" min="0" class="form-control" id="precio" name="precio" required>
+                        
+                        <div class="col-md-4">
+                            <label for="tipo_trabajo" class="form-label">Trabajo</label>
+                            <select class="form-select" id="tipo_trabajo" name="idTrabajo" required>
+                                <?php 
+                                $trabajos = Datos_Trabajos($MiConexion);
+                                foreach ($trabajos as $trabajo): ?>
+                                    <option value="<?php echo $trabajo['idTipoTrabajo']; ?>">
+                                        <?php echo htmlspecialchars($trabajo['denominacion']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <input type="text" class="form-control" id="descripcion" name="descripcion">
                         </div>
                     </div>
                     
+                    <!-- Segunda fila: Proveedor, Fecha y Hora -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="enviado" class="form-label">Enviado a</label>
+                            <select class="form-select" id="enviado" name="idProveedor" required>
+                                <?php 
+                                $proveedores = Listar_Proveedores($MiConexion);
+                                foreach ($proveedores as $proveedor): ?>
+                                    <option value="<?php echo $proveedor['ID_PROVEEDOR']; ?>">
+                                        <?php echo htmlspecialchars($proveedor['NOMBRE']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha Entrega</label>
+                            <input type="date" class="form-control" id="fecha_entrega" name="fechaEntrega" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Hora Entrega</label>
+                            <select class="form-select" id="hora_entrega" name="horaEntrega">
+                                <?php
+                                $horas = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
+                                         '12:00', '12:30', '16:00', '16:30', '17:00', '17:30', 
+                                         '18:00', '18:30', '19:00', '19:30'];
+                                ?>
+                                <?php foreach ($horas as $hora): ?>
+                                    <option value="<?php echo $hora; ?>">
+                                        <?php echo $hora; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Tercera fila: Precio -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="fechaEntrega" class="form-label">Fecha de Entrega</label>
-                            <input type="date" class="form-control" id="fechaEntrega" name="fechaEntrega" required>
+                            <label for="precio" class="form-label">Precio ($)</label>
+                            <input type="number" class="form-control" id="precio" name="precio" 
+                                step="0.01" min="0" required>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
-                    </div>
+
+                    <input type="hidden" name="IdPedido" value="<?php echo htmlspecialchars($DatosPedidoActual['ID'] ?? ''); ?>">
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -307,6 +362,34 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('La seña no puede ser negativa');
             this.value = '0.00';
         }
+    });
+
+    document.getElementById('formAgregarDetalle').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this)
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+        })
+        .then(data => {
+            if (data) {
+                // Si hay datos (no fue redirección), mostrar mensaje
+                alert(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al guardar el trabajo: ' + error.message);
+        });
     });
 });
 
