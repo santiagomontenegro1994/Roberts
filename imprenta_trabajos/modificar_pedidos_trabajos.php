@@ -35,7 +35,8 @@ if (!empty($_POST['BotonModificarPedido'])) {
         $DatosPedidoActual = array_merge($DatosPedidoActual, $tempData);
         $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $_POST['IdPedido']);
     }
-} 
+}
+
 // --- MODIFICAR SOLO LA SEÑA ---
 else if (!empty($_POST['BotonModificarSenia'])) {
     $idPedido = (int)($_POST['IdPedido'] ?? 0);
@@ -45,14 +46,6 @@ else if (!empty($_POST['BotonModificarSenia'])) {
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $precioTotal = (float)($DatosPedidoActual['PRECIO_TOTAL'] ?? 0);
     
-    // Validaciones
-    if ($idPedido <= 0) {
-        $_SESSION['Mensaje'] = "ID de pedido inválido.";
-        $_SESSION['Estilo'] = 'danger';
-    } elseif ($nuevaSenia < 0) {
-        $_SESSION['Mensaje'] = "La seña no puede ser negativa.";
-        $_SESSION['Estilo'] = 'warning';
-    } else {
         // Actualizar la seña
         if (Modificar_Senia_Pedido($MiConexion, $idPedido, $nuevaSenia)) {
             $_SESSION['Mensaje'] = "Seña actualizada correctamente.";
@@ -63,7 +56,6 @@ else if (!empty($_POST['BotonModificarSenia'])) {
             $_SESSION['Mensaje'] = "Error al actualizar la seña. ".$MiConexion->error;
             $_SESSION['Estilo'] = 'danger';
         }
-    }
     
     // Recargar datos después de intentar modificar
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
@@ -199,9 +191,9 @@ ob_end_flush();
                         <div class="col-md-4 mb-3">
                             <label for="senia" class="form-label fw-bold">Seña ($)</label>
                             <input type="number" step="0.01" min="0" 
-                                class="form-control <?php echo (!empty($_SESSION['Estilo']) && $_SESSION['Estilo'] == 'warning') ? 'is-invalid' : ''; ?>" 
+                                class="form-control <?php echo (!empty($_SESSION['Estilo'])) && $_SESSION['Estilo'] == 'warning' ? 'is-invalid' : ''; ?>" 
                                 name="Senia" id="senia"
-                                value="<?php echo htmlspecialchars(number_format($DatosPedidoActual['SENIA'] ?? 0, 2, '.', '')); ?>">
+                                value="<?php echo htmlspecialchars($DatosPedidoActual['SENIA'] ?? 0); ?>">
                             <?php if (!empty($_SESSION['Estilo']) && $_SESSION['Estilo'] == 'warning') { ?>
                                 <div class="invalid-feedback">
                                     <?php echo htmlspecialchars($_SESSION['Mensaje']); ?>
@@ -211,7 +203,7 @@ ob_end_flush();
 
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">Saldo a Pagar:</label>
-                            <p id="saldo" class="form-control-static fw-bold fs-5 text-danger mb-0">
+                            <p id="saldo" class="form-control-static fw-bold fs-5 <?php echo ($saldoInicial > 0) ? 'text-danger' : 'text-success'; ?> mb-0">
                                 $<?php echo number_format($saldoInicial, 2, ',', '.'); ?>
                             </p>
                         </div>
@@ -234,60 +226,88 @@ ob_end_flush();
     </section>
 </main>
 
-<!-- Modales -->
-<!-- ... (los modales y scripts siguen sin cambios) ... -->
+<!-- Modal para agregar detalle -->
+<div class="modal fade" id="agregarDetalleModal" tabindex="-1" aria-labelledby="agregarDetalleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agregarDetalleModalLabel">Agregar Trabajo al Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Contenido del modal para agregar detalle -->
+                <form id="formAgregarDetalle" action="procesar_detalle.php" method="post">
+                    <input type="hidden" name="accion" value="agregar">
+                    <input type="hidden" name="idPedido" value="<?php echo $IdPedidoParaJs; ?>">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="trabajo" class="form-label">Trabajo</label>
+                            <select class="form-select" id="trabajo" name="trabajo" required>
+                                <option value="" selected disabled>Seleccione un trabajo</option>
+                                <!-- Opciones de trabajos -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="precio" class="form-label">Precio</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="precio" name="precio" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="fechaEntrega" class="form-label">Fecha de Entrega</label>
+                            <input type="date" class="form-control" id="fechaEntrega" name="fechaEntrega" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Trabajo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar detalle -->
+<div class="modal fade" id="editarDetalleModal" tabindex="-1" aria-labelledby="editarDetalleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarDetalleModalLabel">Editar Trabajo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="contenidoEditarDetalle">
+                <!-- Contenido cargado dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const totalElement = document.getElementById('precioTotal');
-    const total = parseFloat(totalElement.dataset.value) || 0;
+    // Validar que la seña no sea mayor que el total ni negativa
     const seniaInput = document.getElementById('senia');
-    const saldoElement = document.getElementById('saldo');
-    
-    const formatArgentineNumber = (num) => {
-        return num.toLocaleString('es-AR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    };
-    
-    const calcularSaldo = () => {
-        const senia = parseFloat(seniaInput.value) || 0;
-        const saldo = Math.max(0, total - senia); // No permitir saldo negativo
-        
-        // Actualizar visualización
-        saldoElement.textContent = '$' + formatArgentineNumber(saldo);
-        
-        // Resaltar si la seña es mayor que el total
-        if (senia > total) {
-            seniaInput.classList.add('is-invalid');
-            saldoElement.classList.add('text-danger');
-            saldoElement.classList.remove('text-success');
-        } else {
-            seniaInput.classList.remove('is-invalid');
-            saldoElement.classList.remove('text-danger');
-            saldoElement.classList.add('text-success');
-        }
-    };
-    
-    // Event listeners
-    seniaInput.addEventListener('input', calcularSaldo);
     
     seniaInput.addEventListener('change', function() {
+        const total = parseFloat(document.getElementById('precioTotal').dataset.value) || 0;
         const senia = parseFloat(this.value) || 0;
+        
         if (senia > total) {
             alert('La seña no puede ser mayor que el total del pedido');
             this.value = total.toFixed(2);
-            calcularSaldo();
         } else if (senia < 0) {
             alert('La seña no puede ser negativa');
             this.value = '0.00';
-            calcularSaldo();
         }
     });
-    
-    // Calcular saldo inicial
-    calcularSaldo();
 });
 
 function editarDetalle(id) {
@@ -301,7 +321,7 @@ function editarDetalle(id) {
 
 function eliminarDetalle(id) {
     if (confirm('¿Está seguro que desea eliminar este trabajo?')) {
-        window.location.href = `procesar_detalle.php?accion=eliminar&id=${id}&idPedido=<?php echo $IdPedidoParaJs; ?>`;
+        window.location.href = `procesar_detalle.php?accion=eliminar&id=${id}&ID_PEDIDO=<?php echo $IdPedidoParaJs; ?>`;
     }
 }
 </script>

@@ -1291,102 +1291,163 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia){
     }
 }
 
-function Listar_Detalles_Pedido($conexion, $idPedido) {
-    $query = "SELECT * FROM detalle_trabajos WHERE id_pedido_trabajos = ? AND idActivo = 1";
+function Obtener_Detalle_Trabajo($conexion, $idDetalle) {
+    // Validar parámetros
+    if ($idDetalle <= 0) {
+        error_log("ID de detalle inválido: $idDetalle");
+        return false;
+    }
+
+    // Consulta para obtener los datos del detalle con información del pedido
+    $query = "SELECT 
+                dt.idDetalleTrabajo, 
+                dt.id_pedido_trabajos, 
+                dt.idTrabajo, 
+                dt.descripcion AS descripcion_trabajo, 
+                dt.precio, 
+                DATE_FORMAT(dt.fechaEntrega, '%Y-%m-%d') AS fecha_entrega,
+                TIME_FORMAT(dt.horaEntrega, '%H:%i') AS hora_entrega,
+                dt.idProveedor, 
+                dt.idEstadoTrabajo, 
+                dt.idActivo,
+                pt.idPedidoTrabajos,
+                pt.idCliente,
+                DATE_FORMAT(pt.fecha, '%Y-%m-%d') AS fecha_pedido,
+                pt.senia,
+                pt.idUsuario,
+                pt.idEstado,
+                pt.idActivo AS pedido_activo
+              FROM detalle_trabajos dt
+              JOIN pedido_trabajos pt ON dt.id_pedido_trabajos = pt.idPedidoTrabajos
+              WHERE dt.idDetalleTrabajo = ?";
+
     $stmt = $conexion->prepare($query);
-    $stmt->bind_param("i", $idPedido);
-    $stmt->execute();
+    if (!$stmt) {
+        error_log("Error al preparar la consulta: " . $conexion->error);
+        return false;
+    }
+
+    $stmt->bind_param('i', $idDetalle);
+    
+    if (!$stmt->execute()) {
+        error_log("Error al ejecutar la consulta: " . $stmt->error);
+        $stmt->close();
+        return false;
+    }
+
     $resultado = $stmt->get_result();
-    
-    $detalles = array();
-    while ($fila = $resultado->fetch_assoc()) {
-        $detalles[] = $fila;
+
+    if ($resultado->num_rows === 0) {
+        $stmt->close();
+        return false;
     }
-    return $detalles;
+
+    $detalle = $resultado->fetch_assoc();
+    $stmt->close();
+
+    return $detalle;
 }
 
-function Agregar_Detalle_Trabajo($conexion, $idPedido, $datos) {
-    $query = "INSERT INTO detalle_trabajos 
-              (id_pedido_trabajos, idTrabajo, idProveedor, fechaEntrega, horaEntrega, precio, descripcion, idEstadoTrabajo) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("iiissdsi", 
-        $idPedido,
-        $datos['idTrabajo'],
-        $datos['idProveedor'],
-        $datos['fechaEntrega'],
-        $datos['horaEntrega'],
-        $datos['precio'],
-        $datos['descripcion'],
-        $datos['idEstadoTrabajo']
-    );
-    
-    if ($stmt->execute()) {
-        Actualizar_Precio_Total($conexion, $idPedido);
-        return true;
+function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
+    // Validar parámetros básicos
+    if (!in_array($accion, ['agregar', 'editar', 'eliminar'])) {
+        error_log("Acción no válida: $accion");
+        return false;
     }
-    return false;
-}
 
-function Editar_Detalle_Trabajo($conexion, $idDetalle, $datos) {
-    $query = "UPDATE detalle_trabajos SET 
-              idTrabajo = ?, 
-              idProveedor = ?, 
-              fechaEntrega = ?, 
-              horaEntrega = ?, 
-              precio = ?, 
-              descripcion = ?, 
-              idEstadoTrabajo = ? 
-              WHERE idDetalleTrabajo = ?";
-    
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("iissdsii", 
-        $datos['idTrabajo'],
-        $datos['idProveedor'],
-        $datos['fechaEntrega'],
-        $datos['horaEntrega'],
-        $datos['precio'],
-        $datos['descripcion'],
-        $datos['idEstadoTrabajo'],
-        $idDetalle
-    );
-    
-    if ($stmt->execute()) {
-        Actualizar_Precio_Total($conexion, $datos['id_pedido_trabajos']);
-        return true;
-    }
-    return false;
-}
+    try {
+        switch ($accion) {
+            case 'editar':
+                $query = "UPDATE detalle_trabajos SET 
+                         idTrabajo = ?, 
+                         precio = ?, 
+                         fechaEntrega = ?, 
+                         horaEntrega = ?, 
+                         descripcion = ?,
+                         idProveedor = ?,
+                         idEstadoTrabajo = ?
+                         WHERE idDetalleTrabajo = ?";
+                
+                $stmt = $conexion->prepare($query);
+                if (!$stmt) {
+                    error_log("Error al preparar la consulta: " . $conexion->error);
+                    return false;
+                }
+                
+                $stmt->bind_param('idsssiii', 
+                    $datos['idTrabajo'], 
+                    $datos['precio'], 
+                    $datos['fechaEntrega'],
+                    $datos['horaEntrega'],
+                    $datos['descripcion'],
+                    $datos['idProveedor'],
+                    $datos['idEstadoTrabajo'],
+                    $datos['idDetalle']
+                );
+                break;
+                
+            case 'agregar':
+                $query = "INSERT INTO detalle_trabajos (
+                    id_pedido_trabajos, 
+                    idTrabajo, 
+                    precio, 
+                    fechaEntrega, 
+                    horaEntrega, 
+                    descripcion,
+                    idProveedor,
+                    idEstadoTrabajo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                
+                $stmt = $conexion->prepare($query);
+                if (!$stmt) {
+                    error_log("Error al preparar la consulta: " . $conexion->error);
+                    return false;
+                }
+                
+                $stmt->bind_param('iidsssii',
+                    $datos['id_pedido_trabajos'],
+                    $datos['idTrabajo'],
+                    $datos['precio'],
+                    $datos['fechaEntrega'],
+                    $datos['horaEntrega'],
+                    $datos['descripcion'],
+                    $datos['idProveedor'],
+                    $datos['idEstadoTrabajo']
+                );
+                break;
+                
+            case 'eliminar':
+                $query = "DELETE FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
+                $stmt = $conexion->prepare($query);
+                if (!$stmt) {
+                    error_log("Error al preparar la consulta: " . $conexion->error);
+                    return false;
+                }
+                
+                $stmt->bind_param('i', $datos['idDetalle']);
+                break;
+                
+            default:
+                return false;
+        }
 
-function Eliminar_Detalle_Trabajo($conexion, $idDetalle) {
-    // Eliminación lógica
-    $query = "UPDATE detalle_trabajos SET idActivo = 0 WHERE idDetalleTrabajo = ?";
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("i", $idDetalle);
-    
-    if ($stmt->execute()) {
-        // Obtener el id_pedido_trabajos para actualizar el precio total
-        $query = "SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
-        $stmt = $conexion->prepare($query);
-        $stmt->bind_param("i", $idDetalle);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
-        $idPedido = $resultado->fetch_assoc()['id_pedido_trabajos'];
+        $resultado = $stmt->execute();
+        if (!$resultado) {
+            error_log("Error al ejecutar la consulta: " . $stmt->error);
+            $stmt->close();
+            return false;
+        }
         
-        Actualizar_Precio_Total($conexion, $idPedido);
-        return true;
+        $filasAfectadas = $stmt->affected_rows;
+        $stmt->close();
+        
+        return $filasAfectadas > 0;
+        
+    } catch (Exception $e) {
+        error_log("Excepción al procesar detalle: " . $e->getMessage());
+        if (isset($stmt)) $stmt->close();
+        return false;
     }
-    return false;
-}
-
-function Datos_Detalle_Trabajo($conexion, $idDetalle) {
-    $query = "SELECT * FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
-    $stmt = $conexion->prepare($query);
-    $stmt->bind_param("i", $idDetalle);
-    $stmt->execute();
-    $resultado = $stmt->get_result();
-    return $resultado->fetch_assoc();
 }
 
 ?>
