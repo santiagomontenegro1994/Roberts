@@ -1,6 +1,6 @@
 <?php
 require_once '../funciones/conexion.php';
-require_once '../funciones/select_general.php';
+require_once '../funciones/imprenta.php';
 
 // Obtener información de la caja seleccionada
 $MiConexion = ConexionBD();
@@ -73,11 +73,22 @@ $MiConexion->close();
         <span class="badge bg-primary text-white px-3 py-2 text-wrap text-center caja-seleccionada">
             <?php
             if ($cajaSeleccionada) {
-                echo "Caja: " . $cajaSeleccionada['Fecha'] . " - Turno: " . $cajaSeleccionada['Turno'];
+                $dias = [
+                    'Sunday' => 'domingo',
+                    'Monday' => 'lunes',
+                    'Tuesday' => 'martes',
+                    'Wednesday' => 'miércoles',
+                    'Thursday' => 'jueves',
+                    'Friday' => 'viernes',
+                    'Saturday' => 'sábado'
+                ];
+                $diaEnIngles = date('l', strtotime($cajaSeleccionada['Fecha']));
+                $diaEnEspañol = $dias[$diaEnIngles] ?? $diaEnIngles;
+                echo "Caja: " . $diaEnEspañol . " " . date('d-m-Y', strtotime($cajaSeleccionada['Fecha']));
             } else {
                 echo "Sin caja seleccionada";
             }
-            ?>
+            ?>        
         </span>
     </div>
 

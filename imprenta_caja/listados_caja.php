@@ -69,10 +69,10 @@ if (!empty($_POST['BotonBuscar'])) {
                       <label class="form-check-label" for="gridRadios1">Fecha</label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="idTurno">
-                      <label class="form-check-label" for="gridRadios2">Turno</label>
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="idCaja" checked>
+                      <label class="form-check-label" for="gridRadios1">Id</label>
                     </div>
-                  </div>
+              </div>
           </div>
           </form>
 
@@ -83,7 +83,6 @@ if (!empty($_POST['BotonBuscar'])) {
                 <tr>
                   <th scope="col">ID Caja</th>
                   <th scope="col">Fecha</th>
-                  <th scope="col">Turno</th>
                   <th scope="col">Caja Inicial</th>
                   <th scope="col">Acciones</th>
                   <th scope="col" class="text-end">Seleccionar</th> <!-- Nueva columna para el botón Seleccionar -->
@@ -93,8 +92,7 @@ if (!empty($_POST['BotonBuscar'])) {
                 <?php for ($i = 0; $i < $CantidadCajas; $i++) { ?>
                   <tr>
                     <td><?php echo $ListadoCajas[$i]['idCaja']; ?></td>
-                    <td><?php echo $ListadoCajas[$i]['Fecha']; ?></td>
-                    <td><?php echo $ListadoCajas[$i]['denominacion']; ?></td>
+                    <td><?php echo date('d-m-Y', strtotime($ListadoCajas[$i]['Fecha'])); ?></td>
                     <td>$<?php echo number_format($ListadoCajas[$i]['cajaInicial'], 2); ?></td>
                     <td>
                       <!-- Botón Eliminar -->

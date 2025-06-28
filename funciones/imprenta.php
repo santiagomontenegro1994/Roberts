@@ -535,9 +535,8 @@ function ObtenerInfoCaja($vConexion, $idCaja) {
 }
 
 function Listar_Cajas($Conexion) {
-    $sql = "SELECT caja.*, turnos.denominacion 
+    $sql = "SELECT caja.*
             FROM caja 
-            LEFT JOIN turnos ON caja.idTurno = turnos.idTurno 
             ORDER BY caja.Fecha DESC";
             
     $resultado = $Conexion->query($sql);
@@ -549,9 +548,8 @@ function Listar_Cajas($Conexion) {
 }
 
 function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
-    $sql = "SELECT caja.*, turnos.denominacion 
+    $sql = "SELECT caja.*
             FROM caja 
-            LEFT JOIN turnos ON caja.idTurno = turnos.idTurno 
             WHERE caja.$Criterio LIKE ? 
             ORDER BY caja.Fecha DESC";
     
@@ -568,9 +566,8 @@ function Listar_Cajas_Parametro($Conexion, $Criterio, $Parametro) {
 }
 
 function Obtener_Info_Caja($Conexion, $idCaja) {
-    $sql = "SELECT c.Fecha, t.denominacion AS Turno 
+    $sql = "SELECT c.Fecha
             FROM caja c
-            INNER JOIN turnos t ON c.idTurno = t.idTurno
             WHERE c.idCaja = ?";
     $stmt = $Conexion->prepare($sql);
     $stmt->bind_param("i", $idCaja);

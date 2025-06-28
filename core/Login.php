@@ -14,17 +14,17 @@ if (!empty($_POST['BotonLogin'])) {
 
     //la consulta con la BD para que encuentre un usuario registrado con el usuario y clave brindados
     if ( !empty($UsuarioLogueado)) {
-       // $Mensaje ='ok! ya puedes ingresar';
+      // $Mensaje ='ok! ya puedes ingresar';
 
-       //generar los valores del usuario (esto va a venir de mi BD)
-        $_SESSION['Usuario_Nombre']     =   $UsuarioLogueado['NOMBRE'];
-        $_SESSION['Usuario_Apellido']   =   $UsuarioLogueado['APELLIDO'];
-        $_SESSION['Usuario_Nivel']      =   $UsuarioLogueado['NIVEL'];
-        $_SESSION['Usuario_Id']         =   $UsuarioLogueado['ID'];
-        $_SESSION['Id_Caja']            ='';
-        $_SESSION['Mensaje']            ='';
-        $_SESSION['Estilo']             ='';
-        $_SESSION['Descarga']            ='';
+      //generar los valores del usuario (esto va a venir de mi BD)
+      $_SESSION['Usuario_Nombre']     = $UsuarioLogueado['NOMBRE'];
+      $_SESSION['Usuario_Apellido']   = $UsuarioLogueado['APELLIDO'];
+      $_SESSION['Usuario_Nivel']      = $UsuarioLogueado['NIVEL'];
+      $_SESSION['Usuario_Id']         = $UsuarioLogueado['ID'];
+      $_SESSION['Id_Caja']            = $UsuarioLogueado['ID_CAJA']; // Aquí asignamos el ID de la caja
+      $_SESSION['Mensaje']            = '';
+      $_SESSION['Estilo']             = '';
+      $_SESSION['Descarga']           = '';
         
         header('Location: ../core/index.php');
         exit;

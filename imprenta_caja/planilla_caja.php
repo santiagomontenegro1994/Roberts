@@ -48,9 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idCaja'])){
 }
 
 // Obtener los datos de la caja específica
-$queryCaja = "SELECT c.idCaja, c.Fecha, turnos.denominacion, c.cajaInicial
+$queryCaja = "SELECT c.idCaja, c.Fecha, c.cajaInicial
               FROM caja c
-              JOIN turnos ON c.idTurno = turnos.idTurno
               WHERE c.idCaja = ?";
 $stmtCaja = $MiConexion->prepare($queryCaja);
 $stmtCaja->bind_param("i", $idCaja);
@@ -179,11 +178,7 @@ $cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja i
                             <p><strong>Caja ID:</strong> <?php echo $idCaja; ?></p>
                         </div>
 
-                        <div class="col-12 col-md-2">
-                            <p><strong>Turno:</strong> <?php echo $filaCaja['denominacion']; ?></p>
-                        </div>
-
-                        <div class="col-12 col-md-2">
+                        <div class="col-12 col-md-3">
                             <p><strong>Fecha:</strong> <?php echo $filaCaja['Fecha']; ?></p>
                         </div>
                     </div>

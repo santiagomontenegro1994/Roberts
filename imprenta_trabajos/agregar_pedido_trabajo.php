@@ -25,6 +25,14 @@ $proveedores = Listar_Proveedores($MiConexion);
         padding: 8px 10px !important;
     }
 
+    .btn_new_cliente_imprenta {
+        padding: 3px 6px !important;
+        font-size: 0.6rem !important;
+        margin-left: 8px !important; /* menos margen que antes */
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
     .card {
         margin-bottom: 8px !important;
     }
@@ -121,9 +129,9 @@ $proveedores = Listar_Proveedores($MiConexion);
 <section class="section">
     <div class="card">
         <div class="card-body">
-            <div class="d-flex justify-content-start align-items-center mb-2"> 
+            <div class="d-flex justify-content-start align-items-center mb-0"> 
                 <h6 class="card-title mr-2" style="margin-bottom:0;">Datos de Cliente</h6> 
-                <a href="#" class="btn btn-primary btn-sm m-2 btn_new_cliente_imprenta">Nuevo Cliente</a>
+                <a href="#" class="btn btn-primary btn_new_cliente_imprenta">Nuevo Cliente</a>
             </div>
 
             <form class="row g-1" id="formularioClientePedidoImprenta" name="form_new_cliente_pedido">
