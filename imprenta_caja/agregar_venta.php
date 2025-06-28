@@ -87,7 +87,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
-                        <a href="listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
+                        <a href="../imprenta_metodos_pago/listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
                         <?php foreach ($TiposPagos as $tipo) { ?>
@@ -101,7 +101,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                     <!-- Sección de Tipos de Servicio -->
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Tipo de Servicio</h6>
-                        <a href="listados_tipos_servicios.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Servicio</a>
+                        <a href="../imprenta_tipos_servicios/listados_tipos_servicios.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Servicio</a>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
                         <?php foreach ($TiposServicio as $tipo) { ?>

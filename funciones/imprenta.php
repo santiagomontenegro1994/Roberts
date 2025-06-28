@@ -581,10 +581,10 @@ function Obtener_Info_Caja($Conexion, $idCaja) {
     return null; // Si no se encuentra la caja
 }
 
-function InsertarCaja($vConexion, $Fecha, $idTurno, $cajaInicial) {
+function InsertarCaja($vConexion, $Fecha, $cajaInicial) {
 
-    // Verificar si ya existe una caja para la misma fecha y turno
-    $SQL_Verificar = "SELECT COUNT(*) AS total FROM caja WHERE DATE(Fecha) = '$Fecha' AND idTurno = $idTurno";
+    // Verificar si ya existe una caja para la misma fecha
+    $SQL_Verificar = "SELECT COUNT(*) AS total FROM caja WHERE DATE(Fecha) = '$Fecha'";
     $resultado = mysqli_query($vConexion, $SQL_Verificar);
 
     if (!$resultado) {
@@ -607,7 +607,7 @@ function InsertarCaja($vConexion, $Fecha, $idTurno, $cajaInicial) {
     }
 
     // Ejecutar la inserción
-    $SQL_Insert = "INSERT INTO caja (Fecha, idTurno, cajaInicial) VALUES ('$Fecha', $idTurno, $cajaInicial)";
+    $SQL_Insert = "INSERT INTO caja (Fecha, cajaInicial) VALUES ('$Fecha', $cajaInicial)";
     $resultado_insert = mysqli_query($vConexion, $SQL_Insert);
 
     if (!$resultado_insert) {
@@ -629,9 +629,6 @@ function Validar_Caja(){
     $_SESSION['Mensaje']='';
     if (strlen($_POST['Fecha']) < 1) {
         $_SESSION['Mensaje'].='Debes seleccionar una fecha. <br />';
-    }
-    if (strlen($_POST['idTurno']) < 1) {
-        $_SESSION['Mensaje'].='Debes seleccionar un turno. <br />';
     }
     if (strlen($_POST['cajaIncial']) < 0) {
         $_SESSION['Mensaje'].='Debes pober una caja inicial. <br />';
@@ -657,7 +654,6 @@ function Datos_Caja($vConexion, $vIdCaja) {
     if (!empty($data)) {
         $DatosCaja['IDCAJA'] = $data['idCaja'];
         $DatosCaja['FECHA'] = $data['Fecha'];
-        $DatosCaja['IDTURNO'] = $data['idTurno'];
         $DatosCaja['CAJA_INICIAL'] = $data['cajaInicial'];
     }
     return $DatosCaja;
@@ -694,14 +690,12 @@ function ObtenerDetallesCaja($vConexion, $idCaja) {
 function Modificar_Caja($vConexion) {
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $Fecha = mysqli_real_escape_string($vConexion, $_POST['Fecha']);
-    $idTurno = mysqli_real_escape_string($vConexion, $_POST['idTurno']);
     $cajaInicial = mysqli_real_escape_string($vConexion, $_POST['cajaInicial']);
 
-    // Verificar si ya existe una caja para la misma fecha y turno, excluyendo la caja actual
+    // Verificar si ya existe una caja para la misma fecha, excluyendo la caja actual
     $SQL_Verificar = "SELECT COUNT(*) AS total 
                       FROM caja 
                       WHERE DATE(Fecha) = '$Fecha' 
-                      AND idTurno = $idTurno 
                       AND idCaja != $idCaja";
     $resultado = mysqli_query($vConexion, $SQL_Verificar);
 
@@ -727,7 +721,6 @@ function Modificar_Caja($vConexion) {
     // Ejecutar la modificación
     $SQL_MiConsulta = "UPDATE caja
                        SET Fecha = '$Fecha',
-                           idTurno = $idTurno,
                            cajaInicial = $cajaInicial
                        WHERE idCaja = $idCaja";
 

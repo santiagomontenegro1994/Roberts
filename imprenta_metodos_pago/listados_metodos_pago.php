@@ -88,7 +88,7 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
 
 <!-- Botón Volver a Ventas -->
 <div class="text-center mt-4">
-  <a href="agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
+  <a href="../imprenta_caja/agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
 </div>
 
 </main><!-- End #main -->

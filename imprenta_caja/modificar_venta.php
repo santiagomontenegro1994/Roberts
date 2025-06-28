@@ -124,7 +124,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 
 <?php
     $_SESSION['Mensaje'] = '';
-    require('footer.inc.php'); // Incluir footer
+    require('../shared/footer.inc.php'); // Incluir footer
 ?>
 
 </body>

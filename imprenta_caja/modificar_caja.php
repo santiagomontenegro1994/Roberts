@@ -36,7 +36,6 @@ if (!empty($_POST['BotonModificarCaja'])) {
         $_SESSION['Estilo'] = 'warning';
         $DatosCajaActual['IDCAJA'] = !empty($_POST['idCaja']) ? $_POST['idCaja'] : '';
         $DatosCajaActual['FECHA'] = !empty($_POST['Fecha']) ? $_POST['Fecha'] : '';
-        $DatosCajaActual['ID_TURNO'] = !empty($_POST['idTurno']) ? $_POST['idTurno'] : '';
         $DatosCajaActual['CAJA_INICIAL'] = !empty($_POST['cajaInicial']) ? $_POST['cajaInicial'] : '';
     }
 } else if (!empty($_GET['idCaja'])) {
@@ -77,21 +76,6 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                         <div class="col-sm-10">
                             <input type="date" class="form-control" name="Fecha" id="Fecha"
                             value="<?php echo !empty($DatosCajaActual['FECHA']) ? $DatosCajaActual['FECHA'] : ''; ?>">
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <label for="idTurno" class="col-sm-2 col-form-label">Turno</label>
-                        <div class="col-sm-10">
-                            <select class="form-control" name="idTurno" id="idTurno">
-                                <option value="">Seleccione un turno</option>
-                                <?php foreach (Listar_Turnos($MiConexion) as $turno) { ?>
-                                    <option value="<?php echo $turno['idTurno']; ?>"
-                                        <?php echo ((int)$DatosCajaActual['IDTURNO'] === (int)$turno['idTurno']) ? 'selected' : ''; ?>>
-                                        <?php echo $turno['denominacion']; ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
                         </div>
                     </div>
 

@@ -70,7 +70,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 <div class="text-center">
                   <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
                   <button type="reset" class="btn btn-secondary">Reset</button>
-                  <a href="agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
+                  <a href="../imprenta_caja/agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
                 </div>
               </form><!-- End Horizontal Form -->
 
