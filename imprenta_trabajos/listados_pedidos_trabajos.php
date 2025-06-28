@@ -148,7 +148,7 @@ $CantidadPedidos = count($ListadoPedidos);
         $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
 
         // Obtener el color y título de la fila según el estado
-        list($Title, $Color) = ColorDeFila($ListadoPedidos[$i]['ESTADO']);
+        list($Title, $Color) = ColorDeFilaTrabajo($ListadoPedidos[$i]['ESTADO']);
       ?>
         <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
           <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
@@ -163,19 +163,22 @@ $CantidadPedidos = count($ListadoPedidos);
           <td>
             <!-- Acciones -->
             <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+              class="btn btn-sm btn-danger me-2"
               title="Anular" 
               onclick="return confirm('Confirma anular este Pedido?');">
-              <i class="bi bi-trash-fill text-danger fs-5"></i>
+              <i class="bi bi-trash-fill"></i>
             </a>
 
-            <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+            <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
+              class="btn btn-sm btn-warning me-2" 
               title="Modificar">
-              <i class="bi bi-pencil-fill text-warning fs-5"></i>
+              <i class="bi bi-pencil-fill"></i>
             </a>
 
-            <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+            <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
+              class="btn btn-sm btn-primary me-2" 
               title="Imprimir">
-              <i class="bi bi-printer-fill text-primary fs-5"></i>
+              <i class="bi bi-printer-fill"></i>
             </a>
           </td>
         </tr>

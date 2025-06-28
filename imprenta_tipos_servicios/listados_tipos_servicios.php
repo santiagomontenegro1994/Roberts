@@ -65,14 +65,16 @@ $CantidadTiposServicio = count($ListadoTiposServicio);
                     <td>
                       <!-- Acciones -->
                       <a href="modificar_tipo_servicio.php?idTipoServicio=<?php echo $ListadoTiposServicio[$i]['idTipoServicio']; ?>" 
+                          class="btn btn-sm btn-warning me-2"
                           title="Modificar">
-                        <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                        <i class="bi bi-pencil-fill"></i>
                       </a>
 
                       <a href="eliminar_tipo_servicio.php?idTipoServicio=<?php echo $ListadoTiposServicio[$i]['idTipoServicio']; ?>" 
+                          class="btn btn-sm btn-danger me-2"
                           title="Eliminar" 
                           onclick="return confirm('Confirma eliminar este tipo de servicio?');">
-                        <i class="bi bi-trash-fill text-danger fs-5"></i>
+                        <i class="bi bi-trash-fill"></i>
                       </a>
                     </td>
                   </tr>

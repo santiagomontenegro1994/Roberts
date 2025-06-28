@@ -631,7 +631,7 @@ function Validar_Caja(){
         $_SESSION['Mensaje'].='Debes seleccionar una fecha. <br />';
     }
     if (strlen($_POST['cajaIncial']) < 0) {
-        $_SESSION['Mensaje'].='Debes pober una caja inicial. <br />';
+        $_SESSION['Mensaje'].='Debes poner una caja inicial. <br />';
     }
     
     //con esto aseguramos que limpiamos espacios y limpiamos de caracteres de codigo ingresados
@@ -901,6 +901,33 @@ function ColorDeFilaCaja($vTipoOperacion) {
         $Color='table-danger'; 
     }
         
+    return [$Title, $Color];
+
+}
+
+function ColorDeFilaTrabajo($vEstado) {
+    $Title='';
+    $Color=''; 
+
+    if ($vEstado == '4'){
+        //Estado pendiente
+        $Title='Entregado';
+        $Color='table-primary'; 
+    
+    } else if ($vEstado == '3'){
+        //Estado listo para retirar
+        $Title='Recibido';
+        $Color='table-success'; 
+    } else if ($vEstado == '2'){
+        //Estado retirado
+        $Title='Pedido';
+        $Color='table-warning'; 
+    } else if ($vEstado == '1'){
+    //Estado retirado
+    $Title='Para pedir';
+    $Color='table-danger'; 
+    }      
+    
     return [$Title, $Color];
 
 }

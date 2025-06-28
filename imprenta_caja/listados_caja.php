@@ -97,15 +97,17 @@ if (!empty($_POST['BotonBuscar'])) {
                     <td>
                       <!-- Botón Eliminar -->
                       <a href="eliminar_caja.php?idCaja=<?php echo $ListadoCajas[$i]['idCaja']; ?>" 
+                        class="btn btn-sm btn-danger me-2"
                         title="Eliminar" 
                         onclick="return confirm('¿Confirma eliminar esta caja?');">
-                          <i class="bi bi-trash-fill text-danger fs-5"></i>
+                          <i class="bi bi-trash-fill"></i>
                       </a>
 
                       <!-- Botón Modificar -->
                       <a href="modificar_caja.php?idCaja=<?php echo $ListadoCajas[$i]['idCaja']; ?>"  
+                        class="btn btn-sm btn-warning me-2"
                         title="Modificar">
-                        <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                        <i class="bi bi-pencil-fill"></i>
                       </a>
                     </td>
                     <td class="text-end"> <!-- Nueva celda para el botón Seleccionar -->

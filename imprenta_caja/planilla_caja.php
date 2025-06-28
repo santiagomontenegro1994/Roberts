@@ -228,13 +228,15 @@ $cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja i
                                     <td><?php echo $fila['observaciones']; ?></td>
                                     <td>
                                         <a href="eliminar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
+                                           class="btn btn-sm btn-danger me-2"
                                            title="Anular" 
                                            onclick="return confirm('¿Confirma anular este detalle de caja?');">
-                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                            <i class="bi bi-trash-fill"></i>
                                         </a>
                                         <a href="modificar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
+                                           class="btn btn-sm btn-warning me-2"
                                            title="Modificar">
-                                            <i class="bi bi-pencil-fill text-warning fs-5"></i>
+                                            <i class="bi bi-pencil-fill"></i>
                                         </a>
                                     </td>
                                 </tr>
