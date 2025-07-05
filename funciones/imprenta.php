@@ -332,8 +332,21 @@ function Modificar_Proveedor($vConexion) {
     
 }
 
-function Listar_Tipos_Pagos($conexion) {
-    $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1";
+function Listar_Tipos_Pagos_Entrada($conexion) {
+    $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1 AND esEntrada = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposPagos = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposPagos[] = $fila;
+        }
+    }
+    return $tiposPagos;
+}
+
+function Listar_Tipos_Pagos_Salida($conexion) {
+    $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1 AND esSalida = 1";
     $resultado = mysqli_query($conexion, $sql);
 
     $tiposPagos = array();
@@ -789,22 +802,24 @@ function Modificar_Venta($vConexion) {
     $idDetalleCaja = mysqli_real_escape_string($vConexion, $_POST['idDetalleCaja']);
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
-    $idTipoServicio = mysqli_real_escape_string($vConexion, $_POST['idTipoServicio']);
+    $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']);
     $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
     $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
+    $observaciones = isset($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
 
     $SQL_MiConsulta = "UPDATE detalle_caja
                        SET idCaja = '$idCaja',
                            idTipoPago = '$idTipoPago',
-                           idTipoServicio = '$idTipoServicio',
+                           idTipoMovimiento = '$idTipoMovimiento',
                            idUsuario = '$idUsuario',
-                           monto = '$monto'
+                           monto = '$monto',
+                           observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
                        WHERE idDetalleCaja = '$idDetalleCaja'";
 
     if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
-        return true; // Modificación exitosa
+        return true;
     } else {
-        return false; // Error al modificar
+        return false;
     }
 }
 
@@ -814,8 +829,8 @@ function Validar_Venta() {
     if (empty($_POST['idTipoPago'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
     }
-    if (empty($_POST['idDetalle'])) {
-        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de servicio. <br />';
+    if (empty($_POST['idTipoMovimiento'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de entrada. <br />';
     }
     if (empty($_POST['Monto']) || !is_numeric($_POST['Monto']) || $_POST['Monto'] <= 0) {
         $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido. <br />';
@@ -840,37 +855,23 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
             'idDetalleCaja' => $data['idDetalleCaja'],
             'idCaja' => $data['idCaja'],
             'idTipoPago' => $data['idTipoPago'],
-            'idTipoServicio' => $data['idTipoServicio'], // Asegúrate de incluir este campo
-            'Monto' => $data['monto']
+            'idTipoMovimiento' => $data['idTipoMovimiento'],
+            'Monto' => $data['monto'],
+            'observaciones' => $data['observaciones'] 
         );
     }
 
     return array();
 }
 
-function InsertarVenta($vConexion) {
+function InsertarMovimiento($vConexion) {
     // Preparar los valores para la inserción
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
-    $idTipoServicio = null; // Inicializar idTipoServicio como null
-    $idTipoRetiro = null; // Inicializar idTipoRetiro como null
-    $idDetalle = mysqli_real_escape_string($vConexion, $_POST['idDetalle']);
+    $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']); // Nuevo campo
     $idUsuario = isset($_SESSION['Usuario_Id']) ? mysqli_real_escape_string($vConexion, $_SESSION['Usuario_Id']) : null;
     $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
-    $idTipoOperacion = mysqli_real_escape_string($vConexion, $_POST['idTipoOperacion']);
     $observaciones = !empty($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
-
-    // Si idTipoOperacion es 3, establecer idCaja como 0
-    $idCaja = ($idTipoOperacion == 3) ? "0" : "'$idCaja'";
-
-    // Si idTipoOperacion es 2, usar idDetalle como idTipoRetiro
-    if ($idTipoOperacion == 2) {
-        $idTipoRetiro = $idDetalle;
-        $idTipoServicio = "NULL"; // Asegurarse de que idTipoServicio sea NULL
-    } else {
-        $idTipoServicio = $idDetalle;
-        $idTipoRetiro = "NULL"; // Asegurarse de que idTipoRetiro sea NULL si no es operación 2
-    }
 
     // Verificar que el idUsuario no sea nulo
     if ($idUsuario === null) {
@@ -878,8 +879,8 @@ function InsertarVenta($vConexion) {
     }
 
     // Construir la consulta SQL
-    $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoServicio, idTipoRetiro, idUsuario, monto, idTipoOperacion, observaciones)
-                   VALUES ($idCaja, '$idTipoPago', $idTipoServicio, $idTipoRetiro, '$idUsuario', '$monto', '$idTipoOperacion', " . 
+    $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones)
+                   VALUES ('$idCaja', '$idTipoPago', '$idTipoMovimiento', '$idUsuario', '$monto', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
 
     // Ejecutar la consulta
@@ -1485,4 +1486,78 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     }
 }
 
+function Listar_Tipos_Movimiento_Entrada($conexion) {
+    $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_entrada = 1 AND idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposMovimiento = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposMovimiento[] = $fila;
+        }
+    }
+    return $tiposMovimiento;
+}
+
+function InsertarTipoMovimientoEntrada($vConexion) {
+    $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
+    $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 1, 0, 1)";
+    $stmt = $vConexion->prepare($sql);
+    $stmt->bind_param("s", $denominacion);
+    if (!$stmt->execute()) {
+        return false;
+    }
+    $stmt->close();
+    return true;
+}
+
+function Validar_Tipo_Movimiento() {
+    $Mensaje = '';
+    if (empty(trim($_POST['Denominacion'] ?? ''))) {
+        $Mensaje .= 'Debes agregar una denominación.<br />';
+    }
+    return $Mensaje;
+}
+
+function Datos_Tipo_Movimiento($vConexion, $vIdTipoMovimiento) {
+    $DatosTipoMovimiento = array();
+    $SQL = "SELECT * FROM tipo_movimiento WHERE idTipoMovimiento = $vIdTipoMovimiento";
+    $rs = mysqli_query($vConexion, $SQL);
+    $data = mysqli_fetch_array($rs);
+    if (!empty($data)) {
+        $DatosTipoMovimiento['IdTipoMovimiento'] = $data['idTipoMovimiento'];
+        $DatosTipoMovimiento['Denominacion'] = $data['denominacion'];
+    }
+    return $DatosTipoMovimiento;
+}
+
+function Modificar_Tipo_Movimiento($vConexion) {
+    $denominacion = mysqli_real_escape_string($vConexion, $_POST['Denominacion']);
+    $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['IdTipoMovimiento']);
+    $SQL_MiConsulta = "UPDATE tipo_movimiento
+    SET denominacion = '$denominacion'
+    WHERE idTipoMovimiento = '$idTipoMovimiento'";
+    if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
+    $SQL_MiConsulta = "SELECT idTipoMovimiento FROM tipo_movimiento 
+                    WHERE idTipoMovimiento = $vIdConsulta";
+
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idTipoMovimiento'])) {
+        // Si se cumple todo, entonces desactivo:
+        mysqli_query($vConexion, "UPDATE tipo_movimiento SET idActivo = 2 WHERE idTipoMovimiento = $vIdConsulta");
+        return true;
+    } else {
+        return false;
+    }
+}
 ?>

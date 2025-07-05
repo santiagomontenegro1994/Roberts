@@ -15,8 +15,8 @@ require_once '../funciones/imprenta.php';
 $MiConexion = ConexionBD();
 
 // Obtener los tipos de servicio y métodos de pago desde la base de datos
-$TiposServicio = Listar_Tipos_Servicios($MiConexion);
-$TiposPagos = Listar_Tipos_Pagos($MiConexion);
+$TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
+$TiposMovimientoEntrada = Listar_Tipos_Movimiento_Entrada($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
@@ -37,8 +37,8 @@ if (!empty($_POST['BotonRegistrar'])) {
             exit;
         }
 
-        // Llamar al método InsertarVenta
-        if (InsertarVenta($MiConexion)) {
+        // Llamar al método InsertarMovimiento
+        if (InsertarMovimiento($MiConexion)) {
             $_SESSION['Mensaje'] = 'Detalle de venta registrado correctamente.';
             $_SESSION['Estilo'] = 'success';
 
@@ -98,18 +98,19 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                         <input type="hidden" name="idTipoPago" id="idTipoPago">
                     </div>
 
-                    <!-- Sección de Tipos de Servicio -->
+
+                    <!-- Sección de Tipos de Movimiento Entrada -->
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 card-title">Seleccione el Tipo de Servicio</h6>
-                        <a href="../imprenta_tipos_servicios/listados_tipos_servicios.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Servicio</a>
+                        <h6 class="mb-0 card-title">Seleccione el Tipo de Entrada</h6>
+                        <a href="../imprenta_tipos_movimientos_entrada/listados_tipos_movimientos.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Entrada</a>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
-                        <?php foreach ($TiposServicio as $tipo) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-servicio" data-id="<?php echo $tipo['idTipoServicio']; ?>">
+                        <?php foreach ($TiposMovimientoEntrada as $tipo) { ?>
+                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-movimiento" data-id="<?php echo $tipo['idTipoMovimiento']; ?>">
                                 <?php echo $tipo['denominacion']; ?>
                             </button>
                         <?php } ?>
-                        <input type="hidden" name="idDetalle" id="idDetalle">
+                        <input type="hidden" name="idTipoMovimiento" id="idTipoMovimiento">
                     </div>
 
                     <!-- Campo para ingresar el valor de dinero -->
@@ -160,15 +161,15 @@ require ('../shared/footer.inc.php'); // Incluir el footer
         });
     });
 
-    // Manejar la selección de los botones de Tipos de Servicio
-    const tipoServicioButtons = document.querySelectorAll('.tipo-servicio');
-    tipoServicioButtons.forEach(button => {
+    // Manejar la selección de los botones de Tipos de Movimiento Entrada
+    const tipoMovimientoButtons = document.querySelectorAll('.tipo-movimiento');
+    tipoMovimientoButtons.forEach(button => {
         button.addEventListener('click', () => {
-            tipoServicioButtons.forEach(btn => btn.classList.remove('btn-primary')); // Quitar selección previa
-            tipoServicioButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
+            tipoMovimientoButtons.forEach(btn => btn.classList.remove('btn-primary')); // Quitar selección previa
+            tipoMovimientoButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
             button.classList.remove('btn-secondary'); // Quitar estilo secundario
             button.classList.add('btn-primary'); // Agregar estilo seleccionado
-            document.getElementById('idDetalle').value = button.getAttribute('data-id'); // Asignar valor al input hidden
+            document.getElementById('idTipoMovimiento').value = button.getAttribute('data-id'); // Asignar valor al input hidden
         });
     });
 </script>

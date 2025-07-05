@@ -27,8 +27,32 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
             $Usuario['ID_CAJA'] = $cajaData['idCaja'];
         } else {
             // Si no existe, crear una nueva caja
+            // Buscar la caja anterior (la de la fecha más reciente anterior a hoy)
+            $SQLCajaAnterior = "SELECT cajaInicial, 
+                (SELECT IFNULL(SUM(dc.monto),0) FROM detalle_caja dc 
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento 
+                    WHERE dc.idCaja = c.idCaja AND tm.es_entrada = 1) AS totalEntradas,
+                (SELECT IFNULL(SUM(dc.monto),0) FROM detalle_caja dc 
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento 
+                    WHERE dc.idCaja = c.idCaja AND tm.es_salida = 1) AS totalRetiros
+                FROM caja c
+                WHERE Fecha < '$fechaActual'
+                ORDER BY Fecha DESC
+                LIMIT 1";
+            $rsCajaAnterior = mysqli_query($vConexion, $SQLCajaAnterior);
+            $cajaAnterior = mysqli_fetch_assoc($rsCajaAnterior);
+            
+            if ($cajaAnterior) {
+                $cajaInicialAnterior = (float)$cajaAnterior['cajaInicial'];
+                $totalEntradas = (float)$cajaAnterior['totalEntradas'];
+                $totalRetiros = (float)$cajaAnterior['totalRetiros'];
+                $cajaEfectivoAnterior = $cajaInicialAnterior + $totalEntradas - $totalRetiros;
+            } else {
+                $cajaEfectivoAnterior = 19500; // Valor por defecto si no hay caja anterior
+            }
+            
             $SQLNuevaCaja = "INSERT INTO caja (Fecha, cajaInicial) 
-                             VALUES ('$fechaActual', 19500)";
+                             VALUES ('$fechaActual', $cajaEfectivoAnterior)";
             
             if (mysqli_query($vConexion, $SQLNuevaCaja)) {
                 $idNuevaCaja = mysqli_insert_id($vConexion);

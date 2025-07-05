@@ -32,11 +32,48 @@ if (!empty($_POST['BotonModificarVenta'])) {
         $DatosVentaActual['idDetalleCaja'] = !empty($_POST['idDetalleCaja']) ? $_POST['idDetalleCaja'] : '';
         $DatosVentaActual['idCaja'] = !empty($_POST['idCaja']) ? $_POST['idCaja'] : '';
         $DatosVentaActual['Monto'] = !empty($_POST['Monto']) ? $_POST['Monto'] : '';
-        $DatosVentaActual['idTipoPago'] = !empty($_POST['idTipoPago']) ? $_POST['idTipoPago'] : '';
-        $DatosVentaActual['idTipoServicio'] = !empty($_POST['idTipoServicio']) ? $_POST['idTipoServicio'] : '';
+        $DatosVentaActual['idTipoPago'] = isset($_POST['idTipoPago']) ? $_POST['idTipoPago'] : '';
+        $DatosVentaActual['idTipoMovimiento'] = isset($_POST['idTipoMovimiento']) ? $_POST['idTipoMovimiento'] : '';
     }
 } else if (!empty($_GET['idDetalleCaja'])) {
     $DatosVentaActual = Datos_Venta($MiConexion, $_GET['idDetalleCaja']);
+}
+
+// Obtener el idTipoMovimiento actual
+$idTipoMovimientoActual = !empty($DatosVentaActual['idTipoMovimiento']) ? $DatosVentaActual['idTipoMovimiento'] : null;
+$esEntrada = false;
+$esSalida = false;
+
+if ($idTipoMovimientoActual) {
+    $sql = "SELECT es_entrada, es_salida FROM tipo_movimiento WHERE idTipoMovimiento = $idTipoMovimientoActual";
+    $rs = mysqli_query($MiConexion, $sql);
+    if ($rs) {
+        $row = mysqli_fetch_assoc($rs);
+        $esEntrada = !empty($row['es_entrada']);
+        $esSalida = !empty($row['es_salida']);
+    }
+}
+
+// Listar métodos de pago y tipos de movimiento según corresponda
+if ($esEntrada) {
+    $TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
+    $TiposMovimiento = [];
+    $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_entrada = 1 AND idActivo = 1";
+    $rs = mysqli_query($MiConexion, $sql);
+    while ($row = mysqli_fetch_assoc($rs)) {
+        $TiposMovimiento[] = $row;
+    }
+} elseif ($esSalida) {
+    $TiposPagos = Listar_Tipos_Pagos_Salida($MiConexion);
+    $TiposMovimiento = [];
+    $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_salida = 1 AND idActivo = 1";
+    $rs = mysqli_query($MiConexion, $sql);
+    while ($row = mysqli_fetch_assoc($rs)) {
+        $TiposMovimiento[] = $row;
+    }
+} else {
+    $TiposPagos = [];
+    $TiposMovimiento = [];
 }
 
 ob_end_flush(); // Envía el contenido del búfer al navegador
@@ -81,8 +118,8 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                   <div class="col-sm-10">
                     <select class="form-control" name="idTipoPago" id="idTipoPago">
                       <option value="">Seleccione un tipo de pago</option>
-                      <?php foreach (Listar_Tipos_Pagos($MiConexion) as $tipoPago) { ?>
-                        <option value="<?php echo $tipoPago['idTipoPago']; ?>" 
+                      <?php foreach ($TiposPagos as $tipoPago) { ?>
+                        <option value="<?php echo $tipoPago['idTipoPago']; ?>"
                           <?php echo (!empty($DatosVentaActual['idTipoPago']) && $DatosVentaActual['idTipoPago'] == $tipoPago['idTipoPago']) ? 'selected' : ''; ?>>
                           <?php echo $tipoPago['denominacion']; ?>
                         </option>
@@ -92,17 +129,24 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 </div>
 
                 <div class="row mb-3">
-                  <label for="idTipoServicio" class="col-sm-2 col-form-label">Tipo de Servicio</label>
+                  <label for="idTipoMovimiento" class="col-sm-2 col-form-label">Tipo de Movimiento</label>
                   <div class="col-sm-10">
-                    <select class="form-control" name="idTipoServicio" id="idTipoServicio">
-                      <option value="">Seleccione un tipo de servicio</option>
-                      <?php foreach (Listar_Tipos_Servicios($MiConexion) as $tipoServicio) { ?>
-                        <option value="<?php echo $tipoServicio['idTipoServicio']; ?>" 
-                          <?php echo (!empty($DatosVentaActual['idTipoServicio']) && $DatosVentaActual['idTipoServicio'] == $tipoServicio['idTipoServicio']) ? 'selected' : ''; ?>>
-                          <?php echo $tipoServicio['denominacion']; ?>
+                    <select class="form-control" name="idTipoMovimiento" id="idTipoMovimiento">
+                      <option value="">Seleccione un tipo de movimiento</option>
+                      <?php foreach ($TiposMovimiento as $tipoMov) { ?>
+                        <option value="<?php echo $tipoMov['idTipoMovimiento']; ?>"
+                          <?php echo (!empty($DatosVentaActual['idTipoMovimiento']) && $DatosVentaActual['idTipoMovimiento'] == $tipoMov['idTipoMovimiento']) ? 'selected' : ''; ?>>
+                          <?php echo $tipoMov['denominacion']; ?>
                         </option>
                       <?php } ?>
                     </select>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <label for="observaciones" class="col-sm-2 col-form-label">Observaciones</label>
+                  <div class="col-sm-10">
+                    <textarea class="form-control" name="Observaciones" id="observaciones" rows="3"><?php echo !empty($DatosVentaActual['observaciones']) ? htmlspecialchars($DatosVentaActual['observaciones']) : ''; ?></textarea>
                   </div>
                 </div>
 

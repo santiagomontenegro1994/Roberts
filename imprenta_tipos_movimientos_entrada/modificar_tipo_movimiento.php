@@ -15,25 +15,25 @@ $MiConexion = ConexionBD();
 
 require_once '../funciones/imprenta.php';
 
-$DatosTipoServicioActual = array();
+$DatosTipoMovimientoActual = array();
 
-if (!empty($_POST['BotonModificarCliente'])) {
-    Validar_Tipos_Servicio();
+if (!empty($_POST['BotonModificarMovimiento'])) {
+    $_SESSION['Mensaje'] = Validar_Tipo_Movimiento();
 
     if (empty($_SESSION['Mensaje'])) { // Si no hay errores de validación
-        if (Modificar_Tipo_Servicio($MiConexion) != false) {
-            $_SESSION['Mensaje'] = "El Tipo de Servicio se ha modificado correctamente!";
+        if (Modificar_Tipo_Movimiento($MiConexion) != false) {
+            $_SESSION['Mensaje'] = "El Tipo de Movimiento se ha modificado correctamente!";
             $_SESSION['Estilo'] = 'success';
-            header('Location: listados_tipos_servicios.php');
+            header('Location: listados_tipos_movimientos.php');
             exit;
         }
     } else { // Si hay errores de validación
         $_SESSION['Estilo'] = 'warning';
-        $DatosTipoServicioActual['IdTipoServicio'] = !empty($_POST['IdTipoServicio']) ? $_POST['IdTipoServicio'] : '';
-        $DatosTipoServicioActual['Denominacion'] = !empty($_POST['Denominacion']) ? $_POST['Denominacion'] : '';
+        $DatosTipoMovimientoActual['IdTipoMovimiento'] = !empty($_POST['IdTipoMovimiento']) ? $_POST['IdTipoMovimiento'] : '';
+        $DatosTipoMovimientoActual['Denominacion'] = !empty($_POST['Denominacion']) ? $_POST['Denominacion'] : '';
     }
-} else if (!empty($_GET['idTipoServicio'])) {
-    $DatosTipoServicioActual = Datos_Tipo_Servicio($MiConexion, $_GET['idTipoServicio']);
+} else if (!empty($_GET['idTipoMovimiento'])) {
+    $DatosTipoMovimientoActual = Datos_Tipo_Movimiento($MiConexion, $_GET['idTipoMovimiento']);
 }
 
 ob_end_flush(); // Envía el contenido del búfer al navegador
@@ -42,12 +42,12 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>Tipos de Servicios</h1>
+      <h1>Tipos de Movimientos</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="../core/index.php">Ventas</a></li>
-          <li class="breadcrumb-item">Tipos de Servicios</li>
-          <li class="breadcrumb-item active">Modificar Tipo de Servicio</li>
+          <li class="breadcrumb-item"><a href="../core/index.php">Caja</a></li>
+          <li class="breadcrumb-item">Tipos de Movimientos</li>
+          <li class="breadcrumb-item active">Modificar Tipo de Movimiento</li>
         </ol>
       </nav>
     </div><!-- End Page Title -->
@@ -55,7 +55,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
     <section class="section">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Modificar Tipo de Servicio</h5>
+              <h5 class="card-title">Modificar Tipo de Movimiento</h5>
 
               <!-- Formulario -->
                 <form method='post'>
@@ -69,15 +69,15 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                   <label for="denominacion" class="col-sm-2 col-form-label">Denominación</label>
                   <div class="col-sm-10">
                     <input type="text" class="form-control" name="Denominacion" id="denominacion"
-                    value="<?php echo !empty($DatosTipoServicioActual['Denominacion']) ? $DatosTipoServicioActual['Denominacion'] : ''; ?>">
+                    value="<?php echo !empty($DatosTipoMovimientoActual['Denominacion']) ? $DatosTipoMovimientoActual['Denominacion'] : ''; ?>">
                   </div>
                 </div>
 
                 <div class="text-center">
-                    <input type='hidden' name="IdTipoServicio" value="<?php echo $DatosTipoServicioActual['IdTipoServicio']; ?>"/>
+                    <input type='hidden' name="IdTipoMovimiento" value="<?php echo $DatosTipoMovimientoActual['IdTipoMovimiento']; ?>"/>
                     
-                    <button type="submit" class="btn btn-primary" value="Modificar" name="BotonModificarCliente">Modificar</button>
-                    <a href="listados_tipos_servicios.php" 
+                    <button type="submit" class="btn btn-primary" value="Modificar" name="BotonModificarMovimiento">Modificar</button>
+                    <a href="listados_tipos_movimientos.php" 
                     class="btn btn-success btn-info" 
                     title="Listado"> Volver al listado  </a>
                 </div>

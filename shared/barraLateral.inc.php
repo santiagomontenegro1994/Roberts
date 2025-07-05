@@ -130,6 +130,29 @@
         </ul>
       </li><!-- End Caja Nav -->
 
+            <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#contables-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-cash-stack"></i><span>Movimiento Contable</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="contables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="../imprenta_caja/agregar_venta.php">
+            <i class="bi bi-circle"></i><span>Listados Movimientos</span>
+          </a>
+        </li>
+                <li>
+          <a href="../imprenta_caja/agregar_venta.php">
+            <i class="bi bi-circle"></i><span>Agregar</span>
+          </a>
+        </li>
+        <li>
+          <a href="../imprenta_caja/retirar_caja.php">
+            <i class="bi bi-circle"></i><span>Retiro</span>
+          </a>
+        </li>
+        </ul>
+      </li><!-- End Contables -->
+
     </ul>
 
   </aside><!-- End Sidebar-->
