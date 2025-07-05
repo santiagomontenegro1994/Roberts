@@ -505,7 +505,7 @@ function Datos_Tipo_Servicio($vConexion, $vIdTipoServicio) {
 
     $rs = mysqli_query($vConexion, $SQL);
 
-    $data = mysqli_fetch_array($rs);
+    $data = mysqli_fetch_array($rs) ;
     if (!empty($data)) {
         $DatosTipoServicio['IdTipoServicio'] = $data['idTipoServicio'];
         $DatosTipoServicio['Denominacion'] = $data['denominacion'];
@@ -660,18 +660,21 @@ function Datos_Caja($vConexion, $vIdCaja) {
 }
 
 function ObtenerDetallesCaja($vConexion, $idCaja) {
-    $query = "SELECT dc.idDetalleCaja, dc.idTipoOperacion, dc.idCaja, tp.denominacion AS metodoPago, 
-                     CASE 
-                         WHEN dc.idTipoOperacion = 2 AND tr.denominacion IS NOT NULL THEN tr.denominacion
-                         WHEN ts.denominacion IS NOT NULL THEN ts.denominacion
-                         ELSE 'No especificado'
-                     END AS detalle,
-                     u.usuario, dc.monto, dc.observaciones
+    $query = "SELECT 
+                dc.idDetalleCaja, 
+                dc.idCaja, 
+                dc.idTipoMovimiento, 
+                tp.denominacion AS metodoPago, 
+                tm.denominacion AS detalle,         
+                tm.es_entrada, 
+                tm.es_salida, 
+                u.usuario, 
+                dc.monto, 
+                dc.observaciones
               FROM detalle_caja dc
               JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
               JOIN usuarios u ON dc.idUsuario = u.idUsuario
-              LEFT JOIN tipo_servicio ts ON (dc.idTipoServicio = ts.idTipoServicio AND dc.idTipoOperacion != 2)
-              LEFT JOIN tipo_retiro tr ON (dc.idTipoRetiro = tr.idTipoRetiro AND dc.idTipoOperacion = 2)
               WHERE dc.idCaja = ?
               ORDER BY dc.idDetalleCaja DESC";
 
@@ -740,6 +743,7 @@ function Modificar_Caja($vConexion) {
 }
 
 function Anular_Caja($vConexion, $vIdCaja) {
+
     // Verificar si la caja existe
     $SQL_MiConsulta = "SELECT idCaja FROM caja WHERE idCaja = $vIdCaja";
 
@@ -886,23 +890,31 @@ function InsertarVenta($vConexion) {
     return true;
 }
 
-function ColorDeFilaCaja($vTipoOperacion) {
-    $Title='';
-    $Color=''; 
+function ColorDeFilaCaja($idTipoMovimiento) {
+    // Conexión a la base de datos (ajusta según tu contexto)
+    $conexion = ConexionBD(); // O usa $GLOBALS['MiConexion'] si ya está abierta
 
-    if ($vTipoOperacion===1){
-        //Es una entrada
-        $Title='Entrada';
-        $Color='table-success'; 
-    
-    } else if ($vTipoOperacion===2){
-        //Es una salida
-        $Title='Salida';
-        $Color='table-danger'; 
+    $query = "SELECT es_entrada, es_salida FROM tipo_movimiento WHERE idTipoMovimiento = ?";
+    $stmt = $conexion->prepare($query);
+    $stmt->bind_param("i", $idTipoMovimiento);
+    $stmt->execute();
+    $stmt->bind_result($es_entrada, $es_salida);
+    $stmt->fetch();
+    $stmt->close();
+
+    $Title = '';
+    $Color = '';
+
+    if ($es_entrada) {
+        $Title = 'Entrada';
+        $Color = 'table-success';
+    } else if ($es_salida) {
+        $Title = 'Salida';
+        $Color = 'table-danger';
     }
-        
-    return [$Title, $Color];
+    // Si ambos son false, no asigna color ni título
 
+    return [$Title, $Color];
 }
 
 function ColorDeFilaTrabajo($vEstado) {

@@ -68,7 +68,8 @@ if ($resultadoCaja->num_rows === 0) {
 $queryTotales = "SELECT tp.denominacion AS metodoPago, SUM(dc.monto) AS totalMonto
                  FROM detalle_caja dc
                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                 WHERE dc.idCaja = ? AND (tp.denominacion != 'Efectivo' OR dc.idTipoOperacion = 1)
+                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                 WHERE dc.idCaja = ? AND tm.es_entrada = 1
                  GROUP BY tp.denominacion";
 $stmtTotales = $MiConexion->prepare($queryTotales);
 $stmtTotales->bind_param("i", $idCaja);
@@ -94,10 +95,11 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     }
 }
 
-// Calcular el total de retiros para esta caja
-$queryRetiros = "SELECT SUM(monto) AS totalRetiros
-                 FROM detalle_caja
-                 WHERE idCaja = ? AND idTipoOperacion = 2";
+// Calcular el total de retiros para esta caja (ahora usando tipo_movimiento)
+$queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
+                 FROM detalle_caja dc
+                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                 WHERE dc.idCaja = ? AND tm.es_salida = 1";
 $stmtRetiros = $MiConexion->prepare($queryRetiros);
 $stmtRetiros->bind_param("i", $idCaja);
 $stmtRetiros->execute();
@@ -109,9 +111,9 @@ if ($filaRetiros = $resultadoRetiros->fetch_assoc()) {
 }
 
 // Obtener los detalles de la caja específica usando la función
+// Asegúrate de que ObtenerDetallesCaja también traiga la denominación del movimiento
 $resultadoDetalleCaja = ObtenerDetallesCaja($MiConexion, $idCaja);
 
-// Almacenar todos los detalles en un array para poder usarlos múltiples veces
 $detalles = [];
 while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
     $detalles[] = $fila;
@@ -217,7 +219,7 @@ $cajaFuerte = $totalEfectivo - $cajaInicial - $totalRetiros; // Restar la caja i
                         <tbody>
                             <?php foreach ($detalles as $fila) { ?>
 
-                                <?php list($Title, $Color) = ColorDeFilaCaja($fila['idTipoOperacion']);?>
+                                <?php list($Title, $Color) = ColorDeFilaCaja($fila['idTipoMovimiento']);?>
 
                                 <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                     <td><?php echo $fila['idDetalleCaja']; ?></td>
