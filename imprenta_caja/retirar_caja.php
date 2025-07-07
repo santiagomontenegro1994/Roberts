@@ -95,7 +95,7 @@ ob_end_flush();
                     <!-- Sección de Tipos de Movimiento Salida -->
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
-                        <a href="../imprenta_tipos_movimientos_entrada/listados_tipos_movimientos.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Retiro</a>
+                        <a href="../imprenta_tipos_movimientos_salida/listados_tipos_movimientos.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Retiro</a>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center">
                         <?php foreach ($TiposMovimientoSalida as $tipo) { ?>

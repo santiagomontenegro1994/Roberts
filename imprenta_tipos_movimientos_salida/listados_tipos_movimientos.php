@@ -14,23 +14,23 @@ $MiConexion = ConexionBD();
 
 require_once '../funciones/imprenta.php';
 
-// Obtener los métodos de pago desde la base de datos
-$ListadoMetodosPago = Listar_Tipos_Pagos_Entrada($MiConexion);
-$CantidadMetodosPago = count($ListadoMetodosPago);
+// Obtener los tipos de movimiento de entrada desde la base de datos
+$ListadoTiposMovimiento = Listar_Tipos_Movimiento_Salida($MiConexion);
+$CantidadTiposMovimiento = count($ListadoTiposMovimiento);
 
 ?>
 
 <main id="main" class="main">
 
 <div class="pagetitle d-flex justify-content-between align-items-center">
-  <h1>Listado Tipos de Pago</h1>
- </div>
+  <h1>Listado Tipos de Movimientos (Entradas)</h1>
+</div>
 
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-    <li class="breadcrumb-item">Tipos de Pago</li>
-    <li class="breadcrumb-item active">Listado Tipos de Pago</li>
+    <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
+    <li class="breadcrumb-item">Tipos de Movimientos</li>
+    <li class="breadcrumb-item active">Listado Tipos de Movimientos</li>
   </ol>
 </nav>
 
@@ -38,8 +38,8 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
     <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">Listado Tipos de Pago</h5>
-            <a href="agregar_metodo_pago.php" class="btn btn-primary btn-sm">Agregar Nuevo Tipo de Pago</a>
+            <h5 class="card-title mb-0">Listado Tipos de Movimientos (Entradas)</h5>
+            <a href="agregar_tipo_movimiento.php" class="btn btn-primary btn-sm">Agregar Nuevo Tipo de Movimiento</a>
           </div>
           <?php if (!empty($_SESSION['Mensaje'])) { ?>
             <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
@@ -58,22 +58,22 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
                 </tr>
               </thead>
               <tbody>
-                <?php for ($i = 0; $i < $CantidadMetodosPago; $i++) { ?>
+                <?php for ($i = 0; $i < $CantidadTiposMovimiento; $i++) { ?>
                   <tr>
-                    <td class="small"><?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?></td>
-                    <td class="small"><?php echo $ListadoMetodosPago[$i]['denominacion']; ?></td>
+                    <td class="small"><?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?></td>
+                    <td class="small"><?php echo $ListadoTiposMovimiento[$i]['denominacion']; ?></td>
                     <td>
                       <!-- Acciones -->
-                      <a href="modificar_metodo_pago.php?idTipoPago=<?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?>" 
+                      <a href="modificar_tipo_movimiento.php?idTipoMovimiento=<?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?>" 
                           class="btn btn-sm btn-warning me-2"
                           title="Modificar">
                         <i class="bi bi-pencil-fill"></i>
                       </a>
 
-                      <a href="eliminar_metodo_pago.php?idTipoPago=<?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?>" 
+                      <a href="eliminar_tipo_movimiento.php?idTipoMovimiento=<?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?>" 
                           class="btn btn-sm btn-danger me-2"
                           title="Eliminar" 
-                          onclick="return confirm('Confirma eliminar este método de pago?');">
+                          onclick="return confirm('Confirma eliminar este tipo de movimiento?');">
                         <i class="bi bi-trash-fill"></i>
                       </a>
                     </td>
@@ -90,7 +90,7 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
 
 <!-- Botón Volver a Ventas -->
 <div class="text-center mt-4">
-  <a href="../imprenta_caja/agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
+  <a href="../imprenta_caja/retirar_caja.php" class="btn btn-secondary">Volver a Retiros</a>
 </div>
 
 </main><!-- End #main -->

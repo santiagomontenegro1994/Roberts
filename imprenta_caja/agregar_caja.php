@@ -13,18 +13,14 @@ $MiConexion = ConexionBD();
 
 require_once '../funciones/imprenta.php';
 
-// Obtener los turnos disponibles desde la base de datos
-$Turnos = Listar_Turnos($MiConexion);
-
 if (!empty($_POST['BotonRegistrar'])) {
     // Validar y limpiar los datos del formulario
     $Fecha = !empty($_POST['Fecha']) ? $_POST['Fecha'] : null;
-    $idTurno = !empty($_POST['idTurno']) ? (int)$_POST['idTurno'] : null;
     $cajaInicial = !empty($_POST['cajaInicial']) ? (int)$_POST['cajaInicial'] : null;
 
-    if ($Fecha && $idTurno && $cajaInicial >= 0) {
+    if ($Fecha && $cajaInicial >= 0) {
         // Llamar a la función para insertar la caja
-        $resultado = InsertarCaja($MiConexion, $Fecha, $idTurno, $cajaInicial);
+        $resultado = InsertarCaja($MiConexion, $Fecha, $cajaInicial);
 
         // Manejar el resultado de la función
         $_SESSION['Mensaje'] = $resultado['message'];
@@ -75,19 +71,6 @@ $MiConexion->close();
                                 value="<?php echo !empty($_POST['Fecha']) ? $_POST['Fecha'] : ''; ?>" required>
                         </div>
 
-                        <!-- Campo de Turno -->
-                        <div class="col-md-6">
-                            <label for="idTurno" class="form-label">Turno</label>
-                            <select class="form-control" name="idTurno" id="idTurno" required>
-                                <option value="">Seleccione un turno</option>
-                                <?php foreach ($Turnos as $turno) { ?>
-                                    <option value="<?php echo $turno['idTurno']; ?>" 
-                                        <?php echo (!empty($_POST['idTurno']) && $_POST['idTurno'] == $turno['idTurno']) ? 'selected' : ''; ?>>
-                                        <?php echo $turno['denominacion']; ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="row mb-3">

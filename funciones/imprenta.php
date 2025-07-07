@@ -614,7 +614,7 @@ function InsertarCaja($vConexion, $Fecha, $cajaInicial) {
     if ($total > 0) {
         return [
             'success' => false,
-            'message' => 'Error: Ya existe una caja para esta fecha y turno.',
+            'message' => 'Error: Ya existe una caja para esta fecha.',
             'style' => 'warning'
         ];
     }
@@ -1498,10 +1498,34 @@ function Listar_Tipos_Movimiento_Entrada($conexion) {
     }
     return $tiposMovimiento;
 }
+function Listar_Tipos_Movimiento_Salida($conexion) {
+    $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_salida = 1 AND idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposMovimiento = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposMovimiento[] = $fila;
+        }
+    }
+    return $tiposMovimiento;
+}
 
 function InsertarTipoMovimientoEntrada($vConexion) {
     $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
     $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 1, 0, 1)";
+    $stmt = $vConexion->prepare($sql);
+    $stmt->bind_param("s", $denominacion);
+    if (!$stmt->execute()) {
+        return false;
+    }
+    $stmt->close();
+    return true;
+}
+
+function InsertarTipoMovimientoSalida($vConexion) {
+    $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
+    $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 0, 1, 1)";
     $stmt = $vConexion->prepare($sql);
     $stmt->bind_param("s", $denominacion);
     if (!$stmt->execute()) {

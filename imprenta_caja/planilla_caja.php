@@ -200,7 +200,7 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar l
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>ID Detalle</th>
+                                <th>N°</th>
                                 <th>Método de Pago</th>
                                 <th>Detalle</th>
                                 <th>Usuario</th>
@@ -210,12 +210,14 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar l
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($detalles as $fila) { ?>
+                            <?php 
+                                $contador = 1;
+                                foreach ($detalles as $fila) { ?>
 
                                 <?php list($Title, $Color) = ColorDeFilaCaja($fila['idTipoMovimiento']);?>
 
                                 <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
-                                    <td><?php echo $fila['idDetalleCaja']; ?></td>
+                                    <td><?php echo $contador; $contador++; ?></td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
                                     <td><?php echo $fila['detalle']; ?></td>
                                     <td><?php echo $fila['usuario']; ?></td>
