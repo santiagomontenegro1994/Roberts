@@ -31,7 +31,8 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
             $SQLCajaAnterior = "SELECT cajaInicial, 
                 (SELECT IFNULL(SUM(dc.monto),0) FROM detalle_caja dc 
                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento 
-                    WHERE dc.idCaja = c.idCaja AND tm.es_entrada = 1) AS totalEntradas,
+                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                    WHERE dc.idCaja = c.idCaja AND tm.es_entrada = 1 AND tp.denominacion = 'Efectivo') AS totalEntradas,
                 (SELECT IFNULL(SUM(dc.monto),0) FROM detalle_caja dc 
                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento 
                     WHERE dc.idCaja = c.idCaja AND tm.es_salida = 1) AS totalRetiros
@@ -46,7 +47,7 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
                 $cajaInicialAnterior = (float)$cajaAnterior['cajaInicial'];
                 $totalEntradas = (float)$cajaAnterior['totalEntradas'];
                 $totalRetiros = (float)$cajaAnterior['totalRetiros'];
-                $cajaEfectivoAnterior = $cajaInicialAnterior + $totalEntradas - $totalRetiros;
+                $cajaEfectivoAnterior = $cajaInicialAnterior + $totalEntradas - $totalRetiros; // Esto es igual a $cajaEfectivoActual de la planilla
             } else {
                 $cajaEfectivoAnterior = 19500; // Valor por defecto si no hay caja anterior
             }

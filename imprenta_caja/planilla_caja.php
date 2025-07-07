@@ -121,10 +121,10 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
 
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
-$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'] + $cajaInicial; // Sumar la caja inicial al total efectivo
+$totalEfectivo = (float)$totalesPorCaja['totalEfectivo']; // Solo entradas en efectivo, sin caja inicial
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaEfectivoActual = $totalEfectivo - $totalRetiros; // Restar la caja inicial al total efectivo
+$cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar la caja inicial al total efectivo
 ?>
 
 <!DOCTYPE html>
@@ -243,19 +243,19 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros; // Restar la caja inicial 
                 <!-- Totales -->
                 <div class="row mt-4 border-top pt-3">
                     <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>T. Efectivo:</strong></p>
+                        <p class="mb-0"><strong>Ing. Efectivo:</strong></p>
                         <p class="fs-5 fw-bold">$<?php echo number_format($totalEfectivo, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>T. Transferencia:</strong></p>
+                        <p class="mb-0"><strong>Ing. Transferencia:</strong></p>
                         <p class="fs-5 fw-bold">$<?php echo number_format($totalTransferencia, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>T. Tarjeta:</strong></p>
+                        <p class="mb-0"><strong>Ing. Tarjeta:</strong></p>
                         <p class="fs-5 fw-bold">$<?php echo number_format($totalTarjeta, 2); ?></p>
                     </div>
                     <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>T. Retiros:</strong></p>
+                        <p class="mb-0"><strong>Retiros:</strong></p>
                         <p class="fs-5 fw-bold">$<?php echo number_format($totalRetiros, 2); ?></p>
                     </div>
                 </div>
