@@ -375,8 +375,8 @@ function Validar_Tipos_Pago(){
 
 function InsertarTipoPago($vConexion){
     
-    $SQL_Insert="INSERT INTO tipo_pago (denominacion)
-    VALUES ('".$_POST['Denominacion']."')";
+$SQL_Insert="INSERT INTO tipo_pago (denominacion, esEntrada, esSalida, idActivo) 
+             VALUES ('".$_POST['Denominacion']."', 1, 0, 1)";
 
 
     if (!mysqli_query($vConexion, $SQL_Insert)) {
@@ -1498,6 +1498,7 @@ function Listar_Tipos_Movimiento_Entrada($conexion) {
     }
     return $tiposMovimiento;
 }
+
 function Listar_Tipos_Movimiento_Salida($conexion) {
     $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_salida = 1 AND idActivo = 1";
     $resultado = mysqli_query($conexion, $sql);

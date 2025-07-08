@@ -109,7 +109,15 @@ if (!empty($_POST['BotonBuscar'])) {
                         title="Modificar">
                         <i class="bi bi-pencil-fill"></i>
                       </a>
+
+                        <!-- Botón Imprimir -->
+                      <a href="imprimir_caja.php?idCaja=<?php echo $ListadoCajas[$i]['idCaja']; ?>"  
+                        class="btn btn-sm btn-primary me-2"
+                        title="Imprimir">
+                        <i class="bi bi-printer-fill"></i>
+                      </a>
                     </td>
+
                     <td class="text-end"> <!-- Nueva celda para el botón Seleccionar -->
                       <a href="seleccionar_caja.php?idCaja=<?php echo $ListadoCajas[$i]['idCaja']; ?>" 
                         class="btn btn-success btn-sm" 
