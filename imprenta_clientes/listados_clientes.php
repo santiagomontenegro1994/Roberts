@@ -116,20 +116,20 @@ $CantidadClientes = count($ListadoClientes);
               <tbody>
                 <?php for ($i=0; $i<$CantidadClientes; $i++) { ?>
                   <tr>
-                    <td><?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?></td>
-                    <td><?php echo $ListadoClientes[$i]['NOMBRE']; ?> <?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
-                    <td><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
-                    <td>
+                    <td class="extra-small"><?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoClientes[$i]['NOMBRE']; ?> <?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
+                    <td class="extra-small">
                       <!-- eliminar la consulta -->
                       <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
-                        class="btn btn-sm btn-danger me-2"
+                        class="btn btn-xs btn-danger me-2"
                         title="Eliminar" 
                         onclick="return confirm('Confirma eliminar este cliente?');">
                           <i class="bi bi-trash-fill"></i>
                       </a>
 
                       <a href="modificar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>"  
-                        class="btn btn-sm btn-warning me-2"
+                        class="btn btn-xs btn-warning me-2"
                         title="Modificar">
                       <i class="bi bi-pencil-fill"></i>
                       </a>

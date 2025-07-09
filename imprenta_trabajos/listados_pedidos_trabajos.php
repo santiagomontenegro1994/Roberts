@@ -123,7 +123,7 @@ $CantidadPedidos = count($ListadoPedidos);
           </form>
           <!-- Table with stripped rows -->
           <div class="table-responsive">
-  <table class="table table-striped fs-6">
+  <table class="table table-striped table-sm small">
     <thead>
       <tr class="fs-6">
         <th scope="col">ID</th>
@@ -151,32 +151,32 @@ $CantidadPedidos = count($ListadoPedidos);
         list($Title, $Color) = ColorDeFilaTrabajo($ListadoPedidos[$i]['ESTADO']);
       ?>
         <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
-          <td><?php echo $ListadoPedidos[$i]['ID']; ?></td>
-          <td><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
-          <td><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
-          <td><?php echo $cantidad; ?> trabajo/s</td>
-          <td>$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
-          <td>$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
-          <td>$<?php echo number_format($saldo, 2); ?></td>
-          <td><?php echo $ListadoPedidos[$i]['ESTADO_NOMBRE']; ?></td>
-          <td><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
-          <td>
+          <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>
+          <td class="extra-small"><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
+          <td class="extra-small"><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
+          <td class="extra-small"><?php echo $cantidad; ?> trabajo/s</td>
+          <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
+          <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
+          <td class="extra-small">$<?php echo number_format($saldo, 2); ?></td>
+          <td class="extra-small"><?php echo $ListadoPedidos[$i]['ESTADO_NOMBRE']; ?></td>
+          <td class="extra-small"><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
+          <td class="extra-small">
             <!-- Acciones -->
             <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
-              class="btn btn-sm btn-danger me-2"
+              class="btn btn-xs btn-danger me-2"
               title="Anular" 
               onclick="return confirm('Confirma anular este Pedido?');">
               <i class="bi bi-trash-fill"></i>
             </a>
 
             <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
-              class="btn btn-sm btn-warning me-2" 
+              class="btn btn-xs btn-warning me-2" 
               title="Modificar">
               <i class="bi bi-pencil-fill"></i>
             </a>
 
             <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
-              class="btn btn-sm btn-primary me-2" 
+              class="btn btn-xs btn-primary me-2" 
               title="Imprimir">
               <i class="bi bi-printer-fill"></i>
             </a>

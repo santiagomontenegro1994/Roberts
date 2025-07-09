@@ -60,18 +60,18 @@ $CantidadTiposMovimiento = count($ListadoTiposMovimiento);
               <tbody>
                 <?php for ($i = 0; $i < $CantidadTiposMovimiento; $i++) { ?>
                   <tr>
-                    <td class="small"><?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?></td>
-                    <td class="small"><?php echo $ListadoTiposMovimiento[$i]['denominacion']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoTiposMovimiento[$i]['denominacion']; ?></td>
                     <td>
                       <!-- Acciones -->
                       <a href="modificar_tipo_movimiento.php?idTipoMovimiento=<?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?>" 
-                          class="btn btn-sm btn-warning me-2"
+                          class="btn btn-xs btn-warning me-2"
                           title="Modificar">
                         <i class="bi bi-pencil-fill"></i>
                       </a>
 
                       <a href="eliminar_tipo_movimiento.php?idTipoMovimiento=<?php echo $ListadoTiposMovimiento[$i]['idTipoMovimiento']; ?>" 
-                          class="btn btn-sm btn-danger me-2"
+                          class="btn btn-xs btn-danger me-2"
                           title="Eliminar" 
                           onclick="return confirm('Confirma eliminar este tipo de movimiento?');">
                         <i class="bi bi-trash-fill"></i>

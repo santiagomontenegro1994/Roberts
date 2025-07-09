@@ -60,18 +60,18 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
               <tbody>
                 <?php for ($i = 0; $i < $CantidadMetodosPago; $i++) { ?>
                   <tr>
-                    <td class="small"><?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?></td>
-                    <td class="small"><?php echo $ListadoMetodosPago[$i]['denominacion']; ?></td>
-                    <td>
+                    <td class="extra-small"><?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoMetodosPago[$i]['denominacion']; ?></td>
+                    <td class="extra-small">
                       <!-- Acciones -->
                       <a href="modificar_metodo_pago.php?idTipoPago=<?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?>" 
-                          class="btn btn-sm btn-warning me-2"
+                          class="btn btn-xs btn-warning me-2"
                           title="Modificar">
                         <i class="bi bi-pencil-fill"></i>
                       </a>
 
                       <a href="eliminar_metodo_pago.php?idTipoPago=<?php echo $ListadoMetodosPago[$i]['idTipoPago']; ?>" 
-                          class="btn btn-sm btn-danger me-2"
+                          class="btn btn-xs btn-danger me-2"
                           title="Eliminar" 
                           onclick="return confirm('Confirma eliminar este método de pago?');">
                         <i class="bi bi-trash-fill"></i>

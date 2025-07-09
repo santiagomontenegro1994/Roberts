@@ -118,21 +118,21 @@ $CantidadProveedores = count($ListadoProveedores);
               <tbody>
                 <?php for ($i=0; $i<$CantidadProveedores; $i++) { ?>
                   <tr>
-                    <td><?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?></td>
-                    <td><?php echo $ListadoProveedores[$i]['NOMBRE']; ?></td>
-                    <td><?php echo $ListadoProveedores[$i]['CONTACTO']; ?></td>
-                    <td><?php echo $ListadoProveedores[$i]['CUIT']; ?></td>
-                    <td>
+                    <td class="extra-small"><?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoProveedores[$i]['NOMBRE']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoProveedores[$i]['CONTACTO']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoProveedores[$i]['CUIT']; ?></td>
+                    <td class="extra-small">
                       <!-- Acciones -->
                       <a href="eliminar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>" 
-                        class="btn btn-sm btn-danger me-2"
+                        class="btn btn-xs btn-danger me-2"
                         title="Eliminar" 
                         onclick="return confirm('Confirma eliminar este proveedor?');">
                         <i class="bi bi-trash-fill"></i>
                       </a>
 
                       <a href="modificar_proveedores.php?ID_PROVEEDOR=<?php echo $ListadoProveedores[$i]['ID_PROVEEDOR']; ?>"  
-                        class="btn btn-sm btn-warning me-2"
+                        class="btn btn-xs btn-warning me-2"
                         title="Modificar">
                         <i class="bi bi-pencil-fill"></i>
                       </a>
