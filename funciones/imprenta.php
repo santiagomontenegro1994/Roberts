@@ -375,7 +375,7 @@ function Validar_Tipos_Pago(){
 
 function InsertarTipoPago($vConexion){
     
-$SQL_Insert="INSERT INTO tipo_pago (denominacion, esEntrada, esSalida, idActivo) 
+    $SQL_Insert="INSERT INTO tipo_pago (denominacion, esEntrada, esSalida, idActivo) 
              VALUES ('".$_POST['Denominacion']."', 1, 0, 1)";
 
 
@@ -1585,4 +1585,5 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
         return false;
     }
 }
+
 ?>

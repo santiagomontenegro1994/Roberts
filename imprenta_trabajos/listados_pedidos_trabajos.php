@@ -85,35 +85,35 @@ $CantidadPedidos = count($ListadoPedidos);
               <div class="col-sm-5 mt-2">
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Fecha" checked>
-                      <label class="form-check-label" for="gridRadios1">
+                      <label class="form-check-label fs-7" for="gridRadios1">
                         Fecha
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Cliente">
-                      <label class="form-check-label" for="gridRadios2">
+                      <label class="form-check-label fs-7" for="gridRadios2">
                       Cliente
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Telefono">
-                      <label class="form-check-label" for="gridRadios2">
+                      <label class="form-check-label fs-7" for="gridRadios2">
                       Telefono
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
-                      <label class="form-check-label" for="gridRadios2">
+                      <label class="form-check-label fs-7" for="gridRadios2">
                       ID
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
-                      <label class="form-check-label" for="gridRadios4">
+                      <label class="form-check-label fs-7" for="gridRadios4">
                         Estado
                     </div>
                     
@@ -123,9 +123,9 @@ $CantidadPedidos = count($ListadoPedidos);
           </form>
           <!-- Table with stripped rows -->
           <div class="table-responsive">
-  <table class="table table-striped">
+  <table class="table table-striped fs-6">
     <thead>
-      <tr>
+      <tr class="fs-6">
         <th scope="col">ID</th>
         <th scope="col">Fecha</th>
         <th scope="col">Cliente</th>
@@ -138,7 +138,7 @@ $CantidadPedidos = count($ListadoPedidos);
         <th scope="col">Acciones</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="fs-6">
       <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
         // Calcular la cantidad de trabajos asociados (si tienes una función, si no, puedes omitir)
         // $cantidad = Contar_Trabajos($MiConexion, $ListadoPedidos[$i]['ID']);

@@ -350,30 +350,120 @@ $MiConexion=ConexionBD();
         }
 
         //confirmar pedido -------------------
-        if($_POST['action'] == 'procesarPedidoTrabajo'){
-            $codCliente = $_POST['codCliente'];
-            $senia = $_POST['senia'];
-            $usuario = $_SESSION['Usuario_Id'];
+        if($_POST['action'] == 'procesarPedidoTrabajo') {
+            $codCliente = intval($_POST['codCliente']);
+            $senia = floatval($_POST['senia']);
+            $usuario = intval($_SESSION['Usuario_Id']);
 
-                $query = mysqli_query($MiConexion,"SELECT * FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
-                $result = mysqli_num_rows($query); //vemos si detalle temp tiene algo
+            // Verificar si hay trabajos en el pedido
+            $query = mysqli_query($MiConexion, "SELECT * FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
+            if(mysqli_num_rows($query) == 0) {
+                echo json_encode(['status' => 'error', 'message' => 'No hay trabajos en el pedido']);
+                exit;
+            }
 
-                if($result > 0){
-                    $query_procesar = mysqli_query($MiConexion,"CALL procesar_pedido_trabajo($codCliente,$senia,$usuario)");
-                    $result_detalle = mysqli_num_rows($query_procesar);
-                    //devuelve 0 cuando no encuentra registros
-                    if($result_detalle > 0){
-                        $data = mysqli_fetch_assoc($query_procesar);//guardo en data el query
-                        echo json_encode($data,JSON_UNESCAPED_UNICODE);// convierto en formato JSON 
-                    }else{
-                        echo 'error';
-                    }
-                }else{
-                    echo 'error';
-                }
-                mysqli_close($MiConexion);
-                exit;    
+            // Procesar el pedido
+            $query_procesar = mysqli_query($MiConexion, "CALL procesar_pedido_trabajo($codCliente, $senia, $usuario)");
+            if(!$query_procesar) {
+                echo json_encode(['status' => 'error', 'message' => 'Error al procesar pedido: '.mysqli_error($MiConexion)]);
+                exit;
+            }
 
+            // Limpiar resultados del procedimiento almacenado
+            while(mysqli_more_results($MiConexion)) {
+                mysqli_next_result($MiConexion);
+            }
+
+            // Obtener el ID del pedido
+            $query_last_id = mysqli_query($MiConexion, "SELECT LAST_INSERT_ID() as idPedido");
+            $result = mysqli_fetch_assoc($query_last_id);
+            $idPedido = $result['idPedido'] ?? 0;
+
+            if($idPedido == 0) {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo obtener ID del pedido']);
+                exit;
+            }
+
+            echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
+            exit;
+        }
+
+        if($_POST['action'] == 'procesarPedidoTrabajoConPago') {
+            $codCliente = intval($_POST['codCliente']);
+            $senia = floatval($_POST['senia']);
+            $idTipoPago = intval($_POST['idTipoPago']);
+            $usuario = intval($_SESSION['Usuario_Id']);
+            $idCaja = intval($_SESSION['Id_Caja']);
+
+            // 1. Procesar el pedido
+            $query_pedido = mysqli_query($MiConexion, "CALL procesar_pedido_trabajo($codCliente, $senia, $usuario)");
+            if(!$query_pedido) {
+                echo json_encode(['status' => 'error', 'message' => 'Error al procesar pedido: '.mysqli_error($MiConexion)]);
+                exit;
+            }
+
+            // Limpiar resultados del procedimiento almacenado
+            while(mysqli_more_results($MiConexion)) {
+                mysqli_next_result($MiConexion);
+            }
+
+            // Obtener el ID del pedido
+            //$query_last_id = mysqli_query($MiConexion, "SELECT LAST_INSERT_ID() as idPedido");
+            //$result = mysqli_fetch_assoc($query_last_id);
+            //$idPedido = $result['idPedido'] ?? 0;
+
+            $result_pedido = mysqli_fetch_assoc($query_pedido);
+            $idPedido = $result_pedido['idPedidoTrabajos'] ?? 0;
+
+            //if($idPedido == 0) {
+            //    echo json_encode(['status' => 'error', 'message' => 'No se pudo obtener ID del pedido']);
+            //    exit;
+            //}
+
+            if($idPedido == 0) {
+                $errorMessage = $result_pedido['mensaje'] ?? 'No se pudo obtener ID del pedido';
+                echo json_encode(['status' => 'error', 'message' => $errorMessage]);
+                exit;
+            }
+
+            // Definir observaciones con el formato deseado
+            $observaciones = "Seña de trabajo: " . $idPedido;
+
+            // 2. Registrar el movimiento en caja
+            $SQL_Insert = "INSERT INTO detalle_caja (
+                idCaja, 
+                idTipoPago, 
+                idTipoMovimiento, 
+                idUsuario, 
+                monto, 
+                observaciones
+            ) VALUES (
+                $idCaja,
+                $idTipoPago,
+                3,  -- Tipo movimiento fijo para trabajos
+                $usuario,
+                $senia,
+                '" . mysqli_real_escape_string($MiConexion, $observaciones) . "'
+            )";
+
+            $query_pago = mysqli_query($MiConexion, $SQL_Insert);
+            if(!$query_pago) {
+                // Eliminar el pedido si falla el registro en caja
+                mysqli_query($MiConexion, "DELETE FROM pedido_trabajos WHERE idPedidoTrabajos = $idPedido");
+                echo json_encode([
+                    'status' => 'error', 
+                    'message' => 'Error al registrar pago: '.mysqli_error($MiConexion),
+                    'sql_error' => $SQL_Insert
+                ]);
+                exit;
+            }
+
+            echo json_encode([
+                'status' => 'success', 
+                'idPedido' => $idPedido,
+                'idMovimiento' => mysqli_insert_id($MiConexion)
+            ]);
+            exit;
         }
 
     }

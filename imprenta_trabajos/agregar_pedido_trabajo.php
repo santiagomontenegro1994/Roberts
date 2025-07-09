@@ -17,6 +17,7 @@ require_once '../funciones/imprenta.php';
 $estados = Datos_Estados_Trabajo($MiConexion);
 $trabajos = Datos_Trabajos($MiConexion);
 $proveedores = Listar_Proveedores($MiConexion);
+$TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
 ?>
 
 <style>
@@ -274,7 +275,49 @@ $proveedores = Listar_Proveedores($MiConexion);
         <a href="#" class="btn btn-danger btn-sm m-2" id="btn_anular_pedido_trabajo">Anular</a> 
         <a href="#" class="btn btn-primary btn-sm m-2" id="btn_new_pedido_trabajo">Crear Pedido</a>
     </div>
-</section>            
+</section>        
+
+<!-- Modal para selección de método de pago ------------------------------------------------ -->
+<div class="modal fade" id="pagoModal" tabindex="-1" aria-labelledby="pagoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fs-6" id="pagoModalLabel">Registrar Pago de Seña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row mb-3">
+                        <div class="col-12 text-center">
+                            <h6 class="fs-6">Monto de la Seña</h6>
+                            <input type="text" class="form-control text-center fs-5 fw-bold" id="montoPagoModal" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Métodos de Pago -->
+                    <div class="text-center mb-4 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center">
+                        <?php foreach ($TiposPagos as $tipo) { ?>
+                            <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="<?php echo $tipo['idTipoPago']; ?>">
+                                <?php echo $tipo['denominacion']; ?>
+                            </button>
+                        <?php } ?>
+                        <input type="hidden" name="idTipoPagoModal" id="idTipoPagoModal">
+                    </div>
+                    
+                     <!-- Observaciones (oculto) -->
+                    <input type="hidden" id="observacionesModal" value="">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary" id="confirmarPago">Confirmar Pago</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 </main>
 
@@ -287,6 +330,18 @@ require ('../shared/footer.inc.php');
 $(document).ready(function() {
     searchforDetalleTrabajo();
 });
+
+    // Manejar la selección de los botones de Métodos de Pago
+    const metodoPagoButtons = document.querySelectorAll('.metodo-pago');
+    metodoPagoButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            metodoPagoButtons.forEach(btn => btn.classList.remove('btn-primary')); // Quitar selección previa
+            metodoPagoButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
+            button.classList.remove('btn-secondary'); // Quitar estilo secundario
+            button.classList.add('btn-primary'); // Agregar estilo seleccionado
+            document.getElementById('idTipoPagoModal').value = button.getAttribute('data-id'); // Asignar valor al input hidden
+        });
+    });
 </script>
 
 </body>
