@@ -1282,48 +1282,86 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
     return $detalles;
 }
 
-function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia){
-    // Validación adicional de parámetros
+function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null) {
+    // Validaciones básicas
     if ($idPedido <= 0) {
-        error_log("ID de pedido inválido: $idPedido");
-        return false;
+        error_log("Error: ID de pedido inválido");
+        return ['success' => false, 'error' => 'ID de pedido inválido'];
     }
     
     if ($nuevaSenia < 0) {
-        error_log("Intento de establecer seña negativa: $nuevaSenia");
-        return false;
+        error_log("Error: Seña negativa no permitida");
+        return ['success' => false, 'error' => 'La seña no puede ser negativa'];
     }
 
     try {
-        // Iniciar transacción para mayor seguridad
         $conexion->begin_transaction();
 
+        // 1. Obtener solo la seña actual (sin precio_total)
+        $query = "SELECT senia FROM pedido_trabajos WHERE idPedidoTrabajos = ? FOR UPDATE";
+        $stmt = $conexion->prepare($query);
+        
+        if (!$stmt) {
+            throw new Exception("Error al preparar consulta: " . $conexion->error);
+        }
+        
+        $stmt->bind_param('i', $idPedido);
+        if (!$stmt->execute()) {
+            throw new Exception("Error al obtener seña: " . $stmt->error);
+        }
+        
+        $stmt->bind_result($seniaActual);
+        $stmt->fetch();
+        $stmt->close();
+
+        // 2. Actualizar la seña
         $query = "UPDATE pedido_trabajos SET senia = ? WHERE idPedidoTrabajos = ?";
         $stmt = $conexion->prepare($query);
         
         if (!$stmt) {
-            error_log("Error al preparar la consulta: " . $conexion->error);
-            $conexion->rollback();
-            return false;
+            throw new Exception("Error al preparar actualización: " . $conexion->error);
         }
         
         $stmt->bind_param('di', $nuevaSenia, $idPedido);
-        $resultado = $stmt->execute();
-        $stmt->close();
-        
-        if (!$resultado) {
-            error_log("Error al ejecutar la actualización: " . $conexion->error);
-            $conexion->rollback();
-            return false;
+        if (!$stmt->execute()) {
+            throw new Exception("Error al actualizar seña: " . $stmt->error);
         }
+        $stmt->close();
+
+        // 3. Registrar pago en caja solo si hay aumento y método de pago
+        $diferencia = $nuevaSenia - $seniaActual;
         
+        if ($diferencia > 0 && $idTipoPago) {
+            $idUsuario = $_SESSION['Usuario_Id'] ?? 0;
+            $idCaja = $_SESSION['Id_Caja'] ?? 0;
+            
+            if ($idUsuario <= 0 || $idCaja <= 0) {
+                throw new Exception("Datos de sesión inválidos para registrar pago");
+            }
+            
+            $observaciones = "Seña del pedido #$idPedido";
+            $query = "INSERT INTO detalle_caja (
+                idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
+            ) VALUES (?, ?, 3, ?, ?, ?)";
+            
+            $stmt = $conexion->prepare($query);
+            if (!$stmt || !$stmt->bind_param('iiids', $idCaja, $idTipoPago, $idUsuario, $diferencia, $observaciones)) {
+                throw new Exception("Error al preparar registro de pago: " . ($stmt ? $stmt->error : $conexion->error));
+            }
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Error al registrar pago: " . $stmt->error);
+            }
+            $stmt->close();
+        }
+
         $conexion->commit();
-        return true;
+        return ['success' => true];
         
     } catch (Exception $e) {
-        error_log("Excepción al modificar seña: " . $e->getMessage());
         $conexion->rollback();
-        return false;
+        error_log("Error en Modificar_Senia_Pedido: " . $e->getMessage());
+        return ['success' => false, 'error' => $e->getMessage()];
     }
 }
 
