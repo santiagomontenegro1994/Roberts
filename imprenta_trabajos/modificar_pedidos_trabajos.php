@@ -18,7 +18,8 @@ if (!$MiConexion) {
 }
 
 // Obtener métodos de pago desde la base de datos
-$TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
+$TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
+$TiposPagosSalida = Listar_Tipos_Pagos_Salida($MiConexion);
 
 $DatosPedidoActual = array();
 $DetallesPedido = array();
@@ -45,13 +46,14 @@ else if (!empty($_POST['BotonModificarSenia'])) {
     $idPedido = (int)($_POST['IdPedido'] ?? 0);
     $nuevaSenia = (float)($_POST['Senia'] ?? 0);
     $metodoPago = $_POST['metodoPago'] ?? null;
+    $esReduccion = ($_POST['esReduccion'] ?? '0') === '1';
     
     // Obtener datos actuales del pedido
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $precioTotal = (float)($DatosPedidoActual['PRECIO_TOTAL'] ?? 0);
     
     // Actualizar la seña
-    $resultado = Modificar_Senia_Pedido($MiConexion, $idPedido, $nuevaSenia, $metodoPago);
+    $resultado = Modificar_Senia_Pedido($MiConexion, $idPedido, $nuevaSenia, $metodoPago, $esReduccion);
     if (!$resultado['success']) {
         // Mostrar error al usuario
         $_SESSION['Mensaje'] = "Error: " . $resultado['error'];
@@ -98,7 +100,8 @@ function obtenerIconoMetodoPago($nombreMetodo) {
         'Cheque' => 'bi-wallet2',
         'Depósito' => 'bi-piggy-bank',
         'Débito' => 'bi-credit-card-2-back',
-        'Crédito' => 'bi-credit-card-2-front'
+        'Crédito' => 'bi-credit-card-2-front',
+        'Retiro' => 'bi-cash-stack'
     ];
     
     return $iconos[$nombreMetodo] ?? 'bi-coin';
@@ -254,6 +257,7 @@ ob_end_flush();
                                 <input type="hidden" name="IdPedido" value="<?php echo htmlspecialchars($DatosPedidoActual['ID'] ?? ''); ?>">
                                 <input type="hidden" name="BotonModificarSenia" value="1">
                                 <input type="hidden" name="metodoPago" id="inputMetodoPago">
+                                <input type="hidden" name="esReduccion" id="inputEsReduccion" value="0">
                                 
                                 <button type="button" class="btn btn-success me-2" id="btnModificarSenia"
                                     data-pedido-id="<?php echo htmlspecialchars($DatosPedidoActual['ID'] ?? ''); ?>"
@@ -397,32 +401,26 @@ ob_end_flush();
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Registrar Pago</h5>
+                    <h5 class="modal-title" id="modalPagoTitle">Registrar Pago</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Monto a pagar</label>
+                        <label class="form-label">Monto a registrar</label>
                         <input type="text" class="form-control form-control-lg text-center fw-bold" id="montoPagoModal" readonly>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Método de Pago</label>
+                        <label class="form-label">Método</label>
                         <div class="d-flex flex-wrap justify-content-center" id="metodosPagoContainer">
-                            <?php foreach ($TiposPagos as $metodo): ?>
-                                <button type="button" class="btn btn-outline-primary m-2 metodo-pago" 
-                                    data-id="<?php echo $metodo['idTipoPago']; ?>">
-                                    <i class="bi <?php echo obtenerIconoMetodoPago($metodo['denominacion']); ?> me-1"></i>
-                                    <?php echo htmlspecialchars($metodo['denominacion']); ?>
-                                </button>
-                            <?php endforeach; ?>
+                            <!-- Se llena dinámicamente con JavaScript -->
                         </div>
                     </div>
                     <input type="hidden" id="metodoPagoSeleccionado" value="">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="confirmarPagoBtn">Confirmar Pago</button>
+                    <button type="button" class="btn btn-primary" id="confirmarPagoBtn">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -431,6 +429,10 @@ ob_end_flush();
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    // Pre-cargar los métodos de pago desde PHP
+    const metodosPagoEntrada = <?php echo json_encode($TiposPagosEntrada); ?>;
+    const metodosPagoSalida = <?php echo json_encode($TiposPagosSalida); ?>;
+
     document.addEventListener('DOMContentLoaded', function() {
         // Elementos del DOM
         const btnModificarSenia = document.getElementById('btnModificarSenia');
@@ -439,7 +441,10 @@ ob_end_flush();
         const confirmarPagoBtn = document.getElementById('confirmarPagoBtn');
         const seniaInput = document.getElementById('senia');
         const inputMetodoPago = document.getElementById('inputMetodoPago');
+        const inputEsReduccion = document.getElementById('inputEsReduccion');
         const metodoPagoSeleccionado = document.getElementById('metodoPagoSeleccionado');
+        const modalPagoTitle = document.getElementById('modalPagoTitle');
+        const metodosPagoContainer = document.getElementById('metodosPagoContainer');
         const form = document.querySelector('form');
         const precioTotal = document.getElementById('precioTotal');
         const saldoElement = document.getElementById('saldo');
@@ -469,17 +474,40 @@ ob_end_flush();
             return true;
         }
 
-        // Manejar selección de método de pago
-        document.querySelectorAll('.metodo-pago').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Remover selección previa
-                document.querySelectorAll('.metodo-pago').forEach(b => b.classList.remove('active'));
-                
-                // Seleccionar nuevo método
-                this.classList.add('active');
-                metodoPagoSeleccionado.value = this.dataset.id;
+        /**
+         * Cargar métodos de pago en el modal según el tipo de operación
+         */
+        function cargarMetodosPago(esReduccion) {
+            metodosPagoContainer.innerHTML = '';
+            const metodos = esReduccion ? metodosPagoSalida : metodosPagoEntrada;
+            
+            metodos.forEach(metodo => {
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'btn btn-outline-primary m-2 metodo-pago';
+                boton.dataset.id = metodo.idTipoPago;
+                boton.innerHTML = `<i class="bi ${obtenerIconoMetodoPago(metodo.denominacion)} me-1"></i>${metodo.denominacion}`;
+                metodosPagoContainer.appendChild(boton);
             });
-        });
+        }
+
+        /**
+         * Función auxiliar para obtener iconos según el método de pago
+         */
+        function obtenerIconoMetodoPago(nombreMetodo) {
+            const iconos = {
+                'Efectivo': 'bi-cash',
+                'Transferencia': 'bi-bank',
+                'Tarjeta': 'bi-credit-card',
+                'Mercado Pago': 'bi-wallet',
+                'Cheque': 'bi-wallet2',
+                'Depósito': 'bi-piggy-bank',
+                'Débito': 'bi-credit-card-2-back',
+                'Crédito': 'bi-credit-card-2-front',
+                'Retiro': 'bi-cash-stack'
+            };
+            return iconos[nombreMetodo] || 'bi-coin';
+        }
 
         /**
          * Manejar clic en el botón de modificar seña
@@ -491,25 +519,45 @@ ob_end_flush();
             const seniaActual = parseFloat(this.dataset.seniaActual) || 0;
             const diferencia = nuevaSenia - seniaActual;
             
-            // Si no hay aumento en la seña o es reducción, enviar directamente
-            if (diferencia <= 0) {
-                inputMetodoPago.value = '0'; // No hay pago nuevo
+            // Si no hay cambio, enviar directamente
+            if (diferencia === 0) {
                 form.submit();
                 return;
             }
             
-            // Configurar el modal para el pago de la diferencia
-            montoPagoModal.value = '$' + diferencia.toFixed(2);
-            // Resetear selección de método de pago
+            // Determinar si es reducción (salida)
+            const esReduccion = diferencia < 0;
+            inputEsReduccion.value = esReduccion ? '1' : '0';
+            
+            // Configurar el modal según el tipo de operación
+            modalPagoTitle.textContent = esReduccion ? 'Registrar Retiro' : 'Registrar Pago';
+            montoPagoModal.value = '$' + Math.abs(diferencia).toFixed(2);
+            
+            // Cargar los métodos de pago correspondientes
+            cargarMetodosPago(esReduccion);
+            
+            // Resetear selección
             document.querySelectorAll('.metodo-pago').forEach(b => b.classList.remove('active'));
             metodoPagoSeleccionado.value = '';
             pagoModal.show();
         });
 
+        // Manejar selección de método de pago
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('metodo-pago')) {
+                // Remover selección previa
+                document.querySelectorAll('.metodo-pago').forEach(b => b.classList.remove('active'));
+                
+                // Seleccionar nuevo método
+                e.target.classList.add('active');
+                metodoPagoSeleccionado.value = e.target.dataset.id;
+            }
+        });
+
         // Manejar confirmación de pago
         confirmarPagoBtn.addEventListener('click', function() {
             if (!metodoPagoSeleccionado.value) {
-                alert('Por favor seleccione un método de pago');
+                alert('Por favor seleccione un método');
                 return;
             }
             

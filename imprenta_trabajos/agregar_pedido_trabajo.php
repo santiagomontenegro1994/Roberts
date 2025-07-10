@@ -17,7 +17,22 @@ require_once '../funciones/imprenta.php';
 $estados = Datos_Estados_Trabajo($MiConexion);
 $trabajos = Datos_Trabajos($MiConexion);
 $proveedores = Listar_Proveedores($MiConexion);
-$TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
+$TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
+
+function obtenerIconoMetodoPago($nombreMetodo) {
+    $iconos = [
+        'Efectivo' => 'bi-cash',
+        'Transferencia' => 'bi-bank',
+        'Tarjeta' => 'bi-credit-card',
+        'Mercado Pago' => 'bi-wallet',
+        'Cheque' => 'bi-wallet2',
+        'Depósito' => 'bi-piggy-bank',
+        'Débito' => 'bi-credit-card-2-back',
+        'Crédito' => 'bi-credit-card-2-front',
+        'Retiro' => 'bi-cash-stack'
+    ];
+    return $iconos[$nombreMetodo] ?? 'bi-coin';
+}
 ?>
 
 <main id="main" class="main">
@@ -184,42 +199,36 @@ $TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
 </section>        
 
 <!-- Modal para selección de método de pago ------------------------------------------------ -->
-<div class="modal fade" id="pagoModal" tabindex="-1" aria-labelledby="pagoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="pagoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fs-6" id="pagoModalLabel">Registrar Pago de Seña</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Registrar Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="container-fluid">
-                    <div class="row mb-3">
-                        <div class="col-12 text-center">
-                            <h6 class="fs-6">Monto de la Seña</h6>
-                            <input type="text" class="form-control text-center fs-5 fw-bold" id="montoPagoModal" readonly>
-                        </div>
-                    </div>
-                    
-                    <!-- Métodos de Pago -->
-                    <div class="text-center mb-4 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
-                    </div>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <?php foreach ($TiposPagos as $tipo) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 metodo-pago" data-id="<?php echo $tipo['idTipoPago']; ?>">
-                                <?php echo $tipo['denominacion']; ?>
-                            </button>
-                        <?php } ?>
-                        <input type="hidden" name="idTipoPagoModal" id="idTipoPagoModal">
-                    </div>
-                    
-                     <!-- Observaciones (oculto) -->
-                    <input type="hidden" id="observacionesModal" value="">
+                <div class="mb-3">
+                    <label class="form-label">Monto a registrar</label>
+                    <input type="text" class="form-control form-control-lg text-center fw-bold" id="montoPagoModal" readonly>
                 </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Método</label>
+                    <div class="d-flex flex-wrap justify-content-center" id="metodosPagoContainer">
+                        <?php foreach ($TiposPagosEntrada as $metodo): ?>
+                            <button type="button" class="btn btn-outline-primary m-2 metodo-pago-btn" 
+                                data-id="<?= $metodo['idTipoPago'] ?>">
+                                <i class="bi <?= obtenerIconoMetodoPago($metodo['denominacion']) ?> me-1"></i>
+                                <?= htmlspecialchars($metodo['denominacion']) ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <input type="hidden" id="metodoPagoSeleccionado">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-sm btn-primary" id="confirmarPago">Confirmar Pago</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarPago">Confirmar</button>
             </div>
         </div>
     </div>
@@ -237,17 +246,11 @@ $(document).ready(function() {
     searchforDetalleTrabajo();
 });
 
-    // Manejar la selección de los botones de Métodos de Pago
-    const metodoPagoButtons = document.querySelectorAll('.metodo-pago');
-    metodoPagoButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            metodoPagoButtons.forEach(btn => btn.classList.remove('btn-primary')); // Quitar selección previa
-            metodoPagoButtons.forEach(btn => btn.classList.add('btn-secondary')); // Restaurar estilo secundario
-            button.classList.remove('btn-secondary'); // Quitar estilo secundario
-            button.classList.add('btn-primary'); // Agregar estilo seleccionado
-            document.getElementById('idTipoPagoModal').value = button.getAttribute('data-id'); // Asignar valor al input hidden
-        });
-    });
+$(document).on('click', '.metodo-pago', function() {
+    $('.metodo-pago').removeClass('active');
+    $(this).addClass('active');
+    $('#metodoPagoSeleccionado').val($(this).data('id'));
+});
 </script>
 
 </body>

@@ -191,7 +191,6 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         e.preventDefault();
         
         var rows = $('#detalleVentaTrabajo tr').length;
-
         if(rows <= 0) {
             alert('No hay trabajos agregados en el pedido');
             return false;
@@ -199,78 +198,79 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         
         var codCliente = $('#idCliente_imprenta').val();
         var senia = parseFloat($('#seniaPedidoImprenta').val()) || 0;
-        var totalPedido = parseFloat($('#total_pedido_original').text()) || 0;
         
-        // Validaciones básicas
         if(!codCliente) {
             alert('Falta agregar cliente');
             return false;
         }
         
-        // Si hay seña mayor a 0, mostrar modal de pago
         if(senia > 0) {
             $('#montoPagoModal').val(senia.toFixed(2));
+            $('#metodoPagoSeleccionado').val(''); // Resetear selección previa
+            $('.metodo-pago-btn').removeClass('btn-primary').addClass('btn-outline-primary');
             $('#pagoModal').modal('show');
         } else {
-            // Si no hay seña, procesar directamente
             procesarPedidoTrabajo(codCliente, senia, null, null, null);
         }
     });
 
     // Función para procesar el pedido
     function procesarPedidoTrabajo(codCliente, senia, idTipoPago, idTipoMovimiento, observaciones) {
-        var action = (idTipoPago) ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
-        
-        var data = {
-            action: action,
-            codCliente: codCliente,
-            senia: senia
-        };
-        
-        if(action === 'procesarPedidoTrabajoConPago') {
-            data.idTipoPago = idTipoPago;
-            data.observaciones = observaciones;
-        }
-        
-        $.ajax({
-            url: '../shared/ajax_imprenta.php',
-            type: "POST",
-            data: data,
-            dataType: 'json', // Forzar interpretación como JSON
-            success: function(response){
-                console.log('Respuesta del servidor:', response); // Para depuración
-                
-                if(response && response.status === 'success') {
-                    alert('Pedido generado ' + (senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
-                    location.reload();
-                } else {
-                    var errorMsg = response?.message || 'Error desconocido';
-                    alert('Error al procesar el pedido: ' + errorMsg);
-                }
-            },
-            error: function(xhr, status, error){
-                console.error('Error en la petición:', status, error);
-                console.error('Respuesta del servidor:', xhr.responseText);
-                alert('Error de conexión. Ver consola para detalles.');
+            var action = (idTipoPago) ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
+            
+            var data = {
+                action: action,
+                codCliente: codCliente,
+                senia: senia
+            };
+            
+            if(action === 'procesarPedidoTrabajoConPago') {
+                data.idTipoPago = idTipoPago;
+                data.observaciones = observaciones;
             }
-        });
-    }
+            
+            $.ajax({
+                url: '../shared/ajax_imprenta.php',
+                type: "POST",
+                data: data,
+                dataType: 'json',
+                success: function(response){
+                    if(response && response.status === 'success') {
+                        alert('Pedido generado ' + (senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
+                        location.reload();
+                    } else {
+                        var errorMsg = response?.message || 'Error desconocido';
+                        alert('Error al procesar el pedido: ' + errorMsg);
+                    }
+                },
+                error: function(xhr, status, error){
+                    console.error('Error en la petición:', status, error);
+                    console.error('Respuesta del servidor:', xhr.responseText);
+                    alert('Error de conexión. Ver consola para detalles.');
+                }
+            });
+        }
 
     // Manejar el confirmar pago desde el modal
-    $('#confirmarPago').click(function() {
-        var idTipoPago = $('#idTipoPagoModal').val();
-        var idTipoMovimiento = 3; // 3 es el ID para "Trabajo"
-        var observaciones = $('#observacionesModal').val();
-        var codCliente = $('#idCliente_imprenta').val();
-        var senia = parseFloat($('#seniaPedidoImprenta').val()) || 0;
-        
+    $('#btnConfirmarPago').click(function() {
+        var idTipoPago = $('#metodoPagoSeleccionado').val();
         if(!idTipoPago) {
             alert('Seleccione método de pago');
             return;
         }
         
-        procesarPedidoTrabajo(codCliente, senia, idTipoPago, idTipoMovimiento, observaciones);
+        var codCliente = $('#idCliente_imprenta').val();
+        var senia = parseFloat($('#seniaPedidoImprenta').val()) || 0;
+        
+        procesarPedidoTrabajo(codCliente, senia, idTipoPago, 3, 'Seña por trabajo');
         $('#pagoModal').modal('hide');
+    });
+
+       // Manejar selección de método de pago
+    $(document).on('click', '.metodo-pago-btn', function() {
+        $('.metodo-pago-btn').removeClass('btn-primary').addClass('btn-outline-primary');
+        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+        $('#metodoPagoSeleccionado').val($(this).data('id'));
     });
     
 });

@@ -23,7 +23,7 @@ $CantidadTiposMovimiento = count($ListadoTiposMovimiento);
 <main id="main" class="main">
 
 <div class="pagetitle d-flex justify-content-between align-items-center">
-  <h1>Listado Tipos de Movimientos (Entradas)</h1>
+  <h1>Listado Tipos de Movimientos (Retiro)</h1>
 </div>
 
 <nav>
@@ -38,7 +38,7 @@ $CantidadTiposMovimiento = count($ListadoTiposMovimiento);
     <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">Listado Tipos de Movimientos (Entradas)</h5>
+            <h5 class="card-title mb-0">Listado Tipos de Movimientos (Retiro)</h5>
             <a href="agregar_tipo_movimiento.php" class="btn btn-primary btn-sm">Agregar Nuevo Tipo de Movimiento</a>
           </div>
           <?php if (!empty($_SESSION['Mensaje'])) { ?>

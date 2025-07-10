@@ -37,7 +37,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
 <main id="main" class="main">
 
   <div class="pagetitle">
-    <h1>Tipos de Movimientos (Entrada)</h1>
+    <h1>Tipos de Movimientos (Retiro)</h1>
     <nav>
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
@@ -51,7 +51,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
   <section class="section">
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Agregar Tipo de Movimiento (Entrada)</h5>
+        <h5 class="card-title">Agregar Tipo de Movimiento (Retiro)</h5>
 
         <!-- Formulario -->
         <form method='post'>

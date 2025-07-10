@@ -4,7 +4,8 @@ session_start();
 require_once '../funciones/conexion.php';
 $MiConexion=ConexionBD();
 
-
+// Configurar zona horaria Argentina
+date_default_timezone_set('America/Argentina/Cordoba');
 
 $Mensaje='';
 if (!empty($_POST['BotonLogin'])) {

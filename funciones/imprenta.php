@@ -1282,7 +1282,7 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
     return $detalles;
 }
 
-function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null) {
+function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null, $esReduccion = false) {
     // Validaciones básicas
     if ($idPedido <= 0) {
         error_log("Error: ID de pedido inválido");
@@ -1297,7 +1297,7 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago =
     try {
         $conexion->begin_transaction();
 
-        // 1. Obtener solo la seña actual (sin precio_total)
+        // 1. Obtener solo la seña actual
         $query = "SELECT senia FROM pedido_trabajos WHERE idPedidoTrabajos = ? FOR UPDATE";
         $stmt = $conexion->prepare($query);
         
@@ -1328,29 +1328,33 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago =
         }
         $stmt->close();
 
-        // 3. Registrar pago en caja solo si hay aumento y método de pago
+        // 3. Registrar movimiento en caja
         $diferencia = $nuevaSenia - $seniaActual;
+        $idUsuario = $_SESSION['Usuario_Id'] ?? 0;
+        $idCaja = $_SESSION['Id_Caja'] ?? 0;
         
-        if ($diferencia > 0 && $idTipoPago) {
-            $idUsuario = $_SESSION['Usuario_Id'] ?? 0;
-            $idCaja = $_SESSION['Id_Caja'] ?? 0;
+        if ($idUsuario <= 0 || $idCaja <= 0) {
+            throw new Exception("Datos de sesión inválidos para registrar movimiento");
+        }
+        
+        if ($diferencia != 0 && $idTipoPago) {
+            $observaciones = "Ajuste de seña del pedido #$idPedido";
             
-            if ($idUsuario <= 0 || $idCaja <= 0) {
-                throw new Exception("Datos de sesión inválidos para registrar pago");
-            }
+            // Tipo de movimiento (3=Entrada, 13=Salida )
+            $idTipoMovimiento = $esReduccion ? 13 : 3;
+            $monto = abs($diferencia);
             
-            $observaciones = "Seña del pedido #$idPedido";
             $query = "INSERT INTO detalle_caja (
                 idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
-            ) VALUES (?, ?, 3, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?)";
             
             $stmt = $conexion->prepare($query);
-            if (!$stmt || !$stmt->bind_param('iiids', $idCaja, $idTipoPago, $idUsuario, $diferencia, $observaciones)) {
-                throw new Exception("Error al preparar registro de pago: " . ($stmt ? $stmt->error : $conexion->error));
+            if (!$stmt || !$stmt->bind_param('iiiids', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $monto, $observaciones)) {
+                throw new Exception("Error al preparar registro: " . ($stmt ? $stmt->error : $conexion->error));
             }
             
             if (!$stmt->execute()) {
-                throw new Exception("Error al registrar pago: " . $stmt->error);
+                throw new Exception("Error al registrar movimiento: " . $stmt->error);
             }
             $stmt->close();
         }
