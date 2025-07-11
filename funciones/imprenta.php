@@ -400,6 +400,20 @@ function InsertarTipoPago($vConexion){
     return true;
 }
 
+function InsertarTipoPagoContables($vConexion){
+    
+    $SQL_Insert="INSERT INTO tipo_pago (denominacion, esEntrada, esSalida, idActivo) 
+             VALUES ('".$_POST['Denominacion']."', 0, 0, 1)";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
 function Anular_Tipo_Pago($vConexion , $vIdConsulta) { 
     $SQL_MiConsulta="SELECT idTipoPago FROM tipo_pago 
                     WHERE idTipoPago = $vIdConsulta "; 
@@ -1297,6 +1311,7 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
 
 function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null, $esReduccion = false) {
     // Validaciones básicas
+    $seniaActual = 0.0;
     if ($idPedido <= 0) {
         error_log("Error: ID de pedido inválido");
         return ['success' => false, 'error' => 'ID de pedido inválido'];
@@ -1664,6 +1679,70 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
     } else {
         return false;
     }
+}
+
+// Obtener todos los movimientos contables históricos con fecha de caja
+function Listar_Movimientos_Contables($conexion) {
+    $query = "SELECT dc.*, c.Fecha as fecha, tp.denominacion as tipo_pago, tm.denominacion as tipo_movimiento 
+              FROM detalle_caja dc
+              JOIN caja c ON dc.idCaja = c.idCaja
+              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+              WHERE (tp.esEntrada = 0 OR tp.esSalida = 1)
+              AND (tm.es_entrada = 0 OR tm.es_salida = 1)
+              ORDER BY c.Fecha DESC, dc.idDetalleCaja DESC";
+    
+    $result = $conexion->query($query);
+    $movimientos = array();
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $movimientos[] = $row;
+        }
+    }
+    
+    return $movimientos;
+}
+
+// Obtener total de Caja Fuerte (retiros) con fecha de caja
+function Obtener_Total_Caja_Fuerte($conexion) {
+    $query = "SELECT SUM(dc.monto) as total
+              FROM detalle_caja dc
+              JOIN caja c ON dc.idCaja = c.idCaja
+              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+              WHERE tm.idTipoMovimiento = 9";
+    
+    $result = $conexion->query($query);
+    $total = 0;
+    
+    if ($result && $row = $result->fetch_assoc()) {
+        $total = $row['total'] ? $row['total'] : 0;
+    }
+    
+    return $total;
+}
+
+// Obtener total de Banco (ingresos) con fecha de caja
+function Obtener_Total_Banco($conexion) {
+    $query = "SELECT SUM(dc.monto) as total
+              FROM detalle_caja dc
+              JOIN caja c ON dc.idCaja = c.idCaja
+              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+              WHERE (tp.denominacion LIKE '%Transferencia%' 
+                     OR tp.denominacion LIKE '%Tarjeta%'
+                     OR tp.denominacion LIKE '%Cheque%')
+              AND tm.es_entrada = 1";
+    
+    $result = $conexion->query($query);
+    $total = 0;
+    
+    if ($result && $row = $result->fetch_assoc()) {
+        $total = $row['total'] ? $row['total'] : 0;
+    }
+    
+    return $total;
 }
 
 ?>

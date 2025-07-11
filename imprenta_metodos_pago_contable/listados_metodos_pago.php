@@ -15,7 +15,7 @@ $MiConexion = ConexionBD();
 require_once '../funciones/imprenta.php';
 
 // Obtener los métodos de pago desde la base de datos
-$ListadoMetodosPago = Listar_Tipos_Pagos_Entrada($MiConexion);
+$ListadoMetodosPago = Listar_Tipos_Pagos_Contable($MiConexion);
 $CantidadMetodosPago = count($ListadoMetodosPago);
 
 ?>
@@ -90,7 +90,7 @@ $CantidadMetodosPago = count($ListadoMetodosPago);
 
 <!-- Botón Volver a Ventas -->
 <div class="text-center mt-4">
-  <a href="../imprenta_caja/agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
+  <a href="../imprenta_contables/retirar_contables.php" class="btn btn-secondary">Volver a Retiros</a>
 </div>
 
 </main><!-- End #main -->

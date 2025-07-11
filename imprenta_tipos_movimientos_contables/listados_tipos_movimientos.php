@@ -90,7 +90,7 @@ $CantidadTiposMovimiento = count($ListadoTiposMovimiento);
 
 <!-- Botón Volver a Ventas -->
 <div class="text-center mt-4">
-  <a href="../imprenta_caja/retirar_caja.php" class="btn btn-secondary">Volver a Retiros</a>
+  <a href="../imprenta_contables/retirar_contables.php" class="btn btn-secondary">Volver a Retiros</a>
 </div>
 
 </main><!-- End #main -->

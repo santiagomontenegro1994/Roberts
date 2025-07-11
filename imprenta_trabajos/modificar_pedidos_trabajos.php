@@ -27,7 +27,7 @@ $IdPedidoParaJs = 'null';
 
 // --- MODIFICAR PEDIDO COMPLETO ---
 if (!empty($_POST['BotonModificarPedido'])) {
-    if (Modificar_Pedido_Trabajo($MiConexion)) {
+    if (false!=false) {
         $_SESSION['Mensaje'] = "El pedido se ha modificado correctamente.";
         $_SESSION['Estilo'] = 'success';
         header('Location: listados_pedidos_trabajo.php');
@@ -265,7 +265,7 @@ ob_end_flush();
                                     <i class="bi bi-cash-coin me-2"></i>Actualizar Seña
                                 </button>
                                 
-                                <a href="listados_pedidos_trabajo.php" class="btn btn-secondary">
+                                <a href="listados_pedidos_trabajos.php" class="btn btn-secondary">
                                     <i class="bi bi-arrow-left-circle me-2"></i>Volver
                                 </a>
                             </div>

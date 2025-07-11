@@ -22,7 +22,7 @@ if (!empty($_POST['BotonRegistrar'])) {
     //estoy en condiciones de poder validar los datos
     $Mensaje=Validar_Tipos_Pago();
     if (empty($Mensaje)) {
-        if (InsertarTipoPago($MiConexion) != false) {
+        if (InsertarTipoPagoContables($MiConexion) != false) {
           $_SESSION['Mensaje'] = "Tu Metodo de pago se agrego correctamente!";
           $_SESSION['Estilo'] = 'success';
           header('Location: listados_metodos_pago.php');
@@ -40,7 +40,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
       <nav>
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="index.php">Menu</a></li>
-          <li class="breadcrumb-item">Ventas</li>
+          <li class="breadcrumb-item">Retiros</li>
           <li class="breadcrumb-item">Metodos de Pago</li>
           <li class="breadcrumb-item active">Agregar Tipo de Pago</li>
         </ol>
@@ -70,7 +70,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 <div class="text-center">
                   <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
                   <button type="reset" class="btn btn-secondary">Reset</button>
-                  <a href="../imprenta_caja/agregar_venta.php" class="btn btn-secondary">Volver a Ventas</a>
+                  <a href="../imprenta_contables/retirar_contables.php" class="btn btn-secondary">Volver a Retiros</a>
                 </div>
               </form><!-- End Horizontal Form -->
 
