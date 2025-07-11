@@ -141,12 +141,12 @@
           </a>
         </li>
                 <li>
-          <a href="../imprenta_caja/agregar_venta.php">
+          <a href="../imprenta_tipos_movimientos_contables/agregar_venta.php">
             <i class="bi bi-circle"></i><span>Agregar</span>
           </a>
         </li>
         <li>
-          <a href="../imprenta_caja/retirar_caja.php">
+          <a href="../imprenta_contables/retirar_contables.php">
             <i class="bi bi-circle"></i><span>Retiro</span>
           </a>
         </li>

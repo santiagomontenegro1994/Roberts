@@ -358,6 +358,19 @@ function Listar_Tipos_Pagos_Salida($conexion) {
     return $tiposPagos;
 }
 
+function Listar_Tipos_Pagos_Contable($conexion) {
+    $sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1 AND esSalida = 0 AND esEntrada = 0";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposPagos = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposPagos[] = $fila;
+        }
+    }
+    return $tiposPagos;
+}
+
 function Validar_Tipos_Pago(){
     $_SESSION['Mensaje']='';
     if (strlen($_POST['Denominacion']) < 1) {
@@ -1554,6 +1567,19 @@ function Listar_Tipos_Movimiento_Salida($conexion) {
     return $tiposMovimiento;
 }
 
+function Listar_Tipos_Movimiento_Contable($conexion) {
+    $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_salida = 0 AND es_entrada = 0 AND idActivo = 1";
+    $resultado = mysqli_query($conexion, $sql);
+
+    $tiposMovimiento = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tiposMovimiento[] = $fila;
+        }
+    }
+    return $tiposMovimiento;
+}
+
 function InsertarTipoMovimientoEntrada($vConexion) {
     $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
     $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 1, 0, 1)";
@@ -1569,6 +1595,18 @@ function InsertarTipoMovimientoEntrada($vConexion) {
 function InsertarTipoMovimientoSalida($vConexion) {
     $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
     $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 0, 1, 1)";
+    $stmt = $vConexion->prepare($sql);
+    $stmt->bind_param("s", $denominacion);
+    if (!$stmt->execute()) {
+        return false;
+    }
+    $stmt->close();
+    return true;
+}
+
+function InsertarTipoMovimientoContable($vConexion) {
+    $denominacion = trim(strip_tags($_POST['Denominacion'] ?? ''));
+    $sql = "INSERT INTO tipo_movimiento (denominacion, es_entrada, es_salida, idActivo) VALUES (?, 0, 0, 1)";
     $stmt = $vConexion->prepare($sql);
     $stmt->bind_param("s", $denominacion);
     if (!$stmt->execute()) {
