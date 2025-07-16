@@ -95,11 +95,14 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     }
 }
 
-// Calcular el total de retiros para esta caja (ahora usando tipo_movimiento)
+// Calcular el total de retiros (sin incluir Caja fuerte) para esta caja (ahora usando tipo_movimiento)
+
 $queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
-                 FROM detalle_caja dc
-                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                 WHERE dc.idCaja = ? AND tm.es_salida = 1";
+                              FROM detalle_caja dc
+                              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                              WHERE dc.idCaja = ?
+                                AND tm.es_salida = 1
+                                AND tm.denominacion NOT LIKE '%Caja Fuerte%'";
 $stmtRetiros = $MiConexion->prepare($queryRetiros);
 $stmtRetiros->bind_param("i", $idCaja);
 $stmtRetiros->execute();
@@ -108,6 +111,25 @@ $resultadoRetiros = $stmtRetiros->get_result();
 $totalRetiros = 0;
 if ($filaRetiros = $resultadoRetiros->fetch_assoc()) {
     $totalRetiros = (float)$filaRetiros['totalRetiros'];
+}
+
+// Calcular el total de retiros solo de Caja fuerte para esta caja
+
+$queryRetirosCajaFuerte = "SELECT SUM(dc.monto) AS totalRetiros
+                           FROM detalle_caja dc
+                           JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                           WHERE dc.idCaja = ?
+                             AND tm.es_salida = 1
+                             AND tm.denominacion LIKE '%Caja Fuerte%'";
+
+$stmtRetirosCajaFuerte = $MiConexion->prepare($queryRetirosCajaFuerte);
+$stmtRetirosCajaFuerte->bind_param("i", $idCaja);
+$stmtRetirosCajaFuerte->execute();
+$resultadoRetirosCajaFuerte = $stmtRetirosCajaFuerte->get_result();
+
+$totalRetirosCajaFuerte = 0;
+if ($filaRetirosCajaFuerte = $resultadoRetirosCajaFuerte->fetch_assoc()) {
+    $totalRetirosCajaFuerte = (float)$filaRetirosCajaFuerte['totalRetiros'];
 }
 
 // Obtener los detalles de la caja específica usando la función
@@ -124,7 +146,7 @@ $cajaInicial = (float)$filaCaja['cajaInicial'];
 $totalEfectivo = (float)$totalesPorCaja['totalEfectivo']; // Solo entradas en efectivo, sin caja inicial
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar la caja inicial al total efectivo
+$cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial; // Restar la caja inicial al total efectivo
 ?>
 
 <!DOCTYPE html>
@@ -195,6 +217,38 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar l
                     </a>
                 </h5>
 
+                <!-- Totales -->
+                <div class="row mt-4 border-top pt-3 text-center">
+                    <div class="col">
+                        <p class="mb-0"><strong>Efectivo:</strong></p>
+                        <p class="fs-6 fw-bold">$<?php echo number_format($totalEfectivo, 2); ?></p>
+                    </div>
+                    <div class="col">
+                        <p class="mb-0"><strong>Transferencia:</strong></p>
+                        <p class="fs-6 fw-bold">$<?php echo number_format($totalTransferencia, 2); ?></p>
+                    </div>
+                    <div class="col">
+                        <p class="mb-0"><strong>Tarjeta:</strong></p>
+                        <p class="fs-6 fw-bold">$<?php echo number_format($totalTarjeta, 2); ?></p>
+                    </div>
+                    <div class="col">
+                        <p class="mb-0"><strong>Caja Fuerte:</strong></p>
+                        <p class="fs-6 fw-bold">$<?php echo number_format($totalRetirosCajaFuerte, 2); ?></p>
+                    </div>
+                    <div class="col">
+                        <p class="mb-0"><strong>Retiros:</strong></p>
+                        <p class="fs-6 fw-bold">$<?php echo number_format($totalRetiros, 2); ?></p>
+                    </div>
+                </div>
+
+                <!-- Caja Fuerte -->
+                <div class="col-12 text-center">
+                    <p class="mb-0 fs-5 fw-bold">
+                        <span class="text-dark">Efectivo en Caja:</span>
+                        <span class="text-success">$<?php echo number_format($cajaEfectivoActual, 2); ?></span>
+                    </p>
+                </div>
+
                 <!-- Tabla de Detalles de Caja -->
                 <div class="table-responsive">
                     <table class="table table-striped">
@@ -240,34 +294,6 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros + $cajaInicial; // Restar l
                             <?php } ?>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Totales -->
-                <div class="row mt-4 border-top pt-3">
-                    <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>Ing. Efectivo:</strong></p>
-                        <p class="fs-5 fw-bold">$<?php echo number_format($totalEfectivo, 2); ?></p>
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>Ing. Transferencia:</strong></p>
-                        <p class="fs-5 fw-bold">$<?php echo number_format($totalTransferencia, 2); ?></p>
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>Ing. Tarjeta:</strong></p>
-                        <p class="fs-5 fw-bold">$<?php echo number_format($totalTarjeta, 2); ?></p>
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 text-center">
-                        <p class="mb-0"><strong>Retiros:</strong></p>
-                        <p class="fs-5 fw-bold">$<?php echo number_format($totalRetiros, 2); ?></p>
-                    </div>
-                </div>
-
-                <!-- Caja Fuerte -->
-                <div class="row mt-3">
-                    <div class="col-12 text-center">
-                        <p class="mb-0 fs-4 fw-bold text-success">Efectivo Total en Caja:</p>
-                        <p class="fs-2 fw-bold text-success">$<?php echo number_format($cajaEfectivoActual, 2); ?></p>
-                    </div>
                 </div>
 
             </div>

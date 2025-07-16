@@ -2,6 +2,15 @@
 ob_start();
 session_start();
 
+$Mensaje = '';
+$Estilo = '';
+
+if (!empty($_SESSION['Mensaje'])) {
+    $Mensaje = $_SESSION['Mensaje'];
+    $Estilo = $_SESSION['Estilo'];
+    unset($_SESSION['Mensaje'], $_SESSION['Estilo']); // Limpiar después de mostrar
+}
+
 if (empty($_SESSION['Usuario_Nombre'])) {
     header('Location: ../core/cerrarsesion.php');
     exit;
@@ -43,8 +52,9 @@ if (!empty($_POST['BotonRegistrar'])) {
             $_SESSION['Estilo'] = 'success';
 
             // Redirigir para evitar reenvío del formulario
-            header("Location: planilla_caja.php");
+            header("Location: " . $_SERVER['PHP_SELF']);
             exit;
+
         } else {
             $_SESSION['Mensaje'] = 'Error al registrar el detalle de venta.';
             $_SESSION['Estilo'] = 'danger';
@@ -135,6 +145,7 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                         <input type='hidden' name="idTipoOperacion" value="1"/>
                         <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
                         <button type="reset" class="btn btn-secondary">Reset</button>
+                        <a href="planilla_caja.php" class="btn btn-success">Ir a Planilla de Caja</a>
                     </div>
                 </form><!-- End Horizontal Form -->
             </div>
