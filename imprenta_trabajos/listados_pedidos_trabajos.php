@@ -148,7 +148,7 @@ $CantidadPedidos = count($ListadoPedidos);
         $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
 
         // Obtener el color y título de la fila según el estado
-        list($Title, $Color) = ColorDeFilaTrabajo($ListadoPedidos[$i]['ESTADO']);
+        list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
       ?>
         <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
           <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>

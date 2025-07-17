@@ -183,8 +183,11 @@ ob_end_flush();
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($DetallesPedido)) {
-                                        foreach ($DetallesPedido as $detalle) { ?>
-                                            <tr>
+                                        foreach ($DetallesPedido as $detalle) { 
+                                                    // Obtener el color y título de la fila según el estado
+                                        list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']);
+                                        ?>
+                                            <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['TRABAJO']); ?></td>
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['ESTADO']); ?></td>
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['DESCRIPCION']); ?></td>

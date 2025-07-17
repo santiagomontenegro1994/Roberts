@@ -945,29 +945,75 @@ function ColorDeFilaCaja($idTipoMovimiento) {
     return [$Title, $Color];
 }
 
-function ColorDeFilaTrabajo($vEstado) {
+function ColorDeFilaPedidoTrabajo($vEstado) {
     $Title='';
     $Color=''; 
 
     if ($vEstado == '4'){
-        //Estado pendiente
+    //Estado entregado
         $Title='Entregado';
         $Color='table-primary'; 
     
     } else if ($vEstado == '3'){
-        //Estado listo para retirar
-        $Title='Recibido';
+    //Estado listo para retirar
+        $Title='Listo';
         $Color='table-success'; 
     } else if ($vEstado == '2'){
-        //Estado retirado
-        $Title='Pedido';
+    //Estado en proceso
+        $Title='En proceso';
         $Color='table-warning'; 
     } else if ($vEstado == '1'){
-    //Estado retirado
-    $Title='Para pedir';
+    //Estado pendiente
+    $Title='Pendiente';
     $Color='table-danger'; 
     }      
     
+    return [$Title, $Color];
+
+}
+
+function ColorDeFilaTrabajo($vEstado) {
+    $Title='';
+    $Color=''; 
+
+    switch ($vEstado) {
+        case '1':
+            $Title = 'Pendiente';
+            $Color = 'table-danger';
+            break;
+        case '2':
+            $Title = 'Diseño Empezado';
+            $Color = 'table-warning';
+            break;
+        case '3':
+            $Title = 'Muestra Enviada';
+            $Color = 'table-warning';
+            break;
+        case '4':
+            $Title = 'Impreso';
+            $Color = 'table-warning';
+            break;
+        case '5':
+            $Title = 'Enviado';        
+            $Color = 'table-warning';
+            break;
+        case '6':
+            $Title = 'Listo';        
+            $Color = 'table-success';
+            break;
+        case '7':
+            $Title = 'Entregado';     
+            $Color = 'table-primary';
+            break;
+        case '8':
+            $Title = 'Cuenta Corriente';     
+            $Color = 'table-primary';
+            break;
+        default:
+            $Title = 'Error';
+            $Color = '';
+            break;
+    }
     return [$Title, $Color];
 
 }
@@ -1279,7 +1325,8 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
                 DT.fechaEntrega AS FECHA_ENTREGA,
                 DT.horaEntrega AS HORA_ENTREGA,
                 DT.precio AS PRECIO,
-                ET.denominacion AS ESTADO
+                ET.denominacion AS ESTADO,
+                ET.idEstado AS ESTADO_ID
             FROM detalle_trabajos DT
             INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
             INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
@@ -1303,6 +1350,7 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
             'HORA_ENTREGA' => $data['HORA_ENTREGA'],
             'PRECIO' => $data['PRECIO'],
             'PROVEEDOR' => $data['PROVEEDOR'],
+            'ESTADO_ID' => $data['ESTADO_ID'],
             'ESTADO' => $data['ESTADO']
         );
     }
@@ -1556,6 +1604,87 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     }
 }
 
+function ActualizarEstadoPedido($conexion, $idPedido) {
+    // Log de entrada a la función
+    error_log("Iniciando ActualizarEstadoPedido() para ID Pedido: $idPedido");
+    
+    // 1. Obtener estados de los detalles
+    $sql = "SELECT idEstadoTrabajo FROM detalle_trabajos 
+            WHERE id_pedido_trabajos = " . intval($idPedido) . " 
+            AND idActivo = 1";
+    
+    error_log("Ejecutando consulta SQL: " . $sql);
+    
+    $resultado = mysqli_query($conexion, $sql);
+    
+    if (!$resultado) {
+        $error = mysqli_error($conexion);
+        error_log("ERROR en consulta SQL: " . $error);
+        return false;
+    }
+
+    $estados = array();
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $estados[] = $fila['idEstadoTrabajo'];
+        error_log("Detalle encontrado - Estado ID: " . $fila['idEstadoTrabajo']);
+    }
+
+    error_log("Estados encontrados: " . implode(", ", $estados));
+    
+    // 2. Determinar el nuevo estado
+    $nuevoEstado = null;
+    $reglaAplicada = '';
+
+    // Regla 1: Si algún detalle tiene estado 1 (pendiente)
+    if (in_array(1, $estados)) {
+        $nuevoEstado = 1;
+        $reglaAplicada = "Regla 1 - Hay detalles pendientes (estado 1)";
+    }
+    // Regla 2: Si algún detalle tiene estado 2, 3, 4 o 5 (en proceso)
+    elseif (array_intersect([2, 3, 4, 5], $estados)) {
+        $nuevoEstado = 2;
+        $reglaAplicada = "Regla 2 - Hay detalles en proceso (estados 2-5)";
+    }
+    // Regla 3: Si algún detalle tiene estado 6 (listo para entregar)
+    elseif (in_array(6, $estados)) {
+        $nuevoEstado = 3;
+        $reglaAplicada = "Regla 3 - Hay detalles listos para entregar (estado 6)";
+    }
+    // Regla 4: Si algún detalle tiene estado 7 u 8 (entregado o cancelado)
+    elseif (array_intersect([7, 8], $estados)) {
+        $nuevoEstado = 4;
+        $reglaAplicada = "Regla 4 - Hay detalles entregados/cancelados (estados 7-8)";
+    }
+    // Si no cumple ninguna regla (no debería pasar si hay detalles)
+    else {
+        $nuevoEstado = 1;
+        $reglaAplicada = "Regla por defecto - No se cumplieron otras reglas";
+    }
+
+    error_log("Regla aplicada: $reglaAplicada");
+    error_log("Nuevo estado calculado: $nuevoEstado");
+    
+    // 3. Actualizar el estado del pedido
+    $sqlUpdate = "UPDATE pedido_trabajos 
+                 SET idEstado = " . intval($nuevoEstado) . "
+                 WHERE idPedidoTrabajos = " . intval($idPedido);
+    
+    error_log("Ejecutando actualización: " . $sqlUpdate);
+    
+    $resultadoUpdate = mysqli_query($conexion, $sqlUpdate);
+    
+    if (!$resultadoUpdate) {
+        $error = mysqli_error($conexion);
+        error_log("ERROR al actualizar estado: " . $error);
+        return false;
+    }
+
+    $filasAfectadas = mysqli_affected_rows($conexion);
+    error_log("Actualización exitosa. Filas afectadas: $filasAfectadas");
+    
+    return true;
+}
+
 function Listar_Tipos_Movimiento_Entrada($conexion) {
     $sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_entrada = 1 AND idActivo = 1";
     $resultado = mysqli_query($conexion, $sql);
@@ -1681,7 +1810,7 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
     }
 }
 
-// Obtener todos los movimientos contables históricos con fecha de caja
+    // Obtener todos los movimientos contables históricos con fecha de caja
 function Listar_Movimientos_Contables($conexion) {
     $query = "SELECT dc.*, c.Fecha as fecha, tp.denominacion as tipo_pago, tm.denominacion as tipo_movimiento 
               FROM detalle_caja dc
@@ -1704,7 +1833,7 @@ function Listar_Movimientos_Contables($conexion) {
     return $movimientos;
 }
 
-// Obtener total de Caja Fuerte (retiros) con fecha de caja
+    // Obtener total de Caja Fuerte (retiros) con fecha de caja
 function Obtener_Total_Caja_Fuerte($conexion) {
     $query = "SELECT SUM(dc.monto) as total
               FROM detalle_caja dc
@@ -1723,7 +1852,7 @@ function Obtener_Total_Caja_Fuerte($conexion) {
     return $total;
 }
 
-// Obtener total de Banco (ingresos) con fecha de caja
+    // Obtener total de Banco (ingresos) con fecha de caja
 function Obtener_Total_Banco($conexion) {
     $query = "SELECT SUM(dc.monto) as total
               FROM detalle_caja dc

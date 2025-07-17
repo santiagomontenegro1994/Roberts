@@ -7,6 +7,7 @@ if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no 
 }
 
 require_once '../funciones/conexion.php';
+require_once '../funciones/imprenta.php';
 $MiConexion=ConexionBD();
 
     if(!empty($_POST)){
@@ -385,9 +386,12 @@ $MiConexion=ConexionBD();
             }
 
             echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
+            //Funcion para actualizar el estado del pedido
+            ActualizarEstadoPedido($MiConexion, $idPedido);
             exit;
         }
 
+        //confirmar pedido con seña -------------------
         if($_POST['action'] == 'procesarPedidoTrabajoConPago') {
             $codCliente = intval($_POST['codCliente']);
             $senia = floatval($_POST['senia']);
