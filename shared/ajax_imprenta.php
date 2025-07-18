@@ -375,13 +375,13 @@ $MiConexion=ConexionBD();
                 mysqli_next_result($MiConexion);
             }
 
-            // Obtener el ID del pedido
-            $query_last_id = mysqli_query($MiConexion, "SELECT LAST_INSERT_ID() as idPedido");
-            $result = mysqli_fetch_assoc($query_last_id);
-            $idPedido = $result['idPedido'] ?? 0;
+            // Obtener el ID del pedido del resultado del procedimiento almacenado
+            $result_pedido = mysqli_fetch_assoc($query_procesar);
+            $idPedido = $result_pedido['idPedidoTrabajos'] ?? 0;
 
             if($idPedido == 0) {
-                echo json_encode(['status' => 'error', 'message' => 'No se pudo obtener ID del pedido']);
+                $errorMessage = $result_pedido['mensaje'] ?? 'No se pudo obtener ID del pedido';
+                echo json_encode(['status' => 'error', 'message' => $errorMessage]);
                 exit;
             }
 
@@ -467,6 +467,8 @@ $MiConexion=ConexionBD();
                 'idPedido' => $idPedido,
                 'idMovimiento' => mysqli_insert_id($MiConexion)
             ]);
+            //Funcion para actualizar el estado del pedido
+            ActualizarEstadoPedido($MiConexion, $idPedido);
             exit;
         }
 

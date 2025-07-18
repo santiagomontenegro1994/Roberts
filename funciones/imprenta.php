@@ -1595,6 +1595,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
         $filasAfectadas = $stmt->affected_rows;
         $stmt->close();
         
+        // Llamar a ActualizarEstadoPedido después de ejecutar la consulta
+        if ($filasAfectadas > 0 && isset($datos['id_pedido_trabajos'])) {
+            ActualizarEstadoPedido($conexion, $datos['id_pedido_trabajos']);
+        }
+        
         return $filasAfectadas > 0;
         
     } catch (Exception $e) {
@@ -1605,15 +1610,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
 }
 
 function ActualizarEstadoPedido($conexion, $idPedido) {
-    // Log de entrada a la función
-    error_log("Iniciando ActualizarEstadoPedido() para ID Pedido: $idPedido");
-    
+   
     // 1. Obtener estados de los detalles
     $sql = "SELECT idEstadoTrabajo FROM detalle_trabajos 
             WHERE id_pedido_trabajos = " . intval($idPedido) . " 
             AND idActivo = 1";
-    
-    error_log("Ejecutando consulta SQL: " . $sql);
     
     $resultado = mysqli_query($conexion, $sql);
     
@@ -1626,10 +1627,7 @@ function ActualizarEstadoPedido($conexion, $idPedido) {
     $estados = array();
     while ($fila = mysqli_fetch_assoc($resultado)) {
         $estados[] = $fila['idEstadoTrabajo'];
-        error_log("Detalle encontrado - Estado ID: " . $fila['idEstadoTrabajo']);
     }
-
-    error_log("Estados encontrados: " . implode(", ", $estados));
     
     // 2. Determinar el nuevo estado
     $nuevoEstado = null;
@@ -1657,30 +1655,23 @@ function ActualizarEstadoPedido($conexion, $idPedido) {
     }
     // Si no cumple ninguna regla (no debería pasar si hay detalles)
     else {
-        $nuevoEstado = 1;
+        $nuevoEstado = 0;
         $reglaAplicada = "Regla por defecto - No se cumplieron otras reglas";
     }
-
-    error_log("Regla aplicada: $reglaAplicada");
-    error_log("Nuevo estado calculado: $nuevoEstado");
     
     // 3. Actualizar el estado del pedido
     $sqlUpdate = "UPDATE pedido_trabajos 
                  SET idEstado = " . intval($nuevoEstado) . "
                  WHERE idPedidoTrabajos = " . intval($idPedido);
     
-    error_log("Ejecutando actualización: " . $sqlUpdate);
-    
     $resultadoUpdate = mysqli_query($conexion, $sqlUpdate);
     
     if (!$resultadoUpdate) {
         $error = mysqli_error($conexion);
-        error_log("ERROR al actualizar estado: " . $error);
         return false;
     }
 
     $filasAfectadas = mysqli_affected_rows($conexion);
-    error_log("Actualización exitosa. Filas afectadas: $filasAfectadas");
     
     return true;
 }
