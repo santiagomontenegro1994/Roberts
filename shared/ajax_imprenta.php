@@ -25,12 +25,19 @@ $MiConexion=ConexionBD();
                 $data ='';
                 if($result > 0){
                     $data = mysqli_fetch_assoc($query);
+                    // Guardar en sesión
+                    $_SESSION['Cliente_Pedido'] = [
+                        'id' => $data['idCliente'],
+                        'nombre' => $data['nombre'],
+                        'apellido' => $data['apellido'],
+                        'telefono' => $data['telefono']
+                    ];
                 }else{
                     $data = 0;
+                    // Limpiar sesión si no hay cliente
+                    unset($_SESSION['Cliente_Pedido']);
                 }
                 echo json_encode($data,JSON_UNESCAPED_UNICODE);
-
-
             }
             exit;
         }
@@ -47,15 +54,21 @@ $MiConexion=ConexionBD();
 
 
             if($query_insert){ // si se ejecuto bien la insercion
-                $codCliente = mysqli_insert_id($MiConexion); // extraemos el ID por medio de la funcion mysqli_insert_id
+                $codCliente = mysqli_insert_id($MiConexion);
+                // Guardar en sesión
+                $_SESSION['Cliente_Pedido'] = [
+                    'id' => $codCliente,
+                    'nombre' => $nombre,
+                    'apellido' => $apellido,
+                    'telefono' => $telefono
+                ];
                 $msg = $codCliente;
             }else{
                 $msg = 'error';
             }
-            mysqli_close($MiConexion);//cierro la conexion
+            mysqli_close($MiConexion);
             echo $msg;
             exit;                                          
-
         }
 
         //Agregar trabajo al detalle temporal de trabajos
@@ -340,6 +353,10 @@ $MiConexion=ConexionBD();
             $usuario = $_SESSION['Usuario_Id'];
 
             $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
+            
+            // Limpiar también el cliente de la sesión
+            unset($_SESSION['Cliente_Pedido']);
+            
             mysqli_close($MiConexion);
             if($query_del){
                 echo 'ok';
@@ -347,7 +364,6 @@ $MiConexion=ConexionBD();
                 echo 'error';
             }
             exit;
-
         }
 
         //confirmar pedido -------------------
@@ -388,6 +404,8 @@ $MiConexion=ConexionBD();
             echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
             //Funcion para actualizar el estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
+            // Limpiar también el cliente de la sesión
+            unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
@@ -469,6 +487,8 @@ $MiConexion=ConexionBD();
             ]);
             //Funcion para actualizar el estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
+            // Limpiar también el cliente de la sesión
+            unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 

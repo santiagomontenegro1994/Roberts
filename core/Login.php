@@ -26,6 +26,7 @@ if (!empty($_POST['BotonLogin'])) {
       $_SESSION['Mensaje']            = '';
       $_SESSION['Estilo']             = '';
       $_SESSION['Descarga']           = '';
+      $_SESSION['Cliente_Pedido']           = '';
         
         header('Location: ../core/index.php');
         exit;

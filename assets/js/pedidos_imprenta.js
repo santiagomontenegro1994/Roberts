@@ -145,9 +145,22 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 $('#detalleVentaTrabajo').html(response.detalle);
                 $('#detalleTotalTrabajo').html(response.totales);
                 
-                // Resetear campos
-                $('.form-control').val('');
-                $('.preview-field').html('-');
+                // Restablecer valores por defecto en lugar de borrar
+                $('#descripcion').val(''); // Solo este campo se limpia completamente
+                
+                // Valores por defecto para los selects
+                $('#estado_trabajo').val($('#estado_trabajo option:first').val());
+                $('#tipo_trabajo').val('6'); // Valor por defecto original (Flyer)
+                $('#enviado').val('7'); // Valor por defecto original (Impresión Propia)
+                
+                // Fecha y hora
+                $('#fecha_entrega_date').val(''); // Se puede dejar vacío o establecer fecha futura
+                $('#hora_entrega').val('08:30'); // Primera opción del select
+                
+                // Precio
+                $('#precio').val('0.00');
+                
+                // Mantener los campos del cliente intactos
             },
             error: function(xhr, status, error){
                 console.error('AJAX Error:', status, error);
@@ -161,9 +174,9 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     $('#btn_anular_pedido_trabajo').click(function(e){
         e.preventDefault();
 
-        var rows =$('#detalleVentaTrabajo tr').length;//cuantas filas tiene detalle venta
+        var rows =$('#detalleVentaTrabajo tr').length;
 
-        if(rows > 0){// si hay productos en el detalle                                                                                                                                  
+        if(rows > 0){
             var action = 'anularPedidoTrabajo';
 
             $.ajax({
@@ -171,19 +184,24 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 type: "POST",
                 async : true,
                 data: {action:action}, 
-    
+
                 success: function(response){
-                    if(response!='error'){// si elimino todo el detalle
-                        location.reload();//refresca toda la pagina
+                    if(response!='error'){
+                        // Limpiar también los campos del cliente localmente
+                        $('#idCliente_imprenta').val('');
+                        $('#tel_cliente_imprenta').val('');
+                        $('#nom_cliente_imprenta').val('').attr('disabled','disabled');
+                        $('#ape_cliente_imprenta').val('').attr('disabled','disabled');
+                        $('.btn_new_cliente_imprenta').slideDown();
+                        
+                        location.reload();
                     }
                 },
                 error: function(error){
-
+                    console.log('Error:', error);
                 }
             });    
-
         }
-
     });
 
     //Confirmar pedido trabajo
@@ -216,40 +234,48 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
 
     // Función para procesar el pedido
     function procesarPedidoTrabajo(codCliente, senia, idTipoPago, idTipoMovimiento, observaciones) {
-            var action = (idTipoPago) ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
-            
-            var data = {
-                action: action,
-                codCliente: codCliente,
-                senia: senia
-            };
-            
-            if(action === 'procesarPedidoTrabajoConPago') {
-                data.idTipoPago = idTipoPago;
-                data.observaciones = observaciones;
-            }
-            
-            $.ajax({
-                url: '../shared/ajax_imprenta.php',
-                type: "POST",
-                data: data,
-                dataType: 'json',
-                success: function(response){
-                    if(response && response.status === 'success') {
-                        alert('Pedido generado ' + (senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
-                        location.reload();
-                    } else {
-                        var errorMsg = response?.message || 'Error desconocido';
-                        alert('Error al procesar el pedido: ' + errorMsg);
-                    }
-                },
-                error: function(xhr, status, error){
-                    console.error('Error en la petición:', status, error);
-                    console.error('Respuesta del servidor:', xhr.responseText);
-                    alert('Error de conexión. Ver consola para detalles.');
-                }
-            });
+        var action = (idTipoPago) ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
+        
+        var data = {
+            action: action,
+            codCliente: codCliente,
+            senia: senia
+        };
+        
+        if(action === 'procesarPedidoTrabajoConPago') {
+            data.idTipoPago = idTipoPago;
+            data.observaciones = observaciones;
         }
+        
+        $.ajax({
+            url: '../shared/ajax_imprenta.php',
+            type: "POST",
+            data: data,
+            dataType: 'json',
+            success: function(response){
+                if(response && response.status === 'success') {
+                    // Limpiar cliente de sesión después de procesar el pedido
+                    $.ajax({
+                        url: '../shared/ajax_imprenta.php',
+                        type: "POST",
+                        data: {action: 'limpiarClienteSession'},
+                        success: function() {
+                            alert('Pedido generado ' + (senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
+                            location.reload();
+                        }
+                    });
+                } else {
+                    var errorMsg = response?.message || 'Error desconocido';
+                    alert('Error al procesar el pedido: ' + errorMsg);
+                }
+            },
+            error: function(xhr, status, error){
+                console.error('Error en la petición:', status, error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                alert('Error de conexión. Ver consola para detalles.');
+            }
+        });
+    }
 
     // Manejar el confirmar pago desde el modal
     $('#btnConfirmarPago').click(function() {
