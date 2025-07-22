@@ -19,6 +19,9 @@ $trabajos = Datos_Trabajos($MiConexion);
 $proveedores = Listar_Proveedores($MiConexion);
 $TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
 
+// Recuperar datos del cliente de la sesión si existen
+$clienteSession = isset($_SESSION['Cliente_Pedido']) ? $_SESSION['Cliente_Pedido'] : null;
+
 function obtenerIconoMetodoPago($nombreMetodo) {
     $iconos = [
         'Efectivo' => 'bi-cash',
@@ -58,19 +61,19 @@ function obtenerIconoMetodoPago($nombreMetodo) {
 
             <form class="row g-1" id="formularioClientePedidoImprenta" name="form_new_cliente_pedido">
                 <input type="hidden" name="action" value="addCliente_imprenta">
-                <input type="hidden" name="idCliente_imprenta" id="idCliente_imprenta">
+                <input type="hidden" name="idCliente_imprenta" id="idCliente_imprenta" value="<?= $clienteSession ? $clienteSession['id'] : '' ?>">
 
                 <div class="col-md-4 mb-1">
                     <label for="fecha" class="form-label">Telefono</label>
-                    <input type="number" class="form-control form-control-sm"  name="tel_cliente_imprenta" id="tel_cliente_imprenta">
+                    <input type="number" class="form-control form-control-sm" name="tel_cliente_imprenta" id="tel_cliente_imprenta" value="<?= $clienteSession ? $clienteSession['telefono'] : '' ?>">
                 </div>
                 <div class="col-md-4 mb-1">
                     <label for="fecha" class="form-label">Nombre</label>
-                    <input type="text" class="form-control form-control-sm"  name="nom_cliente_imprenta" id="nom_cliente_imprenta" disabled required>
+                    <input type="text" class="form-control form-control-sm" name="nom_cliente_imprenta" id="nom_cliente_imprenta" disabled required value="<?= $clienteSession ? $clienteSession['nombre'] : '' ?>">
                 </div>
                 <div class="col-md-4 mb-1">
                     <label for="fecha" class="form-label">Apellido</label>
-                    <input type="text" class="form-control form-control-sm"  name="ape_cliente_imprenta" id="ape_cliente_imprenta" disabled>
+                    <input type="text" class="form-control form-control-sm" name="ape_cliente_imprenta" id="ape_cliente_imprenta" disabled value="<?= $clienteSession ? $clienteSession['apellido'] : '' ?>">
                 </div>
 
                 <div class="text-center" id="div_registro_cliente_imprenta" style="display: none;">
@@ -78,7 +81,7 @@ function obtenerIconoMetodoPago($nombreMetodo) {
                 </div>
             </form>
         </div>
-    </div>   
+    </div>     
     
     <div class="card">
         <div class="card-body">
@@ -242,6 +245,18 @@ require ('../shared/footer.inc.php');
 ?>
 
 <script>
+$(document).ready(function() {
+    searchforDetalleTrabajo();
+    
+    // Si hay datos de cliente en sesión, configurar campos como si ya estuviera cargado
+    <?php if($clienteSession): ?>
+        $('#idCliente_imprenta').val('<?= $clienteSession['id'] ?>');
+        $('#nom_cliente_imprenta').attr('disabled','disabled');
+        $('#ape_cliente_imprenta').attr('disabled','disabled');
+        $('.btn_new_cliente_imprenta').slideUp();
+    <?php endif; ?>
+});
+
 $(document).ready(function() {
     searchforDetalleTrabajo();
 });

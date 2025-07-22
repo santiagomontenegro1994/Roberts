@@ -133,7 +133,6 @@ $CantidadPedidos = count($ListadoPedidos);
         <th scope="col">Precio</th>
         <th scope="col">Seña</th>
         <th scope="col">Saldo</th>
-        <th scope="col">Estado</th>
         <th scope="col">Tomado</th>
         <th scope="col">Acciones</th>
       </tr>
@@ -158,7 +157,6 @@ $CantidadPedidos = count($ListadoPedidos);
           <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
           <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
           <td class="extra-small">$<?php echo number_format($saldo, 2); ?></td>
-          <td class="extra-small"><?php echo $ListadoPedidos[$i]['ESTADO_NOMBRE']; ?></td>
           <td class="extra-small"><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
           <td class="extra-small">
             <!-- Acciones -->
