@@ -1010,7 +1010,7 @@ function ColorDeFilaTrabajo($vEstado) {
             break;
         case '8':
             $Title = 'Cuenta Corriente';     
-            $Color = 'table-entregado';
+            $Color = 'table-ctacte';
             break;
         default:
             $Title = 'Error';
@@ -1345,6 +1345,51 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
         );
     }
     return $detalles;
+}
+
+function Actualizar_Estado_Detalle($conexion, $idDetalle, $nuevoEstado) {
+    $sql = "UPDATE detalle_trabajos 
+            SET idEstadoTrabajo = " . intval($nuevoEstado) . "
+            WHERE idDetalleTrabajo = " . intval($idDetalle);
+    
+    $resultado = mysqli_query($conexion, $sql);
+    
+    if (!$resultado) {
+        error_log("Error en Actualizar_Estado_Detalle: " . mysqli_error($conexion));
+        return false;
+    }
+    
+    return true;
+}
+
+function Marcar_Pedido_Como_Pagado($conexion, $idPedido) {
+    // 1. Calcular el precio total sumando los detalles
+    $sql = "SELECT SUM(precio) AS precioTotal 
+            FROM detalle_trabajos 
+            WHERE id_pedido_trabajos = " . intval($idPedido) . "
+            AND idActivo = 1";
+    
+    $resultado = mysqli_query($conexion, $sql);
+    
+    if (!$resultado) {
+        error_log("Error al calcular precio total: " . mysqli_error($conexion));
+        return false;
+    }
+    
+    $data = mysqli_fetch_assoc($resultado);
+    $precioTotal = $data['precioTotal'] ?? 0;
+    
+    // 2. Actualizar la seña al precio total
+    $sqlUpdate = "UPDATE pedido_trabajos 
+                 SET senia = " . floatval($precioTotal) . "
+                 WHERE idPedidoTrabajos = " . intval($idPedido);
+    
+    if (!mysqli_query($conexion, $sqlUpdate)) {
+        error_log("Error al actualizar seña: " . mysqli_error($conexion));
+        return false;
+    }
+    
+    return true;
 }
 
 function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null, $esReduccion = false) {

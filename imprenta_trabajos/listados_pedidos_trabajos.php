@@ -175,6 +175,14 @@ $CantidadPedidos = count($ListadoPedidos);
                         title="Imprimir">
                         <i class="bi bi-printer-fill"></i>
                       </a>
+
+                        <button type="button" class="btn btn-xs btn-success me-2" 
+                                data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
+                                data-pedido-id="<?php echo $ListadoPedidos[$i]['ID']; ?>"
+                                data-pedido-saldo="<?php echo $saldo; ?>"
+                                title="Retirar Pedido">
+                          <i class="bi bi-box-seam"></i> Retirar
+                        </button>
                     </td>
                   </tr>
                 <?php } ?>
@@ -190,11 +198,77 @@ $CantidadPedidos = count($ListadoPedidos);
 
 </main><!-- End #main -->
 
+<!-- Modal Retirar Pedido -->
+<div class="modal fade" id="retirarPedidoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Retirar Pedido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formRetirarPedido" action="procesar_retiro_pedido.php" method="post">
+                    <input type="hidden" name="idPedido" id="retirarPedidoId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Saldo a pagar:</label>
+                        <input type="text" class="form-control" id="retirarPedidoSaldo" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Método de pago:</label>
+                        <select class="form-select" name="metodoPago" required>
+                            <?php 
+                            // Asegúrate de tener $TiposPagosEntrada disponible
+                            $TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
+                            foreach ($TiposPagosEntrada as $metodo): ?>
+                                <option value="<?php echo $metodo['idTipoPago']; ?>">
+                                    <?php echo htmlspecialchars($metodo['denominacion']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Confirmar Retiro</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
   $_SESSION['Mensaje']='';
-  require ('../shared/footer.inc.php'); //Aca uso el FOOTER que esta seccionados en otro archivo
+  require ('../shared/footer.inc.php');
 ?>
 
+<script>
+// Configurar modal de retiro de pedido
+document.addEventListener('DOMContentLoaded', function() {
+    const retirarPedidoModal = new bootstrap.Modal(document.getElementById('retirarPedidoModal'));
+    
+    // Configurar modal cuando se abre
+    document.getElementById('retirarPedidoModal').addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const pedidoId = button.getAttribute('data-pedido-id');
+        const saldo = button.getAttribute('data-pedido-saldo');
+        
+        document.getElementById('retirarPedidoId').value = pedidoId;
+        document.getElementById('retirarPedidoSaldo').value = '$' + parseFloat(saldo).toFixed(2);
+    });
+    
+    // Manejar envío del formulario
+    document.getElementById('formRetirarPedido').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (confirm('¿Confirmar retiro del pedido? Esta acción no se puede deshacer.')) {
+            this.submit();
+        }
+    });
+});
+</script>
 
 </body>
 
