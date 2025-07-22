@@ -37,10 +37,7 @@ $CantidadPedidos = count($ListadoPedidos);
 
 }
 
-
 ?>
-
-
 
 <main id="main" class="main">
 
@@ -84,36 +81,36 @@ $CantidadPedidos = count($ListadoPedidos);
               </div>
               <div class="col-sm-5 mt-2">
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Fecha" checked>
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Cliente" checked>
                       <label class="form-check-label fs-7" for="gridRadios1">
-                        Fecha
-                      </label>
-                    </div>
-
-                    <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Cliente">
-                      <label class="form-check-label fs-7" for="gridRadios2">
                       Cliente
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Telefono">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Fecha">
                       <label class="form-check-label fs-7" for="gridRadios2">
+                        Fecha
+                      </label>
+                    </div>
+
+                    <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Telefono">
+                      <label class="form-check-label fs-7" for="gridRadios3">
                       Telefono
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Id">
-                      <label class="form-check-label fs-7" for="gridRadios2">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Id">
+                      <label class="form-check-label fs-7" for="gridRadios4">
                       ID
                       </label>
                     </div>
 
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Estado">
-                      <label class="form-check-label fs-7" for="gridRadios4">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios5" value="Estado">
+                      <label class="form-check-label fs-7" for="gridRadios5">
                         Estado
                     </div>
                     
@@ -123,67 +120,67 @@ $CantidadPedidos = count($ListadoPedidos);
           </form>
           <!-- Table with stripped rows -->
           <div class="table-responsive">
-  <table class="table table-striped table-sm small">
-    <thead>
-      <tr class="fs-6">
-        <th scope="col">ID</th>
-        <th scope="col">Fecha</th>
-        <th scope="col">Cliente</th>
-        <th scope="col">Detalle</th>
-        <th scope="col">Precio</th>
-        <th scope="col">Seña</th>
-        <th scope="col">Saldo</th>
-        <th scope="col">Tomado</th>
-        <th scope="col">Acciones</th>
-      </tr>
-    </thead>
-    <tbody class="fs-6">
-      <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
-        // Calcular la cantidad de trabajos asociados (si tienes una función, si no, puedes omitir)
-        // $cantidad = Contar_Trabajos($MiConexion, $ListadoPedidos[$i]['ID']);
-        $cantidad = 1; // O ajusta según tu lógica
+            <table class="table table-striped table-sm small">
+              <thead>
+                <tr class="fs-6">
+                  <th scope="col">ID</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Cliente</th>
+                  <th scope="col">Detalle</th>
+                  <th scope="col">Precio</th>
+                  <th scope="col">Seña</th>
+                  <th scope="col">Saldo</th>
+                  <th scope="col">Tomado</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="fs-6">
+                <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
+                  // Calcular la cantidad de trabajos asociados (si tienes una función, si no, puedes omitir)
+                  // $cantidad = Contar_Trabajos($MiConexion, $ListadoPedidos[$i]['ID']);
+                  $cantidad = 1; // O ajusta según tu lógica
 
-        // Calcular el saldo
-        $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
+                  // Calcular el saldo
+                  $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
 
-        // Obtener el color y título de la fila según el estado
-        list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
-      ?>
-        <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
-          <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>
-          <td class="extra-small"><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
-          <td class="extra-small"><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
-          <td class="extra-small"><?php echo $cantidad; ?> trabajo/s</td>
-          <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
-          <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
-          <td class="extra-small">$<?php echo number_format($saldo, 2); ?></td>
-          <td class="extra-small"><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
-          <td class="extra-small">
-            <!-- Acciones -->
-            <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
-              class="btn btn-xs btn-danger me-2"
-              title="Anular" 
-              onclick="return confirm('Confirma anular este Pedido?');">
-              <i class="bi bi-trash-fill"></i>
-            </a>
+                  // Obtener el color y título de la fila según el estado
+                  list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
+                ?>
+                  <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                    <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
+                    <td class="extra-small"><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
+                    <td class="extra-small"><?php echo $cantidad; ?> trabajo/s</td>
+                    <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
+                    <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
+                    <td class="extra-small">$<?php echo number_format($saldo, 2); ?></td>
+                    <td class="extra-small"><?php echo $ListadoPedidos[$i]['USUARIO']; ?></td>
+                    <td class="extra-small">
+                      <!-- Acciones -->
+                      <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>" 
+                        class="btn btn-xs btn-danger me-2"
+                        title="Anular" 
+                        onclick="return confirm('Confirma anular este Pedido?');">
+                        <i class="bi bi-trash-fill"></i>
+                      </a>
 
-            <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
-              class="btn btn-xs btn-warning me-2" 
-              title="Modificar">
-              <i class="bi bi-pencil-fill"></i>
-            </a>
+                      <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
+                        class="btn btn-xs btn-warning me-2" 
+                        title="Modificar">
+                        <i class="bi bi-pencil-fill"></i>
+                      </a>
 
-            <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
-              class="btn btn-xs btn-primary me-2" 
-              title="Imprimir">
-              <i class="bi bi-printer-fill"></i>
-            </a>
-          </td>
-        </tr>
-      <?php } ?>
-    </tbody>
-  </table>
-</div>
+                      <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?php echo $ListadoPedidos[$i]['ID']; ?>"
+                        class="btn btn-xs btn-primary me-2" 
+                        title="Imprimir">
+                        <i class="bi bi-printer-fill"></i>
+                      </a>
+                    </td>
+                  </tr>
+                <?php } ?>
+              </tbody>
+            </table>
+          </div>
           <!-- End Table with stripped rows -->
 
         </div>

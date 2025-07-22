@@ -949,23 +949,26 @@ function ColorDeFilaPedidoTrabajo($vEstado) {
     $Title='';
     $Color=''; 
 
-    if ($vEstado == '4'){
+    if ($vEstado == '5'){
+    //Estado listo para retirar
+        $Title='Cuenta Corriente';
+        $Color='table-ctacte'; 
+    } else if ($vEstado == '4'){
     //Estado entregado
         $Title='Entregado';
-        $Color='table-primary'; 
-    
+        $Color='table-entregado'; 
     } else if ($vEstado == '3'){
     //Estado listo para retirar
         $Title='Listo';
-        $Color='table-success'; 
+        $Color='table-listo'; 
     } else if ($vEstado == '2'){
     //Estado en proceso
         $Title='En proceso';
-        $Color='table-warning'; 
+        $Color='table-proceso'; 
     } else if ($vEstado == '1'){
     //Estado pendiente
     $Title='Pendiente';
-    $Color='table-danger'; 
+    $Color='table-pendiente'; 
     }      
     
     return [$Title, $Color];
@@ -979,35 +982,35 @@ function ColorDeFilaTrabajo($vEstado) {
     switch ($vEstado) {
         case '1':
             $Title = 'Pendiente';
-            $Color = 'table-danger';
+            $Color = 'table-pendiente';
             break;
         case '2':
             $Title = 'Diseño Empezado';
-            $Color = 'table-warning';
+            $Color = 'table-proceso';
             break;
         case '3':
             $Title = 'Muestra Enviada';
-            $Color = 'table-warning';
+            $Color = 'table-proceso';
             break;
         case '4':
             $Title = 'Impreso';
-            $Color = 'table-warning';
+            $Color = 'table-proceso';
             break;
         case '5':
             $Title = 'Enviado';        
-            $Color = 'table-warning';
+            $Color = 'table-proceso';
             break;
         case '6':
             $Title = 'Listo';        
-            $Color = 'table-success';
+            $Color = 'table-listo';
             break;
         case '7':
             $Title = 'Entregado';     
-            $Color = 'table-primary';
+            $Color = 'table-entregado';
             break;
         case '8':
             $Title = 'Cuenta Corriente';     
-            $Color = 'table-primary';
+            $Color = 'table-entregado';
             break;
         default:
             $Title = 'Error';
@@ -1107,49 +1110,41 @@ function Listar_Pedidos_Trabajos($vConexion) {
 function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
     
     $Listado = array();
-
-    // 1) Generar el WHERE según el criterio de búsqueda
-    $whereClause = "";
+    $whereClause = "WHERE PT.idActivo = 1"; // Filtro base para todos los casos
+    
     switch ($criterio) {
         case 'Fecha':
-            // Se busca en la fecha del pedido principal
-            $whereClause = "WHERE PT.fecha LIKE '%$parametro%'";
+            $whereClause .= " AND PT.fecha LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
             break;
         case 'Id':
-            // Se busca por el ID del pedido principal
-            $whereClause = "WHERE PT.idPedidoTrabajos LIKE '%$parametro%'";
+            $whereClause = "WHERE PT.idPedidoTrabajos LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
             break;
         case 'Estado':
-            // Se busca por la denominación del estado del trabajo
-            $whereClause = "WHERE ET.denominacion LIKE '%$parametro%'";
+            $whereClause .= " AND ET.denominacion LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
             break;
         case 'Cliente':
-            // Búsqueda flexible por nombre y/o apellido del cliente
             $parametro = strtolower($parametro);
             $nombreApellido = explode(' ', $parametro);
             if (count($nombreApellido) >= 2) {
-                // Si se ingresan dos palabras, busca combinaciones de nombre y apellido
-                $whereClause = "WHERE 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[0] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[1] . "%') OR 
-                    (LOWER(C.nombre) LIKE '%" . $nombreApellido[1] . "%' AND LOWER(C.apellido) LIKE '%" . $nombreApellido[0] . "%')";
+                $whereClause .= " AND (
+                    (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%' 
+                    AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%') 
+                    OR 
+                    (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%' 
+                    AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%')
+                )";
             } else {
-                // Si es una sola palabra, busca en nombre o apellido
-                $whereClause = "WHERE 
-                    LOWER(C.nombre) LIKE '%$parametro%' OR LOWER(C.apellido) LIKE '%$parametro%'";
+                $whereClause .= " AND (
+                    LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%' 
+                    OR LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'
+                )";
             }
             break;
         case 'Telefono':
-            // Búsqueda por el teléfono del cliente
-            $whereClause = "WHERE C.telefono LIKE '%$parametro%'";
-            break;
-        default:
-            // Por defecto, si no hay criterio, muestra solo los pedidos activos
-            $whereClause = "WHERE PT.idActivo = 1";
+            $whereClause .= " AND C.telefono LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
             break;
     }
 
-    // 2) Construir la consulta SQL principal
-    // Se incorpora el LEFT JOIN y las funciones de agregación (SUM y COUNT)
     $SQL = "SELECT 
                 C.nombre, 
                 C.apellido,
@@ -1171,34 +1166,29 @@ function Listar_Pedidos_Trabajo_Parametro($vConexion, $criterio, $parametro) {
             GROUP BY PT.idPedidoTrabajos, C.nombre, C.apellido, C.telefono, PT.fecha, PT.senia, ET.idEstado, US.usuario, ET.denominacion
             ORDER BY PT.idPedidoTrabajos DESC";
 
-    // 3) Ejecutar la consulta
     $rs = mysqli_query($vConexion, $SQL);
 
-    // 4) Manejo de errores en la consulta
     if (!$rs) {
-        // Es buena práctica registrar el error en lugar de solo mostrarlo
         error_log("Error en la consulta SQL: " . mysqli_error($vConexion));
         die("Ocurrió un error al obtener los datos. Por favor, intente más tarde.");
     }
 
-    // 5) Recorrer los resultados y almacenarlos en el array
     $i = 0;
     while ($data = mysqli_fetch_assoc($rs)) {
         $Listado[$i]['ID'] = $data['idPedidoTrabajos'];
         $Listado[$i]['CLIENTE_N'] = $data['nombre'];
         $Listado[$i]['CLIENTE_A'] = $data['apellido'];
-        $Listado[$i]['TELEFONO'] = $data['telefono']; // Se añade el teléfono al resultado
+        $Listado[$i]['TELEFONO'] = $data['telefono'];
         $Listado[$i]['FECHA'] = $data['fecha'];
-        $Listado[$i]['PRECIO'] = $data['precio_total']; // Se usa el precio calculado
+        $Listado[$i]['PRECIO'] = $data['precio_total'];
         $Listado[$i]['SEÑA'] = $data['senia'];
         $Listado[$i]['ESTADO'] = $data['idEstado'];
         $Listado[$i]['USUARIO'] = $data['usuario'];
         $Listado[$i]['ESTADO_NOMBRE'] = $data['estado_nombre'];
-        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['cantidad_trabajos']; // Se añade la cantidad de trabajos
+        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['cantidad_trabajos'];
         $i++;
     }
 
-    // 6) Devolver el listado final
     return $Listado;
 }
 
@@ -1648,10 +1638,15 @@ function ActualizarEstadoPedido($conexion, $idPedido) {
         $nuevoEstado = 3;
         $reglaAplicada = "Regla 3 - Hay detalles listos para entregar (estado 6)";
     }
-    // Regla 4: Si algún detalle tiene estado 7 u 8 (entregado o cancelado)
-    elseif (array_intersect([7, 8], $estados)) {
+    // Regla 4: Si algún detalle tiene estado 8 (cta cte)
+    elseif (in_array(8, $estados)) {
+        $nuevoEstado = 5;
+        $reglaAplicada = "Regla 4 - Hay detalles cta (estado 8)";
+    }
+    // Regla 5: Si algún detalle tiene estado 7 (entregado)
+    elseif (in_array(7, $estados)) {
         $nuevoEstado = 4;
-        $reglaAplicada = "Regla 4 - Hay detalles entregados/cancelados (estados 7-8)";
+        $reglaAplicada = "Regla 5 - Hay detalles entregados (estado 7)";
     }
     // Si no cumple ninguna regla (no debería pasar si hay detalles)
     else {

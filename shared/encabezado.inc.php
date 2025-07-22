@@ -29,6 +29,9 @@ $MiConexion->close();
   <link href="../assets/img/favicono.png" rel="icon">
   <link href="../assets/img/apple-touch-icono.png" rel="apple-touch-icon">
 
+  <!-- FIconos pagos -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link

@@ -1264,3 +1264,99 @@ main {
         justify-content: center;
     }
 
+/*--------------------------------------------------------------
+# acomodando modales y selectores
+--------------------------------------------------------------*/
+
+        /* Estilos mejorados para selects con texto completo siempre visible */
+        .select-container {
+            position: relative;
+            width: 100%;
+            overflow: visible;
+        }
+        
+        .select-expandido {
+            width: 100%;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 25px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+            min-height: calc(1.5em + 0.75rem + 2px);
+            display: inline-block;
+        }
+        
+        .select-expandido:focus {
+            border-color: #86b7fe;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .select-expandido option {
+            white-space: normal;
+            padding: 8px 12px;
+        }
+        
+        .select-expandido option:checked {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        .form-select {
+            display: block;
+            width: 100%;
+        }
+/*--------------------------------------------------------------
+# Estilo adisional de tabla pendiente
+--------------------------------------------------------------*/
+
+  .table-pendiente {
+    --bs-table-bg: #E6A5A5; /* Mismo color para todas las filas */
+    --bs-table-striped-bg: #E6A5A5; /* Mismo color para filas bandeadas */
+    color: #000;
+    border-color: #270202;
+}  
+
+  .table-listo {
+    --bs-table-bg: #A3C9A8; /* Mismo color para todas las filas */
+    --bs-table-striped-bg: #A3C9A8; /* Mismo color para filas bandeadas */
+    color: #000;
+    border-color: #003d0a;
+}  
+
+  .table-entregado {
+    --bs-table-bg: #9C89B8; /* Mismo color para todas las filas */
+    --bs-table-striped-bg: #9C89B8; /* Mismo color para filas bandeadas */
+    color: #000;
+    border-color: #2a003d;
+} 
+
+  .table-proceso {
+    --bs-table-bg: #F4E3B2; /* Mismo color para todas las filas */
+    --bs-table-striped-bg: #F4E3B2; /* Mismo color para filas bandeadas */
+    color: #000;
+    border-color: #080a01;
+} 
+
+  .table-ctacte {
+    --bs-table-bg: #A1C6EA; /* Mismo color para todas las filas */
+    --bs-table-striped-bg: #A1C6EA; /* Mismo color para filas bandeadas */
+    color: #000;
+    border-color: #080a01;
+} 
+
+

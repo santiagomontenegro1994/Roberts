@@ -110,17 +110,6 @@ function obtenerIconoMetodoPago($nombreMetodo) {
 ob_end_flush();
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modificar Pedido de Trabajo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link href="../assets/css/styles.css" rel="stylesheet">
-</head>
-<body>
     <main id="main" class="main">
         <div class="pagetitle">
             <h1>Modificar Pedido de Trabajo</h1>
@@ -637,11 +626,12 @@ ob_end_flush();
         });
     });
     </script>
-</body>
-</html>
 
 <?php
 $_SESSION['Mensaje'] = '';
 $_SESSION['Estilo'] = '';
 require('../shared/footer.inc.php');
 ?>
+
+</body>
+</html>
