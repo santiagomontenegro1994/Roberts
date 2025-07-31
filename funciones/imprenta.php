@@ -1929,6 +1929,7 @@ function Obtener_Total_Banco($conexion) {
 function Listar_Pedidos_Trabajos_Detallado($vConexion) {
     $Listado = array();
 
+    // Primero obtenemos los pedidos con sus sumatorias
     $SQL = "SELECT 
                 PT.idPedidoTrabajos,
                 PT.fecha,
@@ -1938,20 +1939,15 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
                 ET.idEstado,
                 US.usuario,
                 ET.denominacion AS estado_nombre,
-                COALESCE(SUM(DT.precio), 0) AS precio_total,
-                DT.idDetalleTrabajo,
-                DT.idTrabajo,
-                DT.descripcion,
-                TT.denominacion AS nombre_trabajo
+                COALESCE(SUM(DT.precio), 0) AS precio_total
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
             INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
             LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
-            LEFT JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
             WHERE PT.idActivo = 1
-            GROUP BY PT.idPedidoTrabajos, DT.idDetalleTrabajo
-            ORDER BY PT.idPedidoTrabajos DESC, DT.idDetalleTrabajo ASC";
+            GROUP BY PT.idPedidoTrabajos
+            ORDER BY PT.idPedidoTrabajos DESC";
 
     $rs = mysqli_query($vConexion, $SQL);
 
@@ -1960,30 +1956,52 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
         return $Listado;
     }
 
+    // Obtenemos todos los pedidos con sus totales
     $pedidos = array();
     while ($data = mysqli_fetch_assoc($rs)) {
-        $idPedido = $data['idPedidoTrabajos'];
-        if (!isset($pedidos[$idPedido])) {
-            $pedidos[$idPedido] = array(
-                'ID' => $data['idPedidoTrabajos'],
-                'FECHA' => $data['fecha'],
-                'SEÑA' => $data['senia'],
-                'CLIENTE_N' => $data['nombre_cliente'],
-                'CLIENTE_A' => $data['apellido_cliente'],
-                'ESTADO' => $data['idEstado'],
-                'USUARIO' => $data['usuario'],
-                'ESTADO_NOMBRE' => $data['estado_nombre'],
-                'PRECIO' => $data['precio_total'],
-                'TRABAJOS' => array()
-            );
-        }
-        // Solo agregar si hay detalle de trabajo
-        if (!empty($data['idDetalleTrabajo'])) {
-            $pedidos[$idPedido]['TRABAJOS'][] = array(
-                'ID_TRABAJO' => $data['idTrabajo'],
-                'DENOMINACION' => $data['nombre_trabajo'],
-                'DESCRIPCION' => $data['descripcion']
-            );
+        $pedidos[$data['idPedidoTrabajos']] = array(
+            'ID' => $data['idPedidoTrabajos'],
+            'FECHA' => $data['fecha'],
+            'SEÑA' => $data['senia'],
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'ESTADO' => $data['idEstado'],
+            'USUARIO' => $data['usuario'],
+            'ESTADO_NOMBRE' => $data['estado_nombre'],
+            'PRECIO' => $data['precio_total'],
+            'TRABAJOS' => array()
+        );
+    }
+
+    // Si hay pedidos, obtenemos sus detalles
+    if (!empty($pedidos)) {
+        $SQL = "SELECT 
+                    DT.id_pedido_trabajos,
+                    DT.idDetalleTrabajo,
+                    DT.idTrabajo,
+                    DT.descripcion,
+                    TT.denominacion AS nombre_trabajo
+                FROM detalle_trabajos DT
+                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+                WHERE DT.id_pedido_trabajos IN (" . implode(',', array_keys($pedidos)) . ")
+                AND DT.idActivo = 1
+                ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
+
+        $rs = mysqli_query($vConexion, $SQL);
+
+        if ($rs) {
+            while ($data = mysqli_fetch_assoc($rs)) {
+                $idPedido = $data['id_pedido_trabajos'];
+                if (isset($pedidos[$idPedido])) {
+                    $pedidos[$idPedido]['TRABAJOS'][] = array(
+                        'ID_TRABAJO' => $data['idTrabajo'],
+                        'DENOMINACION' => $data['nombre_trabajo'],
+                        'DESCRIPCION' => $data['descripcion']
+                    );
+                }
+            }
+        } else {
+            error_log("Error al obtener detalles de trabajos: " . mysqli_error($vConexion));
         }
     }
 
@@ -1996,6 +2014,7 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
     $Listado = array();
     $whereClause = "WHERE PT.idActivo = 1"; // Filtro base
 
+    // Construcción de la cláusula WHERE según el criterio
     switch ($criterio) {
         case 'Fecha':
             $whereClause .= " AND PT.fecha LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
@@ -2026,6 +2045,7 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
             break;
     }
 
+    // Primero obtenemos los pedidos que cumplen con el criterio de búsqueda
     $SQL = "SELECT 
                 PT.idPedidoTrabajos,
                 PT.fecha,
@@ -2035,56 +2055,75 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
                 ET.idEstadoPedidoTrabajo AS idEstado,
                 US.usuario,
                 ET.denominacion AS estado_nombre,
-                DT.idDetalleTrabajo,
-                DT.idTrabajo,
-                DT.descripcion,
-                TT.denominacion AS nombre_trabajo,
-                DT.precio
+                COALESCE(SUM(DT.precio), 0) AS precio_total
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
             INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
             LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
-            LEFT JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
             $whereClause
-            ORDER BY PT.idPedidoTrabajos DESC, DT.idDetalleTrabajo ASC";
+            GROUP BY PT.idPedidoTrabajos
+            ORDER BY PT.idPedidoTrabajos DESC";
 
     $rs = mysqli_query($vConexion, $SQL);
 
     if (!$rs) {
-        error_log("Error en Listar_Pedidos_Trabajo_Parametro_Detallado: " . mysqli_error($vConexion));
+        error_log("Error en Listar_Pedidos_Trabajo_Parametro_Detallado (consulta principal): " . mysqli_error($vConexion));
         return $Listado;
     }
 
+    // Obtenemos todos los pedidos que cumplen con el criterio
     $pedidos = array();
     while ($data = mysqli_fetch_assoc($rs)) {
-        $idPedido = $data['idPedidoTrabajos'];
-        if (!isset($pedidos[$idPedido])) {
-            $pedidos[$idPedido] = array(
-                'ID' => $data['idPedidoTrabajos'],
-                'FECHA' => $data['fecha'],
-                'SEÑA' => $data['senia'],
-                'CLIENTE_N' => $data['nombre_cliente'],
-                'CLIENTE_A' => $data['apellido_cliente'],
-                'ESTADO' => $data['idEstado'],
-                'USUARIO' => $data['usuario'],
-                'ESTADO_NOMBRE' => $data['estado_nombre'],
-                'TRABAJOS' => array(),
-                'PRECIO' => 0
-            );
-        }
-        
-        if (!empty($data['idDetalleTrabajo'])) {
-            $pedidos[$idPedido]['TRABAJOS'][] = array(
-                'ID_TRABAJO' => $data['idTrabajo'],
-                'DENOMINACION' => $data['nombre_trabajo'],
-                'DESCRIPCION' => $data['descripcion'],
-                'PRECIO' => $data['precio']
-            );
-            $pedidos[$idPedido]['PRECIO'] += floatval($data['precio']);
+        $pedidos[$data['idPedidoTrabajos']] = array(
+            'ID' => $data['idPedidoTrabajos'],
+            'FECHA' => $data['fecha'],
+            'SEÑA' => $data['senia'],
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'ESTADO' => $data['idEstado'],
+            'USUARIO' => $data['usuario'],
+            'ESTADO_NOMBRE' => $data['estado_nombre'],
+            'PRECIO' => $data['precio_total'],
+            'TRABAJOS' => array()
+        );
+    }
+
+    // Si hay pedidos, obtenemos sus detalles
+    if (!empty($pedidos)) {
+        $SQL = "SELECT 
+                    DT.id_pedido_trabajos,
+                    DT.idDetalleTrabajo,
+                    DT.idTrabajo,
+                    DT.descripcion,
+                    DT.precio,
+                    TT.denominacion AS nombre_trabajo
+                FROM detalle_trabajos DT
+                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+                WHERE DT.id_pedido_trabajos IN (" . implode(',', array_keys($pedidos)) . ")
+                AND DT.idActivo = 1
+                ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
+
+        $rs = mysqli_query($vConexion, $SQL);
+
+        if ($rs) {
+            while ($data = mysqli_fetch_assoc($rs)) {
+                $idPedido = $data['id_pedido_trabajos'];
+                if (isset($pedidos[$idPedido])) {
+                    $pedidos[$idPedido]['TRABAJOS'][] = array(
+                        'ID_TRABAJO' => $data['idTrabajo'],
+                        'DENOMINACION' => $data['nombre_trabajo'],
+                        'DESCRIPCION' => $data['descripcion'],
+                        'PRECIO' => $data['precio']
+                    );
+                }
+            }
+        } else {
+            error_log("Error al obtener detalles de trabajos: " . mysqli_error($vConexion));
         }
     }
 
+    // Convertir a lista indexada
     $Listado = array_values($pedidos);
     return $Listado;
 }
