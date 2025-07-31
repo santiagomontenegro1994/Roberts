@@ -100,7 +100,7 @@
             </a>
           </li>
         </ul>
-      </li> <!-- End Pedido de Libros Nav -->
+      </li> <!-- End Pedido de Trabajos Nav -->
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#ventas-nav" data-bs-toggle="collapse" href="#">
@@ -130,7 +130,25 @@
         </ul>
       </li><!-- End Caja Nav -->
 
-            <li class="nav-item">
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#cta_cte-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-cash-stack"></i><span>Cuenta corriente</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="cta_cte-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="../imprenta_cta_cte/cta_cte.php">
+            <i class="bi bi-circle"></i><span>Cuenta Corriente </span>
+          </a>
+        </li>
+        <li>
+          <a href="../imprenta_cta_cte/listados_cta_cte.php">
+            <i class="bi bi-circle"></i><span>Listados</span>
+          </a>
+        </li>
+        </ul>
+      </li><!-- End Cuenta Corriente -->
+    
+      <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#contables-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-cash-stack"></i><span>Movimiento Contable</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
@@ -152,6 +170,8 @@
         </li>
         </ul>
       </li><!-- End Contables -->
+
+
 
     </ul>
 

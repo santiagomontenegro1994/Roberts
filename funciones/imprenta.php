@@ -2226,4 +2226,126 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
     return $estados;
 }
 
+function Listar_Pedidos_Trabajos_Detallado_Cta_Cte($vConexion, $criterio = null, $parametro = null) {
+    $Listado = array();
+    $whereClause = "WHERE PT.idActivo = 1 AND PT.idEstado = 5"; // Filtro base para cuenta corriente (estado 5)
+
+    // Si hay parámetros de búsqueda
+    if ($criterio && $parametro) {
+        switch ($criterio) {
+            case 'Fecha':
+                $whereClause .= " AND PT.fecha LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+                break;
+            case 'Id':
+                $whereClause .= " AND PT.idPedidoTrabajos LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+                break;
+            case 'Cliente':
+                $parametro = strtolower($parametro);
+                $nombreApellido = explode(' ', $parametro);
+                if (count($nombreApellido) >= 2) {
+                    $whereClause .= " AND (
+                        (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%' 
+                        AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%') 
+                        OR 
+                        (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%' 
+                        AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%')
+                    )";
+                } else {
+                    $whereClause .= " AND (
+                        LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%' 
+                        OR LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'
+                    )";
+                }
+                break;
+            case 'Telefono':
+                $whereClause .= " AND C.telefono LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+                break;
+        }
+    }
+
+    // Consulta principal para obtener los pedidos
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                C.telefono,
+                ET.idEstadoPedidoTrabajo AS idEstado,
+                US.usuario,
+                ET.denominacion AS estado_nombre,
+                COALESCE(SUM(DT.precio), 0) AS precio_total
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            $whereClause
+            GROUP BY PT.idPedidoTrabajos
+            ORDER BY PT.fecha DESC, PT.idPedidoTrabajos DESC";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    if (!$rs) {
+        error_log("Error en Listar_Pedidos_Trabajos_Detallado_Cta_Cte (consulta principal): " . mysqli_error($vConexion));
+        return $Listado;
+    }
+
+    // Obtenemos todos los pedidos
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $pedidos[$data['idPedidoTrabajos']] = array(
+            'ID' => $data['idPedidoTrabajos'],
+            'FECHA' => $data['fecha'],
+            'SEÑA' => $data['senia'],
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'TELEFONO' => $data['telefono'],
+            'ESTADO' => $data['idEstado'],
+            'USUARIO' => $data['usuario'],
+            'ESTADO_NOMBRE' => $data['estado_nombre'],
+            'PRECIO' => $data['precio_total'],
+            'TRABAJOS' => array()
+        );
+    }
+
+    // Si hay pedidos, obtenemos sus detalles
+    if (!empty($pedidos)) {
+        $SQL = "SELECT 
+                    DT.id_pedido_trabajos,
+                    DT.idDetalleTrabajo,
+                    DT.idTrabajo,
+                    DT.descripcion,
+                    DT.precio,
+                    TT.denominacion AS nombre_trabajo
+                FROM detalle_trabajos DT
+                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+                WHERE DT.id_pedido_trabajos IN (" . implode(',', array_keys($pedidos)) . ")
+                AND DT.idActivo = 1
+                ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
+
+        $rs = mysqli_query($vConexion, $SQL);
+
+        if ($rs) {
+            while ($data = mysqli_fetch_assoc($rs)) {
+                $idPedido = $data['id_pedido_trabajos'];
+                if (isset($pedidos[$idPedido])) {
+                    $pedidos[$idPedido]['TRABAJOS'][] = array(
+                        'ID_TRABAJO' => $data['idTrabajo'],
+                        'DENOMINACION' => $data['nombre_trabajo'],
+                        'DESCRIPCION' => $data['descripcion'],
+                        'PRECIO' => $data['precio']
+                    );
+                }
+            }
+        } else {
+            error_log("Error al obtener detalles de trabajos: " . mysqli_error($vConexion));
+        }
+    }
+
+    // Convertir a lista indexada
+    $Listado = array_values($pedidos);
+    return $Listado;
+}
+
 ?>
