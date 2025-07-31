@@ -826,14 +826,20 @@ function Anular_Venta($vConexion, $vIdConsulta) {
 }
 
 function Modificar_Venta($vConexion) {
+    // Validar y escapar los datos
     $idDetalleCaja = mysqli_real_escape_string($vConexion, $_POST['idDetalleCaja']);
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
     $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']);
     $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
-    $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
+    
+    // Usar MontoReal en lugar de Monto
+    $monto = floatval($_POST['MontoReal']); // Convertir a float para asegurar el formato numérico
+    $monto = mysqli_real_escape_string($vConexion, $monto);
+    
     $observaciones = isset($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
 
+    // Construir la consulta SQL
     $SQL_MiConsulta = "UPDATE detalle_caja
                        SET idCaja = '$idCaja',
                            idTipoPago = '$idTipoPago',
@@ -843,11 +849,15 @@ function Modificar_Venta($vConexion) {
                            observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
                        WHERE idDetalleCaja = '$idDetalleCaja'";
 
-    if (mysqli_query($vConexion, $SQL_MiConsulta) != false) {
-        return true;
-    } else {
+    // Ejecutar la consulta
+    $resultado = mysqli_query($vConexion, $SQL_MiConsulta);
+
+    if (!$resultado) {
+        error_log("Error al modificar venta: " . mysqli_error($vConexion));
         return false;
     }
+
+    return true;
 }
 
 function Validar_Venta() {
