@@ -31,9 +31,10 @@ if (!empty($_POST['BotonModificarVenta'])) {
         $_SESSION['Estilo'] = 'warning';
         $DatosVentaActual['idDetalleCaja'] = !empty($_POST['idDetalleCaja']) ? $_POST['idDetalleCaja'] : '';
         $DatosVentaActual['idCaja'] = !empty($_POST['idCaja']) ? $_POST['idCaja'] : '';
-        $DatosVentaActual['Monto'] = !empty($_POST['Monto']) ? $_POST['Monto'] : '';
+        $DatosVentaActual['Monto'] = !empty($_POST['MontoReal']) ? $_POST['MontoReal'] : '';
         $DatosVentaActual['idTipoPago'] = isset($_POST['idTipoPago']) ? $_POST['idTipoPago'] : '';
         $DatosVentaActual['idTipoMovimiento'] = isset($_POST['idTipoMovimiento']) ? $_POST['idTipoMovimiento'] : '';
+        $DatosVentaActual['observaciones'] = isset($_POST['Observaciones']) ? $_POST['Observaciones'] : '';
     }
 } else if (!empty($_GET['idDetalleCaja'])) {
     $DatosVentaActual = Datos_Venta($MiConexion, $_GET['idDetalleCaja']);
@@ -106,10 +107,15 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                 <?php } ?>
 
                 <div class="row mb-3">
-                  <label for="monto" class="col-sm-2 col-form-label">Monto</label>
+                  <label for="valorDinero" class="col-sm-2 col-form-label">Monto</label>
                   <div class="col-sm-10">
-                    <input type="number" step="0.01" class="form-control" name="Monto" id="monto"
-                    value="<?php echo !empty($DatosVentaActual['Monto']) ? $DatosVentaActual['Monto'] : ''; ?>">
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control text-center money-format" id="valorDinero" name="Monto" placeholder="$0,00" 
+                               value="<?php echo !empty($DatosVentaActual['Monto']) ? '$'.number_format($DatosVentaActual['Monto'], 2, ',', '.') : '$0,00'; ?>">
+                        <input type="hidden" id="MontoReal" name="MontoReal" 
+                               value="<?php echo !empty($DatosVentaActual['Monto']) ? $DatosVentaActual['Monto'] : '0'; ?>">
+                    </div>
                   </div>
                 </div>
 
@@ -161,7 +167,8 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                     title="Listado"> Volver al listado  </a>
                 </div>
               </form><!-- End Formulario -->
-
+            </div>
+          </div>
     </section>
 
 </main><!-- End #main -->
@@ -170,6 +177,97 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
     $_SESSION['Mensaje'] = '';
     require('../shared/footer.inc.php'); // Incluir footer
 ?>
+
+<script>
+    // Función principal para formatear el dinero
+    function formatMoney(input) {
+        // Guardar posición del cursor
+        let cursorPos = input.selectionStart;
+        let originalLength = input.value.length;
+        
+        // Obtener solo números y coma decimal
+        let rawValue = input.value.replace(/[^\d,]/g, '');
+        
+        // Manejar múltiples comas
+        let commaPos = rawValue.indexOf(',');
+        if (commaPos !== -1) {
+            rawValue = rawValue.substring(0, commaPos + 1) + rawValue.substring(commaPos + 1).replace(/,/g, '');
+        }
+        
+        // Separar parte entera y decimal
+        let parts = rawValue.split(',');
+        let integerPart = parts[0].replace(/\D/g, '') || '0';
+        let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0, 2) : '';
+        
+        // Formatear parte entera con puntos cada 3 dígitos
+        let formattedInteger = '';
+        if (integerPart.length > 3) {
+            formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        } else {
+            formattedInteger = integerPart;
+        }
+        
+        // Construir valor final
+        let newValue = '$' + formattedInteger;
+        if (decimalPart.length > 0) {
+            newValue += ',' + decimalPart;
+        } else if (commaPos !== -1) {
+            newValue += ',00';
+        }
+        
+        // Actualizar campo visible
+        input.value = newValue;
+        
+        // Ajustar posición del cursor
+        let newLength = input.value.length;
+        cursorPos = Math.max(1, cursorPos + (newLength - originalLength));
+        input.setSelectionRange(cursorPos, cursorPos);
+        
+        // Actualizar campo hidden para el servidor
+        let numericValue = newValue.replace(/[^\d,]/g, '').replace(',', '.');
+        document.getElementById('MontoReal').value = numericValue || '0';
+    }
+
+    // Eventos del campo de dinero
+    const moneyInput = document.getElementById('valorDinero');
+
+    moneyInput.addEventListener('input', function() {
+        formatMoney(this);
+    });
+
+    moneyInput.addEventListener('focus', function() {
+        // Quitar $ temporalmente para edición
+        this.value = this.value.replace('$', '');
+    });
+
+    moneyInput.addEventListener('blur', function() {
+        // Asegurar formato completo al salir del campo
+        if (!this.value.includes('$')) {
+            this.value = '$' + this.value;
+        }
+        formatMoney(this);
+        
+        // Si está vacío o solo tiene $, poner $0,00
+        if (this.value === '$' || this.value === '') {
+            this.value = '$0,00';
+            document.getElementById('MontoReal').value = '0';
+        }
+    });
+
+    // Validación al enviar el formulario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
+            e.preventDefault();
+            alert('Por favor ingrese un monto válido mayor a cero');
+            moneyInput.focus();
+        }
+    });
+
+    // Inicialización al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        formatMoney(moneyInput);
+    });
+</script>
 
 </body>
 </html>
