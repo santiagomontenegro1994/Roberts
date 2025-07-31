@@ -22,7 +22,7 @@ require_once '../funciones/imprenta.php';
 
 
 //voy a ir listando lo necesario para trabajar en este script: 
-$ListadoPedidos = Listar_Pedidos_Trabajos($MiConexion);
+$ListadoPedidos = Listar_Pedidos_Trabajos_Detallado($MiConexion);
 $CantidadPedidos = count($ListadoPedidos);
 
   //estoy en condiciones de poder buscar segun el parametro
@@ -150,7 +150,28 @@ $CantidadPedidos = count($ListadoPedidos);
                     <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>
                     <td class="extra-small"><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
                     <td class="extra-small"><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
-                    <td class="extra-small"><?php echo $cantidad; ?> trabajo/s</td>
+                    <td>
+                      <div class="dropdown">
+                          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownTrabajos<?php echo $i; ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                              Ver trabajos (<?php echo count($ListadoPedidos[$i]['TRABAJOS']); ?>)
+                          </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownTrabajos<?php echo $i; ?>">
+                            <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
+                                <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
+                                    <li>
+                                        <span class="dropdown-item-text">
+                                            <strong><?php echo htmlspecialchars($trabajo['DENOMINACION']); ?></strong>
+                                            <br>
+                                            <small><?php echo htmlspecialchars($trabajo['DESCRIPCION']); ?></small>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <li><span class="dropdown-item-text">Sin trabajos</span></li>
+                            <?php endif; ?>
+                        </ul>
+                      </div>
+                  </td>
                     <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['PRECIO'], 2); ?></td>
                     <td class="extra-small">$<?php echo number_format($ListadoPedidos[$i]['SEÑA'], 2); ?></td>
                     <td class="extra-small">$<?php echo number_format($saldo, 2); ?></td>

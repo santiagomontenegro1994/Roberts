@@ -852,6 +852,7 @@ function Modificar_Venta($vConexion) {
 
 function Validar_Venta() {
     $_SESSION['Mensaje'] = '';
+    $_SESSION['Estilo'] = 'danger';
 
     if (empty($_POST['idTipoPago'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
@@ -859,14 +860,27 @@ function Validar_Venta() {
     if (empty($_POST['idTipoMovimiento'])) {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de entrada. <br />';
     }
-    if (empty($_POST['Monto']) || !is_numeric($_POST['Monto']) || $_POST['Monto'] <= 0) {
+    
+    // Validar el monto
+    if (empty($_POST['MontoReal'])) {
         $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido. <br />';
+    } else {
+        // Convertir a float y validar
+        $monto = (float)$_POST['MontoReal'];
+        if ($monto <= 0) {
+            $_SESSION['Mensaje'] .= 'El monto debe ser mayor a cero. <br />';
+        }
     }
 
     // Limpiar espacios y caracteres no deseados
     foreach ($_POST as $Id => $Valor) {
         $_POST[$Id] = trim($_POST[$Id]);
         $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    // Si no hay errores, limpiar el estilo de mensaje
+    if (empty($_SESSION['Mensaje'])) {
+        unset($_SESSION['Estilo']);
     }
 
     return $_SESSION['Mensaje'];
@@ -895,9 +909,16 @@ function InsertarMovimiento($vConexion) {
     // Preparar los valores para la inserción
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
-    $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']); // Nuevo campo
+    $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']);
     $idUsuario = isset($_SESSION['Usuario_Id']) ? mysqli_real_escape_string($vConexion, $_SESSION['Usuario_Id']) : null;
-    $monto = mysqli_real_escape_string($vConexion, $_POST['Monto']);
+    
+    // Obtener y validar el monto
+    $monto = 0;
+    if (isset($_POST['MontoReal']) && is_numeric($_POST['MontoReal'])) {
+        $monto = (float)$_POST['MontoReal'];
+        $monto = number_format($monto, 2, '.', ''); // Formatear a 2 decimales
+    }
+
     $observaciones = !empty($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
 
     // Verificar que el idUsuario no sea nulo
@@ -1903,6 +1924,72 @@ function Obtener_Total_Banco($conexion) {
     }
     
     return $total;
+}
+
+function Listar_Pedidos_Trabajos_Detallado($vConexion) {
+    $Listado = array();
+
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                ET.idEstado,
+                US.usuario,
+                ET.denominacion AS estado_nombre,
+                COALESCE(SUM(DT.precio), 0) AS precio_total,
+                DT.idDetalleTrabajo,
+                DT.idTrabajo,
+                DT.descripcion,
+                TT.denominacion AS nombre_trabajo
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            LEFT JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+            WHERE PT.idActivo = 1
+            GROUP BY PT.idPedidoTrabajos, DT.idDetalleTrabajo
+            ORDER BY PT.idPedidoTrabajos DESC, DT.idDetalleTrabajo ASC";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    if (!$rs) {
+        error_log("Error en Listar_Pedidos_Trabajos_Detallado: " . mysqli_error($vConexion));
+        return $Listado;
+    }
+
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $idPedido = $data['idPedidoTrabajos'];
+        if (!isset($pedidos[$idPedido])) {
+            $pedidos[$idPedido] = array(
+                'ID' => $data['idPedidoTrabajos'],
+                'FECHA' => $data['fecha'],
+                'SEÑA' => $data['senia'],
+                'CLIENTE_N' => $data['nombre_cliente'],
+                'CLIENTE_A' => $data['apellido_cliente'],
+                'ESTADO' => $data['idEstado'],
+                'USUARIO' => $data['usuario'],
+                'ESTADO_NOMBRE' => $data['estado_nombre'],
+                'PRECIO' => $data['precio_total'],
+                'TRABAJOS' => array()
+            );
+        }
+        // Solo agregar si hay detalle de trabajo
+        if (!empty($data['idDetalleTrabajo'])) {
+            $pedidos[$idPedido]['TRABAJOS'][] = array(
+                'ID_TRABAJO' => $data['idTrabajo'],
+                'DENOMINACION' => $data['nombre_trabajo'],
+                'DESCRIPCION' => $data['descripcion']
+            );
+        }
+    }
+
+    // Convertir a lista indexada
+    $Listado = array_values($pedidos);
+    return $Listado;
 }
 
 ?>

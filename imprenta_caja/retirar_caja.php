@@ -26,14 +26,10 @@ if ($resultado) {
 }
 
 if (!empty($_POST['BotonRegistrar'])) {
-    // Validar y limpiar los datos del formulario
     Validar_Venta();
-
-    // Asignar el mensaje de validación a una variable local
     $Mensaje = $_SESSION['Mensaje'];
     $Estilo = 'danger';
 
-    // Si no hay errores, proceder con la inserción
     if (empty($Mensaje)) {
         if (empty($_SESSION['Id_Caja'])) {
             echo "<script>
@@ -43,7 +39,6 @@ if (!empty($_POST['BotonRegistrar'])) {
             exit;
         }
 
-        // Llamar al método InsertarMovimiento
         if (InsertarMovimiento($MiConexion)) {
             $_SESSION['Mensaje'] = 'Detalle de retiro registrado correctamente.';
             $_SESSION['Estilo'] = 'success';
@@ -61,7 +56,6 @@ ob_end_flush();
 ?>
 
 <main id="main" class="main">
-
     <div class="pagetitle">
         <h1>Retiros</h1>
         <nav>
@@ -71,28 +65,23 @@ ob_end_flush();
                 <li class="breadcrumb-item active">Agregar Retiro</li>
             </ol>
         </nav>
-    </div><!-- End Page Title -->
+    </div>
 
     <section class="section">
         <div class="card">
             <div class="card-body">
-
-                <!-- Sección de Métodos de Pago -->
-                <form method="post">
+                <form method="post" id="formRetiro">
                     <?php if (!empty($Mensaje)) { ?>
                         <div class="alert alert-<?php echo $Estilo; ?> alert-dismissable">
-                        <?php echo $Mensaje; ?>
+                            <?php echo $Mensaje; ?>
                         </div>
                         <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); ?>
                     <?php } ?>
 
-                    <!-- Campo oculto para idCaja -->
                     <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
-
-                    <!-- Campo oculto para idTipoPago (siempre 14) -->
                     <input type="hidden" name="idTipoPago" id="idTipoPago" value="14">
+                    <input type="hidden" id="MontoReal" name="MontoReal" value="0">
 
-                    <!-- Sección de Tipos de Movimiento Salida -->
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
                         <a href="../imprenta_tipos_movimientos_salida/listados_tipos_movimientos.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Retiro</a>
@@ -106,16 +95,14 @@ ob_end_flush();
                         <input type="hidden" name="idTipoMovimiento" id="idTipoMovimiento">
                     </div>
 
-                    <!-- Campo para ingresar el valor de dinero -->
                     <div class="text-center mt-4">
                         <label for="valorDinero" class="form-label">Ingrese el Valor de Dinero</label>
                         <div class="input-group w-50 mx-auto">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control text-center" id="valorDinero" name="Monto" placeholder="0" min="0" step="1">
+                            <input type="text" class="form-control text-center money-format" id="valorDinero" name="Monto" placeholder="$0,00" value="$0,00">
                         </div>
                     </div>
 
-                    <!-- Campo para observaciones -->
                     <div class="row justify-content-center mb-4">
                         <div class="col-md-6 text-center">
                             <label for="observaciones" class="form-label">Observaciones</label>
@@ -123,40 +110,125 @@ ob_end_flush();
                         </div>
                     </div>
 
-                    <!-- Botones de registrar o reset -->
                     <div class="text-center mt-4">
                         <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar Retiro</button>
-                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="reset" class="btn btn-secondary" id="resetButton">Reset</button>
                     </div>
-                </form><!-- End Horizontal Form -->
+                </form>
             </div>
         </div>
-
     </section>
+</main>
 
-</main><!-- End #main -->
-
-<?php
-require ('../shared/footer.inc.php');
-?>
+<?php require ('../shared/footer.inc.php'); ?>
 
 <script>
-    // Manejar la selección de los botones de Tipos de Movimiento Salida
-    const tipoMovimientoButtons = document.querySelectorAll('.tipo-movimiento');
-    tipoMovimientoButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tipoMovimientoButtons.forEach(btn => btn.classList.remove('btn-primary'));
-            tipoMovimientoButtons.forEach(btn => btn.classList.add('btn-secondary'));
-            button.classList.remove('btn-secondary');
-            button.classList.add('btn-primary');
-            document.getElementById('idTipoMovimiento').value = button.getAttribute('data-id');
+// FUNCIÓN PARA FORMATEAR EL DINERO
+function formatMoney(input) {
+    // Guardar posición del cursor
+    let cursorPos = input.selectionStart;
+    let originalLength = input.value.length;
+    
+    // Obtener solo números y coma decimal
+    let rawValue = input.value.replace(/[^\d,]/g, '');
+    
+    // Manejar múltiples comas
+    let commaPos = rawValue.indexOf(',');
+    if (commaPos !== -1) {
+        rawValue = rawValue.substring(0, commaPos + 1) + rawValue.substring(commaPos + 1).replace(/,/g, '');
+    }
+    
+    // Separar parte entera y decimal
+    let parts = rawValue.split(',');
+    let integerPart = parts[0].replace(/\D/g, '') || '0';
+    let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0, 2) : '';
+    
+    // Formatear parte entera con puntos cada 3 dígitos
+    let formattedInteger = '';
+    if (integerPart.length > 3) {
+        formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    } else {
+        formattedInteger = integerPart;
+    }
+    
+    // Construir valor final
+    let newValue = '$' + formattedInteger;
+    if (decimalPart.length > 0) {
+        newValue += ',' + decimalPart;
+    } else if (commaPos !== -1) {
+        newValue += ',00';
+    }
+    
+    // Actualizar campo visible
+    input.value = newValue;
+    
+    // Ajustar posición del cursor
+    let newLength = input.value.length;
+    cursorPos = Math.max(1, cursorPos + (newLength - originalLength));
+    input.setSelectionRange(cursorPos, cursorPos);
+    
+    // Actualizar campo hidden para el servidor
+    let numericValue = newValue.replace(/[^\d,]/g, '').replace(',', '.');
+    document.getElementById('MontoReal').value = numericValue || '0';
+}
+
+// EVENTOS DEL CAMPO DE DINERO
+const moneyInput = document.getElementById('valorDinero');
+
+moneyInput.addEventListener('input', function() {
+    formatMoney(this);
+});
+
+moneyInput.addEventListener('focus', function() {
+    this.value = this.value.replace('$', '');
+});
+
+moneyInput.addEventListener('blur', function() {
+    if (!this.value.includes('$')) {
+        this.value = '$' + this.value;
+    }
+    formatMoney(this);
+    
+    if (this.value === '$' || this.value === '') {
+        this.value = '$0,00';
+        document.getElementById('MontoReal').value = '0';
+    }
+});
+
+// Validación al enviar el formulario
+document.getElementById('formRetiro').addEventListener('submit', function(e) {
+    if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
+        e.preventDefault();
+        alert('Por favor ingrese un monto válido mayor a cero');
+        moneyInput.focus();
+    }
+});
+
+// Botón reset
+document.getElementById('resetButton').addEventListener('click', function() {
+    document.getElementById('MontoReal').value = '0';
+    document.getElementById('valorDinero').value = '$0,00';
+});
+
+// Manejo de botones de tipo de movimiento
+document.querySelectorAll('.tipo-movimiento').forEach(button => {
+    button.addEventListener('click', function() {
+        document.querySelectorAll('.tipo-movimiento').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
         });
+        this.classList.remove('btn-secondary');
+        this.classList.add('btn-primary');
+        document.getElementById('idTipoMovimiento').value = this.getAttribute('data-id');
     });
+});
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    formatMoney(moneyInput);
+});
 </script>
 
-<?php
-ob_end_flush();
-?>
-
+<?php ob_end_flush(); ?>
 </body>
 </html>
