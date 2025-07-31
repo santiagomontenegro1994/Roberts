@@ -138,7 +138,15 @@ ob_end_flush();
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Cliente:</label>
-                                <p class="form-control-static mb-0"><?php echo htmlspecialchars($DatosPedidoActual['CLIENTE'] ?? ''); ?> <?php echo htmlspecialchars($DatosPedidoActual['CLIENTE_A'] ?? ''); ?></p>
+                                <p class="form-control-static mb-0">
+                                    <?php echo htmlspecialchars($DatosPedidoActual['CLIENTE'] ?? ''); ?> 
+                                    <?php echo htmlspecialchars($DatosPedidoActual['CLIENTE_A'] ?? ''); ?>
+                                    <?php if (!empty($DatosPedidoActual['TELEFONO'])): ?>
+                                        <span class="text-muted ms-2">
+                                            <i class="bi bi-telephone"></i> <?php echo htmlspecialchars($DatosPedidoActual['TELEFONO']); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </p>
                             </div>
                             <div class="col-md-6 text-end">
                                 <label class="form-label fw-bold">Fecha:</label>

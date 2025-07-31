@@ -1992,4 +1992,189 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
     return $Listado;
 }
 
+function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $parametro) {
+    $Listado = array();
+    $whereClause = "WHERE PT.idActivo = 1"; // Filtro base
+
+    switch ($criterio) {
+        case 'Fecha':
+            $whereClause .= " AND PT.fecha LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+            break;
+        case 'Id':
+            $whereClause = "WHERE PT.idPedidoTrabajos LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+            break;
+        case 'Cliente':
+            $parametro = strtolower($parametro);
+            $nombreApellido = explode(' ', $parametro);
+            if (count($nombreApellido) >= 2) {
+                $whereClause .= " AND (
+                    (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%' 
+                    AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%') 
+                    OR 
+                    (LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[1])."%' 
+                    AND LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $nombreApellido[0])."%')
+                )";
+            } else {
+                $whereClause .= " AND (
+                    LOWER(C.nombre) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%' 
+                    OR LOWER(C.apellido) LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'
+                )";
+            }
+            break;
+        case 'Telefono':
+            $whereClause .= " AND C.telefono LIKE '%".mysqli_real_escape_string($vConexion, $parametro)."%'";
+            break;
+    }
+
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                ET.idEstadoPedidoTrabajo AS idEstado,
+                US.usuario,
+                ET.denominacion AS estado_nombre,
+                DT.idDetalleTrabajo,
+                DT.idTrabajo,
+                DT.descripcion,
+                TT.denominacion AS nombre_trabajo,
+                DT.precio
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            LEFT JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+            $whereClause
+            ORDER BY PT.idPedidoTrabajos DESC, DT.idDetalleTrabajo ASC";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    if (!$rs) {
+        error_log("Error en Listar_Pedidos_Trabajo_Parametro_Detallado: " . mysqli_error($vConexion));
+        return $Listado;
+    }
+
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $idPedido = $data['idPedidoTrabajos'];
+        if (!isset($pedidos[$idPedido])) {
+            $pedidos[$idPedido] = array(
+                'ID' => $data['idPedidoTrabajos'],
+                'FECHA' => $data['fecha'],
+                'SEÑA' => $data['senia'],
+                'CLIENTE_N' => $data['nombre_cliente'],
+                'CLIENTE_A' => $data['apellido_cliente'],
+                'ESTADO' => $data['idEstado'],
+                'USUARIO' => $data['usuario'],
+                'ESTADO_NOMBRE' => $data['estado_nombre'],
+                'TRABAJOS' => array(),
+                'PRECIO' => 0
+            );
+        }
+        
+        if (!empty($data['idDetalleTrabajo'])) {
+            $pedidos[$idPedido]['TRABAJOS'][] = array(
+                'ID_TRABAJO' => $data['idTrabajo'],
+                'DENOMINACION' => $data['nombre_trabajo'],
+                'DESCRIPCION' => $data['descripcion'],
+                'PRECIO' => $data['precio']
+            );
+            $pedidos[$idPedido]['PRECIO'] += floatval($data['precio']);
+        }
+    }
+
+    $Listado = array_values($pedidos);
+    return $Listado;
+}
+
+function Listar_Pedidos_Trabajo_Por_Estado($vConexion, $idEstado) {
+    $Listado = array();
+    
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                ET.idEstadoPedidoTrabajo AS idEstado,
+                US.usuario,
+                ET.denominacion AS estado_nombre,
+                DT.idDetalleTrabajo,
+                DT.idTrabajo,
+                DT.descripcion,
+                TT.denominacion AS nombre_trabajo,
+                DT.precio
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            LEFT JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+            WHERE PT.idActivo = 1 AND PT.idEstado = ?
+            ORDER BY PT.idPedidoTrabajos DESC, DT.idDetalleTrabajo ASC";
+
+    $stmt = mysqli_prepare($vConexion, $SQL);
+    mysqli_stmt_bind_param($stmt, "i", $idEstado);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+
+    if (!$rs) {
+        error_log("Error en Listar_Pedidos_Trabajo_Por_Estado: " . mysqli_error($vConexion));
+        return $Listado;
+    }
+
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $idPedido = $data['idPedidoTrabajos'];
+        if (!isset($pedidos[$idPedido])) {
+            $pedidos[$idPedido] = array(
+                'ID' => $data['idPedidoTrabajos'],
+                'FECHA' => $data['fecha'],
+                'SEÑA' => $data['senia'],
+                'CLIENTE_N' => $data['nombre_cliente'],
+                'CLIENTE_A' => $data['apellido_cliente'],
+                'ESTADO' => $data['idEstado'],
+                'USUARIO' => $data['usuario'],
+                'ESTADO_NOMBRE' => $data['estado_nombre'],
+                'TRABAJOS' => array(),
+                'PRECIO' => 0
+            );
+        }
+        
+        if (!empty($data['idDetalleTrabajo'])) {
+            $pedidos[$idPedido]['TRABAJOS'][] = array(
+                'ID_TRABAJO' => $data['idTrabajo'],
+                'DENOMINACION' => $data['nombre_trabajo'],
+                'DESCRIPCION' => $data['descripcion'],
+                'PRECIO' => $data['precio']
+            );
+            $pedidos[$idPedido]['PRECIO'] += floatval($data['precio']);
+        }
+    }
+
+    $Listado = array_values($pedidos);
+    return $Listado;
+}
+
+function Datos_Estados_Pedido_Trabajo($conexion) {
+    $query = "SELECT idEstadoPedidoTrabajo AS idEstado, denominacion 
+              FROM estado_pedido_trabajo 
+              ORDER BY denominacion";
+    
+    $resultado = mysqli_query($conexion, $query);
+    
+    if (!$resultado) {
+        die("Error al obtener estados de pedidos: " . mysqli_error($conexion));
+    }
+    
+    $estados = array();
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $estados[] = $fila;
+    }
+    
+    return $estados;
+}
+
 ?>
