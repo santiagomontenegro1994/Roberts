@@ -125,11 +125,18 @@ if (!empty($_POST['BotonBuscar'])) {
                 <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
                   $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
                   list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
+                  $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
+                  $nombreMostrar = (strlen($nombreCliente) > 20) ? substr($nombreCliente, 0, 20) . '...' : $nombreCliente;
                 ?>
-                  <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                     <td class="extra-small"><?php echo $ListadoPedidos[$i]['ID']; ?></td>
                     <td class="extra-small"><?php echo $ListadoPedidos[$i]['FECHA']; ?></td>
-                    <td class="extra-small"><?php echo $ListadoPedidos[$i]['CLIENTE_N']; ?> <?php echo $ListadoPedidos[$i]['CLIENTE_A']; ?></td>
+                    <td class="extra-small">
+                        <strong title="<?php echo htmlspecialchars($nombreCliente); ?>"><?php echo $nombreMostrar; ?></strong>
+                        <?php if (!empty($ListadoPedidos[$i]['TELEFONO'])): ?>
+                            <br><small class="text-muted"><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($ListadoPedidos[$i]['TELEFONO']); ?></small>
+                        <?php endif; ?>
+                    </td>
                     <td>
                       <div class="dropdown">
                           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownTrabajos<?php echo $i; ?>" data-bs-toggle="dropdown" aria-expanded="false">
