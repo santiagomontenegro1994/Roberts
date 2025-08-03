@@ -140,11 +140,6 @@
             <i class="bi bi-circle"></i><span>Cuenta Corriente </span>
           </a>
         </li>
-        <li>
-          <a href="../imprenta_cta_cte/listados_cta_cte.php">
-            <i class="bi bi-circle"></i><span>Listados</span>
-          </a>
-        </li>
         </ul>
       </li><!-- End Cuenta Corriente -->
     

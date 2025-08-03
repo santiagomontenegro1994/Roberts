@@ -2234,56 +2234,120 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
 
     // Cuenta Corriente
 
-function Listar_Clientes_Cuenta_Corriente($conexion, $criterio = '', $parametro = '') {
-    $clientes = array();
-    
-    $sql = "SELECT 
+function Listar_Clientes_Cuenta_Corriente($vConexion) {
+    $Listado = array();
+
+    $SQL = "SELECT 
                 c.idCliente AS ID_CLIENTE,
                 c.nombre AS NOMBRE,
                 c.apellido AS APELLIDO,
                 c.telefono AS TELEFONO,
-                SUM(dt.precio) AS TOTAL_DEUDA,
+                IFNULL(SUM(dt.precio), 0) AS TOTAL_DEUDA,
                 COUNT(dt.idDetalleTrabajo) AS CANTIDAD_TRABAJOS
             FROM clientes c
-            INNER JOIN pedido_trabajos pt ON pt.idCliente = c.idCliente
-            INNER JOIN detalle_trabajos dt ON dt.id_pedido_trabajos = pt.idPedidoTrabajos
-            WHERE dt.idEstadoTrabajo = 8 AND dt.idActivo = 1";
+            LEFT JOIN pedido_trabajos pt ON pt.idCliente = c.idCliente AND pt.idActivo = 1
+            LEFT JOIN detalle_trabajos dt ON dt.id_pedido_trabajos = pt.idPedidoTrabajos 
+                AND dt.idEstadoTrabajo = 8 
+                AND dt.idActivo = 1
+            WHERE c.idActivo = 1
+            GROUP BY c.idCliente, c.nombre, c.apellido, c.telefono
+            HAVING CANTIDAD_TRABAJOS > 0
+            ORDER BY c.apellido, c.nombre";
+
+    $rs = mysqli_query($vConexion, $SQL);
     
-    // Agregar condiciones de búsqueda si hay parámetros
-    if (!empty($parametro)) {
-        $parametro = "%$parametro%";
-        switch ($criterio) {
-            case 'Cliente':
-                $sql .= " AND (CONCAT(c.nombre, ' ', c.apellido) LIKE ?";
-                break;
-            case 'Telefono':
-                $sql .= " AND c.telefono LIKE ?";
-                break;
-            default:
-                $sql .= " AND (CONCAT(c.nombre, ' ', c.apellido) LIKE ?";
-                break;
-        }
+    if (!$rs) {
+        error_log("Error en Listar_Clientes_Cuenta_Corriente: " . mysqli_error($vConexion));
+        return $Listado;
     }
     
-    $sql .= " GROUP BY c.idCliente, c.nombre, c.apellido, c.telefono
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID_CLIENTE'] = $data['ID_CLIENTE'];
+        $Listado[$i]['NOMBRE'] = $data['NOMBRE'];
+        $Listado[$i]['APELLIDO'] = $data['APELLIDO'];
+        $Listado[$i]['TELEFONO'] = $data['TELEFONO'];
+        $Listado[$i]['TOTAL_DEUDA'] = $data['TOTAL_DEUDA'];
+        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['CANTIDAD_TRABAJOS'];
+        $i++;
+    }
+
+    return $Listado;
+}
+
+function Listar_Clientes_Cuenta_Corriente_Parametro($vConexion, $criterio, $parametro) {
+    $Listado = array();
+    $parametro = trim($parametro);
+    $parametro = mysqli_real_escape_string($vConexion, $parametro);
+    
+    // Consulta base con protecciones contra SQL injection
+    $SQLBase = "SELECT 
+                    c.idCliente AS ID_CLIENTE,
+                    c.nombre AS NOMBRE,
+                    c.apellido AS APELLIDO,
+                    c.telefono AS TELEFONO,
+                    IFNULL(SUM(dt.precio), 0) AS TOTAL_DEUDA,
+                    COUNT(dt.idDetalleTrabajo) AS CANTIDAD_TRABAJOS
+                FROM clientes c
+                LEFT JOIN pedido_trabajos pt ON pt.idCliente = c.idCliente AND pt.idActivo = 1
+                LEFT JOIN detalle_trabajos dt ON dt.id_pedido_trabajos = pt.idPedidoTrabajos 
+                    AND dt.idEstadoTrabajo = 8 
+                    AND dt.idActivo = 1
+                WHERE c.idActivo = 1 ";
+    
+    // Añadir condiciones según el criterio
+    switch ($criterio) {
+        case 'Cliente':
+            // Divide el parámetro en partes (nombre y apellido)
+            $partes = explode(' ', $parametro);
+            $nombre = isset($partes[0]) ? $partes[0] : '';
+            $apellido = isset($partes[1]) ? $partes[1] : '';
+            
+            if ($nombre && $apellido) {
+                $SQL = $SQLBase . " AND (c.nombre LIKE '%" . mysqli_real_escape_string($vConexion, $nombre) . "%' 
+                                  AND c.apellido LIKE '%" . mysqli_real_escape_string($vConexion, $apellido) . "%')";
+            } else {
+                $SQL = $SQLBase . " AND (c.nombre LIKE '%" . mysqli_real_escape_string($vConexion, $parametro) . "%' 
+                                  OR c.apellido LIKE '%" . mysqli_real_escape_string($vConexion, $parametro) . "%')";
+            }
+            break;
+            
+        case 'idCliente':
+            $SQL = $SQLBase . " AND c.idCliente = " . intval($parametro);
+            break;
+            
+        case 'Telefono':
+            $SQL = $SQLBase . " AND c.telefono LIKE '%" . mysqli_real_escape_string($vConexion, $parametro) . "%'";
+            break;
+            
+        default:
+            $SQL = $SQLBase . " AND (c.nombre LIKE '%" . mysqli_real_escape_string($vConexion, $parametro) . "%' 
+                              OR c.apellido LIKE '%" . mysqli_real_escape_string($vConexion, $parametro) . "%')";
+    }
+    
+    $SQL .= " GROUP BY c.idCliente, c.nombre, c.apellido, c.telefono
+              HAVING CANTIDAD_TRABAJOS > 0
               ORDER BY c.apellido, c.nombre";
     
-    $stmt = $conexion->prepare($sql);
+    $rs = mysqli_query($vConexion, $SQL);
     
-    if (!empty($parametro)) {
-        $stmt->bind_param("s", $parametro);
+    if (!$rs) {
+        error_log("Error en Listar_Clientes_Cuenta_Corriente_Parametro: " . mysqli_error($vConexion));
+        return $Listado;
     }
     
-    $stmt->execute();
-    $resultado = $stmt->get_result();
-    
-    while ($fila = $resultado->fetch_assoc()) {
-        $clientes[] = $fila;
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID_CLIENTE'] = $data['ID_CLIENTE'];
+        $Listado[$i]['NOMBRE'] = $data['NOMBRE'];
+        $Listado[$i]['APELLIDO'] = $data['APELLIDO'];
+        $Listado[$i]['TELEFONO'] = $data['TELEFONO'];
+        $Listado[$i]['TOTAL_DEUDA'] = $data['TOTAL_DEUDA'];
+        $Listado[$i]['CANTIDAD_TRABAJOS'] = $data['CANTIDAD_TRABAJOS'];
+        $i++;
     }
-    
-    $stmt->close();
-    
-    return $clientes;
+
+    return $Listado;
 }
 
 function Listar_Tipos_Pagos_Entradas($conexion) {
@@ -2292,7 +2356,7 @@ function Listar_Tipos_Pagos_Entradas($conexion) {
     $sql = "SELECT idTipoPago, denominacion 
             FROM tipo_pago 
             WHERE esEntrada = 1 AND idActivo = 1
-            ORDER BY denominacion";
+            ORDER BY idTipoPago";
     
     $resultado = $conexion->query($sql);
     

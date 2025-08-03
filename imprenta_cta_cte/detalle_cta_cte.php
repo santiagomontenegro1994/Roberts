@@ -165,9 +165,9 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar modal de pago de trabajo específico
     const pagoTrabajoModal = new bootstrap.Modal(document.getElementById('pagarTrabajoModal'));
     
+    // Configurar modal al mostrarse
     document.getElementById('pagarTrabajoModal').addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
         const trabajoId = button.getAttribute('data-trabajo-id');
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('montoPago').max = precio;
     });
     
-    // Manejar envío del formulario de pago de trabajo
+    // Manejar envío del formulario
     document.getElementById('formPagarTrabajo').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -199,23 +199,37 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm(`¿Confirmar pago de $${montoPago.toFixed(2)} por este trabajo?`)) {
             const formData = new FormData(this);
             
+            // Mostrar indicador de carga
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+            
             fetch('procesar_pago_trabajo_cta_cte.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la red');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert(data.message);
                     pagoTrabajoModal.hide();
-                    location.reload();
+                    location.reload(); // Recargar para ver cambios
                 } else {
-                    alert('Error: ' + data.message);
+                    throw new Error(data.message || 'Error al procesar el pago');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al procesar el pago');
+                alert(error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Registrar Pago';
             });
         }
     });
