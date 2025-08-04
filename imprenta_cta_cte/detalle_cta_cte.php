@@ -45,7 +45,12 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
 <section class="section">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Detalle de Cuenta Corriente</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title mb-0">Detalle de Cuenta Corriente</h5>
+                <a href="cta_cte.php" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver a la lista
+                </a>
+            </div>
             
             <div class="row mb-4">
                 <div class="col-md-6">
@@ -91,8 +96,8 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
                                                     data-bs-toggle="modal" data-bs-target="#pagarTrabajoModal"
                                                     data-trabajo-id="<?= $trabajo['ID_DETALLE'] ?>"
                                                     data-trabajo-precio="<?= $trabajo['PRECIO'] ?>"
-                                                    title="Registrar pago">
-                                                <i class="bi bi-cash"></i>
+                                                    title="Registrar pago completo">
+                                                <i class="bi bi-cash"></i> Pagar
                                             </button>
                                         </div>
                                     </td>
@@ -115,7 +120,7 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Registrar Pago de Trabajo</h5>
+                <h5 class="modal-title">Registrar Pago Completo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -124,13 +129,13 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
                     <input type="hidden" name="idCliente" value="<?= $idCliente ?>">
                     
                     <div class="mb-3">
-                        <label class="form-label">Monto del trabajo:</label>
+                        <label class="form-label">Monto total del trabajo:</label>
                         <input type="text" class="form-control" id="pagarTrabajoPrecio" readonly>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="montoPago" class="form-label">Monto a pagar:</label>
-                        <input type="number" step="0.01" min="0" class="form-control" name="montoPago" id="montoPago" required>
+                        <label for="montoPago" class="form-label">Monto a pagar (completo):</label>
+                        <input type="number" step="0.01" class="form-control" name="montoPago" id="montoPago" readonly>
                     </div>
                     
                     <div class="mb-3">
@@ -138,11 +143,13 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
                         <select class="form-select" name="metodoPago" id="metodoPago" required>
                             <?php 
                             $TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
-                            foreach ($TiposPagosEntrada as $metodo): ?>
-                                <option value="<?= $metodo['idTipoPago'] ?>">
-                                    <?= htmlspecialchars($metodo['denominacion']) ?>
-                                </option>
-                            <?php endforeach; ?>
+                            foreach ($TiposPagosEntrada as $metodo): 
+                                if ($metodo['idTipoPago'] != 18): ?>
+                                    <option value="<?= $metodo['idTipoPago'] ?>">
+                                        <?= htmlspecialchars($metodo['denominacion']) ?>
+                                    </option>
+                                <?php endif;
+                            endforeach; ?>
                         </select>
                     </div>
                     
@@ -153,7 +160,7 @@ $totalDeuda = array_reduce($trabajosCC, function($carry, $item) {
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success">Registrar Pago</button>
+                        <button type="submit" class="btn btn-success">Confirmar Pago Completo</button>
                     </div>
                 </form>
             </div>
@@ -175,28 +182,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('pagarTrabajoId').value = trabajoId;
         document.getElementById('pagarTrabajoPrecio').value = '$' + parseFloat(precio).toFixed(2);
-        document.getElementById('montoPago').value = parseFloat(precio).toFixed(2);
-        document.getElementById('montoPago').max = precio;
+        
+        // Establecer el monto a pagar como el precio completo y hacerlo readonly
+        const montoPago = document.getElementById('montoPago');
+        montoPago.value = parseFloat(precio).toFixed(2);
+        montoPago.readOnly = true;
     });
     
     // Manejar envío del formulario
     document.getElementById('formPagarTrabajo').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const montoPago = parseFloat(document.getElementById('montoPago').value);
         const precio = parseFloat(document.getElementById('pagarTrabajoPrecio').value.replace('$', ''));
         
-        if (montoPago <= 0) {
-            alert('El monto a pagar debe ser mayor que cero');
-            return;
-        }
-        
-        if (montoPago > precio) {
-            alert('El monto a pagar no puede ser mayor que el precio del trabajo');
-            return;
-        }
-        
-        if (confirm(`¿Confirmar pago de $${montoPago.toFixed(2)} por este trabajo?`)) {
+        if (confirm(`¿Confirmar pago completo de $${precio.toFixed(2)} por este trabajo?`)) {
             const formData = new FormData(this);
             
             // Mostrar indicador de carga
@@ -229,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .finally(() => {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Registrar Pago';
+                submitBtn.innerHTML = 'Confirmar Pago Completo';
             });
         }
     });

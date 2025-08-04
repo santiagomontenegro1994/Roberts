@@ -79,14 +79,14 @@ try {
     $obsMovimiento = "Pago trabajo #$idDetalleTrabajo - " . substr($observaciones, 0, 200);
 
     $sqlMovimiento = "INSERT INTO movimientos_cuenta 
-                     (idPedido, idTipoMovimiento, idTipoPago, monto, observaciones, idUsuario, idActivo)
-                     VALUES (?, ?, ?, ?, ?, ?, 1)";
-    
+                    (idPedido, idTipoMovimiento, idTipoPago, monto, observaciones, idUsuario, idActivo)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)";
+
     $stmt = $MiConexion->prepare($sqlMovimiento);
     if (!$stmt) {
         throw new Exception('Error al preparar inserción en movimientos_cuenta: ' . $MiConexion->error, 500);
     }
-    
+
     $stmt->bind_param(
         "iiidsi",
         $trabajo['id_pedido_trabajos'],
@@ -96,7 +96,7 @@ try {
         $obsMovimiento,
         $_SESSION['Usuario_Id']
     );
-    
+
     if (!$stmt->execute()) {
         throw new Exception('Error al registrar movimiento: ' . $stmt->error, 500);
     }
@@ -107,17 +107,36 @@ try {
     $sqlUpdateTrabajo = "UPDATE detalle_trabajos 
                         SET idEstadoTrabajo = 7 
                         WHERE idDetalleTrabajo = ?";
-    
+
     $stmt = $MiConexion->prepare($sqlUpdateTrabajo);
     if (!$stmt) {
         throw new Exception('Error al preparar actualización de trabajo: ' . $MiConexion->error, 500);
     }
-    
+
     $stmt->bind_param("i", $idDetalleTrabajo);
     if (!$stmt->execute()) {
         throw new Exception('Error al actualizar trabajo: ' . $stmt->error, 500);
     }
     $stmt->close();
+
+    // 7.1 Actualizar la señal del pedido (sumar el monto pagado a la señal)
+    $sqlUpdateSenia = "UPDATE pedido_trabajos 
+                    SET senia = senia + ? 
+                    WHERE idPedidoTrabajos = ?";
+
+    $stmt = $MiConexion->prepare($sqlUpdateSenia);
+    if (!$stmt) {
+        throw new Exception('Error al preparar actualización de señal: ' . $MiConexion->error, 500);
+    }
+
+    $stmt->bind_param("di", $montoPago, $trabajo['id_pedido_trabajos']);
+    if (!$stmt->execute()) {
+        throw new Exception('Error al actualizar señal: ' . $stmt->error, 500);
+    }
+    $stmt->close();
+
+    // 7.2 Actualizar el estado del pedido si es necesario
+    ActualizarEstadoPedido($MiConexion, $trabajo['id_pedido_trabajos']);
 
     // 8. Registrar en caja si hay una caja abierta
     if (!empty($_SESSION['Id_Caja'])) {
