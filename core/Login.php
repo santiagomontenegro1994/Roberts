@@ -27,6 +27,11 @@ if (!empty($_POST['BotonLogin'])) {
       $_SESSION['Estilo']             = '';
       $_SESSION['Descarga']           = '';
       $_SESSION['Cliente_Pedido']           = '';
+      $_SESSION['filtros_pedidos'] = [
+                                          'parametro' => '',
+                                          'criterio' => 'Cliente',
+                                          'estadoBuscado' => ''
+                                      ];
         
         header('Location: ../core/index.php');
         exit;
