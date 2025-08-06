@@ -2523,4 +2523,47 @@ function ObtenerMovimientosCliente($conexion, $idCliente, $limit = 10) {
     return $movimientos;
 }
 
+function Obtener_Trabajos_Pendientes_Por_Antiguedad($conexion, $idCliente) {
+    $trabajos = array();
+    
+    $sql = "SELECT 
+                dt.idDetalleTrabajo AS ID_DETALLE,
+                dt.id_pedido_trabajos AS ID_PEDIDO,
+                dt.precio AS PRECIO,
+                dt.descripcion AS DESCRIPCION,
+                pt.fecha AS FECHA_PEDIDO,
+                tt.denominacion AS TIPO_TRABAJO
+            FROM detalle_trabajos dt
+            INNER JOIN pedido_trabajos pt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos
+            INNER JOIN tipo_trabajo tt ON tt.idTipoTrabajo = dt.idTrabajo
+            WHERE pt.idCliente = ? 
+            AND dt.idEstadoTrabajo = 8 -- Estado pendiente de pago
+            AND dt.idActivo = 1
+            ORDER BY pt.fecha ASC, dt.idDetalleTrabajo ASC"; // Más antiguos primero
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("i", $idCliente);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($fila = $result->fetch_assoc()) {
+        $trabajos[] = $fila;
+    }
+    
+    return $trabajos;
+}
+
+function Marcar_Trabajo_Pagado($conexion, $idDetalleTrabajo) {
+    $sql = "UPDATE detalle_trabajos 
+           SET idEstadoTrabajo = 7 
+           WHERE idDetalleTrabajo = ?";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("i", $idDetalleTrabajo);
+    $result = $stmt->execute();
+    $stmt->close();
+    
+    return $result;
+}
+
 ?>

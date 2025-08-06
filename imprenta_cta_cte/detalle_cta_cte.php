@@ -29,7 +29,7 @@ $saldoCliente = ObtenerSaldoCliente($MiConexion, $idCliente);
 // Obtener últimos movimientos
 $movimientos = ObtenerMovimientosCliente($MiConexion, $idCliente, 10);
 
-// Obtener trabajos pendientes (opcional)
+// Obtener trabajos pendientes
 $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $idCliente);
 $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
 ?>
@@ -101,7 +101,7 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="pago-tab" data-bs-toggle="tab" 
                                             data-bs-target="#pago" type="button" role="tab">
-                                        <i class="bi bi-cash"></i> Pago
+                                        <i class="bi bi-cash"></i> Pago Directo
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -117,6 +117,9 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                             <div class="tab-content" id="operacionesTabContent">
                                 <!-- Pestaña Depósito -->
                                 <div class="tab-pane fade show active" id="deposito" role="tabpanel">
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i> Los depósitos se aplicarán automáticamente a los trabajos más antiguos pendientes de pago.
+                                    </div>
                                     <form id="formDeposito" method="POST" action="procesar_operacion_ctacte.php">
                                         <input type="hidden" name="idCliente" value="<?= $idCliente ?>">
                                         <input type="hidden" name="tipo" value="DEPOSITO">
@@ -156,11 +159,14 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                     </form>
                                 </div>
                                 
-                                <!-- Pestaña Pago -->
+                                <!-- Pestaña Pago Directo -->
                                 <div class="tab-pane fade" id="pago" role="tabpanel">
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="bi bi-exclamation-triangle"></i> Esta opción es para pagar trabajos al momento de retirarlos, sin usar saldo de la cuenta corriente.
+                                    </div>
                                     <form id="formPago" method="POST" action="procesar_operacion_ctacte.php">
                                         <input type="hidden" name="idCliente" value="<?= $idCliente ?>">
-                                        <input type="hidden" name="tipo" value="PAGO">
+                                        <input type="hidden" name="tipo" value="PAGO_DIRECTO">
                                         
                                         <div class="row g-3">
                                             <div class="col-md-6">
@@ -173,7 +179,7 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                             </div>
                                             
                                             <div class="col-md-6">
-                                                <label for="metodoPago" class="form-label">Método</label>
+                                                <label for="metodoPago" class="form-label">Método de Pago</label>
                                                 <select class="form-select" id="metodoPago" name="metodo" required>
                                                     <option value="EFECTIVO">Efectivo</option>
                                                     <option value="TRANSFERENCIA">Transferencia</option>
@@ -183,7 +189,7 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                             </div>
                                             
                                             <div class="col-12">
-                                                <label for="trabajoPago" class="form-label">Seleccione un trabajo</label>
+                                                <label for="trabajoPago" class="form-label">Seleccione un trabajo pendiente</label>
                                                 <select class="form-select" id="trabajoPago" name="idReferencia" required>
                                                     <option value="">-- Seleccione un trabajo --</option>
                                                     <?php foreach ($trabajosPendientes as $trabajo): ?>
@@ -202,7 +208,7 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                             
                                             <div class="col-12 text-end">
                                                 <button type="submit" class="btn btn-success">
-                                                    <i class="bi bi-check-circle"></i> Registrar Pago
+                                                    <i class="bi bi-check-circle"></i> Registrar Pago Directo
                                                 </button>
                                             </div>
                                         </div>
@@ -211,6 +217,9 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                 
                                 <!-- Pestaña Ajuste -->
                                 <div class="tab-pane fade" id="ajuste" role="tabpanel">
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="bi bi-exclamation-triangle"></i> Use esta opción solo para correcciones manuales del saldo.
+                                    </div>
                                     <form id="formAjuste" method="POST" action="procesar_operacion_ctacte.php">
                                         <input type="hidden" name="idCliente" value="<?= $idCliente ?>">
                                         <input type="hidden" name="tipo" value="AJUSTE">
@@ -294,13 +303,14 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                                     <?php 
                                                     $badgeClass = [
                                                         'DEPOSITO' => 'bg-success',
-                                                        'PAGO' => 'bg-primary',
-                                                        'AJUSTE' => 'bg-warning'
+                                                        'PAGO_DIRECTO' => 'bg-primary',
+                                                        'AJUSTE' => 'bg-warning',
+                                                        'APLICACION_AUTOMATICA' => 'bg-info'
                                                     ][$mov['tipo']] ?? 'bg-secondary';
                                                     ?>
                                                     <span class="badge <?= $badgeClass ?>"><?= $mov['tipo'] ?></span>
                                                 </td>
-                                                <td class="text-end <?= $mov['tipo'] == 'DEPOSITO' ? 'text-success' : 'text-danger' ?>">
+                                                <td class="text-end <?= ($mov['tipo'] == 'DEPOSITO' || $mov['tipo'] == 'APLICACION_AUTOMATICA') ? 'text-success' : 'text-danger' ?>">
                                                     $<?= number_format($mov['monto'], 2, ',', '.') ?>
                                                 </td>
                                                 <td>
@@ -400,6 +410,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Validar que el monto coincida con el precio del trabajo
+        const montoInput = document.getElementById('montoPago');
+        const precioSeleccionado = parseFloat(trabajoSelect.options[trabajoSelect.selectedIndex].getAttribute('data-precio'));
+        const montoIngresado = parseFloat(montoInput.value);
+        
+        if (isNaN(montoIngresado)) {
+            alert('El monto ingresado no es válido');
+            return;
+        }
+        
+        if (Math.abs(montoIngresado - precioSeleccionado) > 0.01) {
+            alert('El monto debe coincidir exactamente con el precio del trabajo seleccionado ($' + precioSeleccionado.toFixed(2) + ')');
+            return;
+        }
+        
         procesarOperacion(this);
     });
     
@@ -423,22 +448,28 @@ document.addEventListener('DOMContentLoaded', function() {
             body: formData
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en la red');
+            // Primero verificar si la respuesta es JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text().then(text => {
+                    throw new Error(`Respuesta inesperada del servidor: ${text}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
                 alert(data.message);
-                location.reload(); // Recargar para ver cambios
+                location.reload();
             } else {
                 throw new Error(data.message || 'Error al procesar la operación');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert(error.message);
+            alert('Error: ' + error.message);
+            // Mostrar más detalles en consola
+            console.log('Detalles completos del error:', error);
         })
         .finally(() => {
             submitBtn.disabled = false;
