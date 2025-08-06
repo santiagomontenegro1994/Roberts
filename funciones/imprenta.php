@@ -2231,7 +2231,6 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
     
     return $estados;
 }
-
     // Cuenta Corriente
 
 function Listar_Clientes_Cuenta_Corriente($vConexion) {
@@ -2350,23 +2349,6 @@ function Listar_Clientes_Cuenta_Corriente_Parametro($vConexion, $criterio, $para
     return $Listado;
 }
 
-function Listar_Tipos_Pagos_Entradas($conexion) {
-    $tiposPago = array();
-    
-    $sql = "SELECT idTipoPago, denominacion 
-            FROM tipo_pago 
-            WHERE esEntrada = 1 AND idActivo = 1
-            ORDER BY idTipoPago";
-    
-    $resultado = $conexion->query($sql);
-    
-    while ($fila = $resultado->fetch_assoc()) {
-        $tiposPago[] = $fila;
-    }
-    
-    return $tiposPago;
-}
-
 function Obtener_Cliente_Por_ID($conexion, $idCliente) {
     $sql = "SELECT idCliente, nombre AS NOMBRE, apellido AS APELLIDO, telefono AS TELEFONO
             FROM clientes
@@ -2383,7 +2365,7 @@ function Obtener_Cliente_Por_ID($conexion, $idCliente) {
     return $cliente;
 }
 
-function Obtener_Trabajos_Cuenta_Corriente_Cliente($conexion, $idCliente) {
+function Obtener_Trabajos_Pendientes($conexion, $idCliente) {
     $trabajos = array();
     
     $sql = "SELECT 
@@ -2392,25 +2374,153 @@ function Obtener_Trabajos_Cuenta_Corriente_Cliente($conexion, $idCliente) {
                 tt.denominacion AS TIPO_TRABAJO,
                 dt.descripcion AS DESCRIPCION,
                 dt.precio AS PRECIO,
-                dt.fechaEntrega AS FECHA_ENTREGA
+                dt.fechaEntrega AS FECHA_ENTREGA,
+                et.denominacion AS ESTADO
             FROM detalle_trabajos dt
             INNER JOIN pedido_trabajos pt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos
             INNER JOIN tipo_trabajo tt ON tt.idTipoTrabajo = dt.idTrabajo
-            WHERE pt.idCliente = ? AND dt.idEstadoTrabajo = 8 AND dt.idActivo = 1
-            ORDER BY pt.fecha DESC";
+            INNER JOIN estado_trabajo et ON et.idEstado = dt.idEstadoTrabajo
+            WHERE pt.idCliente = ? 
+            AND dt.idEstadoTrabajo IN (1, 2, 3, 4, 5, 6, 8) -- Estados pendientes
+            AND dt.idActivo = 1
+            ORDER BY pt.fecha ASC, dt.idDetalleTrabajo ASC";
     
     $stmt = $conexion->prepare($sql);
     $stmt->bind_param("i", $idCliente);
     $stmt->execute();
-    $resultado = $stmt->get_result();
+    $result = $stmt->get_result();
     
-    while ($fila = $resultado->fetch_assoc()) {
+    while ($fila = $result->fetch_assoc()) {
         $trabajos[] = $fila;
     }
     
+    return $trabajos;
+}
+
+function ActualizarSaldoCliente($conexion, $idCliente, $monto, $tipoMovimiento, $idUsuario, $idReferencia = null, $tipoReferencia = null, $observaciones = '') {
+    // Iniciar transacción
+    $conexion->begin_transaction();
+    
+    try {
+        // 1. Insertar movimiento en movimientos_ctacte
+        $sqlMovimiento = "INSERT INTO movimientos_ctacte 
+                         (idCliente, tipo, monto, idUsuario, idReferencia, tipoReferencia, observaciones)
+                         VALUES (?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $conexion->prepare($sqlMovimiento);
+        if (!$stmt) {
+            throw new Exception("Error al preparar consulta: " . $conexion->error);
+        }
+        
+        $stmt->bind_param("isddiss", 
+            $idCliente, 
+            $tipoMovimiento, 
+            $monto, 
+            $idUsuario,
+            $idReferencia,
+            $tipoReferencia,
+            $observaciones
+        );
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Error al ejecutar consulta: " . $stmt->error);
+        }
+        $stmt->close();
+        
+        // 2. Actualizar saldo en saldos_clientes
+        // Primero verificar si existe registro para el cliente
+        $sqlCheck = "SELECT idSaldo FROM saldos_clientes WHERE idCliente = ?";
+        $stmt = $conexion->prepare($sqlCheck);
+        $stmt->bind_param("i", $idCliente);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        
+        if ($result->num_rows > 0) {
+            // Actualizar saldo existente
+            $operador = ($tipoMovimiento == 'DEPOSITO') ? '+' : '-';
+            $sqlUpdate = "UPDATE saldos_clientes 
+                         SET saldo = saldo $operador ?, 
+                             fechaActualizacion = NOW(), 
+                             idUsuario = ?
+                         WHERE idCliente = ?";
+            
+            $stmt = $conexion->prepare($sqlUpdate);
+            $stmt->bind_param("dii", $monto, $idUsuario, $idCliente);
+        } else {
+            // Insertar nuevo registro
+            $saldoInicial = ($tipoMovimiento == 'DEPOSITO') ? $monto : -$monto;
+            $sqlInsert = "INSERT INTO saldos_clientes 
+                         (idCliente, saldo, fechaActualizacion, idUsuario)
+                         VALUES (?, ?, NOW(), ?)";
+            
+            $stmt = $conexion->prepare($sqlInsert);
+            $stmt->bind_param("idi", $idCliente, $saldoInicial, $idUsuario);
+        }
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Error al actualizar saldo: " . $stmt->error);
+        }
+        $stmt->close();
+        
+        // Confirmar transacción
+        $conexion->commit();
+        return true;
+    } catch (Exception $e) {
+        $conexion->rollback();
+        error_log("Error en ActualizarSaldoCliente: " . $e->getMessage());
+        return false;
+    }
+}
+
+function ObtenerSaldoCliente($conexion, $idCliente) {
+    $sql = "SELECT saldo FROM saldos_clientes WHERE idCliente = ?";
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        error_log("Error al preparar consulta: " . $conexion->error);
+        return 0.00;
+    }
+    
+    $stmt->bind_param("i", $idCliente);
+    if (!$stmt->execute()) {
+        error_log("Error al ejecutar consulta: " . $stmt->error);
+        return 0.00;
+    }
+    
+    $result = $stmt->get_result();
     $stmt->close();
     
-    return $trabajos;
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return (float)$row['saldo'];
+    }
+    
+    return 0.00;
+}
+
+function ObtenerMovimientosCliente($conexion, $idCliente, $limit = 10) {
+    $movimientos = array();
+    
+    $sql = "SELECT 
+                mc.*,
+                CONCAT(u.nombre, ' ', u.apellido) AS usuarioNombre
+            FROM movimientos_ctacte mc
+            LEFT JOIN usuarios u ON u.idUsuario = mc.idUsuario
+            WHERE mc.idCliente = ?
+            ORDER BY mc.fecha DESC
+            LIMIT ?";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("ii", $idCliente, $limit);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $movimientos[] = $row;
+    }
+    
+    $stmt->close();
+    return $movimientos;
 }
 
 ?>
