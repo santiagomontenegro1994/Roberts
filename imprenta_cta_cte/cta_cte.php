@@ -132,6 +132,11 @@ $CantidadClientes = count($ListadoClientesCC);
                                                title="Ver detalle">
                                                 <i class="bi bi-eye"></i> Detalle
                                             </a>
+                                            <a href="generar_pdf_cta_cte.php?idCliente=<?= $cliente['ID_CLIENTE'] ?>" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               title="Descargar PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
