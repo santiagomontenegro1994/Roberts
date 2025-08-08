@@ -161,55 +161,98 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                 
                                 <!-- Pestaña Pago Directo -->
                                 <div class="tab-pane fade" id="pago" role="tabpanel">
-                                    <div class="alert alert-warning mb-3">
-                                        <i class="bi bi-exclamation-triangle"></i> Esta opción es para pagar trabajos al momento de retirarlos, sin usar saldo de la cuenta corriente.
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i> Esta opción es para pagar trabajos al momento de retirarlos. Se puede usar el saldo disponible y completar con otro método si es necesario.
                                     </div>
                                     <form id="formPago" method="POST" action="procesar_operacion_ctacte.php">
                                         <input type="hidden" name="idCliente" value="<?= $idCliente ?>">
                                         <input type="hidden" name="tipo" value="PAGO_DIRECTO">
+                                        <!-- Campo monto se agregará dinámicamente con JavaScript -->
                                         
                                         <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label for="montoPago" class="form-label">Monto</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text">$</span>
-                                                    <input type="number" step="0.01" class="form-control" 
-                                                           id="montoPago" name="monto" required readonly>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-6">
-                                                <label for="metodoPago" class="form-label">Método de Pago</label>
-                                                <select class="form-select" id="metodoPago" name="metodo" required>
-                                                    <option value="EFECTIVO">Efectivo</option>
-                                                    <option value="TRANSFERENCIA">Transferencia</option>
-                                                    <option value="CHEQUE">Cheque</option>
-                                                    <option value="OTRO">Otro</option>
-                                                </select>
-                                            </div>
-                                            
                                             <div class="col-12">
                                                 <label for="trabajoPago" class="form-label">Seleccione un trabajo pendiente</label>
                                                 <select class="form-select" id="trabajoPago" name="idReferencia" required>
                                                     <option value="">-- Seleccione un trabajo --</option>
-                                                    <?php foreach ($trabajosPendientes as $trabajo): ?>
+                                                    <?php 
+                                                    foreach ($trabajosPendientes as $trabajo): ?>
                                                     <option value="<?= $trabajo['ID_DETALLE'] ?>" data-precio="<?= $trabajo['PRECIO'] ?>">
-                                                        #<?= $trabajo['ID_DETALLE'] ?> - <?= substr($trabajo['DESCRIPCION'], 0, 30) ?>... ($<?= number_format($trabajo['PRECIO'], 2, ',', '.') ?>)
+                                                        #<?= $trabajo['ID_DETALLE'] ?> - <?= htmlspecialchars(substr($trabajo['DESCRIPCION'], 0, 30)) ?>... ($<?= number_format($trabajo['PRECIO'], 2, ',', '.') ?>)
                                                     </option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
                                             
-                                            <div class="col-12">
-                                                <label for="observacionesPago" class="form-label">Observaciones</label>
-                                                <textarea class="form-control" id="observacionesPago" 
-                                                          name="observaciones" rows="2"></textarea>
-                                            </div>
-                                            
-                                            <div class="col-12 text-end">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="bi bi-check-circle"></i> Registrar Pago Directo
-                                                </button>
+                                            <!-- Información de pago -->
+                                            <div id="infoPago" style="display: none;">
+                                                <div class="col-12">
+                                                    <div class="card bg-light">
+                                                        <div class="card-body">
+                                                            <h6 class="card-title">Información de Pago</h6>
+                                                            <div class="row">
+                                                                <div class="col-md-4">
+                                                                    <strong>Precio del trabajo:</strong><br>
+                                                                    <span id="precioTrabajo" class="text-primary fs-5">$0.00</span>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <strong>Saldo disponible:</strong><br>
+                                                                    <span id="saldoDisponible" class="<?= $saldoCliente >= 0 ? 'text-success' : 'text-danger' ?> fs-5">
+                                                                        $<?= number_format(max(0, $saldoCliente), 2, ',', '.') ?>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <strong>Monto a completar:</strong><br>
+                                                                    <span id="montoCompletamente" class="text-warning fs-5">$0.00</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Método de pago para el monto restante -->
+                                                <div id="metodoPagoSection" style="display: none;">
+                                                    <div class="col-md-6">
+                                                        <label for="metodoPago" class="form-label">Método para completar el pago</label>
+                                                        <select class="form-select" id="metodoPago" name="metodo">
+                                                            <option value="EFECTIVO">Efectivo</option>
+                                                            <option value="TRANSFERENCIA">Transferencia</option>
+                                                            <option value="CHEQUE">Cheque</option>
+                                                            <option value="OTRO">Otro</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6">
+                                                        <label for="montoComplemento" class="form-label">Monto a pagar con este método</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">$</span>
+                                                            <input type="number" step="0.01" class="form-control" 
+                                                                id="montoComplemento" name="montoComplemento" readonly>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Solo saldo -->
+                                                <div id="soloSaldoSection" style="display: none;">
+                                                    <div class="col-12">
+                                                        <div class="alert alert-success">
+                                                            <i class="bi bi-check-circle"></i> El trabajo se pagará completamente con el saldo disponible en cuenta corriente.
+                                                        </div>
+                                                        <!-- Campo oculto para indicar que se usa solo saldo -->
+                                                        <input type="hidden" name="metodo" value="SALDO">
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-12">
+                                                    <label for="observacionesPago" class="form-label">Observaciones</label>
+                                                    <textarea class="form-control" id="observacionesPago" 
+                                                            name="observaciones" rows="2"></textarea>
+                                                </div>
+                                                
+                                                <div class="col-12 text-end">
+                                                    <button type="submit" class="btn btn-success">
+                                                        <i class="bi bi-check-circle"></i> Registrar Pago
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </form>
@@ -393,6 +436,8 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const saldoActual = <?= max(0, $saldoCliente) ?>; // Solo saldo positivo disponible
+    
     // Manejar el formulario de depósito con AJAX
     document.getElementById('formDeposito').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -410,20 +455,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Validar que el monto coincida con el precio del trabajo
-        const montoInput = document.getElementById('montoPago');
-        const precioSeleccionado = parseFloat(trabajoSelect.options[trabajoSelect.selectedIndex].getAttribute('data-precio'));
-        const montoIngresado = parseFloat(montoInput.value);
+        // Agregar el campo monto oculto antes de enviar
+        const precio = parseFloat(trabajoSelect.options[trabajoSelect.selectedIndex].getAttribute('data-precio'));
         
-        if (isNaN(montoIngresado)) {
-            alert('El monto ingresado no es válido');
-            return;
+        // Crear campo oculto para el monto (precio del trabajo)
+        let campoMonto = this.querySelector('input[name="monto"]');
+        if (!campoMonto) {
+            campoMonto = document.createElement('input');
+            campoMonto.type = 'hidden';
+            campoMonto.name = 'monto';
+            this.appendChild(campoMonto);
         }
-        
-        if (Math.abs(montoIngresado - precioSeleccionado) > 0.01) {
-            alert('El monto debe coincidir exactamente con el precio del trabajo seleccionado ($' + precioSeleccionado.toFixed(2) + ')');
-            return;
-        }
+        campoMonto.value = precio.toFixed(2);
         
         procesarOperacion(this);
     });
@@ -439,6 +482,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         
+        // Debug: mostrar qué datos se están enviando
+        console.log('Datos enviados:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+        
         // Mostrar spinner
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
@@ -452,7 +501,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 return response.text().then(text => {
-                    throw new Error(`Respuesta inesperada del servidor: ${text}`);
+                    console.error('Respuesta no JSON del servidor:', text);
+                    throw new Error(`Respuesta inesperada del servidor: ${text.substring(0, 100)}...`);
                 });
             }
             return response.json();
@@ -468,8 +518,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('Error: ' + error.message);
-            // Mostrar más detalles en consola
-            console.log('Detalles completos del error:', error);
         })
         .finally(() => {
             submitBtn.disabled = false;
@@ -477,14 +525,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Actualizar monto de pago cuando se selecciona un trabajo
+    // Actualizar información de pago cuando se selecciona un trabajo
     document.getElementById('trabajoPago').addEventListener('change', function() {
-        const montoPago = document.getElementById('montoPago');
+        const infoPago = document.getElementById('infoPago');
+        const precioTrabajoSpan = document.getElementById('precioTrabajo');
+        const saldoDisponibleSpan = document.getElementById('saldoDisponible');
+        const montoComplementoSpan = document.getElementById('montoCompletamente');
+        const metodoPagoSection = document.getElementById('metodoPagoSection');
+        const soloSaldoSection = document.getElementById('soloSaldoSection');
+        const montoComplementoInput = document.getElementById('montoComplemento');
+        const metodoPagoSelect = document.getElementById('metodoPago');
+        
         if (this.value) {
-            const precio = this.options[this.selectedIndex].getAttribute('data-precio');
-            montoPago.value = parseFloat(precio).toFixed(2);
+            const precio = parseFloat(this.options[this.selectedIndex].getAttribute('data-precio'));
+            
+            // Mostrar información
+            precioTrabajoSpan.textContent = '$' + precio.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            saldoDisponibleSpan.textContent = '$' + saldoActual.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            // Calcular monto a completar
+            const montoRestante = Math.max(0, precio - saldoActual);
+            montoComplementoSpan.textContent = '$' + montoRestante.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            // Mostrar la información de pago
+            infoPago.style.display = 'block';
+            
+            if (montoRestante > 0) {
+                // Necesita completar con otro método
+                metodoPagoSection.style.display = 'block';
+                soloSaldoSection.style.display = 'none';
+                montoComplementoInput.value = montoRestante.toFixed(2);
+                metodoPagoSelect.required = true;
+            } else {
+                // Se paga completamente con saldo
+                metodoPagoSection.style.display = 'none';
+                soloSaldoSection.style.display = 'block';
+                montoComplementoInput.value = '0.00';
+                metodoPagoSelect.required = false;
+            }
         } else {
-            montoPago.value = '';
+            infoPago.style.display = 'none';
         }
     });
 

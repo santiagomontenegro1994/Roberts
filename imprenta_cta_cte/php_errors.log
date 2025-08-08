@@ -1,1 +1,9 @@
 
+[08-Aug-2025 04:50:40 Europe/Berlin] [2025-08-08 04:50:40] Error en procesar_operacion_ctacte: Campo requerido faltante: monto
+[08-Aug-2025 04:51:25 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 144
+[08-Aug-2025 04:51:25 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 201
+[08-Aug-2025 04:52:26 Europe/Berlin] [2025-08-08 04:52:26] Error en procesar_operacion_ctacte: Campo requerido faltante: monto
+[08-Aug-2025 05:01:59 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 154
+[08-Aug-2025 05:01:59 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 330
+[08-Aug-2025 05:09:11 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 154
+[08-Aug-2025 05:09:11 Europe/Berlin] PHP Warning:  Undefined variable $observaciones in C:\xampp\htdocs\Roberts\imprenta_cta_cte\procesar_operacion_ctacte.php on line 211
