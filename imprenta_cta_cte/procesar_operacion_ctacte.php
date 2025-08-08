@@ -125,54 +125,75 @@ try {
     }
 
     if ($esDeposito) {
-        $success = ActualizarSaldoCliente($MiConexion, $data['idCliente'], $data['monto'], 'DEPOSITO', $_SESSION['Usuario_Id'], null, null, $observaciones);
+        // 1. Registrar el depósito completo (aumenta el saldo del cliente)
+        $success = ActualizarSaldoCliente(
+            $MiConexion, 
+            $data['idCliente'], 
+            $data['monto'], 
+            'DEPOSITO', 
+            $_SESSION['Usuario_Id'], 
+            null, 
+            null, 
+            $observaciones
+        );
         if (!$success) throw new Exception('Error al registrar el depósito', 500);
 
+        // 2. Obtener trabajos pendientes del cliente (ordenados por antigüedad)
         $trabajosPendientes = Obtener_Trabajos_Pendientes_Por_Antiguedad($MiConexion, $data['idCliente']);
-        $saldoRestante = $data['monto'];
+        $saldoRestante = $data['monto']; // Inicializar con el monto depositado
         $trabajosPagados = [];
 
+        // 3. Pagar solo los trabajos que pueden cubrirse COMPLETAMENTE con el saldo
         foreach ($trabajosPendientes as $trabajo) {
-            if ($saldoRestante <= 0) break;
+            if ($saldoRestante >= $trabajo['PRECIO']) {
+                $montoAplicar = $trabajo['PRECIO'];
+                $saldoRestante -= $montoAplicar;
 
-            $montoAplicar = min($saldoRestante, $trabajo['PRECIO']);
-            $saldoRestante -= $montoAplicar;
+                // a. Registrar el movimiento de pago (reduce el saldo)
+                $success = ActualizarSaldoCliente(
+                    $MiConexion,
+                    $data['idCliente'],
+                    -$montoAplicar, // Monto negativo (reduce el saldo)
+                    'APLICACION_AUTOMATICA',
+                    $_SESSION['Usuario_Id'],
+                    $trabajo['ID_DETALLE'],
+                    'TRABAJO',
+                    "Pago automático trabajo #{$trabajo['ID_DETALLE']}"
+                );
+                if (!$success) throw new Exception('Error al aplicar pago automático', 500);
 
-            $success = ActualizarSaldoCliente($MiConexion, $data['idCliente'], $montoAplicar, 'APLICACION_AUTOMATICA', $_SESSION['Usuario_Id'], $trabajo['ID_DETALLE'], 'TRABAJO', "Aplicación automática de saldo a trabajo #{$trabajo['ID_DETALLE']}");
-            if (!$success) throw new Exception('Error al aplicar saldo a trabajos', 500);
+                // b. Marcar el trabajo como pagado
+                $stmt = $MiConexion->prepare("UPDATE detalle_trabajos SET idEstadoTrabajo = 7 WHERE idDetalleTrabajo = ?");
+                $stmt->bind_param("i", $trabajo['ID_DETALLE']);
+                $stmt->execute();
+                $stmt->close();
 
-            $stmt = $MiConexion->prepare("UPDATE detalle_trabajos SET idEstadoTrabajo = 7 WHERE idDetalleTrabajo = ?");
-            $idDetalle = $trabajo['ID_DETALLE'];
-            $stmt->bind_param("i", $idDetalle);
-            $stmt->execute();
-            $stmt->close();
+                // c. Actualizar la seña del pedido (opcional, si lo necesitas para reporting)
+                $stmt = $MiConexion->prepare("UPDATE pedido_trabajos SET senia = senia + ? WHERE idPedidoTrabajos = ?");
+                $stmt->bind_param("di", $montoAplicar, $trabajo['ID_PEDIDO']);
+                $stmt->execute();
+                $stmt->close();
 
-            $stmt = $MiConexion->prepare("UPDATE pedido_trabajos SET senia = senia + ? WHERE idPedidoTrabajos = ?");
-            $montoAplicarF = floatval($montoAplicar);
-            $idPedido = intval($trabajo['ID_PEDIDO']);
-            $stmt->bind_param("di", $montoAplicarF, $idPedido);
-            $stmt->execute();
-            $stmt->close();
+                // d. Actualizar estado del pedido (si todos sus trabajos están pagados)
+                ActualizarEstadoPedido($MiConexion, $trabajo['ID_PEDIDO']);
 
-            ActualizarEstadoPedido($MiConexion, $trabajo['ID_PEDIDO']);
-            $trabajosPagados[] = $trabajo['ID_DETALLE'];
+                $trabajosPagados[] = $trabajo['ID_DETALLE'];
+            }
         }
 
+        // 4. Actualizar observaciones del depósito con los trabajos pagados
         if (!empty($trabajosPagados)) {
-            $obsTrabajos = "Trabajos pagados automáticamente: " . implode(", #", $trabajosPagados);
+            $obsTrabajos = "Trabajos pagados: " . implode(", #", $trabajosPagados);
             $observaciones .= " | " . $obsTrabajos;
 
             $stmt = $MiConexion->prepare("UPDATE movimientos_ctacte SET observaciones = ? WHERE idCliente = ? AND tipo = 'DEPOSITO' ORDER BY fecha DESC LIMIT 1");
-            $obsUpdate = $observaciones;
-            $idCli = $data['idCliente'];
-            $stmt->bind_param("si", $obsUpdate, $idCli);
+            $stmt->bind_param("si", $observaciones, $data['idCliente']);
             $stmt->execute();
             $stmt->close();
         }
 
-        $response['trabajosPagados'] = $trabajosPagados;
-        $response['saldoRestante'] = $saldoRestante;
-
+        // 5. El saldo restante ya queda como crédito en la cuenta (no se hace nada más)
+        $response['saldoRestante'] = $saldoRestante; // Para debug
     } elseif ($esPagoDirecto) {
         $stmt = $MiConexion->prepare("INSERT INTO movimientos_ctacte (idCliente, tipo, monto, idUsuario, idReferencia, tipoReferencia, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $idCli = $data['idCliente'];
