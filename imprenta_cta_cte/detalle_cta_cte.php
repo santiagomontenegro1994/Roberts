@@ -237,8 +237,8 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                             <div class="col-md-6">
                                                 <label for="tipoAjuste" class="form-label">Tipo de ajuste</label>
                                                 <select class="form-select" id="tipoAjuste" name="tipoAjuste" required>
-                                                    <option value="INCREMENTO">Incremento</option>
-                                                    <option value="DECREMENTO">Decremento</option>
+                                                    <option value="A_FAVOR">A favor del cliente</option>
+                                                    <option value="EN_CONTRA">En contra del cliente</option>
                                                 </select>
                                             </div>
                                             

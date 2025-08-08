@@ -2397,80 +2397,26 @@ function Obtener_Trabajos_Pendientes($conexion, $idCliente) {
     return $trabajos;
 }
 
-function ActualizarSaldoCliente($conexion, $idCliente, $monto, $tipoMovimiento, $idUsuario, $idReferencia = null, $tipoReferencia = null, $observaciones = '') {
-    // Iniciar transacción
-    $conexion->begin_transaction();
+function ActualizarSaldoCliente($conexion, $idCliente, $monto, $tipo, $idUsuario, $idReferencia = null, $tipoReferencia = null, $observaciones = '') {
+    // Primero insertar el movimiento
+    $sqlMov = "INSERT INTO movimientos_ctacte (idCliente, tipo, monto, idUsuario, idReferencia, tipoReferencia, observaciones) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conexion->prepare($sqlMov);
+    $stmt->bind_param("isdiiss", $idCliente, $tipo, $monto, $idUsuario, $idReferencia, $tipoReferencia, $observaciones);
+    $stmt->execute();
     
-    try {
-        // 1. Insertar movimiento en movimientos_ctacte
-        $sqlMovimiento = "INSERT INTO movimientos_ctacte 
-                         (idCliente, tipo, monto, idUsuario, idReferencia, tipoReferencia, observaciones)
-                         VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $conexion->prepare($sqlMovimiento);
-        if (!$stmt) {
-            throw new Exception("Error al preparar consulta: " . $conexion->error);
-        }
-        
-        $stmt->bind_param("isddiss", 
-            $idCliente, 
-            $tipoMovimiento, 
-            $monto, 
-            $idUsuario,
-            $idReferencia,
-            $tipoReferencia,
-            $observaciones
-        );
-        
-        if (!$stmt->execute()) {
-            throw new Exception("Error al ejecutar consulta: " . $stmt->error);
-        }
-        $stmt->close();
-        
-        // 2. Actualizar saldo en saldos_clientes
-        // Primero verificar si existe registro para el cliente
-        $sqlCheck = "SELECT idSaldo FROM saldos_clientes WHERE idCliente = ?";
-        $stmt = $conexion->prepare($sqlCheck);
-        $stmt->bind_param("i", $idCliente);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $stmt->close();
-        
-        if ($result->num_rows > 0) {
-            // Actualizar saldo existente
-            $operador = ($tipoMovimiento == 'DEPOSITO') ? '+' : '-';
-            $sqlUpdate = "UPDATE saldos_clientes 
-                         SET saldo = saldo $operador ?, 
-                             fechaActualizacion = NOW(), 
-                             idUsuario = ?
-                         WHERE idCliente = ?";
-            
-            $stmt = $conexion->prepare($sqlUpdate);
-            $stmt->bind_param("dii", $monto, $idUsuario, $idCliente);
-        } else {
-            // Insertar nuevo registro
-            $saldoInicial = ($tipoMovimiento == 'DEPOSITO') ? $monto : -$monto;
-            $sqlInsert = "INSERT INTO saldos_clientes 
-                         (idCliente, saldo, fechaActualizacion, idUsuario)
-                         VALUES (?, ?, NOW(), ?)";
-            
-            $stmt = $conexion->prepare($sqlInsert);
-            $stmt->bind_param("idi", $idCliente, $saldoInicial, $idUsuario);
-        }
-        
-        if (!$stmt->execute()) {
-            throw new Exception("Error al actualizar saldo: " . $stmt->error);
-        }
-        $stmt->close();
-        
-        // Confirmar transacción
-        $conexion->commit();
-        return true;
-    } catch (Exception $e) {
-        $conexion->rollback();
-        error_log("Error en ActualizarSaldoCliente: " . $e->getMessage());
-        return false;
-    }
+    // Luego actualizar el saldo en la tabla saldos_clientes
+    $sqlUpdate = "INSERT INTO saldos_clientes (idCliente, saldo, idUsuario) 
+                  VALUES (?, ?, ?)
+                  ON DUPLICATE KEY UPDATE 
+                  saldo = saldo + VALUES(saldo), 
+                  fechaActualizacion = NOW(), 
+                  idUsuario = VALUES(idUsuario)";
+    $stmt = $conexion->prepare($sqlUpdate);
+    $stmt->bind_param("idi", $idCliente, $monto, $idUsuario);
+    $result = $stmt->execute();
+    
+    return $result;
 }
 
 function ObtenerSaldoCliente($conexion, $idCliente) {

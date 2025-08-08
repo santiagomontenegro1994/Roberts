@@ -65,10 +65,26 @@ try {
             $esPagoDirecto = true;
             break;
         case 'AJUSTE':
+            $tipoAjuste = isset($_POST['tipoAjuste']) ? strtoupper($_POST['tipoAjuste']) : 'A_FAVOR';
+            
+            // Obtener el saldo actual del cliente
+            $saldoActual = ObtenerSaldoCliente($MiConexion, $data['idCliente']);
+            
+            // Determinar el signo del monto basado en el tipo de ajuste
+            if ($tipoAjuste === 'A_FAVOR') {
+                // Si el saldo es negativo (deudor), un ajuste a favor debe sumar (acercar a cero)
+                // Si el saldo es positivo (acreedor), un ajuste a favor debe sumar (aumentar crédito)
+                $montoAjuste = abs($data['monto']);
+            } else { // EN_CONTRA
+                // Si el saldo es negativo (deudor), un ajuste en contra debe restar (aumentar deuda)
+                // Si el saldo es positivo (acreedor), un ajuste en contra debe restar (reducir crédito)
+                $montoAjuste = -abs($data['monto']);
+            }
+            
             $tipoMovimiento = 'AJUSTE';
+            $motivo = isset($_POST['motivo']) ? filter_input(INPUT_POST, 'motivo', FILTER_SANITIZE_STRING) : 'OTRO';
+            $observaciones = "Ajuste ($tipoAjuste) por $motivo. {$data['observaciones']}";
             break;
-        default:
-            throw new Exception('Tipo de operación no válido', 400);
     }
 
     $observaciones = '';
