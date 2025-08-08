@@ -37,7 +37,7 @@ try {
         }
     }
 
-    $data['metodo'] = isset($_POST['metodo']) ? filter_input(INPUT_POST, 'metodo', FILTER_SANITIZE_STRING) : 'EFECTIVO';
+    $data['metodo'] = isset($_POST['metodo']) ? filter_input(INPUT_POST, 'metodo', FILTER_VALIDATE_INT) : 1; // Por defecto Efectivo (id 1)
     $data['observaciones'] = isset($_POST['observaciones']) ? filter_input(INPUT_POST, 'observaciones', FILTER_SANITIZE_STRING) : '';
     $data['idReferencia'] = isset($_POST['idReferencia']) ? filter_input(INPUT_POST, 'idReferencia', FILTER_VALIDATE_INT) : null;
     $data['usarSaldo'] = isset($_POST['usarSaldo']) ? filter_var($_POST['usarSaldo'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -46,6 +46,16 @@ try {
     $MiConexion = ConexionBD();
     if (!$MiConexion) {
         throw new Exception('Error de conexión a la base de datos', 500);
+    }
+
+    // Validar que el método de pago sea válido (solo los de entrada permitidos, excluyendo Cta. Cte.)
+    $tiposPagoEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
+    $tiposPagoPermitidos = array_column(array_filter($tiposPagoEntrada, function($tipo) {
+        return $tipo['idTipoPago'] != 18; // Excluir Cta. Cte. (id 18)
+    }), 'idTipoPago');
+
+    if (!in_array($data['metodo'], $tiposPagoPermitidos)) {
+        throw new Exception('Método de pago no válido', 400);
     }
 
     $MiConexion->begin_transaction();
@@ -59,7 +69,7 @@ try {
         case 'DEPOSITO':
             $tipoMovimiento = 'DEPOSITO';
             $esDeposito = true;
-            $observaciones = "Depósito via {$data['metodo']}. {$data['observaciones']}";
+            $observaciones = "Depósito via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']) . ". " . $data['observaciones'];
             break;
             
         case 'PAGO_DIRECTO':
@@ -114,12 +124,13 @@ try {
             $idPedidoTrabajos = $trabajo['id_pedido_trabajos'];
             
             // Construir observaciones detalladas
+            $nombreMetodoPago = ObtenerNombreTipoPago($MiConexion, $data['metodo']);
             if ($montoUsarSaldo > 0 && $montoComplemento > 0) {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Saldo: $" . number_format($montoUsarSaldo, 2, ',', '.') . ", {$data['metodo']}: $" . number_format($montoComplemento, 2, ',', '.') . ". {$data['observaciones']}";
+                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Saldo: $" . number_format($montoUsarSaldo, 2, ',', '.') . ", {$nombreMetodoPago}: $" . number_format($montoComplemento, 2, ',', '.') . ". " . $data['observaciones'];
             } elseif ($montoUsarSaldo > 0) {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Pagado completamente con saldo de cuenta corriente. {$data['observaciones']}";
+                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Pagado completamente con saldo de cuenta corriente. " . $data['observaciones'];
             } else {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} via {$data['metodo']}. {$data['observaciones']}";
+                $observaciones = "Pago directo trabajo #{$data['idReferencia']} via {$nombreMetodoPago}. " . $data['observaciones'];
             }
             
             break;
@@ -139,7 +150,7 @@ try {
             
             $tipoMovimiento = 'AJUSTE';
             $motivo = isset($_POST['motivo']) ? filter_input(INPUT_POST, 'motivo', FILTER_SANITIZE_STRING) : 'OTRO';
-            $observaciones = "Ajuste ($tipoAjuste) por $motivo. {$data['observaciones']}";
+            $observaciones = "Ajuste ($tipoAjuste) por $motivo. " . $data['observaciones'];
             break;
     }
 
@@ -237,18 +248,16 @@ try {
             $idUsu = $_SESSION['Usuario_Id'];
             $idRef = $data['idReferencia'];
             $tipoRef = 'TRABAJO';
-            $obsComplemento = "Pago directo trabajo #{$data['idReferencia']} via {$data['metodo']}";
+            $obsComplemento = "Pago directo trabajo #{$data['idReferencia']} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']);
             $stmt->bind_param("isdiiss", $idCli, $tipoMov, $montoExt, $idUsu, $idRef, $tipoRef, $obsComplemento);
             $stmt->execute();
             $stmt->close();
             
             // Registrar en caja solo el monto del complemento
             if (isset($_SESSION['Id_Caja']) && is_numeric($_SESSION['Id_Caja'])) {
-                $idTipoPago = 1;
-                if (strtoupper($data['metodo']) === 'TRANSFERENCIA') $idTipoPago = 2;
-                elseif (strtoupper($data['metodo']) === 'CHEQUE') $idTipoPago = 3;
-
+                $idTipoPago = $data['metodo']; // Usamos directamente el ID del método de pago
                 $idTipoMovimientoCaja = 2; // Entrada de dinero
+                
                 $sqlCaja = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones) VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt = $MiConexion->prepare($sqlCaja);
                 if (!$stmt) throw new Exception("Error en prepare() de caja: " . $MiConexion->error, 500);
@@ -256,7 +265,7 @@ try {
                 $idCaja = intval($_SESSION['Id_Caja']);
                 $idUsuario = intval($_SESSION['Usuario_Id']);
                 $montoCaja = floatval($montoComplemento);
-                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente #{$data['idCliente']} - Trabajo #{$data['idReferencia']} via {$data['metodo']}", 0, 255, 'UTF-8');
+                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente #{$data['idCliente']} - Trabajo #{$data['idReferencia']} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']), 0, 255, 'UTF-8');
 
                 $stmt->bind_param("iiiids", $idCaja, $idTipoPago, $idTipoMovimientoCaja, $idUsuario, $montoCaja, $obsCaja);
                 $stmt->execute();
@@ -289,11 +298,9 @@ try {
 
     // Solo procesar caja si no es pago directo (porque ya se procesó arriba) o si no se procesó arriba
     if ($procesarCaja && isset($_SESSION['Id_Caja']) && is_numeric($_SESSION['Id_Caja'])) {
-        $idTipoPago = 1;
-        if (strtoupper($data['metodo']) === 'TRANSFERENCIA') $idTipoPago = 2;
-        elseif (strtoupper($data['metodo']) === 'CHEQUE') $idTipoPago = 3;
-
-        $idTipoMovimientoCaja = ($tipoMovimiento === 'DEPOSITO') ? 2 : 1;
+        $idTipoPago = $data['metodo']; // Usamos directamente el ID del método de pago
+        $idTipoMovimientoCaja = ($tipoMovimiento === 'DEPOSITO') ? 2 : 1; // 2=Entrada, 1=Salida
+        
         $sqlCaja = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $MiConexion->prepare($sqlCaja);
         if (!$stmt) throw new Exception("Error en prepare() de caja: " . $MiConexion->error, 500);

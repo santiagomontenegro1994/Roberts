@@ -2512,4 +2512,14 @@ function Marcar_Trabajo_Pagado($conexion, $idDetalleTrabajo) {
     return $result;
 }
 
+function ObtenerNombreTipoPago($conexion, $idTipoPago) {
+    $sql = "SELECT denominacion FROM tipo_pago WHERE idTipoPago = ?";
+    $stmt = mysqli_prepare($conexion, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $idTipoPago);
+    mysqli_stmt_execute($stmt);
+    $resultado = mysqli_stmt_get_result($stmt);
+    $fila = mysqli_fetch_assoc($resultado);
+    return $fila ? $fila['denominacion'] : 'Desconocido';
+}
+
 ?>

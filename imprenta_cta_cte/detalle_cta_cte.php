@@ -32,6 +32,12 @@ $movimientos = ObtenerMovimientosCliente($MiConexion, $idCliente, 10);
 // Obtener trabajos pendientes
 $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $idCliente);
 $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
+
+// Obtener tipos de pago de entrada (excluyendo Cta. Cte.)
+$tiposPagoEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
+$tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
+    return $tipo['idTipoPago'] != 18; // Excluir Cta. Cte. (id 18)
+});
 ?>
 
 <main id="main" class="main">
@@ -137,10 +143,9 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                             <div class="col-md-6">
                                                 <label for="metodoDeposito" class="form-label">Método</label>
                                                 <select class="form-select" id="metodoDeposito" name="metodo" required>
-                                                    <option value="EFECTIVO">Efectivo</option>
-                                                    <option value="TRANSFERENCIA">Transferencia</option>
-                                                    <option value="CHEQUE">Cheque</option>
-                                                    <option value="OTRO">Otro</option>
+                                                    <?php foreach ($tiposPagoEntrada as $tipo): ?>
+                                                        <option value="<?= $tipo['idTipoPago'] ?>"><?= htmlspecialchars($tipo['denominacion']) ?></option>
+                                                    <?php endforeach; ?>
                                                 </select>
                                             </div>
                                             
@@ -209,10 +214,9 @@ $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
                                                             <div class="col-md-6">
                                                                 <label for="metodoPago" class="form-label">Método de pago</label>
                                                                 <select class="form-select" id="metodoPago" name="metodo" required>
-                                                                    <option value="EFECTIVO">Efectivo</option>
-                                                                    <option value="TRANSFERENCIA">Transferencia</option>
-                                                                    <option value="CHEQUE">Cheque</option>
-                                                                    <option value="OTRO">Otro</option>
+                                                                    <?php foreach ($tiposPagoEntrada as $tipo): ?>
+                                                                        <option value="<?= $tipo['idTipoPago'] ?>"><?= htmlspecialchars($tipo['denominacion']) ?></option>
+                                                                    <?php endforeach; ?>
                                                                 </select>
                                                             </div>
                                                             <div class="col-md-6">
