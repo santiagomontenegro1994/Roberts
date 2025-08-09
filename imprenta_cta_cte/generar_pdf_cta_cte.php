@@ -47,7 +47,7 @@ $SaldoCliente = $resultSaldo->fetch_assoc();
 $saldo = $SaldoCliente ? floatval($SaldoCliente['saldo']) : 0;
 $stmtSaldo->close();
 
-// Obtener trabajos pendientes en cuenta corriente
+// Obtener trabajos pendientes en cuenta corriente (SOLO idEstado = 8)
 $SQLTrabajos = "SELECT 
                 dt.idDetalleTrabajo,
                 dt.descripcion,
@@ -60,7 +60,7 @@ $SQLTrabajos = "SELECT
             JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
             WHERE pt.idCliente = ?
             AND dt.idActivo = 1
-            AND dt.idEstadoTrabajo IN (SELECT idEstado FROM estado_trabajo WHERE denominacion NOT LIKE '%PAGADO%')
+            AND dt.idEstadoTrabajo = 8  -- SOLO trabajos en cuenta corriente
             ORDER BY dt.fechaEntrega ASC";
 
 $stmtTrabajos = $MiConexion->prepare($SQLTrabajos);
@@ -76,51 +76,171 @@ while ($row = $resultTrabajos->fetch_assoc()) {
 }
 $stmtTrabajos->close();
 
-// Logo en base64
-$LogoPath = '../imagenes/logo.png';
-$LogoBase64 = '';
-if (file_exists($LogoPath)) {
-    $LogoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($LogoPath));
+// Preparar el logo en base64
+$ruta_imagen = '../imagenes/logo.png';
+$logo_html = '';
+if (file_exists($ruta_imagen)) {
+    $tipo_imagen = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
+    $datos_imagen = file_get_contents($ruta_imagen);
+    $base64_imagen = 'data:image/' . $tipo_imagen . ';base64,' . base64_encode($datos_imagen);
+    $logo_html = '<img src="' . $base64_imagen . '" alt="Logo de la empresa" style="max-width: 150px; height: auto;">';
 }
 
 // HTML del PDF
-$html = '<html>
+$html = '<!DOCTYPE html>
+<html lang="es">
 <head>
-<style>
-body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
-.header { display: flex; align-items: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-.header img { height: 60px; margin-right: 20px; }
-.header h1 { font-size: 20px; margin: 0; }
-.table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-.table th, .table td { border: 1px solid #000; padding: 5px; text-align: left; }
-.table th { background-color: #f0f0f0; }
-.total { margin-top: 20px; font-weight: bold; font-size: 14px; }
-.saldo-box { border: 1px solid #000; padding: 10px; margin-top: 20px; }
-.saldo-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-.saldo-title { font-weight: bold; }
-.saldo-value { text-align: right; }
-.saldo-total { font-size: 14px; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px; }
-.text-danger { color: #dc3545; }
-.text-success { color: #28a745; }
-</style>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta Corriente</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f9f9f9; 
+            margin: 0; 
+            padding: 0; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+        }
+        .header { 
+            width: 100%; 
+            margin-bottom: 20px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-text { 
+            text-align: right; 
+        }
+        .header-text h2 { 
+            color: #333; 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .header-text p { 
+            color: #777; 
+            margin: 5px 0 0; 
+            font-size: 14px; 
+        }
+        .details { 
+            clear: both; 
+            margin: 20px 0; 
+        }
+        .details h3 { 
+            color: #555; 
+            border-bottom: 2px solid #ddd; 
+            padding-bottom: 5px; 
+        }
+        .details div { 
+            margin: 10px 0; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+            font-size: 14px; 
+        }
+        table th, table td { 
+            padding: 8px; 
+            text-align: left; 
+            border: 1px solid #ddd; 
+        }
+        table th { 
+            background: #f8f9fa; 
+            font-weight: bold; 
+            color: #333; 
+        }
+        table tr:nth-child(even) { 
+            background: #f9f9f9; 
+        }
+        .text-right { 
+            text-align: right; 
+        }
+        .text-danger { 
+            color: #dc3545; 
+        }
+        .text-success { 
+            color: #28a745; 
+        }
+        .saldo-box { 
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            margin-top: 20px; 
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+        .saldo-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .saldo-row:last-child {
+            border-bottom: none;
+        }
+        .saldo-title { 
+            font-weight: bold; 
+            color: #555;
+        }
+        .saldo-value { 
+            text-align: right; 
+            font-weight: bold;
+        }
+        .saldo-total { 
+            font-size: 16px; 
+            border-top: 2px solid #ddd; 
+            padding-top: 10px; 
+            margin-top: 10px; 
+        }
+        .footer { 
+            margin-top: 30px;
+            text-align: center;
+            color: #777; 
+            font-style: italic; 
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .thank-you {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .contact-info {
+            margin-bottom: 15px;
+        }
+        .contact-info p {
+            margin: 3px 0;
+        }
+    </style>
 </head>
 <body>
-
-<div class="header">
-    <img src="' . $LogoBase64 . '">
-    <div>
-        <h1>Estado de Cuenta Corriente</h1>
-        <p>Fecha de emisión: ' . date("d/m/Y") . '</p>
-    </div>
-</div>
-
-<p><strong>Cliente:</strong> ' . htmlspecialchars($DatosCliente['nombre'] . ' ' . $DatosCliente['apellido']) . '</p>
-<p><strong>Teléfono:</strong> ' . htmlspecialchars($DatosCliente['telefono']) . '</p>
-
-<h3>Trabajos Pendientes</h3>';
+    <div class="container">
+        <div class="header">
+            ' . $logo_html . '
+            <div class="header-text">
+                <h2>Estado de Cuenta Corriente</h2>
+                <p>Fecha: ' . date("d/m/Y") . '</p>
+            </div>
+        </div>
+        
+        <div class="details">
+            <h3>Datos del Cliente</h3>
+            <div><strong>Nombre:</strong> ' . htmlspecialchars($DatosCliente['nombre'] . ' ' . $DatosCliente['apellido']) . '</div>
+            <div><strong>Teléfono:</strong> ' . htmlspecialchars($DatosCliente['telefono']) . '</div>
+        </div>
+        
+        <div class="details">
+            <h3>Trabajos en Cuenta Corriente</h3>';
 
 if (count($trabajosPendientes) > 0) {
-    $html .= '<table class="table">
+    $html .= '<table>
         <thead>
             <tr>
                 <th>ID</th>
@@ -128,7 +248,7 @@ if (count($trabajosPendientes) > 0) {
                 <th>Descripción</th>
                 <th>Fecha Pedido</th>
                 <th>Fecha Entrega</th>
-                <th>Precio</th>
+                <th class="text-right">Precio</th>
             </tr>
         </thead>
         <tbody>';
@@ -140,45 +260,66 @@ if (count($trabajosPendientes) > 0) {
             <td>' . htmlspecialchars(substr($trabajo['descripcion'], 0, 50)) . (strlen($trabajo['descripcion']) > 50 ? '...' : '') . '</td>
             <td>' . date("d/m/Y", strtotime($trabajo['fechaPedido'])) . '</td>
             <td>' . date("d/m/Y", strtotime($trabajo['fechaEntrega'])) . '</td>
-            <td>$ ' . number_format($trabajo['precio'], 2, ',', '.') . '</td>
+            <td class="text-right">$' . number_format($trabajo['precio'], 2, ',', '.') . '</td>
         </tr>';
     }
 
     $html .= '</tbody>
     </table>';
 } else {
-    $html .= '<p>No hay trabajos pendientes</p>';
+    $html .= '<p>No hay trabajos en cuenta corriente</p>';
 }
 
 // Resumen de saldos
 $saldoProyectado = $saldo - $totalPendiente;
 
 $html .= '
-<div class="saldo-box">
-    <div class="saldo-row">
-        <span class="saldo-title">Total trabajos pendientes:</span>
-        <span class="saldo-value">$ ' . number_format($totalPendiente, 2, ',', '.') . '</span>
+        <div class="saldo-box">
+            <div class="saldo-row">
+                <span class="saldo-title">Total trabajos en CC:</span>
+                <span class="saldo-value">$' . number_format($totalPendiente, 2, ',', '.') . '</span>
+            </div>
+            <div class="saldo-row">
+                <span class="saldo-title">Saldo en cuenta:</span>
+                <span class="saldo-value ' . ($saldo >= 0 ? 'text-success' : 'text-danger') . '">
+                    $' . number_format(abs($saldo), 2, ',', '.') . ' (' . ($saldo >= 0 ? 'A favor' : 'Deudor') . ')
+                </span>
+            </div>
+            <div class="saldo-row saldo-total">
+                <span class="saldo-title">Saldo proyectado:</span>
+                <span class="saldo-value ' . ($saldoProyectado >= 0 ? 'text-success' : 'text-danger') . '">
+                    $' . number_format(abs($saldoProyectado), 2, ',', '.') . ' (' . ($saldoProyectado >= 0 ? 'A favor' : 'Deudor') . ')
+                </span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="contact-info">
+                <p><strong>Contactos:</strong></p>
+                <p>Email: imprentaroberts@gmail.com</p>
+                <p>WhatsApp: 351 3525107</p>
+                <p>Laprida 25 - Villa Allende</p>
+            </div>
+            <p class="thank-you">Gracias por confiar en nosotros</p>
+        </div>
     </div>
-    <div class="saldo-row">
-        <span class="saldo-title">Saldo en cuenta:</span>
-        <span class="saldo-value ' . ($saldo >= 0 ? 'text-success' : 'text-danger') . '">
-            $ ' . number_format(abs($saldo), 2, ',', '.') . ' (' . ($saldo >= 0 ? 'A favor' : 'Deudor') . ')
-        </span>
-    </div>
-    <div class="saldo-row saldo-total">
-        <span class="saldo-title">Saldo proyectado:</span>
-        <span class="saldo-value ' . ($saldoProyectado >= 0 ? 'text-success' : 'text-danger') . '">
-            $ ' . number_format(abs($saldoProyectado), 2, ',', '.') . ' (' . ($saldoProyectado >= 0 ? 'A favor' : 'Deudor') . ')
-        </span>
-    </div>
-</div>
-
 </body>
 </html>';
 
 // Generar PDF
 $dompdf = new Dompdf();
+
+// Activar opciones para imágenes remotas
+$options = $dompdf->getOptions();
+$options->set(array('isRemoteEnable' => true));
+$dompdf->setOptions($options);
+
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-$dompdf->stream("Estado_CtaCte_" . $DatosCliente['nombre'] . "_" . $DatosCliente['apellido'] . ".pdf", ["Attachment" => false]);
+
+// Nombre del archivo con nombre del cliente
+$nombreArchivo = "Estado_CtaCte_" . str_replace(' ', '_', $DatosCliente['nombre'] . '_' . $DatosCliente['apellido']) . ".pdf";
+
+// Mostrar el PDF en el navegador (Attachment false) o forzar descarga (Attachment true)
+$dompdf->stream($nombreArchivo, array("Attachment" => true));
