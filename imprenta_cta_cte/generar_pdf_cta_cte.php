@@ -60,7 +60,7 @@ $SQLTrabajos = "SELECT
             JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
             WHERE pt.idCliente = ?
             AND dt.idActivo = 1
-            AND dt.idEstadoTrabajo = 8  -- SOLO trabajos en cuenta corriente
+            AND dt.idEstadoTrabajo = 8
             ORDER BY dt.fechaEntrega ASC";
 
 $stmtTrabajos = $MiConexion->prepare($SQLTrabajos);
@@ -76,14 +76,15 @@ while ($row = $resultTrabajos->fetch_assoc()) {
 }
 $stmtTrabajos->close();
 
-// Preparar el logo en base64
-$ruta_imagen = '../imagenes/logo.png';
-$logo_html = '';
+// Preparar el logo con base64 embebido
+$ruta_imagen = __DIR__ . '/../assets/img/logo.png'; // Ajustá la ruta según donde esté el logo
 if (file_exists($ruta_imagen)) {
-    $tipo_imagen = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
+    $mime_type = mime_content_type($ruta_imagen);
     $datos_imagen = file_get_contents($ruta_imagen);
-    $base64_imagen = 'data:image/' . $tipo_imagen . ';base64,' . base64_encode($datos_imagen);
+    $base64_imagen = 'data:' . $mime_type . ';base64,' . base64_encode($datos_imagen);
     $logo_html = '<img src="' . $base64_imagen . '" alt="Logo de la empresa" style="max-width: 150px; height: auto;">';
+} else {
+    $logo_html = '<p><strong>Logo no encontrado</strong></p>';
 }
 
 // HTML del PDF
@@ -309,9 +310,9 @@ $html .= '
 // Generar PDF
 $dompdf = new Dompdf();
 
-// Activar opciones para imágenes remotas
+// Activar opciones para imágenes remotas (aunque acá no haría falta por base64, no molesta)
 $options = $dompdf->getOptions();
-$options->set(array('isRemoteEnable' => true));
+$options->set(array('isRemoteEnabled' => true));
 $dompdf->setOptions($options);
 
 $dompdf->loadHtml($html);
@@ -321,5 +322,5 @@ $dompdf->render();
 // Nombre del archivo con nombre del cliente
 $nombreArchivo = "Estado_CtaCte_" . str_replace(' ', '_', $DatosCliente['nombre'] . '_' . $DatosCliente['apellido']) . ".pdf";
 
-// Mostrar el PDF en el navegador (Attachment false) o forzar descarga (Attachment true)
+// Descargar PDF
 $dompdf->stream($nombreArchivo, array("Attachment" => true));
