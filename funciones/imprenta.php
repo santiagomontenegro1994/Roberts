@@ -2522,4 +2522,236 @@ function ObtenerNombreTipoPago($conexion, $idTipoPago) {
     return $fila ? $fila['denominacion'] : 'Desconocido';
 }
 
+    // Usuarios
+
+function Listar_Usuarios($Conexion, $mostrarInactivos = false) {
+    $whereClause = $mostrarInactivos ? "" : "WHERE u.idActivo = 1";
+    
+    $query = "SELECT u.idUsuario AS ID_USUARIO, u.usuario AS USUARIO, 
+                     CONCAT(u.nombre, ' ', u.apellido) AS NOMBRE_COMPLETO,
+                     tu.denominacion AS TIPO_USUARIO,
+                     u.idActivo AS ID_ACTIVO
+              FROM usuarios u
+              JOIN tipo_usuario tu ON u.idTipoUsuario = tu.idTipoUsuario
+              $whereClause
+              ORDER BY u.nombre, u.apellido";
+    
+    $resultado = mysqli_query($Conexion, $query);
+    
+    $usuarios = array();
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $usuarios[] = $fila;
+    }
+    
+    return $usuarios;
+}
+
+function Listar_Usuarios_Parametro($Conexion, $criterio, $parametro, $mostrarInactivos = false) {
+    $criteriosPermitidos = ['nombre_completo', 'usuario', 'idUsuario'];
+    if (!in_array($criterio, $criteriosPermitidos)) {
+        $criterio = 'nombre_completo';
+    }
+    
+    $parametro = mysqli_real_escape_string($Conexion, $parametro);
+    
+    $whereClause = "";
+    if ($criterio == 'nombre_completo') {
+        $whereClause = "(u.nombre LIKE '%$parametro%' OR u.apellido LIKE '%$parametro%' OR CONCAT(u.nombre, ' ', u.apellido) LIKE '%$parametro%')";
+    } else {
+        $whereClause = "u.$criterio LIKE '%$parametro%'";
+    }
+    
+    if (!$mostrarInactivos) {
+        $whereClause = ($whereClause ? $whereClause . " AND " : "") . "u.idActivo = 1";
+    }
+    
+    $query = "SELECT u.idUsuario AS ID_USUARIO, u.usuario AS USUARIO, 
+                     CONCAT(u.nombre, ' ', u.apellido) AS NOMBRE_COMPLETO,
+                     tu.denominacion AS TIPO_USUARIO,
+                     u.idActivo AS ID_ACTIVO
+              FROM usuarios u
+              JOIN tipo_usuario tu ON u.idTipoUsuario = tu.idTipoUsuario
+              " . ($whereClause ? "WHERE $whereClause" : "") . "
+              ORDER BY u.nombre, u.apellido";
+    
+    $resultado = mysqli_query($Conexion, $query);
+    
+    $usuarios = array();
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $usuarios[] = $fila;
+    }
+    
+    return $usuarios;
+}
+
+function Listar_Tipos_Usuario($Conexion) {
+    $query = "SELECT idTipoUsuario AS ID_TIPO_USUARIO, denominacion AS DENOMINACION 
+              FROM tipo_usuario 
+              ORDER BY denominacion";
+    
+    $resultado = mysqli_query($Conexion, $query);
+    
+    $tipos = array();
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $tipos[] = $fila;
+    }
+    
+    return $tipos;
+}
+
+function Validar_Usuario() {
+    $mensaje = '';
+    
+    if (empty($_POST['Nombre'])) {
+        $mensaje .= 'Debe ingresar el nombre.<br>';
+    }
+    
+    if (empty($_POST['Apellido'])) {
+        $mensaje .= 'Debe ingresar el apellido.<br>';
+    }
+    
+    if (empty($_POST['Usuario'])) {
+        $mensaje .= 'Debe ingresar un nombre de usuario.<br>';
+    }
+    
+    if (empty($_POST['Clave'])) {
+        $mensaje .= 'Debe ingresar una contraseña.<br>';
+    } elseif ($_POST['Clave'] != $_POST['ConfirmarClave']) {
+        $mensaje .= 'Las contraseñas no coinciden.<br>';
+    }
+    
+    if (empty($_POST['TipoUsuario'])) {
+        $mensaje .= 'Debe seleccionar un tipo de usuario.<br>';
+    }
+    
+    return $mensaje;
+}
+
+function InsertarUsuario($Conexion) {
+    // Sanitizar inputs
+    $nombre = mysqli_real_escape_string($Conexion, $_POST['Nombre']);
+    $apellido = mysqli_real_escape_string($Conexion, $_POST['Apellido']);
+    $usuario = mysqli_real_escape_string($Conexion, $_POST['Usuario']);
+    $clave = password_hash($_POST['Clave'], PASSWORD_DEFAULT); // Encriptar contraseña
+    $tipoUsuario = intval($_POST['TipoUsuario']);
+    
+    // Verificar si el usuario ya existe
+    $query = "SELECT idUsuario FROM usuarios WHERE usuario = '$usuario'";
+    $resultado = mysqli_query($Conexion, $query);
+    
+    if (mysqli_num_rows($resultado) > 0) {
+        return 'El nombre de usuario ya está en uso.';
+    }
+    
+    // Insertar nuevo usuario
+    $query = "INSERT INTO usuarios (idTipoUsuario, usuario, clave, nombre, apellido)
+              VALUES ($tipoUsuario, '$usuario', '$clave', '$nombre', '$apellido')";
+    
+    if (mysqli_query($Conexion, $query)) {
+        return true;
+    } else {
+        return 'Error al registrar el usuario: ' . mysqli_error($Conexion);
+    }
+}
+
+function Datos_Usuario($Conexion, $idUsuario) {
+    $idUsuario = mysqli_real_escape_string($Conexion, $idUsuario);
+    
+    $query = "SELECT u.idUsuario AS ID_USUARIO, u.usuario AS USUARIO, 
+                     u.nombre AS NOMBRE, u.apellido AS APELLIDO, 
+                     u.idTipoUsuario AS ID_TIPO_USUARIO
+              FROM usuarios u
+              WHERE u.idUsuario = '$idUsuario'";
+    
+    $resultado = mysqli_query($Conexion, $query);
+    
+    if ($resultado && mysqli_num_rows($resultado) > 0) {
+        return mysqli_fetch_assoc($resultado);
+    }
+    
+    return array();
+}
+
+function Validar_Usuario_Modificacion() {
+    $_SESSION['Mensaje'] = '';
+    
+    if (empty($_POST['Nombre'])) {
+        $_SESSION['Mensaje'] .= 'Debe ingresar el nombre.<br>';
+    }
+    
+    if (empty($_POST['Apellido'])) {
+        $_SESSION['Mensaje'] .= 'Debe ingresar el apellido.<br>';
+    }
+    
+    if (empty($_POST['Usuario'])) {
+        $_SESSION['Mensaje'] .= 'Debe ingresar un nombre de usuario.<br>';
+    }
+    
+    if (empty($_POST['TipoUsuario'])) {
+        $_SESSION['Mensaje'] .= 'Debe seleccionar un tipo de usuario.<br>';
+    }
+}
+
+function Modificar_Usuario($Conexion) {
+    // Sanitizar inputs
+    $idUsuario = mysqli_real_escape_string($Conexion, $_POST['IdUsuario']);
+    $nombre = mysqli_real_escape_string($Conexion, $_POST['Nombre']);
+    $apellido = mysqli_real_escape_string($Conexion, $_POST['Apellido']);
+    $usuario = mysqli_real_escape_string($Conexion, $_POST['Usuario']);
+    $tipoUsuario = intval($_POST['TipoUsuario']);
+    
+    // Verificar si el usuario ya existe (excluyendo el usuario actual)
+    $query = "SELECT idUsuario FROM usuarios 
+              WHERE usuario = '$usuario' AND idUsuario != '$idUsuario'";
+    $resultado = mysqli_query($Conexion, $query);
+    
+    if (mysqli_num_rows($resultado) > 0) {
+        $_SESSION['Mensaje'] = 'El nombre de usuario ya está en uso.';
+        return false;
+    }
+    
+    // Actualizar usuario
+    $query = "UPDATE usuarios SET 
+              nombre = '$nombre',
+              apellido = '$apellido',
+              usuario = '$usuario',
+              idTipoUsuario = $tipoUsuario
+              WHERE idUsuario = '$idUsuario'";
+    
+    if (mysqli_query($Conexion, $query)) {
+        return true;
+    } else {
+        $_SESSION['Mensaje'] = 'Error al modificar el usuario: ' . mysqli_error($Conexion);
+        return false;
+    }
+}
+
+function Desactivar_Usuario($Conexion, $idUsuario) {
+    // Sanitizar el input
+    $idUsuario = mysqli_real_escape_string($Conexion, $idUsuario);
+    
+    // Actualizar el estado a inactivo (idActivo = 2)
+    $query = "UPDATE usuarios SET idActivo = 2 WHERE idUsuario = '$idUsuario'";
+    
+    return mysqli_query($Conexion, $query);
+}
+
+function Usuario_Esta_Activo($Conexion, $idUsuario) {
+    $query = "SELECT idActivo FROM usuarios WHERE idUsuario = '$idUsuario'";
+    $resultado = mysqli_query($Conexion, $query);
+    
+    if ($resultado && mysqli_num_rows($resultado) > 0) {
+        $fila = mysqli_fetch_assoc($resultado);
+        return ($fila['idActivo'] == 1); // Asumiendo que 1 es activo
+    }
+    
+    return false;
+}
+
+function Reactivar_Usuario($Conexion, $idUsuario) {
+    $idUsuario = mysqli_real_escape_string($Conexion, $idUsuario);
+    $query = "UPDATE usuarios SET idActivo = 1 WHERE idUsuario = '$idUsuario'";
+    return mysqli_query($Conexion, $query);
+}
+
 ?>

@@ -166,7 +166,23 @@
         </ul>
       </li><!-- End Contables -->
 
-
+            <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#usuarios-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-person-bounding-box"></i><span>Usuarios</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="usuarios-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="../imprenta_usuarios/agregar_usuarios.php">
+            <i class="bi bi-circle"></i><span>Agregar</span>
+          </a>
+        </li>
+        <li>
+          <a href="../imprenta_usuarios/listado_usuarios.php">
+            <i class="bi bi-circle"></i><span>Listado</span>
+          </a>
+        </li>
+        </ul>
+      </li><!-- End Usuarios -->
 
     </ul>
 
