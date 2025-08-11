@@ -1,45 +1,44 @@
 <?php 
 session_start();
-//print_r($_SESSION);
 require_once '../funciones/conexion.php';
-$MiConexion=ConexionBD();
+$MiConexion = ConexionBD();
 
-// Configurar zona horaria Argentina
 date_default_timezone_set('America/Argentina/Cordoba');
 
-$Mensaje='';
+$Mensaje = '';
 if (!empty($_POST['BotonLogin'])) {
-
     require_once '../funciones/login.php';
     $UsuarioLogueado = DatosLogin($_POST['user'], $_POST['password'], $MiConexion);
 
-    //la consulta con la BD para que encuentre un usuario registrado con el usuario y clave brindados
-    if ( !empty($UsuarioLogueado)) {
-      // $Mensaje ='ok! ya puedes ingresar';
-
-      //generar los valores del usuario (esto va a venir de mi BD)
-      $_SESSION['Usuario_Nombre']     = $UsuarioLogueado['NOMBRE'];
-      $_SESSION['Usuario_Apellido']   = $UsuarioLogueado['APELLIDO'];
-      $_SESSION['Usuario_Nivel']      = $UsuarioLogueado['NIVEL'];
-      $_SESSION['Usuario_Id']         = $UsuarioLogueado['ID'];
-      $_SESSION['Id_Caja']            = $UsuarioLogueado['ID_CAJA']; // Aquí asignamos el ID de la caja
-      $_SESSION['Mensaje']            = '';
-      $_SESSION['Estilo']             = '';
-      $_SESSION['Descarga']           = '';
-      $_SESSION['Cliente_Pedido']           = '';
-      $_SESSION['filtros_pedidos'] = [
-                                          'parametro' => '',
-                                          'criterio' => 'Cliente',
-                                          'estadoBuscado' => ''
-                                      ];
+    if (!empty($UsuarioLogueado)) {
+        $_SESSION['Usuario_Nombre'] = $UsuarioLogueado['NOMBRE'];
+        $_SESSION['Usuario_Apellido'] = $UsuarioLogueado['APELLIDO'];
+        $_SESSION['Usuario_Nivel'] = $UsuarioLogueado['NIVEL'];
+        $_SESSION['Usuario_Tipo'] = $UsuarioLogueado['TIPO_USUARIO'];
+        $_SESSION['Id_Caja'] = $UsuarioLogueado['ID_CAJA'];
+        $_SESSION['Mensaje'] = '';
+        $_SESSION['Estilo'] = '';
+        $_SESSION['Descarga'] = '';
+        $_SESSION['Cliente_Pedido'] = '';
+        $_SESSION['filtros_pedidos'] = [
+            'parametro' => '',
+            'criterio' => 'Cliente',
+            'estadoBuscado' => ''
+        ];
         
         header('Location: ../core/index.php');
         exit;
-
-    }else {
-        $Mensaje='Datos incorrectos, ingresa nuevamente.';
+    } else {
+        // Verificar si el usuario existe pero está inactivo
+        $SQL = "SELECT idUsuario FROM usuarios WHERE usuario='".mysqli_real_escape_string($MiConexion, $_POST['user'])."' AND clave='".mysqli_real_escape_string($MiConexion, $_POST['password'])."' AND idActivo != 1";
+        $rs = mysqli_query($MiConexion, $SQL);
+        
+        if (mysqli_num_rows($rs) > 0) {
+            $Mensaje = 'Tu cuenta está desactivada. Contacta al administrador.';
+        } else {
+            $Mensaje = 'Usuario o contraseña incorrectos';
+        }
     }
-
 }
 ?>
 

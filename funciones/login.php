@@ -2,8 +2,10 @@
 function DatosLogin($vUsuario, $vClave, $vConexion) {
     $Usuario = array();
     
-    $SQL = "SELECT * FROM usuarios 
-            WHERE usuario='$vUsuario' AND clave='$vClave'";
+    $SQL = "SELECT u.*, tu.denominacion AS tipo_usuario 
+            FROM usuarios u
+            JOIN tipo_usuario tu ON u.idTipoUsuario = tu.idTipoUsuario
+            WHERE u.usuario='$vUsuario' AND u.clave='$vClave' AND u.idActivo = 1";
     
     $rs = mysqli_query($vConexion, $SQL);
     $data = mysqli_fetch_array($rs);
@@ -13,6 +15,7 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
         $Usuario['NOMBRE'] = $data['nombre'];
         $Usuario['APELLIDO'] = $data['apellido'];
         $Usuario['NIVEL'] = $data['idTipoUsuario'];
+        $Usuario['TIPO_USUARIO'] = $data['tipo_usuario']; // Nuevo campo con la denominación
         
         // Obtener la fecha actual
         $fechaActual = date('Y-m-d');
@@ -47,7 +50,7 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
                 $cajaInicialAnterior = (float)$cajaAnterior['cajaInicial'];
                 $totalEntradas = (float)$cajaAnterior['totalEntradas'];
                 $totalRetiros = (float)$cajaAnterior['totalRetiros'];
-                $cajaEfectivoAnterior = $cajaInicialAnterior + $totalEntradas - $totalRetiros; // Esto es igual a $cajaEfectivoActual de la planilla
+                $cajaEfectivoAnterior = $cajaInicialAnterior + $totalEntradas - $totalRetiros;
             } else {
                 $cajaEfectivoAnterior = 19500; // Valor por defecto si no hay caja anterior
             }
@@ -67,5 +70,4 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
     
     return $Usuario;
 }
-
 ?>

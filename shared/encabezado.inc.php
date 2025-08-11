@@ -107,12 +107,7 @@ $MiConexion->close();
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                     <li class="dropdown-header">
                         <h6><?php echo $_SESSION['Usuario_Nombre'] . ' ' . $_SESSION['Usuario_Apellido']; ?></h6>
-                        <?php if ($_SESSION['Usuario_Nivel'] == 1) { ?>
-                            <span>Administrador</span>
-                        <?php } ?>
-                        <?php if ($_SESSION['Usuario_Nivel'] == 2) { ?>
-                            <span>Libros</span>
-                        <?php } ?>
+                        <span><?php echo $_SESSION['Usuario_Tipo']; ?></span>
                     </li>
                     <li>
                         <hr class="dropdown-divider">
