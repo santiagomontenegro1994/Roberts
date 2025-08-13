@@ -2628,29 +2628,43 @@ function Validar_Usuario() {
 }
 
 function InsertarUsuario($Conexion) {
+    // Validar campos obligatorios
+    if (empty($_POST['Clave']) || strlen($_POST['Clave']) < 4) {
+        return 'La contraseña debe tener al menos 4 caracteres';
+    }
+
     // Sanitizar inputs
     $nombre = mysqli_real_escape_string($Conexion, $_POST['Nombre']);
     $apellido = mysqli_real_escape_string($Conexion, $_POST['Apellido']);
     $usuario = mysqli_real_escape_string($Conexion, $_POST['Usuario']);
-    $clave = password_hash($_POST['Clave'], PASSWORD_DEFAULT); // Encriptar contraseña
     $tipoUsuario = intval($_POST['TipoUsuario']);
     
-    // Verificar si el usuario ya existe
-    $query = "SELECT idUsuario FROM usuarios WHERE usuario = '$usuario'";
-    $resultado = mysqli_query($Conexion, $query);
+    // Generar hash MD5 de la contraseña (32 caracteres hexadecimal)
+    $clave = md5($_POST['Clave']);
     
-    if (mysqli_num_rows($resultado) > 0) {
+    // Verificar si el usuario ya existe
+    $query = "SELECT idUsuario FROM usuarios WHERE usuario = ?";
+    $stmt = $Conexion->prepare($query);
+    $stmt->bind_param("s", $usuario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
         return 'El nombre de usuario ya está en uso.';
     }
     
     // Insertar nuevo usuario
-    $query = "INSERT INTO usuarios (idTipoUsuario, usuario, clave, nombre, apellido)
-              VALUES ($tipoUsuario, '$usuario', '$clave', '$nombre', '$apellido')";
+    $query = "INSERT INTO usuarios (idTipoUsuario, usuario, clave, nombre, apellido, idActivo)
+              VALUES (?, ?, ?, ?, ?, 1)";
     
-    if (mysqli_query($Conexion, $query)) {
+    $stmt = $Conexion->prepare($query);
+    $stmt->bind_param("issss", $tipoUsuario, $usuario, $clave, $nombre, $apellido);
+    
+    if ($stmt->execute()) {
         return true;
     } else {
-        return 'Error al registrar el usuario: ' . mysqli_error($Conexion);
+        error_log("Error SQL: " . $stmt->error);
+        return 'Error al registrar el usuario. Verifica los datos.';
     }
 }
 
@@ -2710,13 +2724,20 @@ function Modificar_Usuario($Conexion) {
         return false;
     }
     
-    // Actualizar usuario
+    // Construir la consulta base
     $query = "UPDATE usuarios SET 
               nombre = '$nombre',
               apellido = '$apellido',
               usuario = '$usuario',
-              idTipoUsuario = $tipoUsuario
-              WHERE idUsuario = '$idUsuario'";
+              idTipoUsuario = $tipoUsuario";
+    
+    // Si se marcó el checkbox para resetear contraseña
+    if (!empty($_POST['ResetearClave'])) {
+        $claveMd5 = md5('12345');
+        $query .= ", clave = '$claveMd5'";
+    }
+    
+    $query .= " WHERE idUsuario = '$idUsuario'";
     
     if (mysqli_query($Conexion, $query)) {
         return true;
@@ -2752,6 +2773,77 @@ function Reactivar_Usuario($Conexion, $idUsuario) {
     $idUsuario = mysqli_real_escape_string($Conexion, $idUsuario);
     $query = "UPDATE usuarios SET idActivo = 1 WHERE idUsuario = '$idUsuario'";
     return mysqli_query($Conexion, $query);
+}
+
+function VerificarCredencialesActuales($conexion, $idUsuario, $clave) {
+    $claveMd5 = md5($clave);
+    
+    $sql = "SELECT idUsuario FROM usuarios 
+            WHERE idUsuario = ? 
+            AND clave = ?";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("is", $idUsuario, $claveMd5);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    return $result->num_rows > 0;
+}
+
+function ActualizarCredenciales($conexion, $idUsuario, $nuevoUsuario, $nuevaClave = null) {
+    $nuevoUsuario = mysqli_real_escape_string($conexion, $nuevoUsuario);
+    
+    $sql = "UPDATE usuarios SET usuario = ?";
+    $params = [$nuevoUsuario];
+    $types = "s";
+    
+    if (!empty($nuevaClave)) {
+        $claveMd5 = md5($nuevaClave);
+        $sql .= ", clave = ?";
+        $params[] = $claveMd5;
+        $types .= "s";
+    }
+    
+    $sql .= " WHERE idUsuario = ?";
+    $params[] = $idUsuario;
+    $types .= "i";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    
+    if ($stmt->execute()) {
+        return $stmt->affected_rows > 0;
+    }
+    return false;
+}
+
+function ObtenerDatosUsuario($conexion, $idUsuario) {
+    $sql = "SELECT idUsuario, usuario, nombre, apellido FROM usuarios WHERE idUsuario = ?";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("i", $idUsuario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        return false;
+    }
+    
+    return $result->fetch_assoc();
+}
+
+function VerificarDisponibilidadUsuario($conexion, $idUsuario, $nuevoUsuario) {
+    $nuevoUsuario = mysqli_real_escape_string($conexion, $nuevoUsuario);
+    
+    $sql = "SELECT idUsuario FROM usuarios 
+            WHERE usuario = ? 
+            AND idUsuario != ?";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("si", $nuevoUsuario, $idUsuario);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    return $result->num_rows === 0;
 }
 
 ?>

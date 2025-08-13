@@ -2,6 +2,7 @@
 session_start();
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
+$MiConexion->set_charset("utf8mb4"); // Asegurar encoding correcto
 
 date_default_timezone_set('America/Argentina/Cordoba');
 
@@ -14,6 +15,7 @@ if (!empty($_POST['BotonLogin'])) {
         $_SESSION['Usuario_Nombre'] = $UsuarioLogueado['NOMBRE'];
         $_SESSION['Usuario_Apellido'] = $UsuarioLogueado['APELLIDO'];
         $_SESSION['Usuario_Nivel'] = $UsuarioLogueado['NIVEL'];
+        $_SESSION['Usuario_Id'] = $UsuarioLogueado['ID'];
         $_SESSION['Usuario_Tipo'] = $UsuarioLogueado['TIPO_USUARIO'];
         $_SESSION['Id_Caja'] = $UsuarioLogueado['ID_CAJA'];
         $_SESSION['Mensaje'] = '';
@@ -29,15 +31,8 @@ if (!empty($_POST['BotonLogin'])) {
         header('Location: ../core/index.php');
         exit;
     } else {
-        // Verificar si el usuario existe pero está inactivo
-        $SQL = "SELECT idUsuario FROM usuarios WHERE usuario='".mysqli_real_escape_string($MiConexion, $_POST['user'])."' AND clave='".mysqli_real_escape_string($MiConexion, $_POST['password'])."' AND idActivo != 1";
-        $rs = mysqli_query($MiConexion, $SQL);
-        
-        if (mysqli_num_rows($rs) > 0) {
-            $Mensaje = 'Tu cuenta está desactivada. Contacta al administrador.';
-        } else {
-            $Mensaje = 'Usuario o contraseña incorrectos';
-        }
+        // Mensaje genérico por seguridad
+        $Mensaje = 'Usuario o contraseña incorrectos';
     }
 }
 ?>

@@ -108,11 +108,33 @@ ob_end_flush(); // Envía el contenido del búfer al navegador
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Restablecer contraseña</label>
+                        <div class="col-sm-10">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="ResetearClave" id="resetearClave">
+                                <label class="form-check-label" for="resetearClave">
+                                    Restablecer a "12345"
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="text-center">
                         <input type='hidden' name="IdUsuario" value="<?php echo $DatosUsuarioActual['ID_USUARIO']; ?>" />
                         <button type="submit" class="btn btn-primary" value="Modificar" name="BotonModificarUsuario">Modificar</button>
                         <a href="listado_usuarios.php" class="btn btn-success btn-info" title="Listado">Volver al listado</a>
                     </div>
+
+                    <script>
+                    document.querySelector('form').addEventListener('submit', function(e) {
+                        if (document.getElementById('resetearClave').checked) {
+                            if (!confirm('¿Está seguro que desea restablecer la contraseña a "12345"?')) {
+                                e.preventDefault();
+                            }
+                        }
+                    });
+                    </script>
                 </form><!-- End Horizontal Form -->
             </div>
         </div>
