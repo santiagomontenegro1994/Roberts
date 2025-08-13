@@ -708,7 +708,7 @@ function ObtenerDetallesCaja($vConexion, $idCaja) {
                 tm.denominacion AS detalle,         
                 tm.es_entrada, 
                 tm.es_salida, 
-                u.usuario, 
+                u.nombre AS usuario, 
                 dc.monto, 
                 dc.observaciones
               FROM detalle_caja dc
