@@ -34,7 +34,7 @@ switch ($tipo) {
         break;
     default:
         $titulo = "Todos los Trabajos";
-        $ListadoPedidos = Listar_Pedidos_Trabajos_Detallado($MiConexion);
+        $ListadoPedidos = Listar_Pedidos_Trabajos_Detallado_Completo($MiConexion);
         break;
 }
 
@@ -55,6 +55,7 @@ ob_start();
         table th { background-color: #f2f2f2; font-weight: bold; }
         .text-right { text-align: right; }
         .footer { margin-top: 15px; font-size: 11px; text-align: center; color: #666; }
+        .nowrap { white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -74,7 +75,7 @@ ob_start();
                 <th>Descripción</th>
                 <th>Proveedor</th>
                 <th>Estado</th>
-                <th>Fecha Entrega</th>
+                <th class="nowrap">Entrega Prometida</th>
             </tr>
         </thead>
         <tbody>
@@ -90,7 +91,7 @@ ob_start();
                         $descripcion = htmlspecialchars($trabajo['DESCRIPCION'] ?? '');
                         $proveedor = htmlspecialchars($trabajo['PROVEEDOR'] ?? 'No asignado');
                         $estado = htmlspecialchars($trabajo['ESTADO'] ?? 'No especificado');
-                        $fechaEntrega = $trabajo['FECHA_ENTREGA'] ?? 'No especificada';
+                        $fechaHoraEntrega = htmlspecialchars($trabajo['FECHA_ENTREGA'] ?? 'No especificada');
             ?>
                     <tr>
                         <td><?= $pedidoId ?></td>
@@ -101,7 +102,7 @@ ob_start();
                         <td><?= $descripcion ?></td>
                         <td><?= $proveedor ?></td>
                         <td><?= $estado ?></td>
-                        <td><?= $fechaEntrega ?></td>
+                        <td class="nowrap"><?= $fechaHoraEntrega ?></td>
                     </tr>
             <?php endforeach; 
                 } else { ?>
@@ -110,7 +111,7 @@ ob_start();
                     <td><?= $fechaPedido ?></td>
                     <td><?= $clienteNombre ?></td>
                     <td><?= $telefono ?></td>
-                    <td colspan="5">Sin trabajos registrados</td>
+                    <td colspan="6">Sin trabajos registrados</td>
                 </tr>
             <?php } ?>
             <?php endforeach; ?>

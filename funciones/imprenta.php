@@ -2937,7 +2937,8 @@ function Listar_Pedidos_Trabajo_Con_Detalle_Estado_Proveedor($conexion, $estados
                 dt.idProveedor, 
                 IFNULL(p.nombre, 'No asignado') AS nombre_proveedor,
                 DATE_FORMAT(dt.fechaEntrega, '%d/%m/%Y') AS fecha_entrega_formateada,
-                dt.horaEntrega,
+                TIME_FORMAT(dt.horaEntrega, '%H:%i') AS hora_entrega_formateada,
+                CONCAT(DATE_FORMAT(dt.fechaEntrega, '%d/%m/%Y'), ' ', TIME_FORMAT(dt.horaEntrega, '%H:%i')) AS fecha_hora_entrega,
                 dt.precio, 
                 dt.descripcion, 
                 dt.idEstadoTrabajo,
@@ -2953,7 +2954,7 @@ function Listar_Pedidos_Trabajo_Con_Detalle_Estado_Proveedor($conexion, $estados
             JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
             WHERE dt.idEstadoTrabajo IN ($estadosPlaceholders)
             AND dt.idProveedor IN ($proveedoresPlaceholders)
-            ORDER BY dt.fechaEntrega ASC, pt.fecha ASC";
+            ORDER BY dt.fechaEntrega ASC, dt.horaEntrega ASC, pt.fecha ASC";
     
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
@@ -2994,8 +2995,8 @@ function Listar_Pedidos_Trabajo_Con_Detalle_Estado_Proveedor($conexion, $estados
             'DESCRIPCION' => $fila['descripcion'],
             'PROVEEDOR' => $fila['nombre_proveedor'],
             'ESTADO' => $fila['nombre_estado'],
-            'FECHA_ENTREGA' => $fila['fecha_entrega_formateada'],
-            'HORA_ENTREGA' => $fila['horaEntrega'],
+            'FECHA_ENTREGA' => $fila['fecha_hora_entrega'],
+            'HORA_ENTREGA' => $fila['hora_entrega_formateada'],
             'PRECIO' => $fila['precio']
         ];
         
@@ -3080,6 +3081,103 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
     }
 
     return array_values($pedidos);
+}
+
+function Listar_Pedidos_Trabajos_Detallado_Completo($vConexion) {
+    $Listado = array();
+
+    // Primero obtenemos los pedidos con sus sumatorias
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                C.telefono,
+                EPT.denominacion AS estado_pedido,
+                US.usuario,
+                COALESCE(SUM(DT.precio), 0) AS precio_total
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_pedido_trabajo EPT ON PT.idEstado = EPT.idEstadoPedidoTrabajo
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            WHERE PT.idActivo = 1
+            GROUP BY PT.idPedidoTrabajos
+            ORDER BY PT.idPedidoTrabajos DESC";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    if (!$rs) {
+        error_log("Error en Listar_Pedidos_Trabajos_Detallado_Completo: " . mysqli_error($vConexion));
+        return $Listado;
+    }
+
+    // Obtenemos todos los pedidos con sus totales
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $pedidos[$data['idPedidoTrabajos']] = array(
+            'ID' => $data['idPedidoTrabajos'],
+            'FECHA' => $data['fecha'],
+            'SEÑA' => $data['senia'],
+            'TELEFONO' => $data['telefono'],
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'ESTADO' => $data['estado_pedido'],
+            'USUARIO' => $data['usuario'],
+            'PRECIO' => $data['precio_total'],
+            'TRABAJOS' => array()
+        );
+    }
+
+    // Si hay pedidos, obtenemos sus detalles completos
+    if (!empty($pedidos)) {
+        $SQL = "SELECT 
+                    DT.id_pedido_trabajos,
+                    DT.idDetalleTrabajo,
+                    DT.idTrabajo,
+                    TT.denominacion AS nombre_trabajo,
+                    DT.descripcion,
+                    IFNULL(P.nombre, 'No asignado') AS proveedor,
+                    IFNULL(ET.denominacion, 'No especificado') AS estado_trabajo,
+                    DATE_FORMAT(DT.fechaEntrega, '%d/%m/%Y') AS fecha_entrega,
+                    TIME_FORMAT(DT.horaEntrega, '%H:%i') AS hora_entrega,
+                    CONCAT(DATE_FORMAT(DT.fechaEntrega, '%d/%m/%Y'), ' ', TIME_FORMAT(DT.horaEntrega, '%H:%i')) AS fecha_hora_entrega,
+                    DT.precio
+                FROM detalle_trabajos DT
+                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+                LEFT JOIN proveedores P ON DT.idProveedor = P.idProveedor
+                LEFT JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
+                WHERE DT.id_pedido_trabajos IN (" . implode(',', array_keys($pedidos)) . ")
+                AND DT.idActivo = 1
+                ORDER BY DT.id_pedido_trabajos DESC, DT.fechaEntrega ASC, DT.horaEntrega ASC";
+
+        $rs = mysqli_query($vConexion, $SQL);
+
+        if ($rs) {
+            while ($data = mysqli_fetch_assoc($rs)) {
+                $idPedido = $data['id_pedido_trabajos'];
+                if (isset($pedidos[$idPedido])) {
+                    $pedidos[$idPedido]['TRABAJOS'][] = array(
+                        'ID_TRABAJO' => $data['idTrabajo'],
+                        'DENOMINACION' => $data['nombre_trabajo'],
+                        'DESCRIPCION' => $data['descripcion'],
+                        'PROVEEDOR' => $data['proveedor'],
+                        'ESTADO' => $data['estado_trabajo'],
+                        'FECHA_ENTREGA' => $data['fecha_hora_entrega'],
+                        'HORA_ENTREGA' => $data['hora_entrega'],
+                        'PRECIO' => $data['precio']
+                    );
+                }
+            }
+        } else {
+            error_log("Error al obtener detalles completos de trabajos: " . mysqli_error($vConexion));
+        }
+    }
+
+    // Convertir a lista indexada
+    $Listado = array_values($pedidos);
+    return $Listado;
 }
 
 ?>
