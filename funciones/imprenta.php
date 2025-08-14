@@ -2846,4 +2846,240 @@ function VerificarDisponibilidadUsuario($conexion, $idUsuario, $nuevoUsuario) {
     return $result->num_rows === 0;
 }
 
+    // Listas trabajos
+
+function Listar_Pedidos_Trabajo_Con_Detalle_Estado($conexion, $idEstado) {
+    $sql = "SELECT 
+                pt.*,
+                c.nombre AS CLIENTE_N, 
+                c.apellido AS CLIENTE_A, 
+                c.telefono AS TELEFONO,
+                dt.idDetalleTrabajo,
+                dt.idTrabajo,
+                dt.idProveedor,
+                IFNULL(p.nombre, 'No asignado') AS nombre_proveedor,
+                DATE_FORMAT(dt.fechaEntrega, '%d/%m/%Y') AS fecha_entrega_formateada,
+                dt.horaEntrega,
+                dt.precio,
+                dt.descripcion,
+                dt.idEstadoTrabajo,
+                IFNULL(et.denominacion, 'No especificado') AS nombre_estado,
+                tt.denominacion AS trabajo_denom,
+                ept.denominacion AS estado_pedido
+            FROM pedido_trabajos pt
+            JOIN clientes c ON pt.idCliente = c.idCliente
+            JOIN detalle_trabajos dt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos
+            LEFT JOIN proveedores p ON dt.idProveedor = p.idProveedor
+            LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
+            JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
+            JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
+            WHERE dt.idEstadoTrabajo = ?
+            ORDER BY dt.fechaEntrega ASC, pt.fecha ASC";
+
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        die("Error en la preparación de la consulta: " . $conexion->error);
+    }
+    
+    $stmt->bind_param("i", $idEstado);
+    if (!$stmt->execute()) {
+        die("Error al ejecutar la consulta: " . $stmt->error);
+    }
+    
+    $resultado = $stmt->get_result();
+    $pedidos = [];
+    
+    while ($fila = $resultado->fetch_assoc()) {
+        $pedidoId = $fila['idPedidoTrabajos'];
+        
+        if (!isset($pedidos[$pedidoId])) {
+            $pedidos[$pedidoId] = [
+                'ID' => $fila['idPedidoTrabajos'],
+                'FECHA' => $fila['fecha'],
+                'CLIENTE_N' => $fila['CLIENTE_N'],
+                'CLIENTE_A' => $fila['CLIENTE_A'],
+                'TELEFONO' => $fila['TELEFONO'],
+                'PRECIO' => 0,
+                'SEÑA' => $fila['senia'],
+                'USUARIO' => $fila['idUsuario'],
+                'ESTADO' => $fila['estado_pedido'],
+                'TRABAJOS' => []
+            ];
+        }
+        
+        $pedidos[$pedidoId]['TRABAJOS'][] = [
+            'DENOMINACION' => $fila['trabajo_denom'],
+            'DESCRIPCION' => $fila['descripcion'],
+            'PROVEEDOR' => $fila['nombre_proveedor'],
+            'ESTADO' => $fila['nombre_estado'],
+            'FECHA_ENTREGA' => $fila['fecha_entrega_formateada'],
+            'HORA_ENTREGA' => $fila['horaEntrega'],
+            'PRECIO' => $fila['precio']
+        ];
+        
+        $pedidos[$pedidoId]['PRECIO'] += $fila['precio'];
+    }
+    
+    return array_values($pedidos);
+}
+
+function Listar_Pedidos_Trabajo_Con_Detalle_Estado_Proveedor($conexion, $estados, $proveedores) {
+    $estadosPlaceholders = implode(',', array_fill(0, count($estados), '?'));
+    $proveedoresPlaceholders = implode(',', array_fill(0, count($proveedores), '?'));
+    
+    $sql = "SELECT 
+                pt.*, 
+                c.nombre AS CLIENTE_N, 
+                c.apellido AS CLIENTE_A, 
+                c.telefono AS TELEFONO,
+                dt.idDetalleTrabajo, 
+                dt.idTrabajo, 
+                dt.idProveedor, 
+                IFNULL(p.nombre, 'No asignado') AS nombre_proveedor,
+                DATE_FORMAT(dt.fechaEntrega, '%d/%m/%Y') AS fecha_entrega_formateada,
+                dt.horaEntrega,
+                dt.precio, 
+                dt.descripcion, 
+                dt.idEstadoTrabajo,
+                tt.denominacion AS trabajo_denom, 
+                IFNULL(et.denominacion, 'No especificado') AS nombre_estado,
+                ept.denominacion AS estado_pedido
+            FROM pedido_trabajos pt
+            JOIN clientes c ON pt.idCliente = c.idCliente
+            JOIN detalle_trabajos dt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos
+            JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
+            LEFT JOIN proveedores p ON dt.idProveedor = p.idProveedor
+            LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
+            JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
+            WHERE dt.idEstadoTrabajo IN ($estadosPlaceholders)
+            AND dt.idProveedor IN ($proveedoresPlaceholders)
+            ORDER BY dt.fechaEntrega ASC, pt.fecha ASC";
+    
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        die("Error en la preparación de la consulta: " . $conexion->error);
+    }
+    
+    $tipos = str_repeat('i', count($estados) + count($proveedores));
+    $params = array_merge($estados, $proveedores);
+    $stmt->bind_param($tipos, ...$params);
+    
+    if (!$stmt->execute()) {
+        die("Error al ejecutar la consulta: " . $stmt->error);
+    }
+    
+    $resultado = $stmt->get_result();
+    $pedidos = [];
+    
+    while ($fila = $resultado->fetch_assoc()) {
+        $pedidoId = $fila['idPedidoTrabajos'];
+        
+        if (!isset($pedidos[$pedidoId])) {
+            $pedidos[$pedidoId] = [
+                'ID' => $fila['idPedidoTrabajos'],
+                'FECHA' => $fila['fecha'],
+                'CLIENTE_N' => $fila['CLIENTE_N'],
+                'CLIENTE_A' => $fila['CLIENTE_A'],
+                'TELEFONO' => $fila['TELEFONO'],
+                'PRECIO' => 0,
+                'SEÑA' => $fila['senia'],
+                'USUARIO' => $fila['idUsuario'],
+                'ESTADO' => $fila['estado_pedido'],
+                'TRABAJOS' => []
+            ];
+        }
+        
+        $pedidos[$pedidoId]['TRABAJOS'][] = [
+            'DENOMINACION' => $fila['trabajo_denom'],
+            'DESCRIPCION' => $fila['descripcion'],
+            'PROVEEDOR' => $fila['nombre_proveedor'],
+            'ESTADO' => $fila['nombre_estado'],
+            'FECHA_ENTREGA' => $fila['fecha_entrega_formateada'],
+            'HORA_ENTREGA' => $fila['horaEntrega'],
+            'PRECIO' => $fila['precio']
+        ];
+        
+        $pedidos[$pedidoId]['PRECIO'] += $fila['precio'];
+    }
+    
+    return array_values($pedidos);
+}
+
+function Listar_Pedidos_Trabajo_Pendientes($conexion) {
+    $sql = "SELECT 
+                pt.idPedidoTrabajos,
+                pt.fecha,
+                pt.senia,
+                c.nombre AS CLIENTE_N,
+                c.apellido AS CLIENTE_A,
+                c.telefono AS TELEFONO,
+                ept.denominacion AS estado_pedido,
+                u.usuario,
+                dt.idDetalleTrabajo,
+                tt.denominacion AS trabajo_denom,
+                dt.descripcion,
+                IFNULL(p.nombre, 'No asignado') AS nombre_proveedor,
+                IFNULL(et.denominacion, 'No especificado') AS nombre_estado,
+                DATE_FORMAT(dt.fechaEntrega, '%d/%m/%Y') AS fecha_entrega_formateada,
+                dt.horaEntrega,
+                dt.precio
+            FROM pedido_trabajos pt
+            INNER JOIN clientes c ON pt.idCliente = c.idCliente
+            INNER JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
+            INNER JOIN usuarios u ON pt.idUsuario = u.idUsuario
+            LEFT JOIN detalle_trabajos dt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos AND dt.idActivo = 1
+            LEFT JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
+            LEFT JOIN proveedores p ON dt.idProveedor = p.idProveedor
+            LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
+            WHERE pt.idActivo = 1 
+              AND pt.idEstado = 1
+            ORDER BY pt.idPedidoTrabajos DESC, dt.idDetalleTrabajo ASC";
+
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        die("Error en la preparación de la consulta: " . $conexion->error);
+    }
+
+    if (!$stmt->execute()) {
+        die("Error al ejecutar la consulta: " . $stmt->error);
+    }
+
+    $resultado = $stmt->get_result();
+    $pedidos = [];
+
+    while ($fila = $resultado->fetch_assoc()) {
+        $pedidoId = $fila['idPedidoTrabajos'];
+
+        if (!isset($pedidos[$pedidoId])) {
+            $pedidos[$pedidoId] = [
+                'ID' => $fila['idPedidoTrabajos'],
+                'FECHA' => $fila['fecha'],
+                'SEÑA' => $fila['senia'],
+                'TELEFONO' => $fila['TELEFONO'],
+                'CLIENTE_N' => $fila['CLIENTE_N'],
+                'CLIENTE_A' => $fila['CLIENTE_A'],
+                'ESTADO' => $fila['estado_pedido'],
+                'USUARIO' => $fila['usuario'],
+                'TRABAJOS' => [],
+                'PRECIO' => 0
+            ];
+        }
+
+        if (!empty($fila['idDetalleTrabajo'])) {
+            $pedidos[$pedidoId]['TRABAJOS'][] = [
+                'DENOMINACION' => $fila['trabajo_denom'],
+                'DESCRIPCION' => $fila['descripcion'],
+                'PROVEEDOR' => $fila['nombre_proveedor'],
+                'ESTADO' => $fila['nombre_estado'],
+                'FECHA_ENTREGA' => $fila['fecha_entrega_formateada'],
+                'HORA_ENTREGA' => $fila['horaEntrega'],
+                'PRECIO' => $fila['precio']
+            ];
+            $pedidos[$pedidoId]['PRECIO'] += floatval($fila['precio']);
+        }
+    }
+
+    return array_values($pedidos);
+}
+
 ?>

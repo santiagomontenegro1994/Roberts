@@ -119,6 +119,20 @@ $CantidadPedidos = count($ListadoPedidos);
                             <button type="submit" class="btn btn-secondary" name="BotonLimpiar" value="1">
                                 <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </button>
+                            
+                            <!-- Botón de descarga con dropdown -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-download"></i> Descargar
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="pendientes">Trabajos Pendientes</a></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Impresos/En Proceso</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="todos">Todos los Trabajos</a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                     
@@ -305,60 +319,91 @@ $CantidadPedidos = count($ListadoPedidos);
 ?>
 
 <script>
+// Función para descargar informes (definida en ámbito global)
+function descargarInforme(tipo) {
+    // Mostrar spinner de carga
+    const spinner = document.createElement('div');
+    spinner.className = 'position-fixed top-50 start-50 translate-middle';
+    spinner.innerHTML = `
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <div class="mt-2 text-primary fs-5">Generando informe...</div>
+    `;
+    document.body.appendChild(spinner);
+
+    // Fetch para generar el PDF
+    fetch(`generar_informe_trabajos.php?tipo=${tipo}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Error en el servidor');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Informe_${tipo}_${new Date().toLocaleDateString()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al generar: ' + error.message);
+        })
+        .finally(() => {
+            document.body.removeChild(spinner);
+        });
+}
+
+// Eventos cuando el DOM está cargado
 document.addEventListener('DOMContentLoaded', function() {
+    // Configuración del modal
     const retirarPedidoModal = new bootstrap.Modal(document.getElementById('retirarPedidoModal'));
-    const formBusqueda = document.getElementById('formBusqueda');
-    const parametroInput = document.getElementById('parametro');
-    const estadoSelect = document.getElementById('estadoBuscado');
     
-    // Configurar el modal de retirar pedido
+    // Evento para mostrar datos en el modal
     document.getElementById('retirarPedidoModal').addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
-        const pedidoId = button.getAttribute('data-pedido-id');
-        const saldo = button.getAttribute('data-pedido-saldo');
-        
-        document.getElementById('retirarPedidoId').value = pedidoId;
-        document.getElementById('retirarPedidoSaldo').value = '$' + parseFloat(saldo).toFixed(2);
+        document.getElementById('retirarPedidoId').value = button.getAttribute('data-pedido-id');
+        document.getElementById('retirarPedidoSaldo').value = '$' + parseFloat(button.getAttribute('data-pedido-saldo')).toFixed(2);
     });
-    
-    // Manejar envío del formulario de retiro
+
+    // Validación del formulario de retiro
     document.getElementById('formRetirarPedido').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (confirm('¿Confirmar retiro del pedido? Esta acción no se puede deshacer.')) {
-            this.submit();
+        if (!confirm('¿Confirmar retiro del pedido?')) {
+            e.preventDefault();
         }
     });
 
-    // Manejar cambios en el select de estado
+    // Eventos para los filtros de búsqueda
+    const formBusqueda = document.getElementById('formBusqueda');
+    const parametroInput = document.getElementById('parametro');
+    const estadoSelect = document.getElementById('estadoBuscado');
+
     estadoSelect.addEventListener('change', function() {
-        // Resetear el campo de búsqueda
         parametroInput.value = '';
-        
-        // Crear un input hidden para el botón de búsqueda
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'BotonBuscar';
-        hiddenInput.value = '1';
-        formBusqueda.appendChild(hiddenInput);
-        
-        // Enviar el formulario
         formBusqueda.submit();
     });
-    
-    // Manejar envío del formulario de búsqueda
+
     formBusqueda.addEventListener('submit', function(e) {
-        // Si se está buscando por parámetro (no es el botón limpiar)
         if (parametroInput.value.trim() !== '' && !(e.submitter && e.submitter.name === 'BotonLimpiar')) {
-            // Resetear el select de estado
             estadoSelect.value = '';
         }
     });
-    
+
     // Inicializar tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    new bootstrap.Tooltip(document.body, {
+        selector: '[data-bs-toggle="tooltip"]'
+    });
+
+    // Asignar eventos a los botones de descarga
+    document.querySelectorAll('.dropdown-item.descargar-informe').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tipo = this.getAttribute('data-tipo');
+            descargarInforme(tipo);
+        });
     });
 });
 </script>
