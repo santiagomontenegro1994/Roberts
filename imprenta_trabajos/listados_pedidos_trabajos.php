@@ -113,24 +113,24 @@ $CantidadPedidos = count($ListadoPedidos);
                     
                     <div class="col-md-4">
                         <div class="btn-group" role="group">
-                            <button type="submit" class="btn btn-primary" name="BotonBuscar" value="1">
+                            <button type="submit" class="btn btn-primary btn-sm" name="BotonBuscar" value="1">
                                 <i class="bi bi-search"></i> Buscar
                             </button>
-                            <button type="submit" class="btn btn-secondary" name="BotonLimpiar" value="1">
+                            <button type="submit" class="btn btn-secondary btn-sm" name="BotonLimpiar" value="1">
                                 <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </button>
                             
                             <!-- Botón de descarga con dropdown -->
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-download"></i> Descargar
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item descargar-informe" href="#" data-tipo="pendientes">Trabajos Pendientes</a></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Impresos/En Proceso</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="todos">Todos los Trabajos</a></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Para Taller</a></li>
                                 </ul>
                             </div>
                         </div>
