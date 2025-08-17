@@ -834,20 +834,43 @@ function Modificar_Venta($vConexion) {
     $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
     
     // Usar MontoReal en lugar de Monto
-    $monto = floatval($_POST['MontoReal']); // Convertir a float para asegurar el formato numérico
+    $monto = floatval($_POST['MontoReal']);
     $monto = mysqli_real_escape_string($vConexion, $monto);
     
     $observaciones = isset($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
+    
+    // Datos de facturación
+    $facturado = isset($_POST['facturado']) ? 1 : 0;
+    $facturadoAnterior = isset($_POST['facturado_anterior']) ? (int)$_POST['facturado_anterior'] : 0;
+    $idTipoFactura = isset($_POST['idTipoFactura']) && !empty($_POST['idTipoFactura']) ? mysqli_real_escape_string($vConexion, $_POST['idTipoFactura']) : null;
+    $numeroFactura = isset($_POST['numeroFactura']) && !empty($_POST['numeroFactura']) ? mysqli_real_escape_string($vConexion, $_POST['numeroFactura']) : null;
 
-    // Construir la consulta SQL
+    // Si se desmarcó el checkbox de facturación, llamar al procedimiento para quitar factura
+    if ($facturadoAnterior == 1 && $facturado == 0) {
+        $SQL_Call = "CALL quitar_factura('caja', '$idDetalleCaja')";
+        if (!mysqli_query($vConexion, $SQL_Call)) {
+            error_log("Error al quitar factura: " . mysqli_error($vConexion));
+            return false;
+        }
+    }
+
+    // Construir la consulta SQL para actualizar los demás campos
     $SQL_MiConsulta = "UPDATE detalle_caja
                        SET idCaja = '$idCaja',
                            idTipoPago = '$idTipoPago',
                            idTipoMovimiento = '$idTipoMovimiento',
                            idUsuario = '$idUsuario',
                            monto = '$monto',
-                           observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                       WHERE idDetalleCaja = '$idDetalleCaja'";
+                           observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL");
+    
+    // Solo actualizar campos de factura si se está facturando
+    if ($facturado == 1) {
+        $SQL_MiConsulta .= ", facturado = 1,
+                           idTipoFactura = " . ($idTipoFactura !== null ? "'$idTipoFactura'" : "NULL") . ",
+                           numeroFactura = " . ($numeroFactura !== null ? "'$numeroFactura'" : "NULL");
+    }
+    
+    $SQL_MiConsulta .= " WHERE idDetalleCaja = '$idDetalleCaja'";
 
     // Ejecutar la consulta
     $resultado = mysqli_query($vConexion, $SQL_MiConsulta);
@@ -898,6 +921,43 @@ function Validar_Venta() {
     return $_SESSION['Mensaje'];
 }
 
+function Validar_Modificar_Venta() {
+    $_SESSION['Mensaje'] = '';
+    $_SESSION['Estilo'] = 'danger';
+
+    // Validaciones básicas
+    if (empty($_POST['idTipoPago'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de pago. <br />';
+    }
+    if (empty($_POST['idTipoMovimiento'])) {
+        $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de movimiento. <br />';
+    }
+    
+    if (empty($_POST['MontoReal']) || floatval($_POST['MontoReal']) <= 0) {
+        $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido mayor a cero. <br />';
+    }
+    
+    // Validación específica para facturación
+    if (isset($_POST['facturado']) && $_POST['facturado'] == 1) {
+        if (empty($_POST['idTipoFactura'])) {
+            $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de factura. <br />';
+        }
+        if (empty($_POST['numeroFactura'])) {
+            $_SESSION['Mensaje'] .= 'Debes ingresar un número de factura. <br />';
+        }
+    }
+
+    // Limpieza de datos
+    foreach ($_POST as $Id => $Valor) {
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+
+    if (empty($_SESSION['Mensaje'])) {
+        unset($_SESSION['Estilo']);
+    }
+}
+
 function Datos_Venta($vConexion, $vIdDetalleCaja) {
     $SQL = "SELECT * FROM detalle_caja WHERE idDetalleCaja = $vIdDetalleCaja";
     $rs = mysqli_query($vConexion, $SQL);
@@ -910,7 +970,10 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
             'idTipoPago' => $data['idTipoPago'],
             'idTipoMovimiento' => $data['idTipoMovimiento'],
             'Monto' => $data['monto'],
-            'observaciones' => $data['observaciones'] 
+            'observaciones' => $data['observaciones'],
+            'facturado' => $data['facturado'],
+            'idTipoFactura' => $data['idTipoFactura'],
+            'numeroFactura' => $data['numeroFactura']
         );
     }
 
