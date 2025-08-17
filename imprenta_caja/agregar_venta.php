@@ -25,6 +25,7 @@ $MiConexion = ConexionBD();
 
 $TiposPagos = Listar_Tipos_Pagos_Entrada($MiConexion);
 $TiposMovimientoEntrada = Listar_Tipos_Movimiento_Entrada($MiConexion);
+$TiposFactura = Listar_Tipos_Factura($MiConexion);
 
 if (!empty($_POST['BotonRegistrar'])) {
     Validar_Venta();
@@ -122,6 +123,35 @@ ob_end_flush();
                         </div>
                     </div>
 
+                    <!-- Sección de Facturación -->
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="facturarCheckbox" name="facturar">
+                                <label class="form-check-label" for="facturarCheckbox">Facturar este movimiento</label>
+                            </div>
+                            
+                            <div id="facturaFields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="tipoFactura" class="form-label">Tipo de Factura</label>
+                                        <select class="form-select" id="tipoFactura" name="idTipoFactura">
+                                            <?php foreach ($TiposFactura as $tipo) { ?>
+                                                <option value="<?php echo $tipo['idTipoFactura']; ?>">
+                                                    <?php echo $tipo['denominacion']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="numeroFactura" class="form-label">Número de Factura</label>
+                                        <input type="text" class="form-control" id="numeroFactura" name="numeroFactura" placeholder="Ingrese el número">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="text-center mt-4">
                         <input type='hidden' name="idTipoOperacion" value="1"/>
                         <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar</button>
@@ -139,25 +169,20 @@ ob_end_flush();
 <script>
     // Función principal para formatear el dinero
     function formatMoney(input) {
-        // Guardar posición del cursor
         let cursorPos = input.selectionStart;
         let originalLength = input.value.length;
         
-        // Obtener solo números y coma decimal
         let rawValue = input.value.replace(/[^\d,]/g, '');
         
-        // Manejar múltiples comas
         let commaPos = rawValue.indexOf(',');
         if (commaPos !== -1) {
             rawValue = rawValue.substring(0, commaPos + 1) + rawValue.substring(commaPos + 1).replace(/,/g, '');
         }
         
-        // Separar parte entera y decimal
         let parts = rawValue.split(',');
         let integerPart = parts[0].replace(/\D/g, '') || '0';
         let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0, 2) : '';
         
-        // Formatear parte entera con puntos cada 3 dígitos
         let formattedInteger = '';
         if (integerPart.length > 3) {
             formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -165,7 +190,6 @@ ob_end_flush();
             formattedInteger = integerPart;
         }
         
-        // Construir valor final
         let newValue = '$' + formattedInteger;
         if (decimalPart.length > 0) {
             newValue += ',' + decimalPart;
@@ -173,15 +197,12 @@ ob_end_flush();
             newValue += ',00';
         }
         
-        // Actualizar campo visible
         input.value = newValue;
         
-        // Ajustar posición del cursor
         let newLength = input.value.length;
         cursorPos = Math.max(1, cursorPos + (newLength - originalLength));
         input.setSelectionRange(cursorPos, cursorPos);
         
-        // Actualizar campo hidden para el servidor
         let numericValue = newValue.replace(/[^\d,]/g, '').replace(',', '.');
         document.getElementById('MontoReal').value = numericValue || '0';
     }
@@ -194,18 +215,15 @@ ob_end_flush();
     });
 
     moneyInput.addEventListener('focus', function() {
-        // Quitar $ temporalmente para edición
         this.value = this.value.replace('$', '');
     });
 
     moneyInput.addEventListener('blur', function() {
-        // Asegurar formato completo al salir del campo
         if (!this.value.includes('$')) {
             this.value = '$' + this.value;
         }
         formatMoney(this);
         
-        // Si está vacío o solo tiene $, poner $0,00
         if (this.value === '$' || this.value === '') {
             this.value = '$0,00';
             document.getElementById('MontoReal').value = '0';
@@ -219,6 +237,14 @@ ob_end_flush();
             alert('Por favor ingrese un monto válido mayor a cero');
             moneyInput.focus();
         }
+        
+        // Validar factura si está marcada
+        if (document.getElementById('facturarCheckbox').checked && 
+            document.getElementById('numeroFactura').value.trim() === '') {
+            e.preventDefault();
+            alert('Por favor ingrese un número de factura');
+            document.getElementById('numeroFactura').focus();
+        }
     });
 
     // Botón reset
@@ -226,7 +252,6 @@ ob_end_flush();
         document.getElementById('MontoReal').value = '0';
         document.getElementById('valorDinero').value = '$0,00';
         
-        // También resetear los botones seleccionados
         document.querySelectorAll('.metodo-pago, .tipo-movimiento').forEach(btn => {
             btn.classList.remove('btn-primary');
             btn.classList.add('btn-secondary');
@@ -234,22 +259,22 @@ ob_end_flush();
         
         document.getElementById('idTipoPago').value = '';
         document.getElementById('idTipoMovimiento').value = '';
+        document.getElementById('facturarCheckbox').checked = false;
+        document.getElementById('facturaFields').style.display = 'none';
+        document.getElementById('numeroFactura').required = false;
     });
 
     // Manejo de botones de método de pago
     document.querySelectorAll('.metodo-pago').forEach(button => {
         button.addEventListener('click', function() {
-            // Remover selección previa
             document.querySelectorAll('.metodo-pago').forEach(btn => {
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-secondary');
             });
             
-            // Seleccionar actual
             this.classList.remove('btn-secondary');
             this.classList.add('btn-primary');
             
-            // Actualizar campo hidden
             document.getElementById('idTipoPago').value = this.getAttribute('data-id');
         });
     });
@@ -257,19 +282,23 @@ ob_end_flush();
     // Manejo de botones de tipo de movimiento
     document.querySelectorAll('.tipo-movimiento').forEach(button => {
         button.addEventListener('click', function() {
-            // Remover selección previa
             document.querySelectorAll('.tipo-movimiento').forEach(btn => {
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-secondary');
             });
             
-            // Seleccionar actual
             this.classList.remove('btn-secondary');
             this.classList.add('btn-primary');
             
-            // Actualizar campo hidden
             document.getElementById('idTipoMovimiento').value = this.getAttribute('data-id');
         });
+    });
+
+    // Mostrar/ocultar campos de facturación
+    document.getElementById('facturarCheckbox').addEventListener('change', function() {
+        const facturaFields = document.getElementById('facturaFields');
+        facturaFields.style.display = this.checked ? 'block' : 'none';
+        document.getElementById('numeroFactura').required = this.checked;
     });
 
     // Inicialización al cargar la página
@@ -277,7 +306,3 @@ ob_end_flush();
         formatMoney(moneyInput);
     });
 </script>
-
-<?php ob_end_flush(); ?>
-</body>
-</html>

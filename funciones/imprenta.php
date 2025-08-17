@@ -871,24 +871,26 @@ function Validar_Venta() {
         $_SESSION['Mensaje'] .= 'Debes seleccionar un tipo de entrada. <br />';
     }
     
-    // Validar el monto
     if (empty($_POST['MontoReal'])) {
         $_SESSION['Mensaje'] .= 'Debes ingresar un monto válido. <br />';
     } else {
-        // Convertir a float y validar
         $monto = (float)$_POST['MontoReal'];
         if ($monto <= 0) {
             $_SESSION['Mensaje'] .= 'El monto debe ser mayor a cero. <br />';
         }
     }
 
-    // Limpiar espacios y caracteres no deseados
+    if (isset($_POST['facturar']) && $_POST['facturar'] == 'on') {
+        if (empty($_POST['numeroFactura'])) {
+            $_SESSION['Mensaje'] .= 'Debes ingresar un número de factura. <br />';
+        }
+    }
+
     foreach ($_POST as $Id => $Valor) {
         $_POST[$Id] = trim($_POST[$Id]);
         $_POST[$Id] = strip_tags($_POST[$Id]);
     }
 
-    // Si no hay errores, limpiar el estilo de mensaje
     if (empty($_SESSION['Mensaje'])) {
         unset($_SESSION['Estilo']);
     }
@@ -916,34 +918,50 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
 }
 
 function InsertarMovimiento($vConexion) {
-    // Preparar los valores para la inserción
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
     $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']);
     $idUsuario = isset($_SESSION['Usuario_Id']) ? mysqli_real_escape_string($vConexion, $_SESSION['Usuario_Id']) : null;
     
-    // Obtener y validar el monto
     $monto = 0;
     if (isset($_POST['MontoReal']) && is_numeric($_POST['MontoReal'])) {
         $monto = (float)$_POST['MontoReal'];
-        $monto = number_format($monto, 2, '.', ''); // Formatear a 2 decimales
+        $monto = number_format($monto, 2, '.', '');
     }
 
     $observaciones = !empty($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
+    
+    $facturar = isset($_POST['facturar']) && $_POST['facturar'] == 'on';
+    $idTipoFactura = $facturar ? mysqli_real_escape_string($vConexion, $_POST['idTipoFactura']) : null;
+    $numeroFactura = $facturar ? mysqli_real_escape_string($vConexion, $_POST['numeroFactura']) : null;
 
-    // Verificar que el idUsuario no sea nulo
     if ($idUsuario === null) {
         die('<h4>Error: No se encontró un usuario en la sesión.</h4>');
     }
 
-    // Construir la consulta SQL
+    // Primero insertamos el movimiento básico
     $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones)
                    VALUES ('$idCaja', '$idTipoPago', '$idTipoMovimiento', '$idUsuario', '$monto', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
 
-    // Ejecutar la consulta
     if (!mysqli_query($vConexion, $SQL_Insert)) {
         die('<h4>Error al intentar insertar la venta: ' . mysqli_error($vConexion) . '</h4>');
+    }
+
+    // Obtenemos el ID del movimiento recién insertado
+    $idDetalleCaja = mysqli_insert_id($vConexion);
+
+    // Si se marcó para facturar, actualizamos con los datos de facturación
+    if ($facturar && $idTipoFactura && $numeroFactura) {
+        $SQL_Update = "UPDATE detalle_caja 
+                      SET facturado = 1,
+                          idTipoFactura = '$idTipoFactura',
+                          numeroFactura = '$numeroFactura'
+                      WHERE idDetalleCaja = $idDetalleCaja";
+        
+        if (!mysqli_query($vConexion, $SQL_Update)) {
+            die('<h4>Error al asociar factura: ' . mysqli_error($vConexion) . '</h4>');
+        }
     }
 
     return true;
@@ -3067,6 +3085,21 @@ function Listar_Trabajos_En_Taller($conexion) {
     }
 
     return $trabajos;
+}
+
+    // Listas Facturas
+function Listar_Tipos_Factura($vConexion) {
+    $SQL = "SELECT idTipoFactura, denominacion FROM tipo_factura WHERE idActivo = 1";
+    $resultado = mysqli_query($vConexion, $SQL);
+    
+    $tipos = array();
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $tipos[] = $fila;
+        }
+    }
+    
+    return $tipos;
 }
 
 ?>
