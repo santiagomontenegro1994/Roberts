@@ -85,7 +85,7 @@ function obtenerIconoMetodoPago($nombreMetodo) {
     
     <div class="card">
         <div class="card-body">
-            <h6 class="card-title mb-2">Datos del Pedido</h6>
+            <h6 class="card-title mb-2">Detalle del Pedido</h6>
             
             <!-- Primera fila -->
             <div class="row datos-pedido-row">
@@ -166,7 +166,7 @@ function obtenerIconoMetodoPago($nombreMetodo) {
 
                 <div class="col-md-4 btn-agregar-col">
                     <a href="#" id="add_trabajo_pedido" class="text-primary fw-bold">
-                        <i class="bi bi-arrow-down-circle-fill"></i> Agregar a Pedido
+                        <i class="bi bi-arrow-down-circle-fill"></i> Sumar a Pedido
                     </a>
                 </div>
             </div>
