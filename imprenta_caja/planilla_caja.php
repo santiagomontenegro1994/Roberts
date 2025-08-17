@@ -95,14 +95,13 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     }
 }
 
-// Calcular el total de retiros (sin incluir Caja fuerte) para esta caja (ahora usando tipo_movimiento)
-
+// Calcular el total de retiros (sin incluir Caja fuerte)
 $queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
-                              FROM detalle_caja dc
-                              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                              WHERE dc.idCaja = ?
-                                AND tm.es_salida = 1
-                                AND tm.denominacion NOT LIKE '%Caja Fuerte%'";
+                 FROM detalle_caja dc
+                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                 WHERE dc.idCaja = ?
+                   AND tm.es_salida = 1
+                   AND tm.denominacion NOT LIKE '%Caja Fuerte%'";
 $stmtRetiros = $MiConexion->prepare($queryRetiros);
 $stmtRetiros->bind_param("i", $idCaja);
 $stmtRetiros->execute();
@@ -113,15 +112,13 @@ if ($filaRetiros = $resultadoRetiros->fetch_assoc()) {
     $totalRetiros = (float)$filaRetiros['totalRetiros'];
 }
 
-// Calcular el total de retiros solo de Caja fuerte para esta caja
-
+// Calcular el total de retiros solo de Caja fuerte
 $queryRetirosCajaFuerte = "SELECT SUM(dc.monto) AS totalRetiros
                            FROM detalle_caja dc
                            JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                            WHERE dc.idCaja = ?
                              AND tm.es_salida = 1
                              AND tm.denominacion LIKE '%Caja Fuerte%'";
-
 $stmtRetirosCajaFuerte = $MiConexion->prepare($queryRetirosCajaFuerte);
 $stmtRetirosCajaFuerte->bind_param("i", $idCaja);
 $stmtRetirosCajaFuerte->execute();
@@ -132,21 +129,37 @@ if ($filaRetirosCajaFuerte = $resultadoRetirosCajaFuerte->fetch_assoc()) {
     $totalRetirosCajaFuerte = (float)$filaRetirosCajaFuerte['totalRetiros'];
 }
 
-// Obtener los detalles de la caja específica usando la función
-// Asegúrate de que ObtenerDetallesCaja también traiga la denominación del movimiento
-$resultadoDetalleCaja = ObtenerDetallesCaja($MiConexion, $idCaja);
+// Obtener los detalles de la caja específica
+$queryDetalles = "SELECT dc.*, 
+                  tp.denominacion AS metodoPago,
+                  tm.denominacion AS detalle,
+                  CONCAT(u.nombre, ' ', u.apellido) AS usuario,
+                  tf.denominacion AS tipoFactura,
+                  dc.numeroFactura,
+                  dc.facturado
+                  FROM detalle_caja dc
+                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                  JOIN usuarios u ON dc.idUsuario = u.idUsuario
+                  LEFT JOIN tipo_factura tf ON dc.idTipoFactura = tf.idTipoFactura
+                  WHERE dc.idCaja = ?
+                  ORDER BY dc.idDetalleCaja";
+$stmtDetalles = $MiConexion->prepare($queryDetalles);
+$stmtDetalles->bind_param("i", $idCaja);
+$stmtDetalles->execute();
+$resultadoDetalles = $stmtDetalles->get_result();
 
 $detalles = [];
-while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
+while ($fila = $resultadoDetalles->fetch_assoc()) {
     $detalles[] = $fila;
 }
 
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
-$totalEfectivo = (float)$totalesPorCaja['totalEfectivo']; // Solo entradas en efectivo, sin caja inicial
+$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'];
 $totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
 $totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial; // Restar la caja inicial al total efectivo
+$cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial;
 ?>
 
 <!DOCTYPE html>
@@ -156,12 +169,30 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte +
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planilla de Caja</title>
+    <style>
+        .badge-facturado {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .table td, .table th {
+            vertical-align: middle;
+        }
+        
+        .factura-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+    </style>
 </head>
 
 <body>
 
 <main id="main" class="main">
-
     <div class="pagetitle">
         <h1>Planilla de Caja</h1>
     </div>
@@ -250,28 +281,46 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte +
                 </div>
 
                 <!-- Tabla de Detalles de Caja -->
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                <div class="table-responsive mt-4">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-light">
                             <tr>
-                                <th>N°</th>
+                                <th width="50">N°</th>
+                                <th width="120">Facturación</th>
                                 <th>Método de Pago</th>
                                 <th>Detalle</th>
                                 <th>Usuario</th>
                                 <th>Monto</th>
                                 <th>Observaciones</th>
-                                <th>Acciones</th>
+                                <th width="120">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php 
                                 $contador = 1;
-                                foreach ($detalles as $fila) { ?>
-
-                                <?php list($Title, $Color) = ColorDeFilaCaja($fila['idTipoMovimiento']);?>
-
-                                <tr class="<?php echo $Color; ?>"  data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
+                                foreach ($detalles as $fila) { 
+                                list($Title, $Color) = ColorDeFilaCaja($fila['idTipoMovimiento']);
+                            ?>
+                                <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                     <td><?php echo $contador; $contador++; ?></td>
+                                    <td class="text-center">
+                                        <?php if ($fila['facturado'] == 1): ?>
+                                            <span class="badge bg-success d-inline-flex align-items-center">
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                <span>Facturado</span>
+                                            </span>
+                                            <?php if (!empty($fila['tipoFactura']) && !empty($fila['numeroFactura'])): ?>
+                                                <div class="factura-info mt-1">
+                                                    <?php echo $fila['tipoFactura'] . ' #' . $fila['numeroFactura']; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary d-inline-flex align-items-center">
+                                                <i class="bi bi-x-circle-fill me-1"></i>
+                                                <span>No facturado</span>
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo $fila['metodoPago']; ?></td>
                                     <td><?php echo $fila['detalle']; ?></td>
                                     <td><?php echo $fila['usuario']; ?></td>
@@ -279,13 +328,13 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte +
                                     <td><?php echo $fila['observaciones']; ?></td>
                                     <td>
                                         <a href="eliminar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
-                                           class="btn btn-sm btn-danger me-2"
+                                           class="btn btn-sm btn-danger me-1"
                                            title="Anular" 
                                            onclick="return confirm('¿Confirma anular este detalle de caja?');">
                                             <i class="bi bi-trash-fill"></i>
                                         </a>
                                         <a href="modificar_venta.php?idDetalleCaja=<?php echo $fila['idDetalleCaja']; ?>" 
-                                           class="btn btn-sm btn-warning me-2"
+                                           class="btn btn-sm btn-warning"
                                            title="Modificar">
                                             <i class="bi bi-pencil-fill"></i>
                                         </a>
@@ -307,5 +356,14 @@ require('../shared/footer.inc.php');
 ob_end_flush();
 ?>
 
+<script>
+    // Inicializar tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 </body>
 </html>
