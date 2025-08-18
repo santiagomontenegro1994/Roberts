@@ -237,6 +237,59 @@ function obtenerIconoMetodoPago($nombreMetodo) {
     </div>
 </div>
 
+<!-- Modal para facturación -->
+<div class="modal fade" id="facturacionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Opciones de Facturación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de Factura</label>
+                        <select class="form-select" id="tipoFacturaModal">
+                            <?php 
+                            $tiposFactura = Listar_Tipos_Factura($MiConexion);
+                            foreach ($tiposFactura as $tipo): ?>
+                                <option value="<?= $tipo['idTipoFactura'] ?>">
+                                    <?= htmlspecialchars($tipo['denominacion']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Factura</label>
+                        <input type="text" class="form-control" id="numeroFacturaModal" placeholder="Ingrese número de factura">
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Facturar</th>
+                                <th>Trabajo</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detallesFacturacion">
+                            <!-- Se llena con AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarFactura">Confirmar</button>
+                <button type="button" class="btn btn-outline-primary" id="btnSinFactura">Sin Factura</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </main>
 
 <?php

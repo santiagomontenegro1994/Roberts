@@ -133,7 +133,7 @@ if ($filaRetirosCajaFuerte = $resultadoRetirosCajaFuerte->fetch_assoc()) {
 $queryDetalles = "SELECT dc.*, 
                   tp.denominacion AS metodoPago,
                   tm.denominacion AS detalle,
-                  CONCAT(u.nombre, ' ', u.apellido) AS usuario,
+                  u.nombre AS usuario,
                   tf.denominacion AS tipoFactura,
                   dc.numeroFactura,
                   dc.facturado
@@ -143,7 +143,7 @@ $queryDetalles = "SELECT dc.*,
                   JOIN usuarios u ON dc.idUsuario = u.idUsuario
                   LEFT JOIN tipo_factura tf ON dc.idTipoFactura = tf.idTipoFactura
                   WHERE dc.idCaja = ?
-                  ORDER BY dc.idDetalleCaja";
+                  ORDER BY dc.idDetalleCaja DESC";
 $stmtDetalles = $MiConexion->prepare($queryDetalles);
 $stmtDetalles->bind_param("i", $idCaja);
 $stmtDetalles->execute();

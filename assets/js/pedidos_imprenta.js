@@ -232,27 +232,163 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
         }
     });
 
-    // Función para procesar el pedido
+    // Mostrar modal con detalles al procesar pedido
     function procesarPedidoTrabajo(codCliente, senia, idTipoPago, idTipoMovimiento, observaciones) {
-        var action = (idTipoPago) ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
+        // Mostrar modal con spinner de carga
+        $('#facturacionModal').modal('show');
+        $('#detallesFacturacion').html('<tr><td colspan="4" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>');
+
+        // Obtener detalles temporales
+        $.ajax({
+            url: '../shared/ajax_imprenta.php',
+            type: "POST",
+            data: {action: 'getDetallesTempTrabajos'},
+            dataType: 'json',
+            success: function(response) {
+                console.log('Respuesta completa:', response); // Para depuración
+                
+                if(response.error) {
+                    $('#detallesFacturacion').html(`
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">
+                                Error: ${response.error}
+                                ${response.trace ? '<br><small>' + response.trace + '</small>' : ''}
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                if(!response.detalles || response.detalles.length === 0) {
+                    $('#detallesFacturacion').html('<tr><td colspan="4" class="text-center">No hay trabajos agregados</td></tr>');
+                    return;
+                }
+                
+                // Construir tabla de detalles
+                let html = '';
+                response.detalles.forEach(detalle => {
+                    html += `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input facturar-detalle" 
+                                    value="${detalle.correlativo}" checked>
+                            </td>
+                            <td>
+                                <strong>${detalle.tipo_trabajo || 'Sin tipo'}</strong><br>
+                                <small class="text-muted">${detalle.descripcion || 'Sin descripción'}</small>
+                            </td>
+                            <td>
+                                <div>${detalle.proveedor || 'Sin proveedor'}</div>
+                                <small class="text-muted">
+                                    ${detalle.fechaEntrega || 'Sin fecha'} - ${detalle.horaEntrega || 'Sin hora'}
+                                </small>
+                            </td>
+                            <td class="text-end">$${parseFloat(detalle.precio || 0).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+                
+                $('#detallesFacturacion').html(html);
+                
+                // Guardar parámetros para el procesamiento final
+                window.pedidoParams = {
+                    codCliente: codCliente,
+                    senia: senia,
+                    idTipoPago: idTipoPago,
+                    idTipoMovimiento: idTipoMovimiento,
+                    observaciones: observaciones
+                };
+            },
+            error: function(xhr, status, error) {
+                console.error('Error en la petición:', status, error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                
+                $('#detallesFacturacion').html(`
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">
+                            Error de conexión<br>
+                            <small>${error}</small>
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    }
+
+    // Confirmar facturación
+    $('#btnConfirmarFactura').click(function() {
+        const idTipoFactura = $('#tipoFacturaModal').val();
+        const numeroFactura = $('#numeroFacturaModal').val().trim();
         
-        var data = {
-            action: action,
-            codCliente: codCliente,
-            senia: senia
-        };
-        
-        if(action === 'procesarPedidoTrabajoConPago') {
-            data.idTipoPago = idTipoPago;
-            data.observaciones = observaciones;
+        if(!numeroFactura) {
+            alert('Ingrese número de factura');
+            return;
         }
+        
+        // Obtener los detalles seleccionados
+        const detallesFacturar = [];
+        $('.facturar-detalle:checked').each(function() {
+            detallesFacturar.push($(this).val());
+        });
+        
+        if(detallesFacturar.length === 0) {
+            alert('Seleccione al menos un detalle para facturar');
+            return;
+        }
+        
+        const data = {
+            action: 'procesarPedidoTrabajoConFactura',
+            codCliente: window.pedidoParams.codCliente,
+            senia: window.pedidoParams.senia,
+            idTipoPago: window.pedidoParams.idTipoPago,
+            idTipoMovimiento: window.pedidoParams.idTipoMovimiento,
+            observaciones: window.pedidoParams.observaciones,
+            idTipoFactura: idTipoFactura,
+            numeroFactura: numeroFactura,
+            detallesFacturar: detallesFacturar.join(',')
+        };
         
         $.ajax({
             url: '../shared/ajax_imprenta.php',
             type: "POST",
             data: data,
             dataType: 'json',
-            success: function(response){
+            success: function(response) {
+                if(response && response.status === 'success') {
+                    alert('Pedido generado correctamente');
+                    location.reload();
+                } else {
+                    const errorMsg = response?.message || 'Error desconocido';
+                    alert('Error al procesar el pedido: ' + errorMsg);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error en la petición:', status, error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                alert('Error de conexión. Ver consola para detalles.');
+            }
+        });
+        
+        $('#facturacionModal').modal('hide');
+    });
+
+    // Manejar opción sin factura
+    $('#btnSinFactura').click(function() {
+        var action = window.pedidoParams.idTipoPago ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
+        
+        $.ajax({
+            url: '../shared/ajax_imprenta.php',
+            type: "POST",
+            data: {
+                action: action,
+                codCliente: window.pedidoParams.codCliente,
+                senia: window.pedidoParams.senia,
+                idTipoPago: window.pedidoParams.idTipoPago,
+                idTipoMovimiento: window.pedidoParams.idTipoMovimiento,
+                observaciones: window.pedidoParams.observaciones
+            },
+            dataType: 'json',
+            success: function(response) {
                 if(response && response.status === 'success') {
                     // Limpiar cliente de sesión después de procesar el pedido
                     $.ajax({
@@ -260,7 +396,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                         type: "POST",
                         data: {action: 'limpiarClienteSession'},
                         success: function() {
-                            alert('Pedido generado ' + (senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
+                            alert('Pedido generado ' + (window.pedidoParams.senia > 0 ? 'y pago registrado ' : '') + 'correctamente');
                             location.reload();
                         }
                     });
@@ -269,13 +405,15 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                     alert('Error al procesar el pedido: ' + errorMsg);
                 }
             },
-            error: function(xhr, status, error){
+            error: function(xhr, status, error) {
                 console.error('Error en la petición:', status, error);
                 console.error('Respuesta del servidor:', xhr.responseText);
                 alert('Error de conexión. Ver consola para detalles.');
             }
         });
-    }
+        
+        $('#facturacionModal').modal('hide');
+    });
 
     // Manejar el confirmar pago desde el modal
     $('#btnConfirmarPago').click(function() {
