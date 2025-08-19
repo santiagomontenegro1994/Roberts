@@ -2020,7 +2020,7 @@ function Obtener_Total_Banco($conexion) {
 function Listar_Pedidos_Trabajos_Detallado($vConexion) {
     $Listado = array();
 
-    // Primero obtenemos los pedidos con sus sumatorias
+    // Primero obtenemos los pedidos con sus sumatorias y estado de facturación
     $SQL = "SELECT 
                 PT.idPedidoTrabajos,
                 PT.fecha,
@@ -2031,7 +2031,10 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
                 ET.idEstado,
                 US.usuario,
                 ET.denominacion AS estado_nombre,
-                COALESCE(SUM(DT.precio), 0) AS precio_total
+                COALESCE(SUM(DT.precio), 0) AS precio_total,
+                -- Información de facturación
+                COUNT(DT.idDetalleTrabajo) as total_detalles,
+                SUM(CASE WHEN DT.facturado = 1 THEN 1 ELSE 0 END) as detalles_facturados
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
@@ -2062,6 +2065,8 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
             'USUARIO' => $data['usuario'],
             'ESTADO_NOMBRE' => $data['estado_nombre'],
             'PRECIO' => $data['precio_total'],
+            'TOTAL_DETALLES' => $data['total_detalles'],
+            'DETALLES_FACTURADOS' => $data['detalles_facturados'],
             'TRABAJOS' => array()
         );
     }
@@ -2149,7 +2154,10 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
                 ET.idEstadoPedidoTrabajo AS idEstado,
                 US.usuario,
                 ET.denominacion AS estado_nombre,
-                COALESCE(SUM(DT.precio), 0) AS precio_total
+                COALESCE(SUM(DT.precio), 0) AS precio_total,
+                -- Información de facturación
+                COUNT(DT.idDetalleTrabajo) as total_detalles,
+                SUM(CASE WHEN DT.facturado = 1 THEN 1 ELSE 0 END) as detalles_facturados
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
@@ -2180,6 +2188,8 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
             'USUARIO' => $data['usuario'],
             'ESTADO_NOMBRE' => $data['estado_nombre'],
             'PRECIO' => $data['precio_total'],
+            'TOTAL_DETALLES' => $data['total_detalles'],
+            'DETALLES_FACTURADOS' => $data['detalles_facturados'],
             'TRABAJOS' => array()
         );
     }
@@ -2240,7 +2250,10 @@ function Listar_Pedidos_Trabajo_Por_Estado($vConexion, $idEstado) {
                 DT.idTrabajo,
                 DT.descripcion,
                 TT.denominacion AS nombre_trabajo,
-                DT.precio
+                DT.precio,
+                -- Información de facturación
+                COUNT(DT.idDetalleTrabajo) OVER (PARTITION BY PT.idPedidoTrabajos) as total_detalles,
+                SUM(CASE WHEN DT.facturado = 1 THEN 1 ELSE 0 END) OVER (PARTITION BY PT.idPedidoTrabajos) as detalles_facturados
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
             INNER JOIN estado_pedido_trabajo ET ON PT.idEstado = ET.idEstadoPedidoTrabajo
@@ -2275,7 +2288,9 @@ function Listar_Pedidos_Trabajo_Por_Estado($vConexion, $idEstado) {
                 'USUARIO' => $data['usuario'],
                 'ESTADO_NOMBRE' => $data['estado_nombre'],
                 'TRABAJOS' => array(),
-                'PRECIO' => 0
+                'PRECIO' => 0,
+                'TOTAL_DETALLES' => $data['total_detalles'],
+                'DETALLES_FACTURADOS' => $data['detalles_facturados']
             );
         }
         
@@ -2292,6 +2307,21 @@ function Listar_Pedidos_Trabajo_Por_Estado($vConexion, $idEstado) {
 
     $Listado = array_values($pedidos);
     return $Listado;
+}
+
+function determinarEstadoFacturacion($detallesFacturados, $totalDetalles) {
+    if ($totalDetalles == 0) {
+        return ['estado' => 'sin_detalles', 'tooltip' => 'Sin detalles para facturar'];
+    } elseif ($detallesFacturados == $totalDetalles) {
+        return ['estado' => 'totalmente_facturado', 'tooltip' => 'Totalmente facturado'];
+    } elseif ($detallesFacturados > 0) {
+        return [
+            'estado' => 'parcialmente_facturado', 
+            'tooltip' => 'Parcialmente facturado (' . $detallesFacturados . ' de ' . $totalDetalles . ' items)'
+        ];
+    } else {
+        return ['estado' => 'no_facturado', 'tooltip' => 'No facturado'];
+    }
 }
 
 function Datos_Estados_Pedido_Trabajo($conexion) {

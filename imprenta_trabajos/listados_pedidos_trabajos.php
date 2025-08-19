@@ -76,7 +76,42 @@ if (!empty($estadoBuscado)) {
 }
 
 $CantidadPedidos = count($ListadoPedidos);
+
 ?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Pedidos Trabajos</title>
+    <style>
+        .badge-facturado {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .table td, .table th {
+            vertical-align: middle;
+        }
+        
+        .factura-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        /* Estilos específicos para los estados de facturación */
+        .badge-bg-success, .badge-bg-warning, .badge-bg-secondary {
+            min-width: 100px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
 
 <main id="main" class="main">
 <div class="pagetitle">
@@ -184,6 +219,7 @@ $CantidadPedidos = count($ListadoPedidos);
                             <th scope="col">ID</th>
                             <th scope="col">Fecha</th>
                             <th scope="col">Cliente</th>
+                            <th scope="col">Facturación</th>
                             <th scope="col">Detalle</th>
                             <th scope="col">Precio</th>
                             <th scope="col">Seña</th>
@@ -198,6 +234,11 @@ $CantidadPedidos = count($ListadoPedidos);
                             list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
                             $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
                             $nombreMostrar = (strlen($nombreCliente) > 20) ? substr($nombreCliente, 0, 20) . '...' : $nombreCliente;
+                            
+                            // Determinar estado de facturación
+                            $detallesFacturados = isset($ListadoPedidos[$i]['DETALLES_FACTURADOS']) ? $ListadoPedidos[$i]['DETALLES_FACTURADOS'] : 0;
+                            $totalDetalles = isset($ListadoPedidos[$i]['TOTAL_DETALLES']) ? $ListadoPedidos[$i]['TOTAL_DETALLES'] : 0;
+                            $estadoFacturacion = determinarEstadoFacturacion($detallesFacturados, $totalDetalles);
                         ?>
                         <tr class="<?= $Color ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?= $Title ?>">
                             <td><?= $ListadoPedidos[$i]['ID'] ?></td>
@@ -208,6 +249,36 @@ $CantidadPedidos = count($ListadoPedidos);
                                     <br><small class="text-muted"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
                                 <?php endif; ?>
                             </td>
+                            
+                            <!-- Nueva columna para estado de facturación -->
+                            <td class="text-center">
+                                <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
+                                    <span class="badge bg-success d-inline-flex align-items-center" 
+                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                        <i class="bi bi-check-circle-fill me-1"></i>
+                                        <span>Facturado</span>
+                                    </span>
+                                <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
+                                    <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
+                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                        <span>Parcial</span>
+                                    </span>
+                                <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
+                                    <span class="badge bg-info d-inline-flex align-items-center" 
+                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                        <i class="bi bi-info-circle-fill me-1"></i>
+                                        <span>Sin detalles</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary d-inline-flex align-items-center" 
+                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                        <i class="bi bi-x-circle-fill me-1"></i>
+                                        <span>No facturado</span>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
