@@ -2029,7 +2029,7 @@ function Listar_Pedidos_Trabajos_Detallado($vConexion) {
                 C.apellido AS apellido_cliente,
                 C.telefono,
                 ET.idEstado,
-                US.usuario,
+                US.nombre AS usuario,
                 ET.denominacion AS estado_nombre,
                 COALESCE(SUM(DT.precio), 0) AS precio_total,
                 -- Información de facturación
@@ -2152,7 +2152,7 @@ function Listar_Pedidos_Trabajo_Parametro_Detallado($vConexion, $criterio, $para
                 C.apellido AS apellido_cliente,
                 C.telefono,
                 ET.idEstadoPedidoTrabajo AS idEstado,
-                US.usuario,
+                US.nombre AS usuario,
                 ET.denominacion AS estado_nombre,
                 COALESCE(SUM(DT.precio), 0) AS precio_total,
                 -- Información de facturación
@@ -2244,7 +2244,7 @@ function Listar_Pedidos_Trabajo_Por_Estado($vConexion, $idEstado) {
                 C.apellido AS apellido_cliente,
                 C.telefono,
                 ET.idEstadoPedidoTrabajo AS idEstado,
-                US.usuario,
+                US.nombre AS usuario,
                 ET.denominacion AS estado_nombre,
                 DT.idDetalleTrabajo,
                 DT.idTrabajo,

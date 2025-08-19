@@ -76,7 +76,6 @@ if (!empty($estadoBuscado)) {
 }
 
 $CantidadPedidos = count($ListadoPedidos);
-
 ?>
 
 <!DOCTYPE html>
@@ -87,27 +86,110 @@ $CantidadPedidos = count($ListadoPedidos);
     <title>Listado de Pedidos Trabajos</title>
     <style>
         .badge-facturado {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            font-size: 0.75rem;
+        }
+        
+        .table {
+            font-size: 0.85rem;
         }
         
         .table td, .table th {
             vertical-align: middle;
+            padding: 0.4rem 0.5rem;
         }
         
         .factura-info {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #6c757d;
         }
         
         /* Estilos específicos para los estados de facturación */
-        .badge-bg-success, .badge-bg-warning, .badge-bg-secondary {
-            min-width: 100px;
+        .badge-bg-success, .badge-bg-warning, .badge-bg-secondary, .badge-bg-info {
+            min-width: 80px;
             justify-content: center;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.4rem;
+        }
+        
+        .btn-group .btn {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+        }
+        
+        .dropdown-toggle::after {
+            margin-left: 0.2rem;
+        }
+        
+        .dropdown-menu {
+            font-size: 0.8rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        /* Estilos para tooltips */
+        .tooltip-inner {
+            font-size: 0.8rem;
+            max-width: 200px;
+        }
+        
+        /* Estilos para textos compactos */
+        .text-compact {
+            font-size: 0.8rem;
+            line-height: 1.2;
+        }
+        
+        .text-tiny {
+            font-size: 0.7rem;
+        }
+        
+        /* Columnas específicas */
+        .col-id {
+            width: 50px;
+        }
+        
+        .col-fecha {
+            width: 90px;
+        }
+        
+        .col-cliente {
+            width: 120px;
+            min-width: 120px;
+        }
+        
+        .col-facturacion {
+            width: 90px;
+        }
+        
+        .col-detalle {
+            width: 100px;
+        }
+        
+        .col-precio {
+            width: 80px;
+        }
+        
+        .col-senia {
+            width: 80px;
+        }
+        
+        .col-saldo {
+            width: 80px;
+        }
+        
+        .col-tomado {
+            width: 100px;
+        }
+        
+        .col-acciones {
+            width: 180px;
         }
     </style>
 </head>
@@ -138,10 +220,10 @@ $CantidadPedidos = count($ListadoPedidos);
                 <?php unset($_SESSION['Mensaje']); unset($_SESSION['Estilo']); ?>
             <?php } ?>
 
-            <form method="POST" class="mb-4" id="formBusqueda">
-                <div class="row g-3 align-items-center">
+            <form method="POST" class="mb-3" id="formBusqueda">
+                <div class="row g-2 align-items-center">
                     <div class="col-md-4">
-                        <input type="text" class="form-control" name="parametro" id="parametro" 
+                        <input type="text" class="form-control form-control-sm" name="parametro" id="parametro" 
                                value="<?= htmlspecialchars($parametro) ?>" 
                                placeholder="Buscar...">
                     </div>
@@ -195,9 +277,9 @@ $CantidadPedidos = count($ListadoPedidos);
                     </div>
                 </div>
                 
-                <div class="row mt-3">
+                <div class="row mt-2">
                     <div class="col-md-4">
-                        <select class="form-select" name="estadoBuscado" id="estadoBuscado">
+                        <select class="form-select form-select-sm" name="estadoBuscado" id="estadoBuscado">
                             <option value="">Todos los estados</option>
                             <?php 
                             $estados = Datos_Estados_Pedido_Trabajo($MiConexion);
@@ -216,16 +298,16 @@ $CantidadPedidos = count($ListadoPedidos);
                 <table class="table table-striped table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">ID</th>
-                            <th scope="col">Fecha</th>
-                            <th scope="col">Cliente</th>
-                            <th scope="col">Facturación</th>
-                            <th scope="col">Detalle</th>
-                            <th scope="col">Precio</th>
-                            <th scope="col">Seña</th>
-                            <th scope="col">Saldo</th>
-                            <th scope="col">Tomado</th>
-                            <th scope="col">Acciones</th>
+                            <th scope="col" class="col-id">ID</th>
+                            <th scope="col" class="col-fecha">Fecha</th>
+                            <th scope="col" class="col-cliente">Cliente</th>
+                            <th scope="col" class="col-facturacion">Facturación</th>
+                            <th scope="col" class="col-detalle">Detalle</th>
+                            <th scope="col" class="col-precio">Precio</th>
+                            <th scope="col" class="col-senia">Seña</th>
+                            <th scope="col" class="col-saldo">Saldo</th>
+                            <th scope="col" class="col-tomado">Tomado</th>
+                            <th scope="col" class="col-acciones">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -233,7 +315,7 @@ $CantidadPedidos = count($ListadoPedidos);
                             $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
                             list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
                             $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
-                            $nombreMostrar = (strlen($nombreCliente) > 20) ? substr($nombreCliente, 0, 20) . '...' : $nombreCliente;
+                            $nombreMostrar = (strlen($nombreCliente) > 15) ? substr($nombreCliente, 0, 15) . '...' : $nombreCliente;
                             
                             // Determinar estado de facturación
                             $detallesFacturados = isset($ListadoPedidos[$i]['DETALLES_FACTURADOS']) ? $ListadoPedidos[$i]['DETALLES_FACTURADOS'] : 0;
@@ -241,17 +323,17 @@ $CantidadPedidos = count($ListadoPedidos);
                             $estadoFacturacion = determinarEstadoFacturacion($detallesFacturados, $totalDetalles);
                         ?>
                         <tr class="<?= $Color ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?= $Title ?>">
-                            <td><?= $ListadoPedidos[$i]['ID'] ?></td>
-                            <td><?= $ListadoPedidos[$i]['FECHA'] ?></td>
-                            <td>
-                                <strong title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
+                            <td class="col-id"><?= $ListadoPedidos[$i]['ID'] ?></td>
+                            <td class="col-fecha text-compact"><?= $ListadoPedidos[$i]['FECHA'] ?></td>
+                            <td class="col-cliente">
+                                <strong class="text-compact" title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
                                 <?php if (!empty($ListadoPedidos[$i]['TELEFONO'])): ?>
-                                    <br><small class="text-muted"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
+                                    <br><small class="text-muted text-tiny"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
                                 <?php endif; ?>
                             </td>
                             
                             <!-- Nueva columna para estado de facturación -->
-                            <td class="text-center">
+                            <td class="col-facturacion text-center">
                                 <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
                                     <span class="badge bg-success d-inline-flex align-items-center" 
                                           data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
@@ -279,16 +361,16 @@ $CantidadPedidos = count($ListadoPedidos);
                                 <?php endif; ?>
                             </td>
                             
-                            <td>
+                            <td class="col-detalle">
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Ver trabajos (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Ver (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownTrabajos<?= $i ?>">
                                         <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
                                             <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
                                                 <li>
-                                                    <span class="dropdown-item-text">
+                                                    <span class="dropdown-item-text text-compact">
                                                         <strong><?= htmlspecialchars($trabajo['DENOMINACION']) ?></strong>
                                                         <br>
                                                         <small><?= htmlspecialchars($trabajo['DESCRIPCION']) ?></small>
@@ -296,42 +378,42 @@ $CantidadPedidos = count($ListadoPedidos);
                                                 </li>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <li><span class="dropdown-item-text">Sin trabajos</span></li>
+                                            <li><span class="dropdown-item-text text-compact">Sin trabajos</span></li>
                                         <?php endif; ?>
                                     </ul>
                                 </div>
                             </td>
-                            <td>$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
-                            <td>$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
-                            <td>$<?= number_format($saldo, 2) ?></td>
-                            <td><?= $ListadoPedidos[$i]['USUARIO'] ?></td>
-                            <td>
+                            <td class="col-precio text-compact">$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
+                            <td class="col-senia text-compact">$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
+                            <td class="col-saldo text-compact">$<?= number_format($saldo, 2) ?></td>
+                            <td class="col-tomado text-compact"><?= $ListadoPedidos[$i]['USUARIO'] ?></td>
+                            <td class="col-acciones">
                                 <div class="btn-group" role="group">
                                     <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" 
-                                        class="btn btn-sm btn-danger me-2"
+                                        class="btn btn-sm btn-danger me-1"
                                         title="Anular" 
                                         onclick="return confirm('Confirma anular este Pedido?');">
                                         <i class="bi bi-trash-fill"></i>
                                     </a>
 
                                     <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
-                                        class="btn btn-sm btn-warning me-2" 
+                                        class="btn btn-sm btn-warning me-1" 
                                         title="Modificar">
                                         <i class="bi bi-pencil-fill"></i>
                                     </a>
 
                                     <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
-                                        class="btn btn-sm btn-primary me-2" 
+                                        class="btn btn-sm btn-primary me-1" 
                                         title="Imprimir">
                                         <i class="bi bi-printer-fill"></i>
                                     </a>
 
-                                    <button type="button" class="btn btn-sm btn-success me-2" 
+                                    <button type="button" class="btn btn-sm btn-success" 
                                             data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
                                             data-pedido-id="<?= $ListadoPedidos[$i]['ID'] ?>"
                                             data-pedido-saldo="<?= $saldo ?>"
                                             title="Retirar Pedido">
-                                        <i class="bi bi-box-seam"></i> Retirar
+                                        <i class="bi bi-box-seam"></i>
                                     </button>
                                 </div>
                             </td>
