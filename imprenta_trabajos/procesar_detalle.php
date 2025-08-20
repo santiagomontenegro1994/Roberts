@@ -58,7 +58,11 @@ $datos = [
     'descripcion' => $_POST['descripcion'] ?? '',
     'idProveedor' => $_POST['idProveedor'] ?? 0,
     'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
-    'id_pedido_trabajos' => $idPedido
+    'id_pedido_trabajos' => $idPedido,
+    // Nuevos campos de facturación
+    'facturado' => isset($_POST['facturado']) ? 1 : 0,
+    'idTipoFactura' => $_POST['idTipoFactura'] ?? null,
+    'numeroFactura' => $_POST['numeroFactura'] ?? null
 ];
 
 // Procesar la acción

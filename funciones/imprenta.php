@@ -1428,11 +1428,16 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
                 DT.horaEntrega AS HORA_ENTREGA,
                 DT.precio AS PRECIO,
                 ET.denominacion AS ESTADO,
-                ET.idEstado AS ESTADO_ID
+                ET.idEstado AS ESTADO_ID,
+                DT.facturado AS FACTURADO,              -- AÑADIDO
+                DT.idTipoFactura AS ID_TIPO_FACTURA,    -- AÑADIDO
+                DT.numeroFactura AS NUMERO_FACTURA,     -- AÑADIDO
+                TF.denominacion AS TIPO_FACTURA         -- AÑADIDO (opcional)
             FROM detalle_trabajos DT
             INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
             INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
             INNER JOIN proveedores P ON DT.idProveedor = P.idProveedor
+            LEFT JOIN tipo_factura TF ON DT.idTipoFactura = TF.idTipoFactura  -- AÑADIDO
             WHERE DT.id_pedido_trabajos = " . intval($idPedido) . " AND DT.idActivo = 1";
     
     $rs = mysqli_query($conexion, $sql);
@@ -1453,7 +1458,11 @@ function Detalles_Pedido_Trabajo($conexion, $idPedido) {
             'PRECIO' => $data['PRECIO'],
             'PROVEEDOR' => $data['PROVEEDOR'],
             'ESTADO_ID' => $data['ESTADO_ID'],
-            'ESTADO' => $data['ESTADO']
+            'ESTADO' => $data['ESTADO'],
+            'FACTURADO' => $data['FACTURADO'],              // AÑADIDO
+            'ID_TIPO_FACTURA' => $data['ID_TIPO_FACTURA'],  // AÑADIDO
+            'NUMERO_FACTURA' => $data['NUMERO_FACTURA'],    // AÑADIDO
+            'TIPO_FACTURA' => $data['TIPO_FACTURA']         // AÑADIDO
         );
     }
     return $detalles;
@@ -1611,6 +1620,9 @@ function Obtener_Detalle_Trabajo($conexion, $idDetalle) {
                 dt.idProveedor, 
                 dt.idEstadoTrabajo, 
                 dt.idActivo,
+                dt.facturado,                    -- AÑADIDO
+                dt.idTipoFactura,                -- AÑADIDO
+                dt.numeroFactura,                -- AÑADIDO
                 pt.idPedidoTrabajos,
                 pt.idCliente,
                 DATE_FORMAT(pt.fecha, '%Y-%m-%d') AS fecha_pedido,

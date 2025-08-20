@@ -30,6 +30,7 @@ if (!$detalle) {
 $estados = Datos_Estados_Trabajo($conexion);
 $trabajos = Datos_Trabajos($conexion);
 $proveedores = Listar_Proveedores($conexion);
+$tiposFactura = Listar_Tipos_Factura($conexion);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -37,6 +38,26 @@ $proveedores = Listar_Proveedores($conexion);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Trabajo</title>
+    <style>
+        .facturacion-section {
+            border-top: 1px solid #dee2e6;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+        .toggle-facturacion {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+        .toggle-facturacion:hover {
+            color: #0a58ca;
+        }
+        .facturacion-content {
+            display: none;
+        }
+        .facturacion-content.show {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div class="modal-header">
@@ -137,6 +158,47 @@ $proveedores = Listar_Proveedores($conexion);
                 </div>
             </div>
             
+            <!-- Sección de Facturación -->
+            <div class="facturacion-section">
+                <h6 class="toggle-facturacion" onclick="toggleFacturacion()">
+                    <i class="bi bi-receipt"></i> Información de Facturación 
+                    <i class="bi bi-chevron-down" id="facturacionIcon"></i>
+                </h6>
+                
+                <div class="facturacion-content" id="facturacionContent">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="facturado" name="facturado" 
+                                    <?php echo ($detalle['facturado'] == 1) ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="facturado">¿Facturado?</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3" id="facturacionFields" style="<?php echo ($detalle['facturado'] == 1) ? '' : 'display: none;'; ?>">
+                        <div class="col-md-6">
+                            <label for="tipo_factura" class="form-label">Tipo de Factura</label>
+                            <select class="form-select" id="tipo_factura" name="idTipoFactura">
+                                <option value="">Seleccionar tipo...</option>
+                                <?php foreach ($tiposFactura as $tipo): ?>
+                                    <option value="<?php echo $tipo['idTipoFactura']; ?>"
+                                        <?php echo ($tipo['idTipoFactura'] == $detalle['idTipoFactura']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($tipo['denominacion']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="numero_factura" class="form-label">Número de Factura</label>
+                            <input type="text" class="form-control" id="numero_factura" name="numeroFactura" 
+                                value="<?php echo htmlspecialchars($detalle['numeroFactura']); ?>">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
@@ -144,7 +206,53 @@ $proveedores = Listar_Proveedores($conexion);
         </form>
     </div>
 
-      <!-- Template Main CSS File -->
-  <link href="../assets/css/style.css" rel="stylesheet">
+    <!-- Template Main CSS File -->
+    <link href="../assets/css/style.css" rel="stylesheet">
+    
+    <script>
+    function toggleFacturacion() {
+        const content = document.getElementById('facturacionContent');
+        const icon = document.getElementById('facturacionIcon');
+        
+        if (content.classList.contains('show')) {
+            content.classList.remove('show');
+            icon.className = 'bi bi-chevron-down';
+        } else {
+            content.classList.add('show');
+            icon.className = 'bi bi-chevron-up';
+        }
+    }
+    
+    // Mostrar/ocultar campos de facturación según el checkbox
+    document.getElementById('facturado').addEventListener('change', function() {
+        const facturacionFields = document.getElementById('facturacionFields');
+        if (this.checked) {
+            facturacionFields.style.display = 'block';
+        } else {
+            facturacionFields.style.display = 'none';
+            document.getElementById('tipo_factura').value = '';
+            document.getElementById('numero_factura').value = '';
+        }
+    });
+    
+    // Inicializar estado de la sección de facturación
+    document.addEventListener('DOMContentLoaded', function() {
+        const facturado = document.getElementById('facturado');
+        const facturacionFields = document.getElementById('facturacionFields');
+        const facturacionContent = document.getElementById('facturacionContent');
+        const icon = document.getElementById('facturacionIcon');
+        
+        // Si ya está facturado, mostrar la sección expandida
+        if (facturado.checked) {
+            facturacionContent.classList.add('show');
+            icon.className = 'bi bi-chevron-up';
+            facturacionFields.style.display = 'block';
+        } else {
+            facturacionContent.classList.remove('show');
+            icon.className = 'bi bi-chevron-down';
+            facturacionFields.style.display = 'none';
+        }
+    });
+    </script>
 </body>
 </html>

@@ -21,6 +21,9 @@ if (!$MiConexion) {
 $TiposPagosEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
 $TiposPagosSalida = Listar_Tipos_Pagos_Salida($MiConexion);
 
+// Obtener tipos de factura
+$TiposFactura = Listar_Tipos_Factura($MiConexion);
+
 $DatosPedidoActual = array();
 $DetallesPedido = array();
 $IdPedidoParaJs = 'null';
@@ -175,21 +178,58 @@ ob_end_flush();
                                         <th>Descripción</th>
                                         <th>Fecha Entrega</th>
                                         <th class="text-end">Precio</th>
+                                        <th>Facturación</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($DetallesPedido)) {
                                         foreach ($DetallesPedido as $detalle) { 
-                                                    // Obtener el color y título de la fila según el estado
-                                        list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']);
-                                        ?>
+                                            // Obtener el color y título de la fila según el estado
+                                            list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']);
+                                            
+                                            // Determinar estado de facturación - CORREGIDO
+                                            $facturado = isset($detalle['FACTURADO']) ? (bool)$detalle['FACTURADO'] : false;
+                                            $idTipoFactura = $detalle['ID_TIPO_FACTURA'] ?? null;
+                                            $numeroFactura = $detalle['NUMERO_FACTURA'] ?? '';
+                                            $tipoFactura = $detalle['TIPO_FACTURA'] ?? '';
+                                            
+                                            // Obtener el nombre del tipo de factura si no viene en la consulta
+                                            $nombreTipoFactura = $tipoFactura;
+                                            if (empty($nombreTipoFactura) && $idTipoFactura && !empty($TiposFactura)) {
+                                                foreach ($TiposFactura as $tipo) {
+                                                    if ($tipo['idTipoFactura'] == $idTipoFactura) {
+                                                        $nombreTipoFactura = $tipo['denominacion'];
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Verificar si está realmente facturado
+                                            $estaFacturado = $facturado && !empty($numeroFactura);
+                                            ?>
                                             <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['TRABAJO']); ?></td>
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['ESTADO']); ?></td>
                                                 <td class="extra-small"><?php echo htmlspecialchars($detalle['DESCRIPCION']); ?></td>
                                                 <td class="extra-small"><?php echo date("d/m/Y", strtotime($detalle['FECHA_ENTREGA'])); ?></td>
                                                 <td class="text-end extra-small">$<?php echo number_format($detalle['PRECIO'], 2, ',', '.'); ?></td>
+                                                <td class="text-center">
+                                                    <?php if ($estaFacturado): ?>
+                                                        <span class="badge bg-success d-inline-flex align-items-center" 
+                                                            data-bs-toggle="tooltip" 
+                                                            title="<?php echo htmlspecialchars(($nombreTipoFactura ? $nombreTipoFactura . ' #' : '') . $numeroFactura); ?>">
+                                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                                            <span>Facturado</span>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary d-inline-flex align-items-center" 
+                                                            data-bs-toggle="tooltip" title="No facturado">
+                                                            <i class="bi bi-x-circle-fill me-1"></i>
+                                                            <span>No facturado</span>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td>
                                                     <button type="button" class="btn btn-xs btn-warning me-2" onclick="editarDetalle(<?php echo $detalle['ID_DETALLE']; ?>)" title="Editar">
                                                         <i class="bi bi-pencil"></i>
@@ -202,7 +242,7 @@ ob_end_flush();
                                         <?php }
                                     } else { ?>
                                         <tr>
-                                            <td colspan="6" class="text-center py-4">No hay trabajos registrados en este pedido</td>
+                                            <td colspan="7" class="text-center py-4">No hay trabajos registrados en este pedido</td>
                                         </tr>
                                     <?php } ?>
                                 </tbody>
@@ -633,6 +673,19 @@ ob_end_flush();
             });
         });
     });
+
+    function toggleFacturacion() {
+        const content = document.getElementById('facturacionContent');
+        const icon = document.getElementById('facturacionIcon');
+        
+        if (content.classList.contains('show')) {
+            content.classList.remove('show');
+            icon.className = 'bi bi-chevron-down';
+        } else {
+            content.classList.add('show');
+            icon.className = 'bi bi-chevron-up';
+        }
+    }
     </script>
 
 <?php
