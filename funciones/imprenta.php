@@ -1671,6 +1671,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     try {
         switch ($accion) {
             case 'editar':
+                // CONSULTA ACTUALIZADA PARA INCLUIR CAMPOS DE FACTURACIÓN
                 $query = "UPDATE detalle_trabajos SET 
                          idTrabajo = ?, 
                          precio = ?, 
@@ -1678,7 +1679,10 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                          horaEntrega = ?, 
                          descripcion = ?,
                          idProveedor = ?,
-                         idEstadoTrabajo = ?
+                         idEstadoTrabajo = ?,
+                         facturado = ?,           -- NUEVO CAMPO
+                         idTipoFactura = ?,       -- NUEVO CAMPO
+                         numeroFactura = ?        -- NUEVO CAMPO
                          WHERE idDetalleTrabajo = ?";
                 
                 $stmt = $conexion->prepare($query);
@@ -1687,7 +1691,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     return false;
                 }
                 
-                $stmt->bind_param('idsssiii', 
+                // Manejar valores NULL para campos de facturación
+                $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
+                $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
+                
+                $stmt->bind_param('idsssiiissi', 
                     $datos['idTrabajo'], 
                     $datos['precio'], 
                     $datos['fechaEntrega'],
@@ -1695,11 +1703,15 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $datos['descripcion'],
                     $datos['idProveedor'],
                     $datos['idEstadoTrabajo'],
+                    $datos['facturado'],        // NUEVO
+                    $idTipoFactura,             // NUEVO
+                    $numeroFactura,             // NUEVO
                     $datos['idDetalle']
                 );
                 break;
                 
             case 'agregar':
+                // CONSULTA ACTUALIZADA PARA INCLUIR CAMPOS DE FACTURACIÓN
                 $query = "INSERT INTO detalle_trabajos (
                     id_pedido_trabajos, 
                     idTrabajo, 
@@ -1708,8 +1720,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     horaEntrega, 
                     descripcion,
                     idProveedor,
-                    idEstadoTrabajo
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    idEstadoTrabajo,
+                    facturado,           -- NUEVO CAMPO
+                    idTipoFactura,       -- NUEVO CAMPO
+                    numeroFactura        -- NUEVO CAMPO
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) {
@@ -1717,7 +1732,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     return false;
                 }
                 
-                $stmt->bind_param('iidsssii',
+                // Manejar valores NULL para campos de facturación
+                $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
+                $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
+                
+                $stmt->bind_param('iidsssiiiss',
                     $datos['id_pedido_trabajos'],
                     $datos['idTrabajo'],
                     $datos['precio'],
@@ -1725,7 +1744,10 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $datos['horaEntrega'],
                     $datos['descripcion'],
                     $datos['idProveedor'],
-                    $datos['idEstadoTrabajo']
+                    $datos['idEstadoTrabajo'],
+                    $datos['facturado'],        // NUEVO
+                    $idTipoFactura,             // NUEVO
+                    $numeroFactura              // NUEVO
                 );
                 break;
                 
