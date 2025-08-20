@@ -1988,25 +1988,48 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
 }
 
     // Obtener todos los movimientos contables históricos con fecha de caja
-function Listar_Movimientos_Contables($conexion) {
-    $query = "SELECT dc.*, c.Fecha as fecha, tp.denominacion as tipo_pago, tm.denominacion as tipo_movimiento 
+function Listar_Movimientos_Contables($conexion, $filtros = []) {
+    $query = "SELECT dc.*, 
+                     c.Fecha as fecha, 
+                     tp.denominacion as tipo_pago, 
+                     tm.denominacion as tipo_movimiento,
+                     tm.es_entrada, 
+                     tm.es_salida
               FROM detalle_caja dc
               JOIN caja c ON dc.idCaja = c.idCaja
               JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
               JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-              WHERE (tp.esEntrada = 0 OR tp.esSalida = 1)
-              AND (tm.es_entrada = 0 OR tm.es_salida = 1)
-              ORDER BY c.Fecha DESC, dc.idDetalleCaja DESC";
-    
+              WHERE NOT (tm.es_entrada = 1 AND tp.denominacion LIKE '%Efectivo%')";
+
+    // Filtros
+    if (!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $query .= " AND c.Fecha >= '$fecha_desde'";
+    }
+    if (!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $query .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+    if (!empty($filtros['tipo_movimiento'])) {
+        $tipo_movimiento = $conexion->real_escape_string($filtros['tipo_movimiento']);
+        $query .= " AND tm.denominacion = '$tipo_movimiento'";
+    }
+    if (!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $query .= " AND tp.denominacion = '$metodo_pago'";
+    }
+
+    $query .= " ORDER BY c.Fecha DESC, dc.idDetalleCaja DESC";
+
     $result = $conexion->query($query);
-    $movimientos = array();
-    
+    $movimientos = [];
+
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $movimientos[] = $row;
         }
     }
-    
+
     return $movimientos;
 }
 
@@ -3227,6 +3250,93 @@ function Listar_Tipos_Factura($vConexion) {
     }
     
     return $tipos;
+}
+
+// FUNCIONES MOVIMIENTOS
+
+function Listar_Movimientos($conexion, $filtros = []) {
+    $SQL = "SELECT 
+                dc.idDetalleCaja,
+                dc.monto,
+                dc.observaciones,
+                dc.facturado,
+                dc.numeroFactura,
+                dc.idCaja,
+                dc.idTipoPago,
+                dc.idTipoMovimiento,
+                dc.idUsuario,
+                dc.idTipoFactura,
+                c.Fecha as fechaCaja,
+                tp.denominacion as metodoPago,
+                tm.denominacion as tipoMovimiento,
+                u.nombre as usuarioNombre,
+                u.apellido as usuarioApellido
+            FROM detalle_caja dc
+            INNER JOIN caja c ON dc.idCaja = c.idCaja
+            INNER JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+            INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+            INNER JOIN usuarios u ON dc.idUsuario = u.idUsuario
+            WHERE 1=1";
+
+    // aplicar filtros si se pasan
+    if (!empty($filtros['desde'])) {
+        $SQL .= " AND c.Fecha >= '" . mysqli_real_escape_string($conexion, $filtros['desde']) . "'";
+    }
+    if (!empty($filtros['hasta'])) {
+        $SQL .= " AND c.Fecha <= '" . mysqli_real_escape_string($conexion, $filtros['hasta']) . "'";
+    }
+    if (!empty($filtros['tipo'])) {
+        $SQL .= " AND tm.denominacion LIKE '%" . mysqli_real_escape_string($conexion, $filtros['tipo']) . "%'";
+    }
+
+    $SQL .= " ORDER BY c.Fecha DESC";
+
+    $resultado = mysqli_query($conexion, $SQL);
+    $movimientos = [];
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $movimientos[] = $fila;
+        }
+    }
+    return $movimientos;
+}
+
+function Obtener_Resumen_Movimientos($conexion) {
+    $resumen = [
+        "entradas" => 0,
+        "salidas" => 0,
+        "balance" => 0,
+        "caja" => 0
+    ];
+
+    $SQL = "SELECT tm.es_entrada, tm.es_salida, dc.monto
+            FROM detalle_caja dc
+            INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento";
+    $resultado = mysqli_query($conexion, $SQL);
+
+    if ($resultado) {
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            if ($fila['es_entrada']) {
+                $resumen['entradas'] += $fila['monto'];
+            }
+            if ($fila['es_salida']) {
+                $resumen['salidas'] += $fila['monto'];
+            }
+        }
+    }
+
+    $resumen['balance'] = $resumen['entradas'] - $resumen['salidas'];
+
+    // sacar saldo de caja actual
+    $SQLCaja = "SELECT SUM(dc.monto * (CASE WHEN tm.es_entrada=1 THEN 1 ELSE -1 END)) as saldo
+                FROM detalle_caja dc
+                INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento";
+    $resultadoCaja = mysqli_query($conexion, $SQLCaja);
+    if ($resultadoCaja && $fila = mysqli_fetch_assoc($resultadoCaja)) {
+        $resumen['caja'] = $fila['saldo'] ?? 0;
+    }
+
+    return $resumen;
 }
 
 ?>

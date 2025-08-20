@@ -14,153 +14,186 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Obtener los métodos de pago y tipos de movimiento de salida (retiro)
-$TiposPagos = Listar_Tipos_Pagos_Contable($MiConexion);
-$TiposMovimientos = Listar_Tipos_Movimiento_Contable($MiConexion);
+// Obtener filtros desde GET
+$filtros = [
+    'fecha_desde' => $_GET['fecha_desde'] ?? '',
+    'fecha_hasta' => $_GET['fecha_hasta'] ?? '',
+    'tipo_movimiento' => $_GET['tipo_movimiento'] ?? '',
+    'metodo_pago' => $_GET['metodo_pago'] ?? ''
+];
 
-if (!empty($_POST['BotonRegistrar'])) {
-    // Validar y limpiar los datos del formulario
-    Validar_Venta();
-
-    // Asignar el mensaje de validación a una variable local
-    $Mensaje = $_SESSION['Mensaje'];
-    $Estilo = 'danger';
-
-    // Si no hay errores, proceder con la inserción
-    if (empty($Mensaje)) {
-        if (empty($_SESSION['Id_Caja'])) {
-            echo "<script>
-                alert('Error: No hay caja seleccionada. Por favor, seleccione una caja antes de registrar el retiro.');
-                window.location.href = 'index.php';
-            </script>";
-            exit;
-        }
-
-        // Llamar al método InsertarMovimiento
-        if (InsertarMovimiento($MiConexion)) {
-            $_SESSION['Mensaje'] = 'Detalle de retiro registrado correctamente.';
-            $_SESSION['Estilo'] = 'success';
-            header("Location: planilla_caja.php");
-            exit;
-        } else {
-            $_SESSION['Mensaje'] = 'Error al registrar el detalle de retiro.';
-            $_SESSION['Estilo'] = 'danger';
-        }
-    }
-}
+// obtenemos los datos con filtros
+$movimientos = Listar_Movimientos_Contables($MiConexion, $filtros);
+$totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion);
+$totalBanco = Obtener_Total_Banco($MiConexion);
 
 $MiConexion->close();
 ob_end_flush();
 ?>
 
 <main id="main" class="main">
-
     <div class="pagetitle">
-        <h1>Contables</h1>
+        <h1>Movimientos Contables</h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
-                <li class="breadcrumb-item">Retiros</li>
-                <li class="breadcrumb-item active">Agregar Retiro</li>
+                <li class="breadcrumb-item active">Movimientos Contables</li>
             </ol>
         </nav>
-    </div><!-- End Page Title -->
+    </div>
 
     <section class="section">
-        <div class="card">
-            <div class="card-body">
+        <div class="row">
+            <div class="col-lg-12">
 
-                <!-- Sección de Métodos de Pago -->
-                <form method="post">
-                    <?php if (!empty($Mensaje)) { ?>
-                        <div class="alert alert-<?php echo $Estilo; ?> alert-dismissable">
-                        <?php echo $Mensaje; ?>
+                <!-- Tarjetas resumen -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Caja Fuerte</h5>
+                                    <h3 class="card-text">$<?= number_format($totalCajaFuerte, 2, ',', '.') ?></h3>
+                                </div>
+                                <i class="bi bi-safe display-4"></i>
+                            </div>
                         </div>
-                        <?php unset($_SESSION['Mensaje'], $_SESSION['Estilo']); ?>
-                    <?php } ?>
-
-                    <!-- Campo oculto para idCaja -->
-                    <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
-
-                    <!-- Campo oculto para idTipoPago (siempre 14) -->
-                    <div class="text-center mb-4 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 card-title">Seleccione el Tipo de Pago</h6>
-                        <a href="../imprenta_metodos_pago_contable/listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Pagos</a>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <?php foreach ($TiposPagos as $tipo) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-pago" data-id="<?php echo $tipo['idTipoPago']; ?>">
-                                <?php echo $tipo['denominacion']; ?>
+                    <div class="col-md-6">
+                        <div class="card text-white bg-secondary mb-3">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Banco</h5>
+                                    <h3 class="card-text">$<?= number_format($totalBanco, 2, ',', '.') ?></h3>
+                                </div>
+                                <i class="bi bi-bank display-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">Registro de Movimientos</h5>
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nuevoMovimientoModal">
+                                <i class="bi bi-plus-circle me-1"></i> Nuevo Movimiento
                             </button>
-                        <?php } ?>
-                        <input type="hidden" name="idTipoPago" id="idTipoPago" value="14">
-                    </div>
-
-                    <!-- Sección de Tipos de Movimiento Salida -->
-                    <div class="text-center mb-4 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
-                        <a href="../imprenta_tipos_movimientos_contables/listados_tipos_movimientos.php" class="btn btn-outline-primary btn-sm">Gestionar Tipos de Retiro</a>
-                    </div>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <?php foreach ($TiposMovimientos as $tipoM) { ?>
-                            <button type="button" class="btn btn-secondary mx-2 my-2 tipo-movimiento" data-id="<?php echo $tipoM['idTipoMovimiento']; ?>">
-                                <?php echo $tipoM['denominacion']; ?>
-                            </button>
-                        <?php } ?>
-                        <input type="hidden" name="idTipoMovimiento" id="idTipoMovimiento">
-                    </div>
-
-                    <!-- Campo para ingresar el valor de dinero -->
-                    <div class="text-center mt-4">
-                        <label for="valorDinero" class="form-label">Ingrese el Valor de Dinero</label>
-                        <div class="input-group w-50 mx-auto">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control text-center" id="valorDinero" name="Monto" placeholder="0" min="0" step="1">
                         </div>
-                    </div>
 
-                    <!-- Campo para observaciones -->
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-md-6 text-center">
-                            <label for="observaciones" class="form-label">Observaciones</label>
-                            <textarea class="form-control" id="observaciones" name="Observaciones" rows="3" placeholder="Ingrese comentarios u observaciones"></textarea>
+                        <!-- Filtro de búsqueda -->
+                        <form method="GET" class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="fecha_desde" class="form-label">Fecha desde</label>
+                                <input type="date" class="form-control" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="fecha_hasta" class="form-label">Fecha hasta</label>
+                                <input type="date" class="form-control" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="tipo_movimiento" class="form-label">Tipo de movimiento</label>
+                                <select class="form-select" name="tipo_movimiento">
+                                    <option value="">Todos</option>
+                                    <option value="Caja Fuerte" <?= ($filtros['tipo_movimiento']=='Caja Fuerte') ? 'selected' : '' ?>>Caja Fuerte</option>
+                                    <option value="Banco" <?= ($filtros['tipo_movimiento']=='Banco') ? 'selected' : '' ?>>Banco</option>
+                                    <option value="Entrada" <?= ($filtros['tipo_movimiento']=='Entrada') ? 'selected' : '' ?>>Entrada</option>
+                                    <option value="Salida" <?= ($filtros['tipo_movimiento']=='Salida') ? 'selected' : '' ?>>Salida</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="metodo_pago" class="form-label">Método de pago</label>
+                                <select class="form-select" name="metodo_pago">
+                                    <option value="">Todos</option>
+                                    <option value="Efectivo" <?= ($filtros['metodo_pago']=='Efectivo') ? 'selected' : '' ?>>Efectivo</option>
+                                    <option value="Transferencia bancaria" <?= ($filtros['metodo_pago']=='Transferencia bancaria') ? 'selected' : '' ?>>Transferencia</option>
+                                    <option value="Cheque" <?= ($filtros['metodo_pago']=='Cheque') ? 'selected' : '' ?>>Cheque</option>
+                                    <option value="Débito" <?= ($filtros['metodo_pago']=='Débito') ? 'selected' : '' ?>>Débito</option>
+                                    <option value="Crédito" <?= ($filtros['metodo_pago']=='Crédito') ? 'selected' : '' ?>>Crédito</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">Filtrar</button>
+                            </div>
+                        </form>
+
+                        <!-- Lista de movimientos -->
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Descripción</th>
+                                        <th>Tipo</th>
+                                        <th>Método</th>
+                                        <th>Usuario</th>
+                                        <th class="text-end">Monto</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($movimientos)): ?>
+                                        <?php foreach ($movimientos as $mov): 
+                                            $esCajaFuerte = (strtolower($mov['tipo_movimiento']) === 'caja fuerte' || $mov['idTipoMovimiento'] == 9);
+                                            $esEntrada = ($mov['es_entrada'] == 1);
+                                            $esSalida = ($mov['es_salida'] == 1);
+
+                                            if ($esCajaFuerte || $esEntrada) {
+                                                $claseMonto = 'text-success';
+                                                $signo = '+';
+                                            } elseif ($esSalida) {
+                                                $claseMonto = 'text-danger';
+                                                $signo = '-';
+                                            } else {
+                                                $claseMonto = '';
+                                                $signo = '';
+                                            }
+                                        ?>
+                                            <tr>
+                                                <td><?= date("d/m/Y", strtotime($mov['fecha'])) ?></td>
+                                                <td><?= htmlspecialchars($mov['observaciones']) ?></td>
+                                                <td>
+                                                    <span class="badge <?= ($claseMonto=='text-success') ? 'bg-success' : 'bg-danger' ?>">
+                                                        <?= htmlspecialchars($mov['tipo_movimiento']) ?>
+                                                    </span>
+                                                </td>
+                                                <td><?= htmlspecialchars($mov['tipo_pago']) ?></td>
+                                                <td><?= htmlspecialchars($_SESSION['Usuario_Nombre']) ?></td>
+                                                <td class="text-end <?= $claseMonto ?>"><?= $signo . "$" . number_format($mov['monto'], 2, ',', '.') ?></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="7" class="text-center">No se encontraron movimientos</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
 
-                    <!-- Botones de registrar o reset -->
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-primary" value="Registrar" name="BotonRegistrar">Agregar Retiro</button>
-                        <button type="reset" class="btn btn-secondary">Reset</button>
                     </div>
-                </form><!-- End Horizontal Form -->
+                </div>
             </div>
         </div>
-
     </section>
+</main>
 
-</main><!-- End #main -->
+<!-- Modal Nuevo Movimiento -->
+<?php require('../shared/modal_nuevo_movimiento.inc.php'); ?>
 
-<?php
-require ('../shared/footer.inc.php');
-?>
+<!-- Footer -->
+<?php require('../shared/footer.inc.php'); ?>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Manejar la selección de los botones de Tipos de Movimiento Salida
-    const tipoMovimientoButtons = document.querySelectorAll('.tipo-movimiento');
-    tipoMovimientoButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tipoMovimientoButtons.forEach(btn => btn.classList.remove('btn-primary'));
-            tipoMovimientoButtons.forEach(btn => btn.classList.add('btn-secondary'));
-            button.classList.remove('btn-secondary');
-            button.classList.add('btn-primary');
-            document.getElementById('idTipoMovimiento').value = button.getAttribute('data-id');
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('fecha').valueAsDate = new Date();
     });
 </script>
-
-<?php
-ob_end_flush();
-?>
-
 </body>
 </html>
