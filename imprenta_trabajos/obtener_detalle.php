@@ -13,7 +13,6 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 
 // Obtener ID del detalle a editar
 $idDetalle = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
 if ($idDetalle <= 0) {
     die('<div class="alert alert-danger">ID de detalle inválido</div>');
 }
@@ -29,7 +28,7 @@ if (!$detalle) {
     die('<div class="alert alert-danger">Detalle no encontrado</div>');
 }
 
-// Obtener datos adicionales necesarios
+// Datos adicionales
 $estados = Datos_Estados_Trabajo($conexion);
 $trabajos = Datos_Trabajos($conexion);
 $proveedores = Listar_Proveedores($conexion);
@@ -47,19 +46,6 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
             padding-top: 1rem;
             margin-top: 1rem;
         }
-        .toggle-facturacion {
-            cursor: pointer;
-            color: #0d6efd;
-        }
-        .toggle-facturacion:hover {
-            color: #0a58ca;
-        }
-        .facturacion-content {
-            display: none;
-        }
-        .facturacion-content.show {
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -72,10 +58,8 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
             <input type="hidden" name="accion" value="editar">
             <input type="hidden" name="idDetalle" value="<?php echo $detalle['idDetalleTrabajo']; ?>">
             <input type="hidden" name="IdPedido" value="<?php echo $detalle['id_pedido_trabajos']; ?>">
-            
-            <!-- Campo oculto para asegurar que siempre se envíe el valor de facturado -->
             <input type="hidden" name="facturado" value="0" id="hiddenFacturado">
-            
+
             <!-- Primera fila: Estado, Trabajo y Descripción -->
             <div class="row mb-3">
                 <div class="col-md-4">
@@ -89,7 +73,6 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
                         <?php endforeach; ?>
                     </select>
                 </div>
-                
                 <div class="col-md-4">
                     <label for="tipo_trabajo" class="form-label">Trabajo</label>
                     <select class="form-select" id="tipo_trabajo" name="idTrabajo" required>
@@ -101,7 +84,6 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
                         <?php endforeach; ?>
                     </select>
                 </div>
-                
                 <div class="col-md-4">
                     <label for="descripcion" class="form-label">Descripción</label>
                     <input type="text" class="form-control" id="descripcion" name="descripcion" 
@@ -122,13 +104,11 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
                         <?php endforeach; ?>
                     </select>
                 </div>
-
                 <div class="col-md-4">
                     <label class="form-label">Fecha Entrega</label>
                     <input type="date" class="form-control" id="fecha_entrega" name="fechaEntrega"
                         value="<?php echo htmlspecialchars($detalle['fecha_entrega']); ?>">
                 </div>
-
                 <div class="col-md-4">
                     <label class="form-label">Hora Entrega</label>
                     <select class="form-select" id="hora_entrega" name="horaEntrega">
@@ -137,10 +117,8 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
                                   '12:00','12:30','16:00','16:30','17:00','17:30',
                                   '18:00','18:30','19:00','19:30'];
                         $horaActual = $detalle['hora_entrega'] ?? '';
-                        ?>
-                        <?php foreach ($horas as $hora): ?>
-                            <option value="<?php echo $hora; ?>"
-                                <?php echo ($hora == $horaActual) ? 'selected' : ''; ?>>
+                        foreach ($horas as $hora): ?>
+                            <option value="<?php echo $hora; ?>" <?php echo ($hora == $horaActual) ? 'selected' : ''; ?>>
                                 <?php echo $hora; ?>
                             </option>
                         <?php endforeach; ?>
@@ -148,53 +126,40 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
                 </div>
             </div>
             
-            <!-- Tercera fila: Precio -->
+            <!-- Precio -->
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="precio" class="form-label">Precio ($)</label>
                     <input type="number" class="form-control" id="precio" name="precio" 
                         step="0.01" min="0" value="<?php echo htmlspecialchars($detalle['precio']); ?>">
                 </div>
-            </div>
-            
-            <!-- Sección de Facturación -->
-            <div class="facturacion-section">
-                <h6 class="toggle-facturacion" onclick="toggleFacturacion()">
-                    <i class="bi bi-receipt"></i> Información de Facturación 
-                    <i class="bi bi-chevron-down" id="facturacionIcon"></i>
-                </h6>
+            </div>   
                 
-                <div class="facturacion-content" id="facturacionContent">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="facturado" name="facturado" 
-                                    value="1" <?php echo ($detalle['facturado'] == 1) ? 'checked' : ''; ?>>
-                                <label class="form-check-label" for="facturado">¿Facturado?</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3" id="facturacionFields">
-                        <div class="col-md-6">
-                            <label for="tipo_factura" class="form-label">Tipo de Factura</label>
-                            <select class="form-select" id="tipo_factura" name="idTipoFactura">
-                                <option value="">Seleccionar tipo...</option>
-                                <?php foreach ($tiposFactura as $tipo): ?>
-                                    <option value="<?php echo $tipo['idTipoFactura']; ?>"
-                                        <?php echo ($tipo['idTipoFactura'] == $detalle['idTipoFactura']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($tipo['denominacion']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="numero_factura" class="form-label">Número de Factura</label>
-                            <input type="text" class="form-control" id="numero_factura" name="numeroFactura" 
-                                value="<?php echo htmlspecialchars($detalle['numeroFactura']); ?>">
-                        </div>
-                    </div>
+            <!-- Checkbox facturado -->
+            <div class="mb-3 form-check">
+                <input class="form-check-input" type="checkbox" id="facturado" name="facturado" value="1"
+                    <?php echo ($detalle['facturado'] == 1) ? 'checked' : ''; ?>>
+                <label class="form-check-label" for="facturado">Facturado</label>
+            </div>
+
+            <!-- Información de facturación -->
+            <div id="facturacionFields" style="display:none;">
+                <div class="mb-3">
+                    <label for="tipo_factura" class="form-label">Tipo de Factura</label>
+                    <select class="form-select" id="tipo_factura" name="idTipoFactura" disabled>
+                        <option value="">Seleccione...</option>
+                        <?php foreach ($tiposFactura as $tipo): ?>
+                            <option value="<?php echo $tipo['idTipoFactura']; ?>"
+                                <?php echo ($tipo['idTipoFactura'] == $detalle['idTipoFactura']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($tipo['denominacion']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="numero_factura" class="form-label">Número de Factura</label>
+                    <input type="text" class="form-control" id="numero_factura" name="numeroFactura" 
+                        value="<?php echo htmlspecialchars($detalle['numeroFactura']); ?>" disabled>
                 </div>
             </div>
             
@@ -206,43 +171,40 @@ $tiposFactura = Listar_Tipos_Factura($conexion);
     </div>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const facturado = document.getElementById('facturado');
-    const formEditar = document.getElementById('formEditarDetalle');
-    const tipoFactura = document.getElementById('tipo_factura');
-    const numeroFactura = document.getElementById('numero_factura');
-    const hiddenFacturado = document.getElementById('hiddenFacturado');
-    const facturacionFields = document.getElementById('facturacionFields');
+    document.addEventListener('DOMContentLoaded', function() {
+        const facturado = document.getElementById('facturado');
+        const formEditar = document.getElementById('formEditarDetalle');
+        const tipoFactura = document.getElementById('tipo_factura');
+        const numeroFactura = document.getElementById('numero_factura');
+        const hiddenFacturado = document.getElementById('hiddenFacturado');
+        const facturacionFields = document.getElementById('facturacionFields');
 
-    function toggleCamposFacturacion() {
-        if (facturado.checked) {
-            facturacionFields.style.display = 'block';
-            tipoFactura.disabled = false;
-            numeroFactura.disabled = false;
-            tipoFactura.setAttribute('required', 'required');
-            numeroFactura.setAttribute('required', 'required');
-        } else {
-            facturacionFields.style.display = 'none';
-            tipoFactura.disabled = true;
-            numeroFactura.disabled = true;
-            tipoFactura.removeAttribute('required');
-            numeroFactura.removeAttribute('required');
-            tipoFactura.value = '';
-            numeroFactura.value = '';
+        function toggleCamposFacturacion() {
+            if (facturado.checked) {
+                facturacionFields.style.display = 'block';
+                tipoFactura.disabled = false;
+                numeroFactura.disabled = false;
+                tipoFactura.required = true;
+                numeroFactura.required = true;
+            } else {
+                facturacionFields.style.display = 'none';
+                tipoFactura.disabled = true;
+                numeroFactura.disabled = true;
+                tipoFactura.required = false;
+                numeroFactura.required = false;
+                tipoFactura.value = '';
+                numeroFactura.value = '';
+            }
+            hiddenFacturado.value = facturado.checked ? '1' : '0';
         }
-        hiddenFacturado.value = facturado.checked ? '1' : '0';
-    }
 
-    // Inicializar al cargar
-    toggleCamposFacturacion();
+        // Inicializar al cargar
+        toggleCamposFacturacion();
 
-    facturado.addEventListener('change', toggleCamposFacturacion);
+        facturado.addEventListener('change', toggleCamposFacturacion);
 
-    if (formEditar) {
         formEditar.addEventListener('submit', function(e) {
             hiddenFacturado.value = facturado.checked ? '1' : '0';
-
-            // Validación solo si está marcado facturado
             if (facturado.checked) {
                 if (!tipoFactura.value) {
                     e.preventDefault();
@@ -258,9 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-    }
-});
-
+    });
     </script>
 </body>
 </html>
