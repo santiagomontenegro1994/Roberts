@@ -48,7 +48,9 @@ if (!$conexion) {
     exit;
 }
 
-// Preparar datos para la función
+// Preparar datos para la función - CORREGIDO EL MANEJO DEL CHECKBOX
+$facturado = isset($_POST['facturado']) ? (int)$_POST['facturado'] : 0;
+
 $datos = [
     'idDetalle' => $idDetalle,
     'idTrabajo' => $_POST['idTrabajo'] ?? 0,
@@ -59,11 +61,16 @@ $datos = [
     'idProveedor' => $_POST['idProveedor'] ?? 0,
     'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
     'id_pedido_trabajos' => $idPedido,
-    // Nuevos campos de facturación
-    'facturado' => isset($_POST['facturado']) ? 1 : 0,
-    'idTipoFactura' => $_POST['idTipoFactura'] ?? null,
-    'numeroFactura' => $_POST['numeroFactura'] ?? null
+    // Campos de facturación - CORREGIDO
+    'facturado' => $facturado,
+    'idTipoFactura' => !empty($_POST['idTipoFactura']) ? $_POST['idTipoFactura'] : null,
+    'numeroFactura' => !empty($_POST['numeroFactura']) ? $_POST['numeroFactura'] : null
 ];
+
+// Log para debugging
+error_log("Datos recibidos - facturado: " . $datos['facturado']);
+error_log("Datos recibidos - idTipoFactura: " . ($datos['idTipoFactura'] ?? 'NULL'));
+error_log("Datos recibidos - numeroFactura: " . ($datos['numeroFactura'] ?? 'NULL'));
 
 // Procesar la acción
 $resultado = Procesar_Detalle_Trabajo($conexion, $accion, $datos);
@@ -76,6 +83,7 @@ if ($resultado) {
     $_SESSION['Mensaje'] = 'Error al procesar el detalle: ' . $error;
     $_SESSION['Estilo'] = 'danger';
     error_log("Error en procesar_detalle: $error");
+    error_log("Datos enviados: " . print_r($datos, true));
 }
 
 // Redireccionar de vuelta a la página del pedido
