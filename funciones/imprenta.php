@@ -1988,20 +1988,23 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
 }
 
     // Obtener todos los movimientos contables históricos con fecha de caja
-function Listar_Movimientos_Contables($conexion, $filtros = []) {
+// Listar movimientos contables con filtros y paginación
+function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
     $query = "SELECT dc.*, 
                      c.Fecha as fecha, 
                      tp.denominacion as tipo_pago, 
                      tm.denominacion as tipo_movimiento,
                      tm.es_entrada, 
-                     tm.es_salida
+                     tm.es_salida,
+                     u.nombre as usuario_nombre
               FROM detalle_caja dc
               JOIN caja c ON dc.idCaja = c.idCaja
               JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
               JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+              LEFT JOIN usuarios u ON dc.idUsuario = u.idUsuario
               WHERE NOT (tm.es_entrada = 1 AND tp.denominacion LIKE '%Efectivo%')";
 
-    // Filtros
+    // filtros
     if (!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $query .= " AND c.Fecha >= '$fecha_desde'";
@@ -2011,15 +2014,24 @@ function Listar_Movimientos_Contables($conexion, $filtros = []) {
         $query .= " AND c.Fecha <= '$fecha_hasta'";
     }
     if (!empty($filtros['tipo_movimiento'])) {
-        $tipo_movimiento = $conexion->real_escape_string($filtros['tipo_movimiento']);
-        $query .= " AND tm.denominacion = '$tipo_movimiento'";
+        if ($filtros['tipo_movimiento'] == 'Entrada') {
+            $query .= " AND (tm.es_entrada = 1 OR tm.denominacion LIKE 'Caja Fuerte')";
+        } elseif ($filtros['tipo_movimiento'] == 'Salida') {
+            $query .= " AND tm.es_salida = 1 AND tm.denominacion NOT LIKE 'Caja Fuerte'";
+        }
     }
     if (!empty($filtros['metodo_pago'])) {
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $query .= " AND tp.denominacion = '$metodo_pago'";
     }
+    if (!empty($filtros['tipo_especial'])) {
+        // Filtrar por el nombre exacto de tipo_movimiento ignorando mayúsculas
+        $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
+        $query .= " AND tm.es_entrada = 0 AND tm.es_salida = 0 AND LOWER(tm.denominacion) = LOWER('$tipo_especial')";
+    }
 
     $query .= " ORDER BY c.Fecha DESC, dc.idDetalleCaja DESC";
+    $query .= " LIMIT $offset, $limite";
 
     $result = $conexion->query($query);
     $movimientos = [];
@@ -2031,6 +2043,65 @@ function Listar_Movimientos_Contables($conexion, $filtros = []) {
     }
 
     return $movimientos;
+}
+
+// Función para Tipo Especial
+function Listar_Tipos_Especiales($conexion) {
+    $tipos = [];
+    $query = "SELECT DISTINCT denominacion 
+              FROM tipo_movimiento
+              WHERE es_entrada = 1 OR es_salida = 1 OR (es_entrada = 0 AND es_salida = 0)
+              ORDER BY denominacion ASC";
+    $res = $conexion->query($query);
+    if ($res) {
+        while($row = $res->fetch_assoc()) {
+            $tipos[$row['denominacion']] = $row['denominacion'];
+        }
+    }
+    return $tipos;
+}
+
+// Contar movimientos para paginación
+function Contar_Movimientos_Contables($conexion, $filtros = []) {
+    $query = "SELECT COUNT(*) as total
+              FROM detalle_caja dc
+              JOIN caja c ON dc.idCaja = c.idCaja
+              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+              WHERE NOT (tm.es_entrada = 1 AND tp.denominacion LIKE '%Efectivo%')";
+
+    if (!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $query .= " AND c.Fecha >= '$fecha_desde'";
+    }
+    if (!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $query .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+    if (!empty($filtros['tipo_movimiento'])) {
+        if ($filtros['tipo_movimiento'] == 'Entrada') {
+            $query .= " AND (tm.es_entrada = 1 OR tm.denominacion LIKE 'Caja Fuerte')";
+        } elseif ($filtros['tipo_movimiento'] == 'Salida') {
+            $query .= " AND tm.es_salida = 1 AND tm.denominacion NOT LIKE 'Caja Fuerte'";
+        }
+    }
+    if (!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $query .= " AND tp.denominacion = '$metodo_pago'";
+    }
+    if (!empty($filtros['tipo_especial'])) {
+        $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
+        $query .= " AND tm.es_entrada = 0 AND tm.es_salida = 0 AND tm.denominacion = '$tipo_especial'";
+    }
+
+    $result = $conexion->query($query);
+    $total = 0;
+    if ($result) {
+        $row = $result->fetch_assoc();
+        $total = intval($row['total']);
+    }
+
+    return $total;
 }
 
     // Obtener total de Caja Fuerte (retiros) con fecha de caja

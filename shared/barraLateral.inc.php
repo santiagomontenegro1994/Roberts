@@ -153,16 +153,6 @@
             <i class="bi bi-circle"></i><span>Listados Movimientos</span>
           </a>
         </li>
-                <li>
-          <a href="../imprenta_contables/agregar_contables.php">
-            <i class="bi bi-circle"></i><span>Agregar</span>
-          </a>
-        </li>
-        <li>
-          <a href="../imprenta_contables/retirar_contables.php">
-            <i class="bi bi-circle"></i><span>Retiro</span>
-          </a>
-        </li>
         </ul>
       </li><!-- End Contables -->
 
