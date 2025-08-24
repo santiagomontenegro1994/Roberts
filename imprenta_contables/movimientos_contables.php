@@ -114,17 +114,6 @@ ob_end_flush();
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <label for="tipo_especial" class="form-label">Tipo Especial</label>
-                                    <select class="form-select" name="tipo_especial">
-                                        <option value="">Todos</option>
-                                        <?php foreach($tipoEspecialOptions as $value => $label): ?>
-                                            <option value="<?= $label ?>" <?= (!empty($filtros['tipo_especial']) && $filtros['tipo_especial'] == $label) ? 'selected' : '' ?>>
-                                                <?= $label ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
                                     <a href="movimientos_contables.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>

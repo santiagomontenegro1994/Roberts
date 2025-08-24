@@ -14,14 +14,42 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Obtener los métodos de pago y tipos de movimiento de salida (retiro)
-$TiposPagos = Listar_Tipos_Pagos_Salida($MiConexion);
+// Obtener tipos de movimiento de salida (retiros)
 $TiposMovimientoSalida = [];
-$sql = "SELECT idTipoMovimiento, denominacion FROM tipo_movimiento WHERE es_salida = 1 AND idActivo = 1";
+$sql = "SELECT idTipoMovimiento, denominacion 
+        FROM tipo_movimiento 
+        WHERE es_salida = 1 AND idActivo = 1 
+        ORDER BY denominacion";
 $resultado = mysqli_query($MiConexion, $sql);
 if ($resultado) {
     while ($fila = mysqli_fetch_assoc($resultado)) {
         $TiposMovimientoSalida[] = $fila;
+    }
+}
+
+// Listar usuarios activos
+$Usuarios = [];
+$sqlUsuarios = "SELECT idUsuario, nombre, apellido 
+                FROM usuarios 
+                WHERE idActivo = 1 
+                ORDER BY apellido, nombre";
+$resUsuarios = mysqli_query($MiConexion, $sqlUsuarios);
+if ($resUsuarios) {
+    while ($fila = mysqli_fetch_assoc($resUsuarios)) {
+        $Usuarios[] = $fila;
+    }
+}
+
+// Listar proveedores activos
+$Proveedores = [];
+$sqlProveedores = "SELECT idProveedor, nombre 
+                   FROM proveedores 
+                   WHERE idActivo = 1 
+                   ORDER BY nombre";
+$resProveedores = mysqli_query($MiConexion, $sqlProveedores);
+if ($resProveedores) {
+    while ($fila = mysqli_fetch_assoc($resProveedores)) {
+        $Proveedores[] = $fila;
     }
 }
 
@@ -39,7 +67,7 @@ if (!empty($_POST['BotonRegistrar'])) {
             exit;
         }
 
-        if (InsertarMovimiento($MiConexion)) {
+        if (InsertarMovimientoRetiro($MiConexion)) {
             $_SESSION['Mensaje'] = 'Detalle de retiro registrado correctamente.';
             $_SESSION['Estilo'] = 'success';
             header("Location: planilla_caja.php");
@@ -81,6 +109,8 @@ ob_end_flush();
                     <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
                     <input type="hidden" name="idTipoPago" id="idTipoPago" value="14">
                     <input type="hidden" id="MontoReal" name="MontoReal" value="0">
+                    <input type="hidden" name="idTipoMovimiento" id="idTipoMovimiento">
+                    <input type="hidden" name="nombreMovimiento" id="nombreMovimiento">
 
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Tipo de Retiro</h6>
@@ -92,7 +122,6 @@ ob_end_flush();
                                 <?php echo $tipo['denominacion']; ?>
                             </button>
                         <?php } ?>
-                        <input type="hidden" name="idTipoMovimiento" id="idTipoMovimiento">
                     </div>
 
                     <div class="text-center mt-4">
@@ -107,6 +136,42 @@ ob_end_flush();
                         <div class="col-md-6 text-center">
                             <label for="observaciones" class="form-label">Observaciones</label>
                             <textarea class="form-control" id="observaciones" name="Observaciones" rows="3" placeholder="Ingrese comentarios u observaciones"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Campos dinámicos según tipo de retiro -->
+                    <div id="extraFields" style="display:none;">
+                        <div id="fieldSueldos" style="display:none;" class="mb-3 text-center">
+                            <label for="usuarioSueldo" class="form-label">Seleccione Usuario</label>
+                            <select class="form-control" name="usuarioSueldo" id="usuarioSueldo">
+                                <option value="">-- Seleccione --</option>
+                                <?php foreach ($Usuarios as $u) { ?>
+                                    <option value="<?php echo $u['idUsuario']; ?>">
+                                        <?php echo $u['apellido'] . ', ' . $u['nombre']; ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <div id="fieldProveedores" style="display:none;" class="mb-3 text-center">
+                            <label for="proveedor" class="form-label">Seleccione Proveedor</label>
+                            <select class="form-control" name="proveedor" id="proveedor">
+                                <option value="">-- Seleccione --</option>
+                                <?php foreach ($Proveedores as $p) { ?>
+                                    <option value="<?php echo $p['idProveedor']; ?>"><?php echo $p['nombre']; ?></option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <div id="fieldServicios" style="display:none;" class="mb-3 text-center">
+                            <label for="servicio" class="form-label">Seleccione Servicio</label>
+                            <select class="form-control" name="servicio" id="servicio">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div id="fieldInsumos" style="display:none;" class="mb-3 text-center">
+                            <label for="insumo" class="form-label">Seleccione Insumo</label>
+                            <select class="form-control" name="insumo" id="insumo">
+                                <option value="">-- Seleccione --</option>
+                            </select>
                         </div>
                     </div>
 
@@ -125,77 +190,48 @@ ob_end_flush();
 <script>
 // FUNCIÓN PARA FORMATEAR EL DINERO
 function formatMoney(input) {
-    // Guardar posición del cursor
     let cursorPos = input.selectionStart;
     let originalLength = input.value.length;
-    
-    // Obtener solo números y coma decimal
     let rawValue = input.value.replace(/[^\d,]/g, '');
-    
-    // Manejar múltiples comas
     let commaPos = rawValue.indexOf(',');
     if (commaPos !== -1) {
         rawValue = rawValue.substring(0, commaPos + 1) + rawValue.substring(commaPos + 1).replace(/,/g, '');
     }
-    
-    // Separar parte entera y decimal
     let parts = rawValue.split(',');
     let integerPart = parts[0].replace(/\D/g, '') || '0';
     let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0, 2) : '';
-    
-    // Formatear parte entera con puntos cada 3 dígitos
     let formattedInteger = '';
     if (integerPart.length > 3) {
         formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     } else {
         formattedInteger = integerPart;
     }
-    
-    // Construir valor final
     let newValue = '$' + formattedInteger;
     if (decimalPart.length > 0) {
         newValue += ',' + decimalPart;
     } else if (commaPos !== -1) {
         newValue += ',00';
     }
-    
-    // Actualizar campo visible
     input.value = newValue;
-    
-    // Ajustar posición del cursor
     let newLength = input.value.length;
     cursorPos = Math.max(1, cursorPos + (newLength - originalLength));
     input.setSelectionRange(cursorPos, cursorPos);
-    
-    // Actualizar campo hidden para el servidor
     let numericValue = newValue.replace(/[^\d,]/g, '').replace(',', '.');
     document.getElementById('MontoReal').value = numericValue || '0';
 }
 
-// EVENTOS DEL CAMPO DE DINERO
 const moneyInput = document.getElementById('valorDinero');
-
-moneyInput.addEventListener('input', function() {
-    formatMoney(this);
-});
-
-moneyInput.addEventListener('focus', function() {
-    this.value = this.value.replace('$', '');
-});
-
+moneyInput.addEventListener('input', function() { formatMoney(this); });
+moneyInput.addEventListener('focus', function() { this.value = this.value.replace('$', ''); });
 moneyInput.addEventListener('blur', function() {
-    if (!this.value.includes('$')) {
-        this.value = '$' + this.value;
-    }
+    if (!this.value.includes('$')) { this.value = '$' + this.value; }
     formatMoney(this);
-    
     if (this.value === '$' || this.value === '') {
         this.value = '$0,00';
         document.getElementById('MontoReal').value = '0';
     }
 });
 
-// Validación al enviar el formulario
 document.getElementById('formRetiro').addEventListener('submit', function(e) {
     if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
         e.preventDefault();
@@ -204,7 +240,6 @@ document.getElementById('formRetiro').addEventListener('submit', function(e) {
     }
 });
 
-// Botón reset
 document.getElementById('resetButton').addEventListener('click', function() {
     document.getElementById('MontoReal').value = '0';
     document.getElementById('valorDinero').value = '$0,00';
@@ -220,10 +255,29 @@ document.querySelectorAll('.tipo-movimiento').forEach(button => {
         this.classList.remove('btn-secondary');
         this.classList.add('btn-primary');
         document.getElementById('idTipoMovimiento').value = this.getAttribute('data-id');
+        document.getElementById('nombreMovimiento').value = this.innerText;
+
+        document.getElementById('extraFields').style.display = 'block';
+        document.getElementById('fieldSueldos').style.display = 'none';
+        document.getElementById('fieldProveedores').style.display = 'none';
+        document.getElementById('fieldServicios').style.display = 'none';
+        document.getElementById('fieldInsumos').style.display = 'none';
+
+        let nombreMovimiento = this.innerText.toLowerCase();
+        if (nombreMovimiento.includes('sueldo')) {
+            document.getElementById('fieldSueldos').style.display = 'block';
+        } else if (nombreMovimiento.includes('proveedor')) {
+            document.getElementById('fieldProveedores').style.display = 'block';
+        } else if (nombreMovimiento.includes('servicio')) {
+            document.getElementById('fieldServicios').style.display = 'block';
+        } else if (nombreMovimiento.includes('insumo')) {
+            document.getElementById('fieldInsumos').style.display = 'block';
+        } else {
+            document.getElementById('extraFields').style.display = 'none';
+        }
     });
 });
 
-// Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     formatMoney(moneyInput);
 });
