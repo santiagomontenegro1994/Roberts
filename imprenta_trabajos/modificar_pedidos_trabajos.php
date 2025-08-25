@@ -47,23 +47,30 @@ if (!empty($_POST['BotonModificarPedido'])) {
 // --- MODIFICAR SOLO LA SEÑA ---
 else if (!empty($_POST['BotonModificarSenia'])) {
     $idPedido = (int)($_POST['IdPedido'] ?? 0);
-    $nuevaSenia = (float)($_POST['Senia'] ?? 0);
+    $montoOperacion = (float)($_POST['montoOperacion'] ?? 0);
     $metodoPago = $_POST['metodoPago'] ?? null;
     $esReduccion = ($_POST['esReduccion'] ?? '0') === '1';
     
-    // Obtener datos actuales del pedido
-    $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
-    $precioTotal = (float)($DatosPedidoActual['PRECIO_TOTAL'] ?? 0);
-    
-    // Actualizar la seña
-    $resultado = Modificar_Senia_Pedido($MiConexion, $idPedido, $nuevaSenia, $metodoPago, $esReduccion);
-    if (!$resultado['success']) {
-        // Mostrar error al usuario
-        $_SESSION['Mensaje'] = "Error: " . $resultado['error'];
+    // Validar monto
+    if ($montoOperacion <= 0) {
+        $_SESSION['Mensaje'] = "El monto debe ser mayor a 0";
         $_SESSION['Estilo'] = 'danger';
     } else {
-        $_SESSION['Mensaje'] = "Seña actualizada correctamente";
-        $_SESSION['Estilo'] = 'success';
+        // Obtener datos actuales del pedido
+        $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
+        $precioTotal = (float)($DatosPedidoActual['PRECIO_TOTAL'] ?? 0);
+        
+        // Actualizar la seña
+        $resultado = Modificar_Senia_Pedido($MiConexion, $idPedido, $montoOperacion, $metodoPago, $esReduccion);
+        if (!$resultado['success']) {
+            // Mostrar error al usuario
+            $_SESSION['Mensaje'] = "Error: " . $resultado['error'];
+            $_SESSION['Estilo'] = 'danger';
+        } else {
+            $accion = $esReduccion ? "quitada" : "agregada";
+            $_SESSION['Mensaje'] = "Seña $accion correctamente";
+            $_SESSION['Estilo'] = 'success';
+        }
     }
     
     // Recargar datos después de intentar modificar
@@ -272,19 +279,6 @@ ob_end_flush();
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label for="senia" class="form-label fw-bold">Seña Modificada</label>
-                                <input type="number" step="0.01" min="0" 
-                                    class="form-control <?php echo (!empty($_SESSION['Estilo'])) && $_SESSION['Estilo'] == 'warning' ? 'is-invalid' : ''; ?>" 
-                                    name="Senia" id="senia"
-                                    value="<?php echo htmlspecialchars($DatosPedidoActual['SENIA'] ?? 0); ?>">
-                                <?php if (!empty($_SESSION['Estilo']) && $_SESSION['Estilo'] == 'warning') { ?>
-                                    <div class="invalid-feedback">
-                                        <?php echo htmlspecialchars($_SESSION['Mensaje']); ?>
-                                    </div>
-                                <?php } ?>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
                                 <label class="form-label fw-bold">Saldo a Pagar:</label>
                                 <p id="saldo" class="form-control-static fw-bold fs-5 <?php echo ($saldoInicial > 0) ? 'text-danger' : 'text-success'; ?> mb-0">
                                     $<?php echo number_format($saldoInicial, 2, ',', '.'); ?>
@@ -298,11 +292,20 @@ ob_end_flush();
                                 <input type="hidden" name="BotonModificarSenia" value="1">
                                 <input type="hidden" name="metodoPago" id="inputMetodoPago">
                                 <input type="hidden" name="esReduccion" id="inputEsReduccion" value="0">
+                                <input type="hidden" name="montoOperacion" id="inputMontoOperacion" value="0">
                                 
-                                <button type="button" class="btn btn-success me-2" id="btnModificarSenia"
+                                <!-- Botón para AGREGAR seña -->
+                                <button type="button" class="btn btn-success me-2" id="btnAgregarSenia"
                                     data-pedido-id="<?php echo htmlspecialchars($DatosPedidoActual['ID'] ?? ''); ?>"
                                     data-senia-actual="<?php echo htmlspecialchars($DatosPedidoActual['SENIA'] ?? 0); ?>">
-                                    <i class="bi bi-cash-coin me-2"></i>Actualizar Seña
+                                    <i class="bi bi-plus-circle me-2"></i>Agregar Seña
+                                </button>
+                                
+                                <!-- Botón para QUITAR seña -->
+                                <button type="button" class="btn btn-danger me-2" id="btnQuitarSenia"
+                                    data-pedido-id="<?php echo htmlspecialchars($DatosPedidoActual['ID'] ?? ''); ?>"
+                                    data-senia-actual="<?php echo htmlspecialchars($DatosPedidoActual['SENIA'] ?? 0); ?>">
+                                    <i class="bi bi-dash-circle me-2"></i>Quitar Seña
                                 </button>
                                 
                                 <a href="listados_pedidos_trabajos.php" class="btn btn-secondary">
@@ -436,32 +439,58 @@ ob_end_flush();
         </div>
     </div>
 
-    <!-- Modal de Pago -->
-    <div class="modal fade" id="pagoModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <!-- Modal para AGREGAR Seña -->
+    <div class="modal fade" id="agregarSeniaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalPagoTitle">Registrar Pago</h5>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Agregar Seña</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Monto a registrar</label>
-                        <input type="text" class="form-control form-control-lg text-center fw-bold" id="montoPagoModal" readonly>
+                        <label class="form-label">Monto a agregar</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="montoAgregar" placeholder="Ingrese el monto">
                     </div>
-                    
                     <div class="mb-3">
                         <label class="form-label">Método de Pago</label>
-                        <div class="d-flex flex-wrap justify-content-center" id="metodosPagoContainer">
-                            <!-- Se llena dinámicamente con JavaScript -->
+                        <div class="d-flex flex-wrap justify-content-center" id="metodosAgregarContainer">
+                            <!-- Se llena dinámicamente -->
                         </div>
                     </div>
-                    <!-- AÑADE ESTE CAMPO OCULTO PARA CAPTURAR LA SELECCIÓN -->
-                    <input type="hidden" id="metodoPagoSeleccionado" value="">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="confirmarPagoBtn">Confirmar</button>
+                    <button type="button" class="btn btn-success" id="confirmarAgregarBtn">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para QUITAR Seña -->
+    <div class="modal fade" id="quitarSeniaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Quitar Seña</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Monto a quitar</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="montoQuitar" 
+                               placeholder="Ingrese el monto" max="<?php echo htmlspecialchars($DatosPedidoActual['SENIA'] ?? 0); ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Método de Devolución</label>
+                        <div class="d-flex flex-wrap justify-content-center" id="metodosQuitarContainer">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmarQuitarBtn">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -471,90 +500,26 @@ ob_end_flush();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // ========== MANEJO DE LA SEÑA Y PAGO ==========
-        const btnModificarSenia = document.getElementById('btnModificarSenia');
-        const seniaInput = document.getElementById('senia');
+        // ========== CONFIGURACIÓN INICIAL ==========
+        const btnAgregarSenia = document.getElementById('btnAgregarSenia');
+        const btnQuitarSenia = document.getElementById('btnQuitarSenia');
         const inputMetodoPago = document.getElementById('inputMetodoPago');
         const inputEsReduccion = document.getElementById('inputEsReduccion');
-        const pagoModal = new bootstrap.Modal(document.getElementById('pagoModal'));
-        const confirmarPagoBtn = document.getElementById('confirmarPagoBtn');
+        const inputMontoOperacion = document.getElementById('inputMontoOperacion');
         
-        // DEBUG: Verificar que los elementos existan
-        console.log('Elementos de pago:', {
-            btnModificarSenia: !!btnModificarSenia,
-            seniaInput: !!seniaInput,
-            inputMetodoPago: !!inputMetodoPago,
-            inputEsReduccion: !!inputEsReduccion,
-            pagoModal: !!pagoModal,
-            confirmarPagoBtn: !!confirmarPagoBtn
-        });
+        const agregarModal = new bootstrap.Modal(document.getElementById('agregarSeniaModal'));
+        const quitarModal = new bootstrap.Modal(document.getElementById('quitarSeniaModal'));
         
-        // Configurar métodos de pago
-        const metodosPagoContainer = document.getElementById('metodosPagoContainer');
+        const metodosAgregarContainer = document.getElementById('metodosAgregarContainer');
+        const metodosQuitarContainer = document.getElementById('metodosQuitarContainer');
+        
         const metodosPagoEntrada = <?php echo isset($TiposPagosEntrada) ? json_encode($TiposPagosEntrada) : '[]'; ?>;
         const metodosPagoSalida = <?php echo isset($TiposPagosSalida) ? json_encode($TiposPagosSalida) : '[]'; ?>;
         
-        // DEBUG: Verificar métodos de pago
-        console.log('Métodos entrada:', metodosPagoEntrada);
-        console.log('Métodos salida:', metodosPagoSalida);
-        
-        // Variable global para rastrear la selección
         let metodoSeleccionadoGlobal = null;
-        
-        // Llenar métodos de pago
-        function configurarMetodosPago(esReduccion = false) {
-            metodosPagoContainer.innerHTML = '';
-            metodoSeleccionadoGlobal = null;
-            
-            const metodos = esReduccion ? metodosPagoSalida : metodosPagoEntrada;
-            
-            if (metodos.length === 0) {
-                metodosPagoContainer.innerHTML = '<p class="text-center text-muted">No hay métodos disponibles</p>';
-                return;
-            }
-            
-            metodos.forEach(metodo => {
-                const iconClass = obtenerIconoClass(metodo.denominacion);
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = esReduccion ? 'btn btn-outline-danger m-1 metodo-pago-btn' : 'btn btn-outline-primary m-1 metodo-pago-btn';
-                btn.innerHTML = `<i class="bi ${iconClass} me-1"></i> ${metodo.denominacion}`;
-                btn.dataset.metodoId = metodo.idTipoPago;
-                btn.dataset.metodoNombre = metodo.denominacion;
-                
-                btn.addEventListener('click', function() {
-                    // Remover selección anterior
-                    document.querySelectorAll('.metodo-pago-btn').forEach(b => {
-                        b.classList.remove('active', 'btn-primary', 'btn-danger');
-                        if (esReduccion) {
-                            b.classList.add('btn-outline-danger');
-                        } else {
-                            b.classList.add('btn-outline-primary');
-                        }
-                    });
-                    
-                    // Seleccionar actual
-                    this.classList.remove('btn-outline-primary', 'btn-outline-danger');
-                    if (esReduccion) {
-                        this.classList.add('active', 'btn-danger');
-                    } else {
-                        this.classList.add('active', 'btn-primary');
-                    }
-                    
-                    // Guardar selección globalmente
-                    metodoSeleccionadoGlobal = {
-                        id: this.dataset.metodoId,
-                        nombre: this.dataset.metodoNombre
-                    };
-                    
-                    console.log('Método seleccionado:', metodoSeleccionadoGlobal);
-                });
-                
-                metodosPagoContainer.appendChild(btn);
-            });
-        }
-        
-        // Función auxiliar para iconos
+        let tipoOperacion = ''; // 'agregar' o 'quitar'
+
+        // ========== FUNCIONES AUXILIARES ==========
         function obtenerIconoClass(nombreMetodo) {
             const iconos = {
                 'Efectivo': 'bi-cash',
@@ -569,101 +534,131 @@ ob_end_flush();
             };
             return iconos[nombreMetodo] || 'bi-coin';
         }
-        
-        // Configurar métodos iniciales
-        configurarMetodosPago();
-        
-        // Manejar clic en el botón de modificar seña
-        if (btnModificarSenia) {
-            btnModificarSenia.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const nuevaSenia = parseFloat(seniaInput.value);
-                const seniaActual = parseFloat(this.dataset.seniaActual);
-                const precioTotal = parseFloat(document.getElementById('precioTotal').dataset.value);
-                
-                // Validaciones
-                if (isNaN(nuevaSenia)) {
-                    alert('Por favor ingrese un monto válido');
-                    return;
-                }
-                
-                if (nuevaSenia < 0) {
-                    alert('La seña no puede ser negativa');
-                    return;
-                }
-                
-                if (nuevaSenia > precioTotal) {
-                    alert('La seña no puede ser mayor al precio total');
-                    return;
-                }
-                
-                if (nuevaSenia === seniaActual) {
-                    alert('La seña modificada no puede ser igual a la actual');
-                    return;
-                }
-                
-                // Determinar si es aumento o reducción
-                const esReduccion = nuevaSenia < seniaActual;
-                inputEsReduccion.value = esReduccion ? '1' : '0';
-                
-                // Configurar modal
-                const montoCambio = Math.abs(nuevaSenia - seniaActual);
-                document.getElementById('montoPagoModal').value = '$' + montoCambio.toFixed(2);
-                
-                if (esReduccion) {
-                    document.getElementById('modalPagoTitle').textContent = 'Confirmar Reducción de Seña';
-                    configurarMetodosPago(true);
-                } else {
-                    document.getElementById('modalPagoTitle').textContent = 'Confirmar Pago de Seña';
-                    configurarMetodosPago(false);
-                }
-                
-                // Resetear selección al abrir modal
-                metodoSeleccionadoGlobal = null;
-                
-                // Mostrar modal
-                pagoModal.show();
-            });
-        }
-        
-        // Confirmar pago desde el modal
-        if (confirmarPagoBtn) {
-            confirmarPagoBtn.addEventListener('click', function() {
-                console.log('Confirmar clickeado, método seleccionado:', metodoSeleccionadoGlobal);
-                
-                if (!metodoSeleccionadoGlobal || !metodoSeleccionadoGlobal.id) {
-                    alert('Por favor seleccione un método de pago');
-                    return;
-                }
-                
-                // Establecer el método de pago en el campo oculto
-                inputMetodoPago.value = metodoSeleccionadoGlobal.id;
-                console.log('Método establecido en hidden:', inputMetodoPago.value);
-                
-                // Cerrar modal
-                pagoModal.hide();
-                
-                // Enviar el formulario manualmente
-                const form = document.querySelector('form');
-                if (form) {
-                    console.log('Enviando formulario...');
-                    form.submit();
-                }
-            });
-        }
-        
-        // Limpiar selección al cerrar el modal
-        document.getElementById('pagoModal').addEventListener('hidden.bs.modal', function() {
+
+        function configurarMetodosPago(container, metodos, esReduccion = false) {
+            container.innerHTML = '';
             metodoSeleccionadoGlobal = null;
-            document.querySelectorAll('.metodo-pago-btn').forEach(b => {
-                b.classList.remove('active', 'btn-primary', 'btn-danger');
-                if (b.classList.contains('btn-outline-danger')) {
-                    b.classList.add('btn-outline-danger');
-                } else {
-                    b.classList.add('btn-outline-primary');
-                }
+            
+            if (metodos.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No hay métodos disponibles</p>';
+                return;
+            }
+            
+            metodos.forEach(metodo => {
+                const iconClass = obtenerIconoClass(metodo.denominacion);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = esReduccion ? 'btn btn-outline-danger m-1 metodo-pago-btn' : 'btn btn-outline-primary m-1 metodo-pago-btn';
+                btn.innerHTML = `<i class="bi ${iconClass} me-1"></i> ${metodo.denominacion}`;
+                btn.dataset.metodoId = metodo.idTipoPago;
+                btn.dataset.metodoNombre = metodo.denominacion;
+                
+                btn.addEventListener('click', function() {
+                    // Remover selección anterior
+                    container.querySelectorAll('.metodo-pago-btn').forEach(b => {
+                        b.classList.remove('active', 'btn-primary', 'btn-danger');
+                        b.classList.add(esReduccion ? 'btn-outline-danger' : 'btn-outline-primary');
+                    });
+                    
+                    // Seleccionar actual
+                    this.classList.remove('btn-outline-primary', 'btn-outline-danger');
+                    this.classList.add('active', esReduccion ? 'btn-danger' : 'btn-primary');
+                    
+                    // Guardar selección
+                    metodoSeleccionadoGlobal = {
+                        id: this.dataset.metodoId,
+                        nombre: this.dataset.metodoNombre
+                    };
+                });
+                
+                container.appendChild(btn);
             });
+        }
+
+        function enviarFormulario() {
+            if (!metodoSeleccionadoGlobal || !metodoSeleccionadoGlobal.id) {
+                alert('Por favor seleccione un método');
+                return;
+            }
+            
+            // Establecer valores en campos ocultos
+            inputMetodoPago.value = metodoSeleccionadoGlobal.id;
+            inputEsReduccion.value = tipoOperacion === 'quitar' ? '1' : '0';
+            
+            // Enviar formulario
+            const form = document.querySelector('form');
+            if (form) {
+                form.submit();
+            }
+        }
+
+        // ========== MANEJO DE AGREGAR SEÑA ==========
+        if (btnAgregarSenia) {
+            btnAgregarSenia.addEventListener('click', function() {
+                tipoOperacion = 'agregar';
+                configurarMetodosPago(metodosAgregarContainer, metodosPagoEntrada, false);
+                document.getElementById('montoAgregar').value = '';
+                agregarModal.show();
+            });
+        }
+
+        // Confirmar agregar seña
+        document.getElementById('confirmarAgregarBtn').addEventListener('click', function() {
+            const monto = parseFloat(document.getElementById('montoAgregar').value);
+            
+            if (isNaN(monto) || monto <= 0) {
+                alert('Por favor ingrese un monto válido mayor a 0');
+                return;
+            }
+            
+            inputMontoOperacion.value = monto;
+            enviarFormulario();
+        });
+
+        // ========== MANEJO DE QUITAR SEÑA ==========
+        if (btnQuitarSenia) {
+            btnQuitarSenia.addEventListener('click', function() {
+                tipoOperacion = 'quitar';
+                const seniaActual = parseFloat(this.dataset.seniaActual);
+                
+                if (seniaActual <= 0) {
+                    alert('No hay seña disponible para retirar');
+                    return;
+                }
+                
+                configurarMetodosPago(metodosQuitarContainer, metodosPagoSalida, true);
+                document.getElementById('montoQuitar').value = '';
+                document.getElementById('montoQuitar').max = seniaActual;
+                quitarModal.show();
+            });
+        }
+
+        // Confirmar quitar seña
+        document.getElementById('confirmarQuitarBtn').addEventListener('click', function() {
+            const monto = parseFloat(document.getElementById('montoQuitar').value);
+            const seniaActual = parseFloat(btnQuitarSenia.dataset.seniaActual);
+            
+            if (isNaN(monto) || monto <= 0) {
+                alert('Por favor ingrese un monto válido mayor a 0');
+                return;
+            }
+            
+            if (monto > seniaActual) {
+                alert('No puede retirar más de la seña actual disponible');
+                return;
+            }
+            
+            inputMontoOperacion.value = monto;
+            enviarFormulario();
+        });
+
+        // ========== LIMPIAR SELECTORES AL CERRAR MODALES ==========
+        document.getElementById('agregarSeniaModal').addEventListener('hidden.bs.modal', function() {
+            metodoSeleccionadoGlobal = null;
+        });
+
+        document.getElementById('quitarSeniaModal').addEventListener('hidden.bs.modal', function() {
+            metodoSeleccionadoGlobal = null;
         });
 
         // ========== MANEJO DE DETALLES DEL PEDIDO ==========

@@ -1857,55 +1857,45 @@ function Marcar_Pedido_Como_Pagado($conexion, $idPedido) {
     return true;
 }
 
-function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago = null, $esReduccion = false) {
+function Modificar_Senia_Pedido($conexion, $idPedido, $montoOperacion, $idTipoPago = null, $esReduccion = false) {
     // Validaciones básicas
-    $seniaActual = 0.0;
     if ($idPedido <= 0) {
         error_log("Error: ID de pedido inválido");
         return ['success' => false, 'error' => 'ID de pedido inválido'];
     }
     
-    if ($nuevaSenia < 0) {
-        error_log("Error: Seña negativa no permitida");
-        return ['success' => false, 'error' => 'La seña no puede ser negativa'];
+    if ($montoOperacion <= 0) {
+        error_log("Error: Monto de operación inválido");
+        return ['success' => false, 'error' => 'Monto de operación inválido'];
     }
 
     try {
         $conexion->begin_transaction();
 
-        // 1. Obtener solo la seña actual
+        // 1. Obtener la seña actual
         $query = "SELECT senia FROM pedido_trabajos WHERE idPedidoTrabajos = ? FOR UPDATE";
         $stmt = $conexion->prepare($query);
-        
-        if (!$stmt) {
-            throw new Exception("Error al preparar consulta: " . $conexion->error);
-        }
-        
         $stmt->bind_param('i', $idPedido);
-        if (!$stmt->execute()) {
-            throw new Exception("Error al obtener seña: " . $stmt->error);
-        }
-        
+        $stmt->execute();
         $stmt->bind_result($seniaActual);
         $stmt->fetch();
         $stmt->close();
 
-        // 2. Actualizar la seña
+        // 2. Calcular nueva seña
+        $nuevaSenia = $esReduccion ? ($seniaActual - $montoOperacion) : ($seniaActual + $montoOperacion);
+        
+        if ($nuevaSenia < 0) {
+            throw new Exception("No se puede tener seña negativa");
+        }
+
+        // 3. Actualizar la seña
         $query = "UPDATE pedido_trabajos SET senia = ? WHERE idPedidoTrabajos = ?";
         $stmt = $conexion->prepare($query);
-        
-        if (!$stmt) {
-            throw new Exception("Error al preparar actualización: " . $conexion->error);
-        }
-        
         $stmt->bind_param('di', $nuevaSenia, $idPedido);
-        if (!$stmt->execute()) {
-            throw new Exception("Error al actualizar seña: " . $stmt->error);
-        }
+        $stmt->execute();
         $stmt->close();
 
-        // 3. Registrar movimiento en caja
-        $diferencia = $nuevaSenia - $seniaActual;
+        // 4. Registrar movimiento en caja
         $idUsuario = $_SESSION['Usuario_Id'] ?? 0;
         $idCaja = $_SESSION['Id_Caja'] ?? 0;
         
@@ -1913,30 +1903,26 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $nuevaSenia, $idTipoPago =
             throw new Exception("Datos de sesión inválidos para registrar movimiento");
         }
         
-        if ($diferencia != 0 && $idTipoPago) {
-            $observaciones = "Ajuste de seña del pedido #$idPedido";
+        if ($idTipoPago) {
+            $observaciones = $esReduccion ? 
+                "Devolución de seña del pedido #$idPedido" : 
+                "Pago de seña del pedido #$idPedido";
             
-            // Tipo de movimiento (3=Entrada, 13=Salida )
+            // Tipo de movimiento (3=Entrada, 13=Salida)
             $idTipoMovimiento = $esReduccion ? 13 : 3;
-            $monto = abs($diferencia);
             
             $query = "INSERT INTO detalle_caja (
                 idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
             ) VALUES (?, ?, ?, ?, ?, ?)";
             
             $stmt = $conexion->prepare($query);
-            if (!$stmt || !$stmt->bind_param('iiiids', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $monto, $observaciones)) {
-                throw new Exception("Error al preparar registro: " . ($stmt ? $stmt->error : $conexion->error));
-            }
-            
-            if (!$stmt->execute()) {
-                throw new Exception("Error al registrar movimiento: " . $stmt->error);
-            }
+            $stmt->bind_param('iiiids', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $montoOperacion, $observaciones);
+            $stmt->execute();
             $stmt->close();
         }
 
         $conexion->commit();
-        return ['success' => true];
+        return ['success' => true, 'nueva_senia' => $nuevaSenia];
         
     } catch (Exception $e) {
         $conexion->rollback();
