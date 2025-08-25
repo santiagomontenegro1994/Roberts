@@ -817,19 +817,48 @@ function Anular_Caja($vConexion, $vIdCaja) {
 
 function Anular_Venta($vConexion, $vIdConsulta) {
     // Verificar si el registro existe en la tabla detalle_caja
-    $SQL_MiConsulta = "SELECT idDetalleCaja FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
-
+    $SQL_MiConsulta = "SELECT * FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
     $rs = mysqli_query($vConexion, $SQL_MiConsulta);
-
-    $data = mysqli_fetch_array($rs);
+    $data = mysqli_fetch_assoc($rs);
 
     if (!empty($data['idDetalleCaja'])) {
-        // Si el registro existe, eliminarlo
+        // Verificar si existe un retiro asociado
+        $SQL_Retiro = "SELECT idRetiro FROM retiros WHERE idRetiro = (SELECT idRetiro FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta)";
+        $rsRetiro = mysqli_query($vConexion, $SQL_Retiro);
+        $dataRetiro = mysqli_fetch_assoc($rsRetiro);
+
+        if (!empty($dataRetiro['idRetiro'])) {
+            $idRetiro = $dataRetiro['idRetiro'];
+
+            // Determinar la subtabla del detalle del retiro
+            $sqlSub = "SELECT * FROM retiros_proveedores WHERE idRetiro = $idRetiro
+                       UNION SELECT * FROM retiros_sueldos WHERE idRetiro = $idRetiro
+                       UNION SELECT * FROM retiros_servicios WHERE idRetiro = $idRetiro
+                       UNION SELECT * FROM retiros_insumos WHERE idRetiro = $idRetiro
+                       UNION SELECT * FROM retiros_varios WHERE idRetiro = $idRetiro";
+            $rsSub = mysqli_query($vConexion, $sqlSub);
+            if ($rsSub && $rsSub->num_rows > 0) {
+                $rowSub = mysqli_fetch_assoc($rsSub);
+                if (isset($rowSub['idProveedor'])) $subtabla = 'retiros_proveedores';
+                elseif (isset($rowSub['idUsuarioSueldo'])) $subtabla = 'retiros_sueldos';
+                elseif (isset($rowSub['tipo_servicio'])) $subtabla = 'retiros_servicios';
+                elseif (isset($rowSub['categoria']) && isset($rowSub['detalle_insumo'])) $subtabla = 'retiros_insumos';
+                else $subtabla = 'retiros_varios';
+
+                // Eliminar detalle del retiro
+                mysqli_query($vConexion, "DELETE FROM $subtabla WHERE idRetiro = $idRetiro");
+            }
+
+            // Eliminar el retiro
+            mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $idRetiro");
+        }
+
+        // Finalmente eliminar el detalle de caja
         $SQL_Delete = "DELETE FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
         if (mysqli_query($vConexion, $SQL_Delete)) {
-            return true; // Eliminación exitosa
+            return true;
         } else {
-            return false; // Error al eliminar
+            return false;
         }
     } else {
         return false; // No se encontró el registro
