@@ -10,10 +10,11 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require('../shared/encabezado.inc.php');
 require('../shared/barraLateral.inc.php');
 require_once '../funciones/conexion.php';
-require_once '../funciones/imprenta.php';
+require_once '../funciones/imprenta.php'; // Aquí ya está Obtener_Tipo_Movimiento()
 
 $MiConexion = ConexionBD();
 
+// Obtener datos actuales de la venta
 $DatosVentaActual = array();
 $TiposFactura = Listar_Tipos_Factura($MiConexion);
 
@@ -42,13 +43,11 @@ $esSalida = false;
 $denominacionMovimiento = "";
 
 if ($idTipoMovimientoActual) {
-    $sql = "SELECT denominacion, es_entrada, es_salida FROM tipo_movimiento WHERE idTipoMovimiento = $idTipoMovimientoActual";
-    $rs = mysqli_query($MiConexion, $sql);
-    if ($rs) {
-        $row = mysqli_fetch_assoc($rs);
-        $esEntrada = !empty($row['es_entrada']);
-        $esSalida = !empty($row['es_salida']);
-        $denominacionMovimiento = strtolower($row['denominacion']);
+    $infoTipoMov = Obtener_Tipo_Movimiento($MiConexion, $idTipoMovimientoActual);
+    if ($infoTipoMov) {
+        $esEntrada = $infoTipoMov['es_entrada'];
+        $esSalida = $infoTipoMov['es_salida'];
+        $denominacionMovimiento = strtolower($infoTipoMov['denominacion']);
     }
 }
 
@@ -86,14 +85,14 @@ ob_end_flush();
 
 <main id="main" class="main">
     <div class="pagetitle">
-      <h1><?php echo $esSalida ? "Modificar Retiro" : "Modificar Venta"; ?></h1>
-      <nav>
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="../core/index.php">Caja</a></li>
-          <li class="breadcrumb-item"><a href="planilla_caja.php">Planilla Caja</a></li>
-          <li class="breadcrumb-item active">Modificar</li>
-        </ol>
-      </nav>
+        <h1><?php echo $esSalida ? "Modificar Retiro" : "Modificar Venta"; ?></h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="../core/index.php">Caja</a></li>
+                <li class="breadcrumb-item"><a href="planilla_caja.php">Planilla Caja</a></li>
+                <li class="breadcrumb-item active">Modificar</li>
+            </ol>
+        </nav>
     </div>
 
     <section class="section">
@@ -222,6 +221,17 @@ ob_end_flush();
                                 </select>
                             </div>
                         </div>
+
+                        <!-- Varios -->
+                        <div class="row mb-3 align-items-center retiro-section" id="retiroVarios" style="display: <?php echo (strpos($denominacionMovimiento,'varios')!==false)?'flex':'none'; ?>;">
+                            <div class="col-sm-2">
+                                <label class="col-form-label">Categoría Varios</label>
+                            </div>
+                            <div class="col-sm-10">
+                                <input type="text" name="categoriaVarios" class="form-control" 
+                                    value="<?php echo $DatosVentaActual['categoria'] ?? ''; ?>" placeholder="Descripción">
+                            </div>
+                        </div>
                     <?php } ?>
 
                     <!-- Observaciones -->
@@ -290,54 +300,46 @@ ob_end_flush();
         if (commaPos !== -1) rawValue = rawValue.substring(0, commaPos+1) + rawValue.substring(commaPos+1).replace(/,/g, '');
         let parts = rawValue.split(',');
         let integerPart = parts[0].replace(/\D/g, '') || '0';
-        let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0,2) : '';
-        let formattedInteger = integerPart.length > 3 ? integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : integerPart;
-        let newValue = '$' + formattedInteger;
-        if (decimalPart.length > 0) newValue += ',' + decimalPart;
-        input.value = newValue;
-        document.getElementById('MontoReal').value = newValue.replace(/[^\d,]/g, '').replace(',', '.') || '0';
+        let decimalPart = parts[1] || '00';
+        decimalPart = decimalPart.padEnd(2,'0').substring(0,2);
+        let intFormatted = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        input.value = '$' + intFormatted + ',' + decimalPart;
+        document.getElementById('MontoReal').value = integerPart + '.' + decimalPart;
     }
-    const moneyInput = document.getElementById('valorDinero');
-    moneyInput.addEventListener('input', function(){ formatMoney(this); });
+
+    document.querySelector('.money-format').addEventListener('input', function(){ formatMoney(this); });
 
     // Facturación
     document.getElementById('facturarCheckbox').addEventListener('change', function() {
-        document.getElementById('facturaFields').style.display = this.checked ? 'block':'none';
-        document.getElementById('tipoFactura').required = this.checked;
-        document.getElementById('numeroFactura').required = this.checked;
+        document.getElementById('facturaFields').style.display = this.checked ? 'block' : 'none';
     });
 
-    // Mostrar/ocultar secciones de retiro según el tipo de movimiento
+    // Mostrar secciones dinámicas de retiro según denominación
+    const tiposMovimientoData = <?php
+        $tiposMovimientoAll = [];
+        $sqlTM = "SELECT idTipoMovimiento, denominacion, es_entrada, es_salida FROM tipo_movimiento WHERE idActivo = 1";
+        $rsTM = mysqli_query($MiConexion, $sqlTM);
+        while($row = mysqli_fetch_assoc($rsTM)) {
+            $tiposMovimientoAll[$row['idTipoMovimiento']] = [
+                'denominacion' => strtolower($row['denominacion']),
+                'es_entrada' => (bool)$row['es_entrada'],
+                'es_salida' => (bool)$row['es_salida']
+            ];
+        }
+        echo json_encode($tiposMovimientoAll);
+    ?>;
+
     document.getElementById('idTipoMovimiento').addEventListener('change', function() {
         const movimientoId = this.value;
-        
-        // Ocultar todas las secciones primero
-        document.querySelectorAll('.retiro-section').forEach(section => {
-            section.style.display = 'none';
-        });
-        
-        // Obtener información del movimiento seleccionado
-        fetch(`obtener_tipo_movimiento.php?id=${movimientoId}`)
-            .then(response => response.json())
-            .then(data => {
-                const esSalida = data.es_salida;
-                const denominacion = data.denominacion.toLowerCase();
-                
-                // Mostrar la sección correspondiente
-                if (esSalida) {
-                    if (denominacion.includes('sueldo')) {
-                        document.getElementById('retiroUsuarios').style.display = 'block';
-                    } else if (denominacion.includes('proveedor')) {
-                        document.getElementById('retiroProveedores').style.display = 'block';
-                    } else if (denominacion.includes('servicio')) {
-                        document.getElementById('retiroServicios').style.display = 'block';
-                    } else if (denominacion.includes('insumo')) {
-                        document.getElementById('retiroInsumos').style.display = 'block';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error al obtener tipo de movimiento:', error);
-            });
+        document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
+
+        if (tiposMovimientoData[movimientoId] && tiposMovimientoData[movimientoId].es_salida) {
+            const denominacion = tiposMovimientoData[movimientoId].denominacion;
+            if (denominacion.includes('sueldo')) document.getElementById('retiroUsuarios').style.display = 'flex';
+            else if (denominacion.includes('proveedor')) document.getElementById('retiroProveedores').style.display = 'flex';
+            else if (denominacion.includes('servicio')) document.getElementById('retiroServicios').style.display = 'flex';
+            else if (denominacion.includes('insumo') || denominacion.includes('material')) document.getElementById('retiroInsumos').style.display = 'flex';
+            else document.getElementById('retiroVarios').style.display = 'flex';
+        }
     });
 </script>

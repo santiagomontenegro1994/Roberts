@@ -844,57 +844,38 @@ function Modificar_Venta($vConexion) {
     $idTipoMovimiento = mysqli_real_escape_string($vConexion, $_POST['idTipoMovimiento']);
     $idUsuario = mysqli_real_escape_string($vConexion, $_POST['idUsuario']);
     
-    // Usar MontoReal en lugar de Monto
     $monto = floatval($_POST['MontoReal']);
     $monto = mysqli_real_escape_string($vConexion, $monto);
     
     $observaciones = isset($_POST['Observaciones']) ? mysqli_real_escape_string($vConexion, $_POST['Observaciones']) : null;
     
-    // Datos de facturación
     $facturado = isset($_POST['facturado']) ? 1 : 0;
     $facturadoAnterior = isset($_POST['facturado_anterior']) ? (int)$_POST['facturado_anterior'] : 0;
     $idTipoFactura = isset($_POST['idTipoFactura']) && !empty($_POST['idTipoFactura']) ? mysqli_real_escape_string($vConexion, $_POST['idTipoFactura']) : null;
     $numeroFactura = isset($_POST['numeroFactura']) && !empty($_POST['numeroFactura']) ? mysqli_real_escape_string($vConexion, $_POST['numeroFactura']) : null;
 
-    // Si se desmarcó el checkbox de facturación, llamar al procedimiento para quitar factura
+    // Quitar factura si se desmarcó
     if ($facturadoAnterior == 1 && $facturado == 0) {
         $SQL_Call = "CALL quitar_factura('caja', '$idDetalleCaja')";
-        if (!mysqli_query($vConexion, $SQL_Call)) {
-            error_log("Error al quitar factura: " . mysqli_error($vConexion));
-            return false;
-        }
+        mysqli_query($vConexion, $SQL_Call);
     }
 
-    // Construir la consulta SQL para actualizar detalle_caja
+    // Actualizar detalle_caja
     $SQL_MiConsulta = "UPDATE detalle_caja
                        SET idCaja = '$idCaja',
                            idTipoPago = '$idTipoPago',
                            idTipoMovimiento = '$idTipoMovimiento',
                            idUsuario = '$idUsuario',
                            monto = '$monto',
-                           observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL");
-
-    if ($facturado == 1) {
-        $SQL_MiConsulta .= ", facturado = 1,
+                           observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ",
+                           facturado = '$facturado',
                            idTipoFactura = " . ($idTipoFactura !== null ? "'$idTipoFactura'" : "NULL") . ",
-                           numeroFactura = " . ($numeroFactura !== null ? "'$numeroFactura'" : "NULL");
-    } else {
-        $SQL_MiConsulta .= ", facturado = 0,
-                           idTipoFactura = NULL,
-                           numeroFactura = NULL";
-    }
+                           numeroFactura = " . ($numeroFactura !== null ? "'$numeroFactura'" : "NULL") . "
+                       WHERE idDetalleCaja = '$idDetalleCaja'";
+    mysqli_query($vConexion, $SQL_MiConsulta);
 
-    $SQL_MiConsulta .= " WHERE idDetalleCaja = '$idDetalleCaja'";
-
-    if (!mysqli_query($vConexion, $SQL_MiConsulta)) {
-        error_log("Error al modificar detalle_caja: " . mysqli_error($vConexion));
-        return false;
-    }
-
-    // -------------------------------------------------------------------
-    // 🔹 Verificar si este detalle está asociado a un retiro
-    // -------------------------------------------------------------------
-    $sqlRetiro = "SELECT r.idRetiro, tm.denominacion
+    // Obtener retiro asociado
+    $sqlRetiro = "SELECT r.idRetiro, tm.denominacion, dc.idTipoMovimiento as tipoAnterior
                   FROM detalle_caja dc
                   INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                   INNER JOIN retiros r ON dc.idRetiro = r.idRetiro
@@ -903,47 +884,49 @@ function Modificar_Venta($vConexion) {
 
     if ($rs && $row = mysqli_fetch_assoc($rs)) {
         $idRetiro = $row['idRetiro'];
-        $denominacion = strtolower($row['denominacion']);
+        $denominacionNueva = strtolower($row['denominacion']);
 
-        // Actualizar la tabla principal retiros
-        $SQL_UpdateRetiro = "UPDATE retiros
-                             SET monto = '$monto',
-                                 idTipoMovimiento = '$idTipoMovimiento',
-                                 idTipoPago = '$idTipoPago',
-                                 observaciones = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ",
-                                 facturado = '$facturado',
-                                 idTipoFactura = " . ($idTipoFactura !== null ? "'$idTipoFactura'" : "NULL") . ",
-                                 numeroFactura = " . ($numeroFactura !== null ? "'$numeroFactura'" : "NULL") . "
-                             WHERE idRetiro = '$idRetiro'";
-        mysqli_query($vConexion, $SQL_UpdateRetiro);
-
-        // Actualizar subtabla correspondiente
-        if (strpos($denominacion, 'proveedor') !== false) {
-            $idProveedor = !empty($_POST['proveedor']) ? intval($_POST['proveedor']) : 1;
-            $SQL_Sub = "UPDATE retiros_proveedores 
-                        SET idProveedor = '$idProveedor', detalle_proveedor = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                        WHERE idRetiro = '$idRetiro'";
-        } elseif (strpos($denominacion, 'sueldo') !== false) {
-            $idUsuarioSueldo = !empty($_POST['usuarioSueldo']) ? intval($_POST['usuarioSueldo']) : $idUsuario;
-            $SQL_Sub = "UPDATE retiros_sueldos
-                        SET idUsuarioSueldo = '$idUsuarioSueldo', detalle_sueldo = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                        WHERE idRetiro = '$idRetiro'";
-        } elseif (strpos($denominacion, 'servicio') !== false) {
-            $tipoServicio = !empty($_POST['servicio']) ? mysqli_real_escape_string($vConexion, $_POST['servicio']) : 'Servicio';
-            $SQL_Sub = "UPDATE retiros_servicios
-                        SET tipo_servicio = '$tipoServicio', detalle_servicio = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                        WHERE idRetiro = '$idRetiro'";
-        } elseif (strpos($denominacion, 'insumo') !== false || strpos($denominacion, 'material') !== false) {
-            $tipoInsumo = !empty($_POST['insumo']) ? mysqli_real_escape_string($vConexion, $_POST['insumo']) : 'Insumo';
-            $SQL_Sub = "UPDATE retiros_insumos
-                        SET categoria = '$tipoInsumo', detalle_insumo = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                        WHERE idRetiro = '$idRetiro'";
-        } else {
-            $SQL_Sub = "UPDATE retiros_varios
-                        SET categoria = '$denominacion', detalle_vario = " . ($observaciones !== null ? "'$observaciones'" : "NULL") . "
-                        WHERE idRetiro = '$idRetiro'";
+        // Determinar subtabla anterior según tipoMovimiento original
+        $sqlSubAnterior = "SELECT * FROM retiros_proveedores WHERE idRetiro = $idRetiro
+                           UNION SELECT * FROM retiros_sueldos WHERE idRetiro = $idRetiro
+                           UNION SELECT * FROM retiros_servicios WHERE idRetiro = $idRetiro
+                           UNION SELECT * FROM retiros_insumos WHERE idRetiro = $idRetiro
+                           UNION SELECT * FROM retiros_varios WHERE idRetiro = $idRetiro";
+        $rsSub = mysqli_query($vConexion, $sqlSubAnterior);
+        $subtablaAnterior = '';
+        if ($rsSub && $rsSub->num_rows > 0) {
+            // Detectar cuál subtabla tenía datos
+            $rowSub = mysqli_fetch_assoc($rsSub);
+            if (isset($rowSub['idProveedor'])) $subtablaAnterior = 'retiros_proveedores';
+            elseif (isset($rowSub['idUsuarioSueldo'])) $subtablaAnterior = 'retiros_sueldos';
+            elseif (isset($rowSub['tipo_servicio'])) $subtablaAnterior = 'retiros_servicios';
+            elseif (isset($rowSub['categoria']) && isset($rowSub['detalle_insumo'])) $subtablaAnterior = 'retiros_insumos';
+            else $subtablaAnterior = 'retiros_varios';
+            // Borrar registro de subtabla anterior
+            mysqli_query($vConexion, "DELETE FROM $subtablaAnterior WHERE idRetiro = '$idRetiro'");
         }
 
+        // Crear nuevo registro en subtabla correspondiente al nuevo tipo de movimiento
+        if (strpos($denominacionNueva, 'proveedor') !== false) {
+            $idProveedor = !empty($_POST['proveedor']) ? intval($_POST['proveedor']) : 1;
+            $SQL_Sub = "INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) 
+                        VALUES ('$idRetiro', '$idProveedor', " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+        } elseif (strpos($denominacionNueva, 'sueldo') !== false) {
+            $idUsuarioSueldo = !empty($_POST['usuarioSueldo']) ? intval($_POST['usuarioSueldo']) : $idUsuario;
+            $SQL_Sub = "INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) 
+                        VALUES ('$idRetiro', '$idUsuarioSueldo', " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+        } elseif (strpos($denominacionNueva, 'servicio') !== false) {
+            $tipoServicio = !empty($_POST['servicio']) ? mysqli_real_escape_string($vConexion, $_POST['servicio']) : 'Servicio';
+            $SQL_Sub = "INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio) 
+                        VALUES ('$idRetiro', '$tipoServicio', " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+        } elseif (strpos($denominacionNueva, 'insumo') !== false || strpos($denominacionNueva, 'material') !== false) {
+            $tipoInsumo = !empty($_POST['insumo']) ? mysqli_real_escape_string($vConexion, $_POST['insumo']) : 'Insumo';
+            $SQL_Sub = "INSERT INTO retiros_insumos (idRetiro, categoria, detalle_insumo) 
+                        VALUES ('$idRetiro', '$tipoInsumo', " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+        } else {
+            $SQL_Sub = "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) 
+                        VALUES ('$idRetiro', '$denominacionNueva', " . ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
+        }
         mysqli_query($vConexion, $SQL_Sub);
     }
 
@@ -1104,6 +1087,22 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
     }
 
     return $resultado;
+}
+
+function Obtener_Tipo_Movimiento($conexion, $idTipoMovimiento) {
+    $idTipoMovimiento = intval($idTipoMovimiento);
+    $sql = "SELECT denominacion, es_entrada, es_salida 
+            FROM tipo_movimiento 
+            WHERE idTipoMovimiento = $idTipoMovimiento AND idActivo = 1";
+    $rs = mysqli_query($conexion, $sql);
+    if ($rs && $row = mysqli_fetch_assoc($rs)) {
+        return [
+            'denominacion' => strtolower($row['denominacion']),
+            'es_entrada' => !empty($row['es_entrada']),
+            'es_salida' => !empty($row['es_salida'])
+        ];
+    }
+    return null;
 }
 
 function InsertarMovimiento($vConexion) {
