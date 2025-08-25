@@ -451,11 +451,12 @@ ob_end_flush();
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Método</label>
+                        <label class="form-label">Método de Pago</label>
                         <div class="d-flex flex-wrap justify-content-center" id="metodosPagoContainer">
                             <!-- Se llena dinámicamente con JavaScript -->
                         </div>
                     </div>
+                    <!-- AÑADE ESTE CAMPO OCULTO PARA CAPTURAR LA SELECCIÓN -->
                     <input type="hidden" id="metodoPagoSeleccionado" value="">
                 </div>
                 <div class="modal-footer">
@@ -470,181 +471,376 @@ ob_end_flush();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-    /**
-     * Manejo del formulario de agregar detalle
-     */
-    const formAgregar = document.getElementById('formAgregarDetalle');
-    if (formAgregar) {
-        formAgregar.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(formAgregar);
-
-            fetch('agregar_detalle.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Cerrar modal y refrescar tabla
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('agregarDetalleModal'));
-                        modal.hide();
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Error al agregar detalle');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                });
+        // ========== MANEJO DE LA SEÑA Y PAGO ==========
+        const btnModificarSenia = document.getElementById('btnModificarSenia');
+        const seniaInput = document.getElementById('senia');
+        const inputMetodoPago = document.getElementById('inputMetodoPago');
+        const inputEsReduccion = document.getElementById('inputEsReduccion');
+        const pagoModal = new bootstrap.Modal(document.getElementById('pagoModal'));
+        const confirmarPagoBtn = document.getElementById('confirmarPagoBtn');
+        
+        // DEBUG: Verificar que los elementos existan
+        console.log('Elementos de pago:', {
+            btnModificarSenia: !!btnModificarSenia,
+            seniaInput: !!seniaInput,
+            inputMetodoPago: !!inputMetodoPago,
+            inputEsReduccion: !!inputEsReduccion,
+            pagoModal: !!pagoModal,
+            confirmarPagoBtn: !!confirmarPagoBtn
         });
-    }
-
-    /**
-     * Manejo del formulario de editar detalle
-     */
-    const formEditar = document.getElementById('formEditarDetalle');
-    if (formEditar) {
-        formEditar.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(formEditar);
-
-            fetch('editar_detalle.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Cerrar modal y refrescar tabla
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('editarDetalleModal'));
-                        modal.hide();
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Error al editar detalle');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                });
-        });
-    }
-
-    /**
-     * Manejo del formulario de eliminar detalle
-     */
-    const formEliminar = document.getElementById('formEliminarDetalle');
-    if (formEliminar) {
-        formEliminar.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(formEliminar);
-
-            fetch('eliminar_detalle.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Cerrar modal y refrescar tabla
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('eliminarDetalleModal'));
-                        modal.hide();
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Error al eliminar detalle');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                });
-        });
-    }
-
-    /**
-     * Función para editar un detalle del pedido
-     */
-    window.editarDetalle = function(id) {
-        fetch(`obtener_detalle.php?id=${id}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al obtener los datos del detalle');
-                }
-                return response.text();
-            })
-            .then(data => {
-                document.getElementById('contenidoEditarDetalle').innerHTML = data;
-                const modal = new bootstrap.Modal(document.getElementById('editarDetalleModal'));
-                modal.show();
-
-                // 👉 Bloque agregado: validación de facturación
-                const facturado = document.getElementById('facturado');
-                const formEditar = document.getElementById('formEditarDetalle');
-                const tipoFactura = document.getElementById('tipo_factura');
-                const numeroFactura = document.getElementById('numero_factura');
-                const hiddenFacturado = document.getElementById('hiddenFacturado');
-                const facturacionFields = document.getElementById('facturacionFields');
-
-                if (facturado) {
-                    function toggleCamposFacturacion() {
-                        if (facturado.checked) {
-                            facturacionFields.style.display = 'block';
-                            tipoFactura.disabled = false;
-                            numeroFactura.disabled = false;
-                            tipoFactura.setAttribute('required', 'required');
-                            numeroFactura.setAttribute('required', 'required');
+        
+        // Configurar métodos de pago
+        const metodosPagoContainer = document.getElementById('metodosPagoContainer');
+        const metodosPagoEntrada = <?php echo isset($TiposPagosEntrada) ? json_encode($TiposPagosEntrada) : '[]'; ?>;
+        const metodosPagoSalida = <?php echo isset($TiposPagosSalida) ? json_encode($TiposPagosSalida) : '[]'; ?>;
+        
+        // DEBUG: Verificar métodos de pago
+        console.log('Métodos entrada:', metodosPagoEntrada);
+        console.log('Métodos salida:', metodosPagoSalida);
+        
+        // Variable global para rastrear la selección
+        let metodoSeleccionadoGlobal = null;
+        
+        // Llenar métodos de pago
+        function configurarMetodosPago(esReduccion = false) {
+            metodosPagoContainer.innerHTML = '';
+            metodoSeleccionadoGlobal = null;
+            
+            const metodos = esReduccion ? metodosPagoSalida : metodosPagoEntrada;
+            
+            if (metodos.length === 0) {
+                metodosPagoContainer.innerHTML = '<p class="text-center text-muted">No hay métodos disponibles</p>';
+                return;
+            }
+            
+            metodos.forEach(metodo => {
+                const iconClass = obtenerIconoClass(metodo.denominacion);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = esReduccion ? 'btn btn-outline-danger m-1 metodo-pago-btn' : 'btn btn-outline-primary m-1 metodo-pago-btn';
+                btn.innerHTML = `<i class="bi ${iconClass} me-1"></i> ${metodo.denominacion}`;
+                btn.dataset.metodoId = metodo.idTipoPago;
+                btn.dataset.metodoNombre = metodo.denominacion;
+                
+                btn.addEventListener('click', function() {
+                    // Remover selección anterior
+                    document.querySelectorAll('.metodo-pago-btn').forEach(b => {
+                        b.classList.remove('active', 'btn-primary', 'btn-danger');
+                        if (esReduccion) {
+                            b.classList.add('btn-outline-danger');
                         } else {
-                            facturacionFields.style.display = 'none';
-                            tipoFactura.disabled = true;
-                            numeroFactura.disabled = true;
-                            tipoFactura.removeAttribute('required');
-                            numeroFactura.removeAttribute('required');
-                            tipoFactura.value = '';
-                            numeroFactura.value = '';
-                        }
-                        hiddenFacturado.value = facturado.checked ? '1' : '0';
-                    }
-
-                    // Inicializar
-                    toggleCamposFacturacion();
-
-                    // Cambiar al click
-                    facturado.addEventListener('change', toggleCamposFacturacion);
-
-                    // Validación al enviar
-                    formEditar.addEventListener('submit', function(e) {
-                        hiddenFacturado.value = facturado.checked ? '1' : '0';
-
-                        if (facturado.checked) {
-                            if (!tipoFactura.value) {
-                                e.preventDefault();
-                                alert("Debe seleccionar un tipo de factura.");
-                                tipoFactura.focus();
-                                return false;
-                            }
-                            if (!numeroFactura.value.trim()) {
-                                e.preventDefault();
-                                alert("Debe ingresar un número de factura.");
-                                numeroFactura.focus();
-                                return false;
-                            }
+                            b.classList.add('btn-outline-primary');
                         }
                     });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert(error.message);
+                    
+                    // Seleccionar actual
+                    this.classList.remove('btn-outline-primary', 'btn-outline-danger');
+                    if (esReduccion) {
+                        this.classList.add('active', 'btn-danger');
+                    } else {
+                        this.classList.add('active', 'btn-primary');
+                    }
+                    
+                    // Guardar selección globalmente
+                    metodoSeleccionadoGlobal = {
+                        id: this.dataset.metodoId,
+                        nombre: this.dataset.metodoNombre
+                    };
+                    
+                    console.log('Método seleccionado:', metodoSeleccionadoGlobal);
+                });
+                
+                metodosPagoContainer.appendChild(btn);
             });
-    };
+        }
+        
+        // Función auxiliar para iconos
+        function obtenerIconoClass(nombreMetodo) {
+            const iconos = {
+                'Efectivo': 'bi-cash',
+                'Transferencia': 'bi-bank',
+                'Tarjeta': 'bi-credit-card',
+                'Mercado Pago': 'bi-wallet',
+                'Cheque': 'bi-wallet2',
+                'Depósito': 'bi-piggy-bank',
+                'Débito': 'bi-credit-card-2-back',
+                'Crédito': 'bi-credit-card-2-front',
+                'Retiro': 'bi-cash-stack'
+            };
+            return iconos[nombreMetodo] || 'bi-coin';
+        }
+        
+        // Configurar métodos iniciales
+        configurarMetodosPago();
+        
+        // Manejar clic en el botón de modificar seña
+        if (btnModificarSenia) {
+            btnModificarSenia.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const nuevaSenia = parseFloat(seniaInput.value);
+                const seniaActual = parseFloat(this.dataset.seniaActual);
+                const precioTotal = parseFloat(document.getElementById('precioTotal').dataset.value);
+                
+                // Validaciones
+                if (isNaN(nuevaSenia)) {
+                    alert('Por favor ingrese un monto válido');
+                    return;
+                }
+                
+                if (nuevaSenia < 0) {
+                    alert('La seña no puede ser negativa');
+                    return;
+                }
+                
+                if (nuevaSenia > precioTotal) {
+                    alert('La seña no puede ser mayor al precio total');
+                    return;
+                }
+                
+                if (nuevaSenia === seniaActual) {
+                    alert('La seña modificada no puede ser igual a la actual');
+                    return;
+                }
+                
+                // Determinar si es aumento o reducción
+                const esReduccion = nuevaSenia < seniaActual;
+                inputEsReduccion.value = esReduccion ? '1' : '0';
+                
+                // Configurar modal
+                const montoCambio = Math.abs(nuevaSenia - seniaActual);
+                document.getElementById('montoPagoModal').value = '$' + montoCambio.toFixed(2);
+                
+                if (esReduccion) {
+                    document.getElementById('modalPagoTitle').textContent = 'Confirmar Reducción de Seña';
+                    configurarMetodosPago(true);
+                } else {
+                    document.getElementById('modalPagoTitle').textContent = 'Confirmar Pago de Seña';
+                    configurarMetodosPago(false);
+                }
+                
+                // Resetear selección al abrir modal
+                metodoSeleccionadoGlobal = null;
+                
+                // Mostrar modal
+                pagoModal.show();
+            });
+        }
+        
+        // Confirmar pago desde el modal
+        if (confirmarPagoBtn) {
+            confirmarPagoBtn.addEventListener('click', function() {
+                console.log('Confirmar clickeado, método seleccionado:', metodoSeleccionadoGlobal);
+                
+                if (!metodoSeleccionadoGlobal || !metodoSeleccionadoGlobal.id) {
+                    alert('Por favor seleccione un método de pago');
+                    return;
+                }
+                
+                // Establecer el método de pago en el campo oculto
+                inputMetodoPago.value = metodoSeleccionadoGlobal.id;
+                console.log('Método establecido en hidden:', inputMetodoPago.value);
+                
+                // Cerrar modal
+                pagoModal.hide();
+                
+                // Enviar el formulario manualmente
+                const form = document.querySelector('form');
+                if (form) {
+                    console.log('Enviando formulario...');
+                    form.submit();
+                }
+            });
+        }
+        
+        // Limpiar selección al cerrar el modal
+        document.getElementById('pagoModal').addEventListener('hidden.bs.modal', function() {
+            metodoSeleccionadoGlobal = null;
+            document.querySelectorAll('.metodo-pago-btn').forEach(b => {
+                b.classList.remove('active', 'btn-primary', 'btn-danger');
+                if (b.classList.contains('btn-outline-danger')) {
+                    b.classList.add('btn-outline-danger');
+                } else {
+                    b.classList.add('btn-outline-primary');
+                }
+            });
+        });
 
-});
+        // ========== MANEJO DE DETALLES DEL PEDIDO ==========
+        /**
+         * Manejo del formulario de agregar detalle
+         */
+        const formAgregar = document.getElementById('formAgregarDetalle');
+        if (formAgregar) {
+            formAgregar.addEventListener('submit', function(e) {
+                e.preventDefault();
 
+                const formData = new FormData(formAgregar);
+
+                fetch('agregar_detalle.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Cerrar modal y refrescar tabla
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('agregarDetalleModal'));
+                            modal.hide();
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error al agregar detalle');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud');
+                    });
+            });
+        }
+
+        /**
+         * Manejo del formulario de editar detalle
+         */
+        const formEditar = document.getElementById('formEditarDetalle');
+        if (formEditar) {
+            formEditar.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(formEditar);
+
+                fetch('editar_detalle.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Cerrar modal y refrescar tabla
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('editarDetalleModal'));
+                            modal.hide();
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error al editar detalle');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud');
+                    });
+            });
+        }
+
+        /**
+         * Manejo del formulario de eliminar detalle
+         */
+        const formEliminar = document.getElementById('formEliminarDetalle');
+        if (formEliminar) {
+            formEliminar.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(formEliminar);
+
+                fetch('eliminar_detalle.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Cerrar modal y refrescar tabla
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('eliminarDetalleModal'));
+                            modal.hide();
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error al eliminar detalle');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud');
+                    });
+            });
+        }
+
+        /**
+         * Función para editar un detalle del pedido
+         */
+        window.editarDetalle = function(id) {
+            fetch(`obtener_detalle.php?id=${id}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al obtener los datos del detalle');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    document.getElementById('contenidoEditarDetalle').innerHTML = data;
+                    const modal = new bootstrap.Modal(document.getElementById('editarDetalleModal'));
+                    modal.show();
+
+                    // 👉 Bloque agregado: validación de facturación
+                    const facturado = document.getElementById('facturado');
+                    const formEditar = document.getElementById('formEditarDetalle');
+                    const tipoFactura = document.getElementById('tipo_factura');
+                    const numeroFactura = document.getElementById('numero_factura');
+                    const hiddenFacturado = document.getElementById('hiddenFacturado');
+                    const facturacionFields = document.getElementById('facturacionFields');
+
+                    if (facturado) {
+                        function toggleCamposFacturacion() {
+                            if (facturado.checked) {
+                                facturacionFields.style.display = 'block';
+                                tipoFactura.disabled = false;
+                                numeroFactura.disabled = false;
+                                tipoFactura.setAttribute('required', 'required');
+                                numeroFactura.setAttribute('required', 'required');
+                            } else {
+                                facturacionFields.style.display = 'none';
+                                tipoFactura.disabled = true;
+                                numeroFactura.disabled = true;
+                                tipoFactura.removeAttribute('required');
+                                numeroFactura.removeAttribute('required');
+                                tipoFactura.value = '';
+                                numeroFactura.value = '';
+                            }
+                            hiddenFacturado.value = facturado.checked ? '1' : '0';
+                        }
+
+                        // Inicializar
+                        toggleCamposFacturacion();
+
+                        // Cambiar al click
+                        facturado.addEventListener('change', toggleCamposFacturacion);
+
+                        // Validación al enviar
+                        formEditar.addEventListener('submit', function(e) {
+                            hiddenFacturado.value = facturado.checked ? '1' : '0';
+
+                            if (facturado.checked) {
+                                if (!tipoFactura.value) {
+                                    e.preventDefault();
+                                    alert("Debe seleccionar un tipo de factura.");
+                                    tipoFactura.focus();
+                                    return false;
+                                }
+                                if (!numeroFactura.value.trim()) {
+                                    e.preventDefault();
+                                    alert("Debe ingresar un número de factura.");
+                                    numeroFactura.focus();
+                                    return false;
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message);
+                });
+        };
+
+    });
     </script>
 
 <?php
