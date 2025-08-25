@@ -293,28 +293,52 @@ ob_end_flush();
 ?>
 
 <script>
-    // Formateo dinero
+    // Función principal para formatear el dinero
     function formatMoney(input) {
+        let cursorPos = input.selectionStart;
+        let originalLength = input.value.length;
+        
         let rawValue = input.value.replace(/[^\d,]/g, '');
         let commaPos = rawValue.indexOf(',');
-        if (commaPos !== -1) rawValue = rawValue.substring(0, commaPos+1) + rawValue.substring(commaPos+1).replace(/,/g, '');
+        if (commaPos !== -1) {
+            rawValue = rawValue.substring(0, commaPos + 1) + rawValue.substring(commaPos + 1).replace(/,/g, '');
+        }
+        
         let parts = rawValue.split(',');
         let integerPart = parts[0].replace(/\D/g, '') || '0';
-        let decimalPart = parts[1] || '00';
-        decimalPart = decimalPart.padEnd(2,'0').substring(0,2);
-        let intFormatted = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        input.value = '$' + intFormatted + ',' + decimalPart;
-        document.getElementById('MontoReal').value = integerPart + '.' + decimalPart;
+        let decimalPart = parts[1] ? parts[1].replace(/\D/g, '').substring(0, 2) : '';
+        
+        let formattedInteger = integerPart.length > 3 ? integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : integerPart;
+        let newValue = '$' + formattedInteger;
+        if (decimalPart.length > 0) {
+            newValue += ',' + decimalPart;
+        } else if (commaPos !== -1) {
+            newValue += ',00';
+        }
+        
+        input.value = newValue;
+        let newLength = input.value.length;
+        cursorPos = Math.max(1, cursorPos + (newLength - originalLength));
+        input.setSelectionRange(cursorPos, cursorPos);
+        
+        let numericValue = newValue.replace(/[^\d,]/g, '').replace(',', '.');
+        document.getElementById('MontoReal').value = numericValue || '0';
     }
 
-    document.querySelector('.money-format').addEventListener('input', function(){ formatMoney(this); });
+    const moneyInput = document.getElementById('valorDinero');
 
-    // Facturación
-    document.getElementById('facturarCheckbox').addEventListener('change', function() {
-        document.getElementById('facturaFields').style.display = this.checked ? 'block' : 'none';
+    moneyInput.addEventListener('input', function() { formatMoney(this); });
+    moneyInput.addEventListener('focus', function() { this.value = this.value.replace('$', ''); });
+    moneyInput.addEventListener('blur', function() {
+        if (!this.value.includes('$')) this.value = '$' + this.value;
+        formatMoney(this);
+        if (this.value === '$' || this.value === '') {
+            this.value = '$0,00';
+            document.getElementById('MontoReal').value = '0';
+        }
     });
 
-    // Mostrar secciones dinámicas de retiro según denominación
+    // Tipos de movimiento dinámicos
     const tiposMovimientoData = <?php
         $tiposMovimientoAll = [];
         $sqlTM = "SELECT idTipoMovimiento, denominacion, es_entrada, es_salida FROM tipo_movimiento WHERE idActivo = 1";
@@ -329,8 +353,10 @@ ob_end_flush();
         echo json_encode($tiposMovimientoAll);
     ?>;
 
-    document.getElementById('idTipoMovimiento').addEventListener('change', function() {
-        const movimientoId = this.value;
+    const tipoMovimientoInput = document.getElementById('idTipoMovimiento');
+
+    function actualizarSecciones() {
+        const movimientoId = tipoMovimientoInput.value;
         document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
 
         if (tiposMovimientoData[movimientoId] && tiposMovimientoData[movimientoId].es_salida) {
@@ -341,5 +367,78 @@ ob_end_flush();
             else if (denominacion.includes('insumo') || denominacion.includes('material')) document.getElementById('retiroInsumos').style.display = 'flex';
             else document.getElementById('retiroVarios').style.display = 'flex';
         }
+    }
+
+    tipoMovimientoInput.addEventListener('change', actualizarSecciones);
+
+    // Botones tipo movimiento
+    document.querySelectorAll('.tipo-movimiento').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.tipo-movimiento').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            this.classList.remove('btn-secondary');
+            this.classList.add('btn-primary');
+            tipoMovimientoInput.value = this.getAttribute('data-id');
+            tipoMovimientoInput.dispatchEvent(new Event('change'));
+        });
     });
+
+    // Botones método de pago
+    document.querySelectorAll('.metodo-pago').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.metodo-pago').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            this.classList.remove('btn-secondary');
+            this.classList.add('btn-primary');
+            document.getElementById('idTipoPago').value = this.getAttribute('data-id');
+        });
+    });
+
+    // Facturación
+    const facturarCheckbox = document.getElementById('facturarCheckbox');
+    facturarCheckbox.addEventListener('change', function() {
+        const facturaFields = document.getElementById('facturaFields');
+        facturaFields.style.display = this.checked ? 'block' : 'none';
+        document.getElementById('numeroFactura').required = this.checked;
+    });
+
+    // Reset
+    document.getElementById('resetButton').addEventListener('click', function() {
+        document.getElementById('MontoReal').value = '0';
+        moneyInput.value = '$0,00';
+        document.querySelectorAll('.metodo-pago, .tipo-movimiento').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        });
+        document.getElementById('idTipoPago').value = '';
+        tipoMovimientoInput.value = '';
+        facturarCheckbox.checked = false;
+        document.getElementById('facturaFields').style.display = 'none';
+        document.getElementById('numeroFactura').required = false;
+        document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
+    });
+
+    // Validación formulario
+    document.getElementById('formVenta').addEventListener('submit', function(e) {
+        if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
+            e.preventDefault();
+            alert('Por favor ingrese un monto válido mayor a cero');
+            moneyInput.focus();
+        }
+
+        if (facturarCheckbox.checked && document.getElementById('numeroFactura').value.trim() === '') {
+            e.preventDefault();
+            alert('Por favor ingrese un número de factura');
+            document.getElementById('numeroFactura').focus();
+        }
+    });
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() { formatMoney(moneyInput); });
 </script>
+
+
