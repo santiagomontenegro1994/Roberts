@@ -46,6 +46,24 @@
         </ul>
       </li><!-- End Proveedores Nav -->
 
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#proveedores-insumos-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-person-bounding-box"></i><span>Proveedores Insumos</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="proveedores-insumos-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="../imprenta_proveedores_insumos/agregar_proveedores.php">
+              <i class="bi bi-circle"></i><span>Agregar</span>
+            </a>
+          </li>
+          <li>
+            <a href="../imprenta_proveedores_insumos/listados_proveedores.php">
+              <i class="bi bi-circle"></i><span>Listados</span>
+            </a>
+          </li>
+        </ul>
+      </li><!-- End Proveedores Insummos Nav -->
+
       <!--
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#libros-nav" data-bs-toggle="collapse" href="#">

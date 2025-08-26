@@ -202,9 +202,47 @@ function Listar_Proveedores($vConexion) {
     return $Listado;
 }
 
+function Listar_Proveedores_Insumos($vConexion) {
+
+    $Listado=array();
+
+      //1) genero la consulta que deseo
+        $SQL = "SELECT * FROM proveedores_insumos WHERE idActivo=1";
+
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $SQL);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_PROVEEDOR'] = $data['idProveedorInsumo'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['CONTACTO'] = $data['contacto'];
+            $Listado[$i]['CUIT'] = $data['CUIT'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
 function InsertarProveedores($vConexion){
     
     $SQL_Insert="INSERT INTO proveedores (nombre, CUIT, contacto)
+    VALUES ('".$_POST['Nombre']."' , '".$_POST['CUIT']."', '".$_POST['Contacto']."')";
+
+
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        //si surge un error, finalizo la ejecucion del script con un mensaje
+        die('<h4>Error al intentar insertar el registro.</h4>');
+    }
+
+    return true;
+}
+
+function InsertarProveedoresInsumos($vConexion){
+    
+    $SQL_Insert="INSERT INTO proveedores_insumos (nombre, CUIT, contacto)
     VALUES ('".$_POST['Nombre']."' , '".$_POST['CUIT']."', '".$_POST['Contacto']."')";
 
 
@@ -249,6 +287,39 @@ function Listar_Proveedores_Parametro($vConexion,$criterio,$parametro) {
     return $Listado;
 }
 
+function Listar_Proveedores_Insumos_Parametro($vConexion,$criterio,$parametro) {
+    $Listado=array();
+
+      //1) genero la consulta que deseo segun el parametro
+        $sql = "SELECT * FROM proveedores_insumos";
+        switch ($criterio) { 
+        case 'Nombre': 
+        $sql = "SELECT * FROM proveedores_insumos WHERE nombre LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        case 'Contacto':
+        $sql = "SELECT * FROM proveedores_insumos WHERE contacto LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        case 'CUIT':
+        $sql = "SELECT * FROM proveedores_insumos WHERE CUIT LIKE '%$parametro%' AND idActivo = 1";
+        break;
+        }    
+        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
+        $rs = mysqli_query($vConexion, $sql);
+        
+        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
+        $i=0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_PROVEEDOR'] = $data['idProveedorInsumo'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['CONTACTO'] = $data['contacto'];
+            $Listado[$i]['CUIT'] = $data['CUIT'];
+            $i++;
+        }
+
+    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    return $Listado;
+}
+
 function Anular_Proveedor($vConexion , $vIdConsulta) {
 
         $SQL_MiConsulta="SELECT idProveedor FROM proveedores 
@@ -271,6 +342,28 @@ function Anular_Proveedor($vConexion , $vIdConsulta) {
     
 }
 
+function Anular_Proveedor_Insumos($vConexion , $vIdConsulta) {
+
+        $SQL_MiConsulta="SELECT idProveedorInsumo FROM proveedores_insumos 
+                        WHERE idProveedorInsumo = $vIdConsulta ";
+   
+    
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+        
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idProveedorInsumo']) ) {
+        //si se cumple todo, entonces elimino:
+        mysqli_query($vConexion, "UPDATE proveedores_insumos SET idActivo = 2 WHERE idProveedorInsumo = $vIdConsulta");
+        
+        return true;
+
+    }else {
+        return false;
+    }
+    
+}
+
 function Datos_Proveedor($vConexion , $vIdProveedor) {
     $DatosProveedor  =   array();
     //me aseguro que la consulta exista
@@ -282,6 +375,25 @@ function Datos_Proveedor($vConexion , $vIdProveedor) {
     $data = mysqli_fetch_array($rs) ;
     if (!empty($data)) {
         $DatosProveedor['ID_PROVEEDOR'] = $data['idProveedor'];
+        $DatosProveedor['NOMBRE'] = $data['nombre'];
+        $DatosProveedor['CONTACTO'] = $data['contacto'];
+        $DatosProveedor['CUIT'] = $data['CUIT'];
+    }
+    return $DatosProveedor;
+
+}
+
+function Datos_Proveedor_Insumos($vConexion , $vIdProveedor) {
+    $DatosProveedor  =   array();
+    //me aseguro que la consulta exista
+    $SQL = "SELECT * FROM proveedores_insumos
+            WHERE idProveedorInsumo = $vIdProveedor";
+
+    $rs = mysqli_query($vConexion, $SQL);
+
+    $data = mysqli_fetch_array($rs) ;
+    if (!empty($data)) {
+        $DatosProveedor['ID_PROVEEDOR'] = $data['idProveedorInsumo'];
         $DatosProveedor['NOMBRE'] = $data['nombre'];
         $DatosProveedor['CONTACTO'] = $data['contacto'];
         $DatosProveedor['CUIT'] = $data['CUIT'];
@@ -323,6 +435,26 @@ function Modificar_Proveedor($vConexion) {
     contacto = '$contacto',
     CUIT = '$cuit'
     WHERE idProveedor = '$idProveedor'";
+
+    if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
+        return true;
+    }else {
+        return false;
+    }
+    
+}
+
+function Modificar_Proveedor_Insumo($vConexion) {
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
+    $contacto = mysqli_real_escape_string($vConexion, $_POST['Contacto']);
+    $cuit = mysqli_real_escape_string($vConexion, $_POST['CUIT']);
+    $idProveedor = mysqli_real_escape_string($vConexion, $_POST['IdProveedor']);
+
+    $SQL_MiConsulta = "UPDATE proveedores_insumos 
+    SET nombre = '$nombre',
+    contacto = '$contacto',
+    CUIT = '$cuit'
+    WHERE idProveedorInsumo = '$idProveedor'";
 
     if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
         return true;
