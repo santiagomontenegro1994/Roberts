@@ -1895,7 +1895,7 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $montoOperacion, $idTipoPa
         $stmt->execute();
         $stmt->close();
 
-        // 4. Registrar movimiento en caja
+        // 4. Registrar movimiento en caja y retiros (solo para reducciones)
         $idUsuario = $_SESSION['Usuario_Id'] ?? 0;
         $idCaja = $_SESSION['Id_Caja'] ?? 0;
         
@@ -1911,14 +1911,45 @@ function Modificar_Senia_Pedido($conexion, $idPedido, $montoOperacion, $idTipoPa
             // Tipo de movimiento (3=Entrada, 13=Salida)
             $idTipoMovimiento = $esReduccion ? 13 : 3;
             
-            $query = "INSERT INTO detalle_caja (
-                idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
-            ) VALUES (?, ?, ?, ?, ?, ?)";
-            
-            $stmt = $conexion->prepare($query);
-            $stmt->bind_param('iiiids', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $montoOperacion, $observaciones);
-            $stmt->execute();
-            $stmt->close();
+            if ($esReduccion) {
+                // 🔹 PARA REDUCCIONES (QUITAR SEÑA) - Crear retiro completo
+                
+                // 4.1. Insertar en retiros
+                $queryRetiro = "INSERT INTO retiros (fecha, monto, idUsuario, idTipoMovimiento, idTipoPago, facturado, idActivo)
+                               VALUES (NOW(), ?, ?, ?, ?, 0, 1)";
+                $stmt = $conexion->prepare($queryRetiro);
+                $stmt->bind_param('diii', $montoOperacion, $idUsuario, $idTipoMovimiento, $idTipoPago);
+                $stmt->execute();
+                $idRetiro = $conexion->insert_id;
+                $stmt->close();
+                
+                // 4.2. Insertar en retiros_varios (categoría "Devolución de Seña")
+                $queryRetiroVarios = "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario)
+                                     VALUES (?, 'Devolución de Seña', ?)";
+                $stmt = $conexion->prepare($queryRetiroVarios);
+                $stmt->bind_param('is', $idRetiro, $observaciones);
+                $stmt->execute();
+                $stmt->close();
+                
+                // 4.3. Insertar en detalle_caja vinculado al retiro
+                $queryDetalleCaja = "INSERT INTO detalle_caja (
+                    idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones, idRetiro
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conexion->prepare($queryDetalleCaja);
+                $stmt->bind_param('iiiidsi', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $montoOperacion, $observaciones, $idRetiro);
+                $stmt->execute();
+                $stmt->close();
+                
+            } else {
+                // 🔹 PARA AUMENTOS (AGREGAR SEÑA) - Solo detalle_caja normal
+                $queryDetalleCaja = "INSERT INTO detalle_caja (
+                    idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
+                ) VALUES (?, ?, ?, ?, ?, ?)";
+                $stmt = $conexion->prepare($queryDetalleCaja);
+                $stmt->bind_param('iiiids', $idCaja, $idTipoPago, $idTipoMovimiento, $idUsuario, $montoOperacion, $observaciones);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
 
         $conexion->commit();
