@@ -29,7 +29,7 @@ $saldoCliente = ObtenerSaldoCliente($MiConexion, $idCliente);
 // Obtener últimos movimientos
 $movimientos = ObtenerMovimientosCliente($MiConexion, $idCliente, 10);
 
-// Obtener trabajos pendientes
+// Obtener trabajos cta cte (estado cuenta corriente)
 $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $idCliente);
 $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
 
@@ -84,8 +84,8 @@ $tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
                         <div class="col-md-6">
                             <div class="border p-3 rounded">
                                 <h6 class="mb-3">Estado de Cuenta</h6>
-                                <p><strong>Trabajos pendientes:</strong> <?= count($trabajosPendientes) ?></p>
-                                <p><strong>Total pendiente:</strong> $<?= number_format($totalPendiente, 2, ',', '.') ?></p>
+                                <p><strong>Trabajos cta cte:</strong> <?= count($trabajosPendientes) ?></p>
+                                <p><strong>Total cta cte:</strong> $<?= number_format($totalPendiente, 2, ',', '.') ?></p>
                                 <p class="fs-5 fw-bold <?= $saldoCliente >= 0 ? 'text-success' : 'text-danger' ?>">
                                     <strong>Saldo actual:</strong> $<?= number_format(abs($saldoCliente), 2, ',', '.') ?>
                                     <small class="d-block">(<?= $saldoCliente >= 0 ? 'Saldo a favor' : 'Saldo deudor' ?>)</small>
@@ -361,14 +361,14 @@ $tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
         </div>
         
         <div class="col-lg-4">
-            <!-- Resumen de trabajos pendientes -->
+            <!-- Resumen de trabajos cta cte -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Trabajos Pendientes</h5>
+                    <h5 class="card-title mb-0">Trabajos cta cte</h5>
                 </div>
                 <div class="card-body">
                     <?php if (empty($trabajosPendientes)): ?>
-                        <div class="alert alert-info mb-0">No hay trabajos pendientes</div>
+                        <div class="alert alert-info mb-0">No hay trabajos cta cte</div>
                     <?php else: ?>
                         <div class="list-group">
                             <?php foreach ($trabajosPendientes as $trabajo): ?>
@@ -397,7 +397,7 @@ $tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Total trabajos pendientes:</span>
+                        <span>Total trabajos cta cte:</span>
                         <span class="fw-bold">$<?= number_format($totalPendiente, 2, ',', '.') ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'info',
                 title: 'Información',
-                text: 'No hay trabajos pendientes para realizar pagos'
+                text: 'No hay trabajos cta cte para realizar pagos'
             });
             document.getElementById('deposito-tab').click();
         }

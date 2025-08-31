@@ -171,9 +171,6 @@ ob_end_flush();
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">Trabajos del Pedido</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#agregarDetalleModal">
-                                <i class="bi bi-plus-circle"></i> Agregar Trabajo
-                            </button>
                         </div>
                         
                         <div class="table-responsive">

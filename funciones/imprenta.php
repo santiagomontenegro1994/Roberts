@@ -3113,7 +3113,7 @@ function Obtener_Trabajos_Pendientes($conexion, $idCliente) {
             INNER JOIN tipo_trabajo tt ON tt.idTipoTrabajo = dt.idTrabajo
             INNER JOIN estado_trabajo et ON et.idEstado = dt.idEstadoTrabajo
             WHERE pt.idCliente = ? 
-            AND dt.idEstadoTrabajo IN (1, 2, 3, 4, 5, 6, 8) -- Estados pendientes
+            AND dt.idEstadoTrabajo = 8 -- Estado cuenta corriente
             AND dt.idActivo = 1
             ORDER BY pt.fecha ASC, dt.idDetalleTrabajo ASC";
     
@@ -3215,7 +3215,7 @@ function Obtener_Trabajos_Pendientes_Por_Antiguedad($conexion, $idCliente) {
             INNER JOIN pedido_trabajos pt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos
             INNER JOIN tipo_trabajo tt ON tt.idTipoTrabajo = dt.idTrabajo
             WHERE pt.idCliente = ? 
-            AND dt.idEstadoTrabajo = 8 -- Estado pendiente de pago
+            AND dt.idEstadoTrabajo = 8 -- Estado cuenta corriente
             AND dt.idActivo = 1
             ORDER BY pt.fecha ASC, dt.idDetalleTrabajo ASC"; // Más antiguos primero
     
