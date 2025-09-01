@@ -121,10 +121,12 @@ ob_end_flush();
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
-                                    <a href="movimientos_contables.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
-                                </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
+                                <a href="movimientos_contables.php" class="btn btn-secondary me-2"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
+                                <a href="agregar_movimiento_contable.php" class="btn btn-success">
+                                    <i class="bi bi-plus-lg"></i> Retirar
+                                </a>
                             </div>
                         </form>
 
