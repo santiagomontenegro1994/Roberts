@@ -29,13 +29,14 @@ $pagina = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
 $limite = 50;
 $offset = ($pagina - 1) * $limite;
 
-// Listado de movimientos y totales
+// Listado de movimientos y totales filtrados
 $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, $offset, $limite);
 $totalMovimientos = Contar_Movimientos_Contables($MiConexion, $filtros);
 $totalPaginas = ceil($totalMovimientos / $limite);
 
-$totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion);
-$totalBanco = Obtener_Total_Banco($MiConexion);
+// Totales ajustados a filtros
+$totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
+$totalBanco = Obtener_Total_Banco($MiConexion, $filtros);
 
 // Opciones de filtros
 $metodosPagoOptions = [];
@@ -48,7 +49,6 @@ $tipoEspecialOptions = Listar_Tipos_Especiales($MiConexion);
 
 $MiConexion->close();
 ob_end_flush();
-
 ?>
 
 <main id="main" class="main">
@@ -121,15 +121,6 @@ ob_end_flush();
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <label for="tipo_especial" class="form-label">Tipo Especial</label>
-                                    <select class="form-select" name="tipo_especial">
-                                        <option value="">Todos</option>
-                                        <?php foreach($tipoEspecialOptions as $value => $label): ?>
-                                            <option value="<?= $label ?>" <?= ($filtros['tipo_especial'] ?? '') == $label ? 'selected' : '' ?>><?= $label ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
                                     <a href="movimientos_contables.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
@@ -186,16 +177,26 @@ ob_end_flush();
                         <?php if($totalPaginas > 1): ?>
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-center">
-                                    <li class="page-item <?= ($pagina<=1) ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina'=>$pagina-1])) ?>">&laquo; Anterior</a>
+                                    <!-- Flecha Anterior -->
+                                    <li class="page-item <?= ($pagina <= 1) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => max(1, $pagina - 1)])) ?>">&laquo; Anterior</a>
                                     </li>
-                                    <?php for($p=1; $p<=$totalPaginas; $p++): ?>
-                                        <li class="page-item <?= ($pagina==$p) ? 'active' : '' ?>">
-                                            <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina'=>$p])) ?>"><?= $p ?></a>
+
+                                    <!-- Rango de páginas centrado -->
+                                    <?php
+                                    $rango = 5; 
+                                    $inicio = max(1, $pagina - $rango);
+                                    $fin = min($totalPaginas, $pagina + $rango);
+                                    for ($p = $inicio; $p <= $fin; $p++):
+                                    ?>
+                                        <li class="page-item <?= ($pagina == $p) ? 'active' : '' ?>">
+                                            <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => $p])) ?>"><?= $p ?></a>
                                         </li>
                                     <?php endfor; ?>
-                                    <li class="page-item <?= ($pagina>=$totalPaginas) ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina'=>$pagina+1])) ?>">Siguiente &raquo;</a>
+
+                                    <!-- Flecha Siguiente -->
+                                    <li class="page-item <?= ($pagina >= $totalPaginas) ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => min($totalPaginas, $pagina + 1)])) ?>">Siguiente &raquo;</a>
                                     </li>
                                 </ul>
                             </nav>

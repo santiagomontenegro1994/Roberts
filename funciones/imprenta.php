@@ -2684,45 +2684,88 @@ function Listar_Tipos_Especiales($conexion) {
     return $tipos;
 }
 
-    // Obtener total de Caja Fuerte (retiros) con fecha de caja
-function Obtener_Total_Caja_Fuerte($conexion) {
-    $query = "SELECT SUM(dc.monto) as total
-              FROM detalle_caja dc
-              JOIN caja c ON dc.idCaja = c.idCaja
-              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-              WHERE tm.idTipoMovimiento = 9";
-    
+function Obtener_Total_Caja_Fuerte($conexion, $filtros = []) {
+    $query = "SELECT SUM(r.monto) as total
+              FROM retiros r
+              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+              WHERE r.idTipoMovimiento = 9"; // Deposito en Caja Fuerte
+
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $query .= " AND r.fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $query .= " AND r.fecha <= '$fecha_hasta'";
+    }
+
     $result = $conexion->query($query);
     $total = 0;
-    
     if ($result && $row = $result->fetch_assoc()) {
-        $total = $row['total'] ? $row['total'] : 0;
+        $total = $row['total'] ?: 0;
     }
-    
     return $total;
 }
 
-    // Obtener total de Banco (ingresos) con fecha de caja
-function Obtener_Total_Banco($conexion) {
-    $query = "SELECT SUM(dc.monto) as total
-              FROM detalle_caja dc
-              JOIN caja c ON dc.idCaja = c.idCaja
-              JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-              JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-              WHERE (tp.denominacion LIKE '%Transferencia%' 
-                     OR tp.denominacion LIKE '%Tarjeta%'
-                     OR tp.denominacion LIKE '%Cheque%')
-              AND tm.es_entrada = 1";
-    
-    $result = $conexion->query($query);
-    $total = 0;
-    
-    if ($result && $row = $result->fetch_assoc()) {
-        $total = $row['total'] ? $row['total'] : 0;
+function Obtener_Total_Banco($conexion, $filtros = []) {
+    // Entradas no efectivo
+    $queryEntrada = "SELECT SUM(dc.monto) as total
+                     FROM detalle_caja dc
+                     JOIN caja c ON dc.idCaja = c.idCaja
+                     JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                     WHERE tm.es_entrada = 1 AND tp.denominacion NOT LIKE '%Efectivo%'";
+
+    // Aplicar filtros
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $queryEntrada .= " AND c.Fecha >= '$fecha_desde'";
     }
-    
-    return $total;
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $queryEntrada .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+    if(!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $queryEntrada .= " AND tp.denominacion = '$metodo_pago'";
+    }
+    if(!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] == 'Salida') {
+        $queryEntrada .= " AND 0"; // no queremos entradas si filtramos salida
+    }
+
+    $resultEntrada = $conexion->query($queryEntrada);
+    $totalEntrada = ($resultEntrada && $row = $resultEntrada->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    // Salidas no efectivo
+    $querySalida = "SELECT SUM(dc.monto) as total
+                    FROM detalle_caja dc
+                    JOIN caja c ON dc.idCaja = c.idCaja
+                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                    LEFT JOIN retiros r ON dc.idRetiro = r.idRetiro
+                    WHERE tm.es_salida = 1 AND tp.denominacion NOT LIKE '%Efectivo%'";
+
+    // Aplicar filtros
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $querySalida .= " AND c.Fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $querySalida .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+    if(!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $querySalida .= " AND tp.denominacion = '$metodo_pago'";
+    }
+    if(!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] == 'Entrada') {
+        $querySalida .= " AND 0"; // no queremos salidas si filtramos entrada
+    }
+
+    $resultSalida = $conexion->query($querySalida);
+    $totalSalida = ($resultSalida && $row = $resultSalida->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    return $totalEntrada - $totalSalida;
 }
 
 function Listar_Pedidos_Trabajos_Detallado($vConexion) {
