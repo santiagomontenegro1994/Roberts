@@ -36,8 +36,17 @@ $tiposServicios = [];
 $res = $MiConexion->query("SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo=1");
 while($row = $res->fetch_assoc()) $tiposServicios[$row['idTipoServicio']] = $row['denominacion'];
 
-// Tipos de movimiento de salida
-$tipoMovimientos = Listar_Tipos_Movimiento_Salida($MiConexion);
+// Obtener métodos de pago para salidas
+$metodosPago = Listar_Tipos_Pagos_Salida($MiConexion);
+
+// Mapeo de tipos de retiro a tipos de movimiento
+$tipoMovimientoMap = [
+    'insumos' => 18,
+    'proveedores' => 16,
+    'servicios' => 20,
+    'sueldos' => 17,
+    'varios' => 19
+];
 
 // Procesar envío del formulario
 $mensaje = '';
@@ -45,70 +54,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha = $_POST['fecha'] ?? date('Y-m-d');
     $monto = floatval($_POST['monto'] ?? 0);
     $idTipoPago = intval($_POST['metodo_pago'] ?? 0);
+    $subtipo = $_POST['subtipo'] ?? '';
     $detalle = $_POST['detalle'] ?? '';
 
     $usuarioId = $_SESSION['Usuario_Id'] ?? 0;
+    
     if (!$usuarioId) {
         $mensaje = "No se pudo obtener el usuario de sesión.";
     } elseif ($monto <= 0) {
         $mensaje = "Debe completar el monto.";
+    } elseif (empty($subtipo)) {
+        $mensaje = "Debe seleccionar un tipo de retiro.";
     } else {
-        // Insertar en tabla retiros
-        $stmt = $MiConexion->prepare("INSERT INTO retiros (fecha, monto, idUsuario, idTipoMovimiento, idTipoPago, facturado) VALUES (?, ?, ?, ?, ?, 0)");
-        $idTipoMovimiento = 1; // Como todos son salidas, podemos asignar un tipo default o el primero de Listar_Tipos_Movimiento_Salida
-        $stmt->bind_param("sdiii", $fecha, $monto, $usuarioId, $idTipoMovimiento, $idTipoPago);
-        $stmt->execute();
-        $idRetiro = $stmt->insert_id;
-        $stmt->close();
+        // Obtener el idTipoMovimiento según el tipo de retiro seleccionado
+        $idTipoMovimiento = $tipoMovimientoMap[$subtipo] ?? 0;
+        
+        if ($idTipoMovimiento === 0) {
+            $mensaje = "Tipo de retiro no válido.";
+        } else {
+            // Insertar en tabla retiros
+            $stmt = $MiConexion->prepare("INSERT INTO retiros (fecha, monto, idUsuario, idTipoMovimiento, idTipoPago, facturado) VALUES (?, ?, ?, ?, ?, 0)");
+            $stmt->bind_param("sdiii", $fecha, $monto, $usuarioId, $idTipoMovimiento, $idTipoPago);
+            $stmt->execute();
+            $idRetiro = $stmt->insert_id;
+            $stmt->close();
 
-        // Insertar detalle según subtipo
-        $tipo = $_POST['subtipo'] ?? '';
-        switch($tipo) {
-            case 'insumos':
-                $idProveedorInsumo = intval($_POST['idProveedorInsumo'] ?? 0);
-                $idCategoria = intval($_POST['idCategoriaInsumo'] ?? 0);
-                $detalle_insumo = $_POST['detalle_insumo'] ?? '';
-                $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, categoria, detalle_insumo) VALUES (?, ?, ?, ?)");
-                $categoriaNombre = $categoriasInsumo[$idCategoria] ?? '';
-                $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $categoriaNombre, $detalle_insumo);
-                $stmt->execute();
-                $stmt->close();
-                break;
-            case 'proveedores':
-                $idProveedor = intval($_POST['idProveedor'] ?? 0);
-                $detalle_proveedor = $_POST['detalle_proveedor'] ?? '';
-                $stmt = $MiConexion->prepare("INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) VALUES (?, ?, ?)");
-                $stmt->bind_param("iis", $idRetiro, $idProveedor, $detalle_proveedor);
-                $stmt->execute();
-                $stmt->close();
-                break;
-            case 'servicios':
-                $idTipoServicio = intval($_POST['tipo_servicio'] ?? 0);
-                $detalle_servicio = $_POST['detalle_servicio'] ?? '';
-                $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio) VALUES (?, ?, ?)");
-                $tipoServicioNombre = $tiposServicios[$idTipoServicio] ?? '';
-                $stmt->bind_param("iss", $idRetiro, $tipoServicioNombre, $detalle_servicio);
-                $stmt->execute();
-                $stmt->close();
-                break;
-            case 'sueldos':
-                $idUsuarioSueldo = intval($_POST['idUsuarioSueldo'] ?? 0);
-                $detalle_sueldo = $_POST['detalle_sueldo'] ?? '';
-                $stmt = $MiConexion->prepare("INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) VALUES (?, ?, ?)");
-                $stmt->bind_param("iis", $idRetiro, $idUsuarioSueldo, $detalle_sueldo);
-                $stmt->execute();
-                $stmt->close();
-                break;
-            case 'varios':
-                $detalle_vario = $_POST['detalle_vario'] ?? '';
-                $stmt = $MiConexion->prepare("INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) VALUES (?, ?, ?)");
-                $stmt->bind_param("iss", $idRetiro, $detalle, $detalle_vario);
-                $stmt->execute();
-                $stmt->close();
-                break;
+            // Insertar detalle según subtipo
+            switch($subtipo) {
+                case 'insumos':
+                    $idProveedorInsumo = intval($_POST['idProveedorInsumo'] ?? 0);
+                    $idCategoria = intval($_POST['idCategoriaInsumo'] ?? 0);
+                    $detalle_insumo = $_POST['detalle_insumo'] ?? '';
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, categoria, detalle_insumo) VALUES (?, ?, ?, ?)");
+                    $categoriaNombre = $categoriasInsumo[$idCategoria] ?? '';
+                    $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $categoriaNombre, $detalle_insumo);
+                    $stmt->execute();
+                    $stmt->close();
+                    break;
+                case 'proveedores':
+                    $idProveedor = intval($_POST['idProveedor'] ?? 0);
+                    $detalle_proveedor = $_POST['detalle_proveedor'] ?? '';
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) VALUES (?, ?, ?)");
+                    $stmt->bind_param("iis", $idRetiro, $idProveedor, $detalle_proveedor);
+                    $stmt->execute();
+                    $stmt->close();
+                    break;
+                case 'servicios':
+                    $idTipoServicio = intval($_POST['tipo_servicio'] ?? 0);
+                    $detalle_servicio = $_POST['detalle_servicio'] ?? '';
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio) VALUES (?, ?, ?)");
+                    $tipoServicioNombre = $tiposServicios[$idTipoServicio] ?? '';
+                    $stmt->bind_param("iss", $idRetiro, $tipoServicioNombre, $detalle_servicio);
+                    $stmt->execute();
+                    $stmt->close();
+                    break;
+                case 'sueldos':
+                    $idUsuarioSueldo = intval($_POST['idUsuarioSueldo'] ?? 0);
+                    $detalle_sueldo = $_POST['detalle_sueldo'] ?? '';
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) VALUES (?, ?, ?)");
+                    $stmt->bind_param("iis", $idRetiro, $idUsuarioSueldo, $detalle_sueldo);
+                    $stmt->execute();
+                    $stmt->close();
+                    break;
+                case 'varios':
+                    $detalle_vario = $_POST['detalle_vario'] ?? '';
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) VALUES (?, ?, ?)");
+                    $stmt->bind_param("iss", $idRetiro, $detalle, $detalle_vario);
+                    $stmt->execute();
+                    $stmt->close();
+                    break;
+            }
+
+            $mensaje = "Movimiento contable registrado correctamente.";
         }
-
-        $mensaje = "Movimiento contable registrado correctamente.";
     }
 }
 
@@ -117,12 +135,12 @@ $MiConexion->close();
 
 <main id="main" class="main">
     <div class="pagetitle">
-        <h1>Agregar Movimiento Contable</h1>
+        <h1>Retiro con Movimiento Contable</h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
-                <li class="breadcrumb-item"><a href="movimientos_contables.php">Movimientos Contables</a></li>
-                <li class="breadcrumb-item active">Agregar Movimiento</li>
+                <li class="breadcrumb-item"><a href="movimientos_contables.php">Retiro con Movimiento Contable</a></li>
+                <li class="breadcrumb-item active">Retiro</li>
             </ol>
         </nav>
     </div>
@@ -150,16 +168,19 @@ $MiConexion->close();
 
                             <div class="mb-3">
                                 <label class="form-label">Método de Pago</label>
-                                <select name="metodo_pago" class="form-select">
-                                    <option value="1">Efectivo</option>
-                                    <option value="2">Transferencia</option>
-                                    <option value="3">Cheque</option>
+                                <select name="metodo_pago" class="form-select" required>
+                                    <option value="">Seleccione un método de pago</option>
+                                    <?php foreach($metodosPago as $pago): ?>
+                                        <option value="<?= $pago['idTipoPago'] ?>">
+                                            <?= htmlspecialchars($pago['denominacion']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Tipo de Retiro</label>
-                                <select name="subtipo" id="subtipo" class="form-select">
+                                <select name="subtipo" id="subtipo" class="form-select" required>
                                     <option value="">Seleccione</option>
                                     <option value="insumos">Insumos</option>
                                     <option value="proveedores">Proveedores</option>
