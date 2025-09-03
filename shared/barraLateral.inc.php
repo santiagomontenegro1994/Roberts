@@ -174,7 +174,7 @@
         </ul>
       </li><!-- End Contables -->
 
-            <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#usuarios-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-person-bounding-box"></i><span>Usuarios</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
@@ -191,6 +191,19 @@
         </li>
         </ul>
       </li><!-- End Usuarios -->
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#dashboard-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-speedometer2"></i><span>Dashboard</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="dashboard-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="../imprenta_dashboard/panel_control.php">
+            <i class="bi bi-circle"></i><span>Panel de control</span>
+          </a>
+        </li>
+        </ul>
+      </li><!-- End Dashboard -->
 
     </ul>
 
