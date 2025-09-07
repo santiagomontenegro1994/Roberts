@@ -30,8 +30,8 @@ $res = $MiConexion->query("SELECT idProveedorInsumo, nombre FROM proveedores_ins
 while($row = $res->fetch_assoc()) $proveedoresInsumos[$row['idProveedorInsumo']] = $row['nombre'];
 
 $categoriasInsumo = [];
-$res = $MiConexion->query("SELECT idTipoInsumo, denominacion FROM tipo_insumo WHERE idActivo=1");
-while($row = $res->fetch_assoc()) $categoriasInsumo[$row['idTipoInsumo']] = $row['denominacion'];
+$res = $MiConexion->query("SELECT idInsumo, denominacion FROM insumos");
+while($row = $res->fetch_assoc()) $categoriasInsumo[$row['idInsumo']] = $row['denominacion'];
 
 $tiposServicios = [];
 $res = $MiConexion->query("SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo=1");

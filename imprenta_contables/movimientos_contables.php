@@ -39,7 +39,9 @@ $totalBanco = Obtener_Total_Banco($MiConexion, $filtros);
 
 // Opciones de filtros
 $metodosPagoOptions = [];
-$res = $MiConexion->query("SELECT DISTINCT denominacion FROM tipo_pago");
+$res = $MiConexion->query("SELECT DISTINCT denominacion 
+                          FROM tipo_pago 
+                          WHERE denominacion NOT IN ('Cta. Cte.', 'Caja Fuerte', 'Banco')");
 while($row = $res->fetch_assoc()) {
     $metodosPagoOptions[$row['denominacion']] = $row['denominacion'];
 }
