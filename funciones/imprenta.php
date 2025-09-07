@@ -2496,8 +2496,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             u.nombre AS usuario, 
             1 AS es_entrada, 
             0 AS es_salida, 
-            dc.observaciones AS detalle,
-            'Normal' AS tipo_especial
+            dc.observaciones AS detalle
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -2520,8 +2519,14 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-    if (!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] === 'Salida') {
-        $detalleCajaQuery .= " AND 0"; // nunca entra en salida
+    
+    // ✅ EXCLUIR detalle_caja CUANDO SE FILTRA POR "Retiros Contables"
+    if (!empty($filtros['tipo_movimiento'])) {
+        if ($filtros['tipo_movimiento'] === 'Salida') {
+            $detalleCajaQuery .= " AND 0"; // nunca entra en salida
+        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
+            $detalleCajaQuery .= " AND 0"; // ✅ EXCLUIR para retiros contables
+        }
     }
 
     // Movimientos de retiros (incluye Caja Fuerte y Contables)
@@ -2550,11 +2555,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 'Retiro Contable'
                 WHEN rv.idRetiro IS NOT NULL THEN CONCAT('Retiro varios: ', rv.categoria)
                 ELSE 'Retiro'
-            END AS detalle,
-            CASE 
-                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 'Contable'
-                ELSE 'Normal'
-            END AS tipo_especial
+            END AS detalle
         FROM retiros r
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
         LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
@@ -2580,20 +2581,16 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
+    
+    // ✅ FILTRO DE TIPO DE MOVIMIENTO COMPLETO
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
             $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
         } elseif ($filtros['tipo_movimiento'] === 'Salida') {
             $retirosQuery .= " AND ( (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') 
                                     AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0) )";
-        }
-    }
-    if (!empty($filtros['tipo_especial'])) {
-        if ($filtros['tipo_especial'] === 'Contable') {
+        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
             $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
-        } else {
-            $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
-            $retirosQuery .= " AND LOWER(rv.categoria) = LOWER('$tipo_especial')";
         }
     }
 
@@ -2606,7 +2603,10 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
 
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            if ($row['tipo_especial'] === 'Contable') {
+            // ✅ DETECTAR TIPO BASADO EN es_entrada/es_salida
+            $esRetiroContable = ($row['es_entrada'] == 0 && $row['es_salida'] == 0);
+            
+            if ($esRetiroContable) {
                 $row['tipo'] = 'Retiros Contables';
             } else {
                 $row['tipo'] = $row['es_entrada'] ? 'Entrada' : 'Salida';
@@ -2641,8 +2641,12 @@ function Contar_Movimientos_Contables($conexion, $filtros = []) {
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-    if (!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] === 'Salida') {
-        $detalleCajaQuery .= " AND 0"; // excluir detalle_caja
+    
+    // ✅ EXCLUIR detalle_caja CUANDO SE FILTRA POR "Salida" o "Retiros Contables"
+    if (!empty($filtros['tipo_movimiento'])) {
+        if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables') {
+            $detalleCajaQuery .= " AND 0"; // excluir detalle_caja
+        }
     }
 
     $result = $conexion->query($detalleCajaQuery);
@@ -2671,17 +2675,16 @@ function Contar_Movimientos_Contables($conexion, $filtros = []) {
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
 
+    // ✅ FILTRO DE TIPO DE MOVIMIENTO COMPLETO
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
             $retirosQuery .= " AND rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte'";
         } elseif ($filtros['tipo_movimiento'] === 'Salida') {
-            $retirosQuery .= " AND (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte')";
+            $retirosQuery .= " AND ( (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') 
+                                    AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0) )";
+        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
+            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
         }
-    }
-
-    if (!empty($filtros['tipo_especial'])) {
-        $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
-        $retirosQuery .= " AND LOWER(rv.categoria) = LOWER('$tipo_especial')";
     }
 
     $result = $conexion->query($retirosQuery);
