@@ -110,6 +110,7 @@ ob_end_flush();
                                         <option value="">Todos</option>
                                         <option value="Entrada" <?= ($filtros['tipo_movimiento'] ?? '') == 'Entrada' ? 'selected' : '' ?>>Entrada</option>
                                         <option value="Salida" <?= ($filtros['tipo_movimiento'] ?? '') == 'Salida' ? 'selected' : '' ?>>Salida</option>
+                                        <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] ?? '') == 'Retiros Contables' ? 'selected' : '' ?>>Retiros Contables</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -150,16 +151,24 @@ ob_end_flush();
                                                 $esEntrada = $mov['es_entrada'] == 1;
                                                 $esSalida = $mov['es_salida'] == 1;
 
-                                                $claseMonto = $esEntrada ? 'text-success' : ($esSalida ? 'text-danger' : '');
+                                                // Detectar Retiros Contables
+                                                $esRetirosContables = !$esEntrada && !$esSalida;
+
+                                                $claseMonto = $esEntrada ? 'text-success' : ($esSalida ? 'text-danger' : ($esRetirosContables ? 'text-purple' : ''));
                                                 $signo = $esEntrada ? '+' : ($esSalida ? '-' : '');
+                                                $tipoBadge = $esRetirosContables ? 'Retiros Contables' : ($esEntrada ? 'Entrada' : 'Salida');
                                             ?>
                                             <tr>
                                                 <td><?= date("d/m/Y", strtotime($mov['fecha'])) ?></td>
                                                 <td><?= htmlspecialchars($mov['detalle']) ?></td>
                                                 <td>
-                                                    <span class="badge <?= $esEntrada ? 'bg-success' : 'bg-danger' ?>">
-                                                        <?= $esEntrada ? 'Entrada' : 'Salida' ?>
-                                                    </span>
+                                                    <?php if($tipoBadge === 'Entrada'): ?>
+                                                        <span class="badge bg-success">Entrada</span>
+                                                    <?php elseif($tipoBadge === 'Salida'): ?>
+                                                        <span class="badge bg-danger">Salida</span>
+                                                    <?php elseif($tipoBadge === 'Retiros Contables'): ?>
+                                                        <span class="badge" style="background-color: purple; color: white;">Retiros Contables</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td><?= htmlspecialchars($mov['metodo_pago']) ?></td>
                                                 <td><?= htmlspecialchars($mov['usuario'] ?? '-') ?></td>
@@ -179,12 +188,9 @@ ob_end_flush();
                         <?php if($totalPaginas > 1): ?>
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-center">
-                                    <!-- Flecha Anterior -->
                                     <li class="page-item <?= ($pagina <= 1) ? 'disabled' : '' ?>">
                                         <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => max(1, $pagina - 1)])) ?>">&laquo; Anterior</a>
                                     </li>
-
-                                    <!-- Rango de páginas centrado -->
                                     <?php
                                     $rango = 5; 
                                     $inicio = max(1, $pagina - $rango);
@@ -195,8 +201,6 @@ ob_end_flush();
                                             <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => $p])) ?>"><?= $p ?></a>
                                         </li>
                                     <?php endfor; ?>
-
-                                    <!-- Flecha Siguiente -->
                                     <li class="page-item <?= ($pagina >= $totalPaginas) ? 'disabled' : '' ?>">
                                         <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => min($totalPaginas, $pagina + 1)])) ?>">Siguiente &raquo;</a>
                                     </li>

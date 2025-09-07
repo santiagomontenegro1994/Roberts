@@ -43,8 +43,8 @@ try {
         
         // Registrar el movimiento en caja solo si hay monto a pagar
         if ($montoAPagar > 0) {
-            // Obtener el tipo de movimiento para "Venta" (ajusta el ID según tu sistema)
-            $idTipoMovimiento = 1; // Ejemplo: 1 para "Venta"
+            // Obtener el tipo de movimiento para "Trabajo"
+            $idTipoMovimiento = 3;
             
             // Verificar que la caja esté abierta
             if (empty($_SESSION['Id_Caja'])) {

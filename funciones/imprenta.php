@@ -2486,26 +2486,28 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
 function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
     $movimientos = [];
 
-    // Movimientos de detalle_caja
+    // Movimientos de detalle_caja (entradas reales)
     $detalleCajaQuery = "
         SELECT 
-            dc.idDetalleCaja AS idMovimiento,
-            c.Fecha AS fecha,
-            dc.monto,
-            tp.denominacion AS metodo_pago,
-            u.nombre AS usuario,
-            1 AS es_entrada,
-            0 AS es_salida,
-            dc.observaciones AS detalle
+            dc.idDetalleCaja AS idMovimiento, 
+            c.Fecha AS fecha, 
+            dc.monto, 
+            tp.denominacion AS metodo_pago, 
+            u.nombre AS usuario, 
+            1 AS es_entrada, 
+            0 AS es_salida, 
+            dc.observaciones AS detalle,
+            'Normal' AS tipo_especial
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
         JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
         LEFT JOIN usuarios u ON dc.idUsuario = u.idUsuario
-        WHERE tm.es_entrada = 1 AND tp.denominacion NOT LIKE '%Efectivo%'
+        WHERE tm.es_entrada = 1 
+          AND tp.denominacion NOT LIKE '%Efectivo%' 
     ";
 
-    // Aplicar filtros de fecha y método de pago
+    // Filtros sobre detalle_caja
     if (!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $detalleCajaQuery .= " AND c.Fecha >= '$fecha_desde'";
@@ -2518,31 +2520,41 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-
-    // Filtrar por tipo de movimiento
     if (!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] === 'Salida') {
-        $detalleCajaQuery .= " AND 0"; // No incluir detalle_caja en Salida
+        $detalleCajaQuery .= " AND 0"; // nunca entra en salida
     }
 
-    // Movimientos de retiros
+    // Movimientos de retiros (incluye Caja Fuerte y Contables)
     $retirosQuery = "
         SELECT 
-            r.idRetiro AS idMovimiento,
-            r.fecha,
-            r.monto,
-            tp.denominacion AS metodo_pago,
+            r.idRetiro AS idMovimiento, 
+            r.fecha, 
+            r.monto, 
+            tp.denominacion AS metodo_pago, 
             u.nombre AS usuario,
-            CASE WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 ELSE 0 END AS es_entrada,
-            CASE WHEN rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte' THEN 1 ELSE 0 END AS es_salida,
-            CASE
+            CASE 
+                WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
+                ELSE 0 
+            END AS es_entrada,
+            CASE 
+                WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 0
+                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 0
+                ELSE 1 
+            END AS es_salida,
+            CASE 
                 WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a proveedor ID ', ri.idProveedorInsumo)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ID ', rp.idProveedor)
                 WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', rs.tipo_servicio)
                 WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a usuario ID ', rsu.idUsuarioSueldo)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
+                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 'Retiro Contable'
                 WHEN rv.idRetiro IS NOT NULL THEN CONCAT('Retiro varios: ', rv.categoria)
                 ELSE 'Retiro'
-            END AS detalle
+            END AS detalle,
+            CASE 
+                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 'Contable'
+                ELSE 'Normal'
+            END AS tipo_especial
         FROM retiros r
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
         LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
@@ -2555,6 +2567,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         WHERE 1=1
     ";
 
+    // Filtros sobre retiros
     if (!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $retirosQuery .= " AND r.fecha >= '$fecha_desde'";
@@ -2567,26 +2580,37 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
-            $retirosQuery .= " AND rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte'";
+            $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
         } elseif ($filtros['tipo_movimiento'] === 'Salida') {
-            $retirosQuery .= " AND (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte')";
+            $retirosQuery .= " AND ( (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') 
+                                    AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0) )";
+        }
+    }
+    if (!empty($filtros['tipo_especial'])) {
+        if ($filtros['tipo_especial'] === 'Contable') {
+            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
+        } else {
+            $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
+            $retirosQuery .= " AND LOWER(rv.categoria) = LOWER('$tipo_especial')";
         }
     }
 
-    if (!empty($filtros['tipo_especial'])) {
-        $tipo_especial = $conexion->real_escape_string($filtros['tipo_especial']);
-        $retirosQuery .= " AND LOWER(rv.categoria) = LOWER('$tipo_especial')";
-    }
-
-    $finalQuery = "($detalleCajaQuery) UNION ALL ($retirosQuery) ORDER BY fecha DESC, idMovimiento DESC LIMIT $offset, $limite";
+    // Unión de consultas
+    $finalQuery = "($detalleCajaQuery) UNION ALL ($retirosQuery) 
+                   ORDER BY fecha DESC, idMovimiento DESC 
+                   LIMIT $offset, $limite";
 
     $result = $conexion->query($finalQuery);
+
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            $row['tipo'] = $row['es_entrada'] ? 'Entrada' : 'Salida';
+            if ($row['tipo_especial'] === 'Contable') {
+                $row['tipo'] = 'Retiros Contables';
+            } else {
+                $row['tipo'] = $row['es_entrada'] ? 'Entrada' : 'Salida';
+            }
             $movimientos[] = $row;
         }
     }
