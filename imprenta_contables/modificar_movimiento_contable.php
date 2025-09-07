@@ -74,6 +74,14 @@ $proveedores = [];
 $res = $MiConexion->query("SELECT idProveedor, nombre FROM proveedores WHERE idActivo=1");
 while($row = $res->fetch_assoc()) $proveedores[$row['idProveedor']] = $row['nombre'];
 
+$proveedoresInsumos = [];
+$res = $MiConexion->query("SELECT idProveedorInsumo, nombre FROM proveedores_insumos");
+while($row = $res->fetch_assoc()) $proveedoresInsumos[$row['idProveedorInsumo']] = $row['nombre'];
+
+$insumos = [];
+$res = $MiConexion->query("SELECT idInsumo, denominacion FROM insumos");
+while($row = $res->fetch_assoc()) $insumos[$row['idInsumo']] = $row['denominacion'];
+
 // Subtipos disponibles
 $subtipos = [
     "insumos" => "Insumos",
@@ -140,16 +148,37 @@ $subtipos = [
                     $detalle = $datosActuales['detalle'];
                     ?>
 
+                    <!-- Detalle Insumos -->
                     <div id="form-insumos" class="subform" style="display: <?= $subtipo == 'insumos' ? 'block' : 'none' ?>">
                         <h5>Detalle Insumos</h5>
-                        <input type="text" name="detalle[idProveedorInsumo]" class="form-control mb-2" placeholder="Proveedor" 
-                               value="<?= htmlspecialchars($detalle['idProveedorInsumo'] ?? '') ?>">
-                        <input type="text" name="detalle[categoria]" class="form-control mb-2" placeholder="Categoría" 
-                               value="<?= htmlspecialchars($detalle['categoria'] ?? '') ?>">
-                        <input type="text" name="detalle[detalle_insumo]" class="form-control mb-2" placeholder="Descripción" 
+                        <!-- Proveedor Insumos -->
+                        <select name="detalle[idProveedorInsumo]" class="form-select mb-2" required>
+                            <option value="">Seleccione proveedor</option>
+                            <?php
+                            foreach($proveedoresInsumos as $id => $nombre) {
+                                $selected = ($detalle['idProveedorInsumo'] ?? 0) == $id ? 'selected' : '';
+                                echo "<option value='$id' $selected>$nombre</option>";
+                            }
+                            ?>
+                        </select>
+
+                        <!-- Categoría / Insumo -->
+                        <select name="detalle[categoria]" class="form-select mb-2" required>
+                            <option value="">Seleccione insumo</option>
+                            <?php
+                            foreach($insumos as $id => $nombre) {
+                                $selected = ($detalle['categoria'] ?? 0) == $id ? 'selected' : '';
+                                echo "<option value='$id' $selected>$nombre</option>";
+                            }
+                            ?>
+                        </select>
+
+                        <!-- Detalle Insumo -->
+                        <input type="text" name="detalle[detalle_insumo]" class="form-control mb-2" placeholder="Detalle Insumo" 
                                value="<?= htmlspecialchars($detalle['detalle_insumo'] ?? '') ?>">
                     </div>
 
+                    <!-- Detalle Proveedores -->
                     <div id="form-proveedores" class="subform" style="display: <?= $subtipo == 'proveedores' ? 'block' : 'none' ?>">
                         <h5>Detalle Proveedores</h5>
                         <select name="detalle[idProveedor]" class="form-select mb-2">
@@ -165,6 +194,7 @@ $subtipos = [
                                value="<?= htmlspecialchars($detalle['detalle_proveedor'] ?? '') ?>">
                     </div>
 
+                    <!-- Detalle Servicios -->
                     <div id="form-servicios" class="subform" style="display: <?= $subtipo == 'servicios' ? 'block' : 'none' ?>">
                         <h5>Detalle Servicios</h5>
                         <input type="text" name="detalle[tipo_servicio]" class="form-control mb-2" placeholder="Tipo de Servicio" 
@@ -173,6 +203,7 @@ $subtipos = [
                                value="<?= htmlspecialchars($detalle['detalle_servicio'] ?? '') ?>">
                     </div>
 
+                    <!-- Detalle Sueldos -->
                     <div id="form-sueldos" class="subform" style="display: <?= $subtipo == 'sueldos' ? 'block' : 'none' ?>">
                         <h5>Detalle Sueldos</h5>
                         <select name="detalle[idUsuarioSueldo]" class="form-select mb-2">
@@ -188,6 +219,7 @@ $subtipos = [
                                value="<?= htmlspecialchars($detalle['detalle_sueldo'] ?? '') ?>">
                     </div>
 
+                    <!-- Detalle Varios -->
                     <div id="form-varios" class="subform" style="display: <?= $subtipo == 'varios' ? 'block' : 'none' ?>">
                         <h5>Detalle Varios</h5>
                         <input type="text" name="detalle[categoria]" class="form-control mb-2" placeholder="Categoría" 

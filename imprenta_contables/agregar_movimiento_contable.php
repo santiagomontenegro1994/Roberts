@@ -34,8 +34,8 @@ $res = $MiConexion->query("SELECT idInsumo, denominacion FROM insumos");
 while($row = $res->fetch_assoc()) $categoriasInsumo[$row['idInsumo']] = $row['denominacion'];
 
 $tiposServicios = [];
-$res = $MiConexion->query("SELECT idTipoServicio, denominacion FROM tipo_servicio WHERE idActivo=1");
-while($row = $res->fetch_assoc()) $tiposServicios[$row['idTipoServicio']] = $row['denominacion'];
+$res = $MiConexion->query("SELECT idServicio, denominacion FROM servicios");
+while($row = $res->fetch_assoc()) $tiposServicios[$row['idServicio']] = $row['denominacion'];
 
 // Obtener métodos de pago para salidas
 $metodosPago = Listar_Tipos_Pagos_Salida($MiConexion);
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idProveedorInsumo = intval($_POST['idProveedorInsumo'] ?? 0);
                     $idCategoria = intval($_POST['idCategoriaInsumo'] ?? 0);
                     $detalle_insumo = $_POST['detalle_insumo'] ?? '';
-                    $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, categoria, detalle_insumo) VALUES (?, ?, ?, ?)");
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) VALUES (?, ?, ?, ?)");
                     $categoriaNombre = $categoriasInsumo[$idCategoria] ?? '';
                     $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $categoriaNombre, $detalle_insumo);
                     $stmt->execute();
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'servicios':
                     $idTipoServicio = intval($_POST['tipo_servicio'] ?? 0);
                     $detalle_servicio = $_POST['detalle_servicio'] ?? '';
-                    $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio) VALUES (?, ?, ?)");
+                    $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) VALUES (?, ?, ?)");
                     $tipoServicioNombre = $tiposServicios[$idTipoServicio] ?? '';
                     $stmt->bind_param("iss", $idRetiro, $tipoServicioNombre, $detalle_servicio);
                     $stmt->execute();

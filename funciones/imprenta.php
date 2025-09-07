@@ -2547,7 +2547,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             CASE
                 WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
-                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', rs.tipo_servicio)
+                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', rs.idServicio)
                 WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
                 WHEN rv.idRetiro IS NOT NULL THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
