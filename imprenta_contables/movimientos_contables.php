@@ -21,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $filtros['fecha_hasta'] = $_GET['fecha_hasta'] ?? '';
     $filtros['tipo_movimiento'] = $_GET['tipo_movimiento'] ?? '';
     $filtros['metodo_pago'] = $_GET['metodo_pago'] ?? '';
-    $filtros['tipo_especial'] = $_GET['tipo_especial'] ?? '';
 }
 
 // Paginación
@@ -122,12 +121,13 @@ ob_end_flush();
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
-                                <a href="movimientos_contables.php" class="btn btn-secondary me-2"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
-                                <a href="agregar_movimiento_contable.php" class="btn btn-success">
-                                    <i class="bi bi-plus-lg"></i> Retirar
-                                </a>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
+                                    <a href="movimientos_contables.php" class="btn btn-secondary me-2"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
+                                    <a href="agregar_movimiento_contable.php" class="btn btn-success">
+                                        <i class="bi bi-plus-lg"></i> Retirar
+                                    </a>
+                                </div>
                             </div>
                         </form>
 
@@ -142,6 +142,7 @@ ob_end_flush();
                                         <th scope="col">Método</th>
                                         <th scope="col">Usuario</th>
                                         <th scope="col" class="text-end">Monto</th>
+                                        <th scope="col">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -150,17 +151,17 @@ ob_end_flush();
                                             <?php
                                                 $esEntrada = $mov['es_entrada'] == 1;
                                                 $esSalida = $mov['es_salida'] == 1;
-
-                                                // Detectar Retiros Contables
                                                 $esRetirosContables = !$esEntrada && !$esSalida;
 
-                                                $claseMonto = $esEntrada ? 'text-success' : ($esSalida ? 'text-danger' : ($esRetirosContables ? 'text-purple' : ''));
-                                                $signo = $esEntrada ? '+' : ($esSalida ? '-' : '');
+                                                $claseMonto = $esEntrada ? 'text-success' : ($esSalida || $esRetirosContables ? 'text-danger' : '');
+                                                $signo = $esEntrada ? '+' : '-';
                                                 $tipoBadge = $esRetirosContables ? 'Retiros Contables' : ($esEntrada ? 'Entrada' : 'Salida');
+
+                                                $detalle = htmlspecialchars($mov['detalle']); // siempre usar 'detalle'
                                             ?>
                                             <tr>
                                                 <td><?= date("d/m/Y", strtotime($mov['fecha'])) ?></td>
-                                                <td><?= htmlspecialchars($mov['detalle']) ?></td>
+                                                <td><?= $detalle ?></td>
                                                 <td>
                                                     <?php if($tipoBadge === 'Entrada'): ?>
                                                         <span class="badge bg-success">Entrada</span>
@@ -173,11 +174,26 @@ ob_end_flush();
                                                 <td><?= htmlspecialchars($mov['metodo_pago']) ?></td>
                                                 <td><?= htmlspecialchars($mov['usuario'] ?? '-') ?></td>
                                                 <td class="text-end <?= $claseMonto ?>"><?= $signo . "$" . number_format($mov['monto'],2,',','.') ?></td>
+                                                <?php if($esRetirosContables): ?>
+                                                    <td>
+                                                        <a href="modificar_movimiento_contable.php?ID_MOVIMIENTO=<?= $mov['idMovimiento'] ?>"  
+                                                           class="btn btn-xs btn-warning me-2" title="Modificar">
+                                                            <i class="bi bi-pencil-fill"></i>
+                                                        </a>
+                                                        <a href="eliminar_movimiento_contable.php?ID_MOVIMIENTO=<?= $mov['idMovimiento'] ?>" 
+                                                           class="btn btn-xs btn-danger me-2" title="Eliminar" 
+                                                           onclick="return confirm('¿Confirma eliminar este movimiento contable?');">
+                                                            <i class="bi bi-x-circle"></i>
+                                                        </a>
+                                                    </td>
+                                                <?php else: ?>
+                                                    <td></td>
+                                                <?php endif; ?>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="6" class="text-center">No se encontraron movimientos</td>
+                                            <td colspan="7" class="text-center">No se encontraron movimientos</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -217,11 +233,5 @@ ob_end_flush();
 
 <?php require('../shared/footer.inc.php'); ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    let fechaInput = document.getElementById('fecha');
-    if(fechaInput) fechaInput.valueAsDate = new Date();
-});
-</script>
 </body>
 </html>

@@ -2489,13 +2489,13 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     // Movimientos de detalle_caja (entradas reales)
     $detalleCajaQuery = "
         SELECT 
-            dc.idDetalleCaja AS idMovimiento, 
-            c.Fecha AS fecha, 
-            dc.monto, 
-            tp.denominacion AS metodo_pago, 
-            u.nombre AS usuario, 
-            1 AS es_entrada, 
-            0 AS es_salida, 
+            dc.idDetalleCaja AS idMovimiento,
+            c.Fecha AS fecha,
+            dc.monto,
+            tp.denominacion AS metodo_pago,
+            CONCAT(u.nombre,' ',u.apellido) AS usuario, 
+            1 AS es_entrada,
+            0 AS es_salida,
             dc.observaciones AS detalle
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
@@ -2520,23 +2520,21 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
     
-    // ✅ EXCLUIR detalle_caja CUANDO SE FILTRA POR "Retiros Contables"
+    // Excluir detalle_caja para "Retiros Contables"
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Salida') {
-            $detalleCajaQuery .= " AND 0"; // nunca entra en salida
-        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
-            $detalleCajaQuery .= " AND 0"; // ✅ EXCLUIR para retiros contables
+        if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables') {
+            $detalleCajaQuery .= " AND 0";
         }
     }
 
     // Movimientos de retiros (incluye Caja Fuerte y Contables)
     $retirosQuery = "
         SELECT 
-            r.idRetiro AS idMovimiento, 
-            r.fecha, 
-            r.monto, 
-            tp.denominacion AS metodo_pago, 
-            u.nombre AS usuario,
+            r.idRetiro AS idMovimiento,
+            r.fecha,
+            r.monto,
+            tp.denominacion AS metodo_pago,
+            CONCAT(uCreador.nombre,' ',uCreador.apellido) AS usuario, 
             CASE 
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
                 ELSE 0 
@@ -2546,25 +2544,27 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 0
                 ELSE 1 
             END AS es_salida,
-            CASE 
-                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a proveedor ID ', ri.idProveedorInsumo)
-                WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ID ', rp.idProveedor)
+            CASE
+                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre)
+                WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
                 WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', rs.tipo_servicio)
-                WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a usuario ID ', rsu.idUsuarioSueldo)
+                WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
+                WHEN rv.idRetiro IS NOT NULL THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
-                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 'Retiro Contable'
-                WHEN rv.idRetiro IS NOT NULL THEN CONCAT('Retiro varios: ', rv.categoria)
-                ELSE 'Retiro'
+                ELSE 'Retiro Contable'
             END AS detalle
         FROM retiros r
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
+        LEFT JOIN proveedores_insumos pi ON ri.idProveedorInsumo = pi.idProveedorInsumo
         LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
+        LEFT JOIN proveedores p ON rp.idProveedor = p.idProveedor
         LEFT JOIN retiros_servicios rs ON r.idRetiro = rs.idRetiro
         LEFT JOIN retiros_sueldos rsu ON r.idRetiro = rsu.idRetiro
+        LEFT JOIN usuarios uSueldo ON rsu.idUsuarioSueldo = uSueldo.idUsuario
         LEFT JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro
         LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
         LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-        LEFT JOIN usuarios u ON r.idUsuario = u.idUsuario
+        LEFT JOIN usuarios uCreador ON r.idUsuario = uCreador.idUsuario
         WHERE 1=1
     ";
 
@@ -2582,13 +2582,12 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
     
-    // ✅ FILTRO DE TIPO DE MOVIMIENTO COMPLETO
+    // Filtro de tipo de movimiento completo
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
             $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
         } elseif ($filtros['tipo_movimiento'] === 'Salida') {
-            $retirosQuery .= " AND ( (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') 
-                                    AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0) )";
+            $retirosQuery .= " AND ((rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0))";
         } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
             $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
         }
@@ -2603,14 +2602,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
 
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            // ✅ DETECTAR TIPO BASADO EN es_entrada/es_salida
             $esRetiroContable = ($row['es_entrada'] == 0 && $row['es_salida'] == 0);
-            
-            if ($esRetiroContable) {
-                $row['tipo'] = 'Retiros Contables';
-            } else {
-                $row['tipo'] = $row['es_entrada'] ? 'Entrada' : 'Salida';
-            }
+            $row['tipo'] = $esRetiroContable ? 'Retiros Contables' : ($row['es_entrada'] ? 'Entrada' : 'Salida');
             $movimientos[] = $row;
         }
     }
