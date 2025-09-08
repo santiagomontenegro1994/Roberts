@@ -69,6 +69,18 @@ ob_end_flush();
                 <div class="card">
                     <div class="card-body">
 
+                        <!-- Mostrar mensaje si existe -->
+                        <?php if (!empty($_SESSION['Mensaje'])): ?>
+                            <div class="alert alert-<?= $_SESSION['Estilo'] ?? 'info' ?> alert-dismissible fade show" role="alert">
+                                <?= $_SESSION['Mensaje'] ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                            </div>
+                            <?php
+                                unset($_SESSION['Mensaje']);
+                                unset($_SESSION['Estilo']);
+                            ?>
+                        <?php endif; ?>
+
                         <!-- Contadores -->
                         <div class="row mb-4">
                             <div class="col-md-4">
@@ -159,7 +171,7 @@ ob_end_flush();
                                                 $signo = $esEntrada ? '+' : '-';
                                                 $tipoBadge = $esRetirosContables ? 'Retiros Contables' : ($esEntrada ? 'Entrada' : 'Salida');
 
-                                                $detalle = htmlspecialchars($mov['detalle']); // siempre usar 'detalle'
+                                                $detalle = htmlspecialchars($mov['detalle']);
                                             ?>
                                             <tr>
                                                 <td><?= date("d/m/Y", strtotime($mov['fecha'])) ?></td>
@@ -182,9 +194,9 @@ ob_end_flush();
                                                            class="btn btn-xs btn-warning me-2" title="Modificar">
                                                             <i class="bi bi-pencil-fill"></i>
                                                         </a>
-                                                        <a href="eliminar_movimiento_contable.php?ID_MOVIMIENTO=<?= $mov['idMovimiento'] ?>" 
-                                                           class="btn btn-xs btn-danger me-2" title="Eliminar" 
-                                                           onclick="return confirm('¿Confirma eliminar este movimiento contable?');">
+                                                        <a href="eliminar_movimiento_contable.php?id=<?= $mov['idMovimiento'] ?>" 
+                                                        class="btn btn-xs btn-danger me-2" title="Eliminar" 
+                                                        onclick="return confirm('¿Confirma eliminar este movimiento contable?');">
                                                             <i class="bi bi-x-circle"></i>
                                                         </a>
                                                     </td>

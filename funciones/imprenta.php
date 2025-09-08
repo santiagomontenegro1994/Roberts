@@ -4363,4 +4363,59 @@ function Modificar_Movimiento_Contable($conexion, $datos) {
     }
 }
 
+function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
+    $tablas = [
+        'retiros_proveedores' => 'idProveedor',
+        'retiros_sueldos' => 'idUsuarioSueldo',
+        'retiros_servicios' => 'tipo_servicio',
+        'retiros_insumos' => 'detalle_insumo', // o categoria + detalle_insumo
+        'retiros_varios' => null
+    ];
+
+    // Verificar que el retiro existe
+    $sql = "SELECT * FROM retiros WHERE idRetiro = $vIdRetiro";
+    $rs = mysqli_query($vConexion, $sql);
+    $data = mysqli_fetch_assoc($rs);
+
+    if (empty($data['idRetiro'])) {
+        return "No se encontró el movimiento contable.";
+    }
+
+    // Buscar en qué subtabla está
+    $subtabla = '';
+    foreach ($tablas as $tabla => $col) {
+        if ($col) {
+            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
+            if ($res && mysqli_num_rows($res) > 0) {
+                $subtabla = $tabla;
+                break;
+            }
+        } else {
+            // Si llega a retiros_varios
+            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
+            if ($res && mysqli_num_rows($res) > 0) {
+                $subtabla = $tabla;
+                break;
+            }
+        }
+    }
+
+    // Eliminar detalle del movimiento contable si existe subtabla
+    if ($subtabla) {
+        mysqli_query($vConexion, "DELETE FROM $subtabla WHERE idRetiro = $vIdRetiro");
+        if (mysqli_error($vConexion)) {
+            return "Error al eliminar detalle en $subtabla: " . mysqli_error($vConexion);
+        }
+    }
+
+    // Eliminar el retiro
+    mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $vIdRetiro");
+    if (mysqli_error($vConexion)) {
+        return "Error al eliminar retiro: " . mysqli_error($vConexion);
+    }
+
+    return true;
+}
+
+
 ?>
