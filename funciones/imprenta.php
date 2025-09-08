@@ -4409,5 +4409,4 @@ function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
     return true;
 }
 
-
 ?>
