@@ -2545,20 +2545,22 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 ELSE 1 
             END AS es_salida,
             CASE
-                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre)
+                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - Categoría: ', i.denominacion)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
-                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', rs.idServicio)
+                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
                 WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
-                WHEN rv.idRetiro IS NOT NULL THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
+                WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
             END AS detalle
         FROM retiros r
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
+        LEFT JOIN insumos i ON ri.idInsumo = i.idInsumo
         LEFT JOIN proveedores_insumos pi ON ri.idProveedorInsumo = pi.idProveedorInsumo
         LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
         LEFT JOIN proveedores p ON rp.idProveedor = p.idProveedor
         LEFT JOIN retiros_servicios rs ON r.idRetiro = rs.idRetiro
+        LEFT JOIN servicios s ON rs.idServicio = s.idServicio
         LEFT JOIN retiros_sueldos rsu ON r.idRetiro = rsu.idRetiro
         LEFT JOIN usuarios uSueldo ON rsu.idUsuarioSueldo = uSueldo.idUsuario
         LEFT JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro

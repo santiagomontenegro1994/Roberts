@@ -82,6 +82,10 @@ $insumos = [];
 $res = $MiConexion->query("SELECT idInsumo, denominacion FROM insumos");
 while($row = $res->fetch_assoc()) $insumos[$row['idInsumo']] = $row['denominacion'];
 
+$servicios = [];
+$res = $MiConexion->query("SELECT idServicio, denominacion FROM servicios");
+while($row = $res->fetch_assoc()) $servicios[$row['idServicio']] = $row['denominacion'];
+
 // Subtipos disponibles
 $subtipos = [
     "insumos" => "Insumos",
@@ -151,7 +155,6 @@ $subtipos = [
                     <!-- Detalle Insumos -->
                     <div id="form-insumos" class="subform" style="display: <?= $subtipo == 'insumos' ? 'block' : 'none' ?>">
                         <h5>Detalle Insumos</h5>
-                        <!-- Proveedor Insumos -->
                         <select name="detalle[idProveedorInsumo]" class="form-select mb-2" required>
                             <option value="">Seleccione proveedor</option>
                             <?php
@@ -162,18 +165,16 @@ $subtipos = [
                             ?>
                         </select>
 
-                        <!-- Categoría / Insumo -->
-                        <select name="detalle[categoria]" class="form-select mb-2" required>
+                        <select name="detalle[idInsumo]" class="form-select mb-2" required>
                             <option value="">Seleccione insumo</option>
                             <?php
                             foreach($insumos as $id => $nombre) {
-                                $selected = ($detalle['categoria'] ?? 0) == $id ? 'selected' : '';
+                                $selected = ($detalle['idInsumo'] ?? 0) == $id ? 'selected' : '';
                                 echo "<option value='$id' $selected>$nombre</option>";
                             }
                             ?>
                         </select>
 
-                        <!-- Detalle Insumo -->
                         <input type="text" name="detalle[detalle_insumo]" class="form-control mb-2" placeholder="Detalle Insumo" 
                                value="<?= htmlspecialchars($detalle['detalle_insumo'] ?? '') ?>">
                     </div>
@@ -197,8 +198,15 @@ $subtipos = [
                     <!-- Detalle Servicios -->
                     <div id="form-servicios" class="subform" style="display: <?= $subtipo == 'servicios' ? 'block' : 'none' ?>">
                         <h5>Detalle Servicios</h5>
-                        <input type="text" name="detalle[tipo_servicio]" class="form-control mb-2" placeholder="Tipo de Servicio" 
-                               value="<?= htmlspecialchars($detalle['tipo_servicio'] ?? '') ?>">
+                        <select name="detalle[idServicio]" class="form-select mb-2" required>
+                            <option value="">Seleccione servicio</option>
+                            <?php
+                            foreach($servicios as $id => $nombre) {
+                                $selected = ($detalle['idServicio'] ?? 0) == $id ? 'selected' : '';
+                                echo "<option value='$id' $selected>$nombre</option>";
+                            }
+                            ?>
+                        </select>
                         <input type="text" name="detalle[detalle_servicio]" class="form-control mb-2" placeholder="Detalle" 
                                value="<?= htmlspecialchars($detalle['detalle_servicio'] ?? '') ?>">
                     </div>
@@ -222,14 +230,12 @@ $subtipos = [
                     <!-- Detalle Varios -->
                     <div id="form-varios" class="subform" style="display: <?= $subtipo == 'varios' ? 'block' : 'none' ?>">
                         <h5>Detalle Varios</h5>
-                        <input type="text" name="detalle[categoria]" class="form-control mb-2" placeholder="Categoría" 
-                               value="<?= htmlspecialchars($detalle['categoria'] ?? '') ?>">
                         <input type="text" name="detalle[detalle_vario]" class="form-control mb-2" placeholder="Detalle" 
                                value="<?= htmlspecialchars($detalle['detalle_vario'] ?? '') ?>">
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <button type="submit" value="1" class="btn btn-primary">Guardar Cambios</button>
                 <a href="movimientos_contables.php" class="btn btn-secondary">Cancelar</a>
             </form>
         </div>

@@ -44,7 +44,7 @@ $metodosPago = Listar_Tipos_Pagos_Salida($MiConexion);
 $tipoMovimientoMap = [
     'insumos' => 18,
     'proveedores' => 16,
-    'servicios' => 20,
+    'servicios' => 22,
     'sueldos' => 17,
     'varios' => 19
 ];
@@ -87,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idCategoria = intval($_POST['idCategoriaInsumo'] ?? 0);
                     $detalle_insumo = $_POST['detalle_insumo'] ?? '';
                     $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) VALUES (?, ?, ?, ?)");
-                    $categoriaNombre = $categoriasInsumo[$idCategoria] ?? '';
-                    $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $categoriaNombre, $detalle_insumo);
+                    $idCategoria = intval($_POST['idInsumo'] ?? 0); // Asegurarse que se use el nombre correcto del select
+                    $stmt->bind_param("iiis", $idRetiro, $idProveedorInsumo, $idCategoria, $detalle_insumo);
                     $stmt->execute();
                     $stmt->close();
                     break;
@@ -104,8 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idTipoServicio = intval($_POST['tipo_servicio'] ?? 0);
                     $detalle_servicio = $_POST['detalle_servicio'] ?? '';
                     $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) VALUES (?, ?, ?)");
-                    $tipoServicioNombre = $tiposServicios[$idTipoServicio] ?? '';
-                    $stmt->bind_param("iss", $idRetiro, $tipoServicioNombre, $detalle_servicio);
+                    $idTipoServicio = intval($_POST['idServicio'] ?? 0);
+                    $stmt->bind_param("iis", $idRetiro, $idTipoServicio, $detalle_servicio);
                     $stmt->execute();
                     $stmt->close();
                     break;
@@ -119,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 case 'varios':
                     $detalle_vario = $_POST['detalle_vario'] ?? '';
+                    $detalle = "varios";
                     $stmt = $MiConexion->prepare("INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) VALUES (?, ?, ?)");
                     $stmt->bind_param("iss", $idRetiro, $detalle, $detalle_vario);
                     $stmt->execute();
@@ -231,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                          </div>
                          <div class="mb-3">
                             <label class="form-label">Categoría</label>
-                            <select name="idCategoriaInsumo" class="form-select">
+                            <select name="idInsumo" class="form-select">
                                 <option value="">Seleccione</option>`;
                 for(const id in categoriasInsumo) {
                     html += `<option value="${id}">${categoriasInsumo[id]}</option>`;
@@ -259,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'servicios':
                 html += `<div class="mb-3">
                             <label class="form-label">Tipo Servicio</label>
-                            <select name="tipo_servicio" class="form-select">
+                            <select name="idServicio" class="form-select">
                                 <option value="">Seleccione</option>`;
                 for(const id in tiposServicios) {
                     html += `<option value="${id}">${tiposServicios[id]}</option>`;
