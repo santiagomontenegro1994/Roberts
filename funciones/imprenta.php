@@ -4190,89 +4190,84 @@ function Modificar_Movimiento_Contable($conexion, $datos) {
 
     try {
         // 1) Actualizar cabecera (sin facturado)
+        $fecha = $datos['fecha'];
+        $monto = $datos['monto'];
+        $idTipoMovimiento = $datos['idTipoMovimiento'];
+        $idTipoPago = $datos['idTipoPago'];
+        $idRetiro = $datos['idRetiro'];
+
         $sql = "UPDATE retiros 
                    SET fecha = ?, monto = ?, idTipoMovimiento = ?, idTipoPago = ?
                  WHERE idRetiro = ?";
         $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("sdiii",
-            $datos['fecha'],
-            $datos['monto'],
-            $datos['idTipoMovimiento'],
-            $datos['idTipoPago'],
-            $datos['idRetiro']
-        );
+        $stmt->bind_param("sdiii", $fecha, $monto, $idTipoMovimiento, $idTipoPago, $idRetiro);
         $stmt->execute();
 
         // 2) Detectar subtipo original
-        $datosOriginales = Datos_Movimiento_Contable($conexion, $datos['idRetiro']);
-        $subtipoOriginal = $datosOriginales['subtipo'];
+        $datosOriginales = Datos_Movimiento_Contable($conexion, $idRetiro);
+        $subtipoOriginal = $datosOriginales['subtipo'] ?? null;
 
         // 3) Si subtipo nuevo = original → UPDATE
         if ($datos['subtipo'] === $subtipoOriginal) {
             switch ($datos['subtipo']) {
                 case 'insumos':
+                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
+                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
+                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
+
                     $sql = "UPDATE retiros_insumos 
-                               SET idProveedorInsumo = ?, categoria = ?, detalle_insumo = ?
+                               SET idProveedorInsumo = ?, idInsumo = ?, detalle_insumo = ?
                              WHERE idRetiro = ?";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("issi",
-                        $datos['detalle']['idProveedorInsumo'] ?? null,
-                        $datos['detalle']['categoria'] ?? null,
-                        $datos['detalle']['detalle_insumo'] ?? null,
-                        $datos['idRetiro']
-                    );
+                    $stmt->bind_param("iisi", $idProveedorInsumo, $idInsumo, $detalle_insumo, $idRetiro);
                     $stmt->execute();
                     break;
 
                 case 'proveedores':
+                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
+                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
+
                     $sql = "UPDATE retiros_proveedores 
                                SET idProveedor = ?, detalle_proveedor = ?
                              WHERE idRetiro = ?";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("isi",
-                        $datos['detalle']['idProveedor'] ?? null,
-                        $datos['detalle']['detalle_proveedor'] ?? null,
-                        $datos['idRetiro']
-                    );
+                    $stmt->bind_param("isi", $idProveedor, $detalle_proveedor, $idRetiro);
                     $stmt->execute();
                     break;
 
                 case 'servicios':
+                    $idServicio = $datos['detalle']['idServicio'] ?? null;
+                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
+
                     $sql = "UPDATE retiros_servicios 
-                               SET tipo_servicio = ?, detalle_servicio = ?
+                               SET idServicio = ?, detalle_servicio = ?
                              WHERE idRetiro = ?";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("ssi",
-                        $datos['detalle']['tipo_servicio'] ?? null,
-                        $datos['detalle']['detalle_servicio'] ?? null,
-                        $datos['idRetiro']
-                    );
+                    $stmt->bind_param("isi", $idServicio, $detalle_servicio, $idRetiro);
                     $stmt->execute();
                     break;
 
                 case 'sueldos':
+                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
+                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
+
                     $sql = "UPDATE retiros_sueldos 
                                SET idUsuarioSueldo = ?, detalle_sueldo = ?
                              WHERE idRetiro = ?";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("isi",
-                        $datos['detalle']['idUsuarioSueldo'] ?? null,
-                        $datos['detalle']['detalle_sueldo'] ?? null,
-                        $datos['idRetiro']
-                    );
+                    $stmt->bind_param("isi", $idUsuarioSueldo, $detalle_sueldo, $idRetiro);
                     $stmt->execute();
                     break;
 
                 case 'varios':
+                    $categoria = $datos['detalle']['categoria'] ?? null;
+                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
+
                     $sql = "UPDATE retiros_varios 
                                SET categoria = ?, detalle_vario = ?
                              WHERE idRetiro = ?";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("ssi",
-                        $datos['detalle']['categoria'] ?? null,
-                        $datos['detalle']['detalle_vario'] ?? null,
-                        $datos['idRetiro']
-                    );
+                    $stmt->bind_param("ssi", $categoria, $detalle_vario, $idRetiro);
                     $stmt->execute();
                     break;
             }
@@ -4289,69 +4284,64 @@ function Modificar_Movimiento_Contable($conexion, $datos) {
             // borrar detalle anterior
             if ($subtipoOriginal && isset($subtablas[$subtipoOriginal])) {
                 $tablaVieja = $subtablas[$subtipoOriginal];
-                $conexion->query("DELETE FROM $tablaVieja WHERE idRetiro = " . intval($datos['idRetiro']));
+                $conexion->query("DELETE FROM $tablaVieja WHERE idRetiro = " . intval($idRetiro));
             }
 
             // insertar en la nueva
             switch ($datos['subtipo']) {
                 case 'insumos':
-                    $sql = "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, categoria, detalle_insumo) 
+                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
+                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
+                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
+
+                    $sql = "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) 
                             VALUES (?, ?, ?, ?)";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iiss",
-                        $datos['idRetiro'],
-                        $datos['detalle']['idProveedorInsumo'] ?? null,
-                        $datos['detalle']['categoria'] ?? null,
-                        $datos['detalle']['detalle_insumo'] ?? null
-                    );
+                    $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $idInsumo, $detalle_insumo);
                     $stmt->execute();
                     break;
 
                 case 'proveedores':
+                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
+                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
+
                     $sql = "INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) 
                             VALUES (?, ?, ?)";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iis",
-                        $datos['idRetiro'],
-                        $datos['detalle']['idProveedor'] ?? null,
-                        $datos['detalle']['detalle_proveedor'] ?? null
-                    );
+                    $stmt->bind_param("iis", $idRetiro, $idProveedor, $detalle_proveedor);
                     $stmt->execute();
                     break;
 
                 case 'servicios':
-                    $sql = "INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio) 
+                    $idServicio = $datos['detalle']['idServicio'] ?? null;
+                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
+
+                    $sql = "INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) 
                             VALUES (?, ?, ?)";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iss",
-                        $datos['idRetiro'],
-                        $datos['detalle']['tipo_servicio'] ?? null,
-                        $datos['detalle']['detalle_servicio'] ?? null
-                    );
+                    $stmt->bind_param("iis", $idRetiro, $idServicio, $detalle_servicio);
                     $stmt->execute();
                     break;
 
                 case 'sueldos':
+                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
+                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
+
                     $sql = "INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) 
                             VALUES (?, ?, ?)";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iis",
-                        $datos['idRetiro'],
-                        $datos['detalle']['idUsuarioSueldo'] ?? null,
-                        $datos['detalle']['detalle_sueldo'] ?? null
-                    );
+                    $stmt->bind_param("iis", $idRetiro, $idUsuarioSueldo, $detalle_sueldo);
                     $stmt->execute();
                     break;
 
                 case 'varios':
+                    $categoria = $datos['detalle']['categoria'] ?? null;
+                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
+
                     $sql = "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) 
                             VALUES (?, ?, ?)";
                     $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iss",
-                        $datos['idRetiro'],
-                        $datos['detalle']['categoria'] ?? null,
-                        $datos['detalle']['detalle_vario'] ?? null
-                    );
+                    $stmt->bind_param("iss", $idRetiro, $categoria, $detalle_vario);
                     $stmt->execute();
                     break;
             }

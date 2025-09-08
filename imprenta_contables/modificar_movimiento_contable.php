@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'fecha'           => $_POST['fecha'],
         'monto'           => $_POST['monto'],
         'idTipoPago'      => $_POST['tipoPago'],
-        'idTipoMovimiento'=> $_POST['tipoMovimiento'],
+        'idTipoMovimiento'=> $_POST['tipoMovimiento'], // viene del hidden
         'subtipo'         => $_POST['subtipo'],
         'detalle'         => $_POST['detalle'] ?? []
     ];
@@ -93,6 +93,15 @@ $subtipos = [
     "servicios" => "Servicios",
     "sueldos" => "Sueldos",
     "varios" => "Varios"
+];
+
+// Mapeo de tipos de retiro a tipos de movimiento
+$tipoMovimientoMap = [
+    'insumos'     => 18,
+    'proveedores' => 16,
+    'servicios'   => 22,
+    'sueldos'     => 17,
+    'varios'      => 19
 ];
 ?>
 
@@ -145,6 +154,10 @@ $subtipos = [
                     </select>
                 </div>
 
+                <!-- Campo oculto para idTipoMovimiento -->
+                <input type="hidden" name="tipoMovimiento" id="tipoMovimiento" 
+                       value="<?= $tipoMovimientoMap[$datosActuales['subtipo']] ?? '' ?>">
+
                 <!-- Subformularios dinámicos -->
                 <div id="subformularios">
                     <?php
@@ -155,7 +168,7 @@ $subtipos = [
                     <!-- Detalle Insumos -->
                     <div id="form-insumos" class="subform" style="display: <?= $subtipo == 'insumos' ? 'block' : 'none' ?>">
                         <h5>Detalle Insumos</h5>
-                        <select name="detalle[idProveedorInsumo]" class="form-select mb-2" required>
+                        <select name="detalle[idProveedorInsumo]" class="form-select mb-2">
                             <option value="">Seleccione proveedor</option>
                             <?php
                             foreach($proveedoresInsumos as $id => $nombre) {
@@ -165,7 +178,7 @@ $subtipos = [
                             ?>
                         </select>
 
-                        <select name="detalle[idInsumo]" class="form-select mb-2" required>
+                        <select name="detalle[idInsumo]" class="form-select mb-2">
                             <option value="">Seleccione insumo</option>
                             <?php
                             foreach($insumos as $id => $nombre) {
@@ -198,7 +211,7 @@ $subtipos = [
                     <!-- Detalle Servicios -->
                     <div id="form-servicios" class="subform" style="display: <?= $subtipo == 'servicios' ? 'block' : 'none' ?>">
                         <h5>Detalle Servicios</h5>
-                        <select name="detalle[idServicio]" class="form-select mb-2" required>
+                        <select name="detalle[idServicio]" class="form-select mb-2">
                             <option value="">Seleccione servicio</option>
                             <?php
                             foreach($servicios as $id => $nombre) {
@@ -235,7 +248,7 @@ $subtipos = [
                     </div>
                 </div>
 
-                <button type="submit" value="1" class="btn btn-primary">Guardar Cambios</button>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 <a href="movimientos_contables.php" class="btn btn-secondary">Cancelar</a>
             </form>
         </div>
@@ -244,12 +257,31 @@ $subtipos = [
 </main>
 
 <script>
+const tipoMovimientoMap = {
+    insumos: 18,
+    proveedores: 16,
+    servicios: 22,
+    sueldos: 17,
+    varios: 19
+};
+
 function mostrarSubform() {
     let valor = document.getElementById('subtipo').value;
-    document.querySelectorAll('.subform').forEach(div => div.style.display = 'none');
+    document.querySelectorAll('.subform').forEach(div => {
+        div.style.display = 'none';
+    });
+
     let activo = document.getElementById('form-' + valor);
-    if (activo) activo.style.display = 'block';
+    if (activo) {
+        activo.style.display = 'block';
+    }
+
+    // actualizar hidden con el idTipoMovimiento correspondiente
+    document.getElementById('tipoMovimiento').value = tipoMovimientoMap[valor] ?? '';
 }
+
+// Ejecutar al cargar para aplicar el valor inicial
+document.addEventListener("DOMContentLoaded", mostrarSubform);
 </script>
 
 <?php
