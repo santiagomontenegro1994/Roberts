@@ -53,6 +53,39 @@ if ($resProveedores) {
     }
 }
 
+// Listar proveedores de insumos activos
+$ProveedoresInsumos = [];
+$sqlProveedoresInsumos = "SELECT idProveedorInsumo, nombre FROM proveedores_insumos WHERE idActivo = 1 ORDER BY nombre";
+$resProveedoresInsumos = mysqli_query($MiConexion, $sqlProveedoresInsumos);
+if ($resProveedoresInsumos) {
+    while ($fila = mysqli_fetch_assoc($resProveedoresInsumos)) {
+        $ProveedoresInsumos[] = $fila;
+    }
+}
+
+// Listar insumos activos
+$Insumos = [];
+$sqlInsumos = "SELECT idInsumo, denominacion FROM insumos ORDER BY denominacion";
+$resInsumos = mysqli_query($MiConexion, $sqlInsumos);
+if ($resInsumos) {
+    while ($fila = mysqli_fetch_assoc($resInsumos)) {
+        $Insumos[] = $fila;
+    }
+}
+
+// Listar servicios activos
+$Servicios = [];
+$sqlServicios = "SELECT idServicio, denominacion FROM servicios ORDER BY denominacion";
+$resServicios = mysqli_query($MiConexion, $sqlServicios);
+if ($resServicios) {
+    while ($fila = mysqli_fetch_assoc($resServicios)) {
+        $Servicios[] = $fila;
+    }
+}
+
+$Mensaje = '';
+$Estilo = '';
+
 if (!empty($_POST['BotonRegistrar'])) {
     Validar_Venta();
     $Mensaje = $_SESSION['Mensaje'];
@@ -152,6 +185,7 @@ ob_end_flush();
                                 <?php } ?>
                             </select>
                         </div>
+
                         <div id="fieldProveedores" style="display:none;" class="mb-3 text-center">
                             <label for="proveedor" class="form-label">Seleccione Proveedor</label>
                             <select class="form-control" name="proveedor" id="proveedor">
@@ -161,16 +195,32 @@ ob_end_flush();
                                 <?php } ?>
                             </select>
                         </div>
+
                         <div id="fieldServicios" style="display:none;" class="mb-3 text-center">
                             <label for="servicio" class="form-label">Seleccione Servicio</label>
                             <select class="form-control" name="servicio" id="servicio">
                                 <option value="">-- Seleccione --</option>
+                                <?php foreach ($Servicios as $s) { ?>
+                                    <option value="<?php echo $s['idServicio']; ?>"><?php echo $s['denominacion']; ?></option>
+                                <?php } ?>
                             </select>
                         </div>
+
                         <div id="fieldInsumos" style="display:none;" class="mb-3 text-center">
-                            <label for="insumo" class="form-label">Seleccione Insumo</label>
+                            <label for="proveedorInsumo" class="form-label">Seleccione Proveedor de Insumo</label>
+                            <select class="form-control" name="proveedorInsumo" id="proveedorInsumo">
+                                <option value="">-- Seleccione --</option>
+                                <?php foreach ($ProveedoresInsumos as $pi) { ?>
+                                    <option value="<?php echo $pi['idProveedorInsumo']; ?>"><?php echo $pi['nombre']; ?></option>
+                                <?php } ?>
+                            </select>
+
+                            <label for="insumo" class="form-label mt-2">Seleccione Insumo</label>
                             <select class="form-control" name="insumo" id="insumo">
                                 <option value="">-- Seleccione --</option>
+                                <?php foreach ($Insumos as $i) { ?>
+                                    <option value="<?php echo $i['idInsumo']; ?>"><?php echo $i['denominacion']; ?></option>
+                                <?php } ?>
                             </select>
                         </div>
                     </div>
@@ -232,14 +282,6 @@ moneyInput.addEventListener('blur', function() {
     }
 });
 
-document.getElementById('formRetiro').addEventListener('submit', function(e) {
-    if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
-        e.preventDefault();
-        alert('Por favor ingrese un monto válido mayor a cero');
-        moneyInput.focus();
-    }
-});
-
 document.getElementById('resetButton').addEventListener('click', function() {
     document.getElementById('MontoReal').value = '0';
     document.getElementById('valorDinero').value = '$0,00';
@@ -276,6 +318,41 @@ document.querySelectorAll('.tipo-movimiento').forEach(button => {
             document.getElementById('extraFields').style.display = 'none';
         }
     });
+});
+
+// VALIDACIÓN ANTES DE ENVIAR
+document.getElementById('formRetiro').addEventListener('submit', function(e) {
+    let tipoMovimiento = document.getElementById('nombreMovimiento').value.toLowerCase();
+    let errorMsg = '';
+
+    if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
+        errorMsg = 'Por favor ingrese un monto válido mayor a cero';
+    }
+
+    if (tipoMovimiento.includes('sueldo')) {
+        if (!document.getElementById('usuarioSueldo').value) {
+            errorMsg = 'Debe seleccionar un usuario para el retiro de sueldo';
+        }
+    } else if (tipoMovimiento.includes('proveedor')) {
+        if (!document.getElementById('proveedor').value) {
+            errorMsg = 'Debe seleccionar un proveedor para este tipo de retiro';
+        }
+    } else if (tipoMovimiento.includes('servicio')) {
+        if (!document.getElementById('servicio').value) {
+            errorMsg = 'Debe seleccionar un servicio para este retiro';
+        }
+    } else if (tipoMovimiento.includes('insumo')) {
+        if (!document.getElementById('proveedorInsumo').value) {
+            errorMsg = 'Debe seleccionar un proveedor de insumo';
+        } else if (!document.getElementById('insumo').value) {
+            errorMsg = 'Debe seleccionar un insumo';
+        }
+    }
+
+    if (errorMsg) {
+        e.preventDefault();
+        alert(errorMsg);
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {

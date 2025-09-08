@@ -947,54 +947,37 @@ function Anular_Caja($vConexion, $vIdCaja) {
     }
 }
 
-function Anular_Venta($vConexion, $vIdConsulta) {
-    // Verificar si el registro existe en la tabla detalle_caja
-    $SQL_MiConsulta = "SELECT * FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
-    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
-    $data = mysqli_fetch_assoc($rs);
+function Anular_DetalleCaja($vConexion, $vIdDetalleCaja) {
+    // 1️⃣ Obtener detalle de caja y posible retiro
+    $sqlDetalle = "SELECT idDetalleCaja, idRetiro FROM detalle_caja WHERE idDetalleCaja = $vIdDetalleCaja";
+    $rsDetalle = mysqli_query($vConexion, $sqlDetalle);
+    if (!$rsDetalle) return false;
 
-    if (!empty($data['idDetalleCaja'])) {
-        // Verificar si existe un retiro asociado
-        $SQL_Retiro = "SELECT idRetiro FROM retiros WHERE idRetiro = (SELECT idRetiro FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta)";
-        $rsRetiro = mysqli_query($vConexion, $SQL_Retiro);
-        $dataRetiro = mysqli_fetch_assoc($rsRetiro);
+    $detalle = mysqli_fetch_assoc($rsDetalle);
+    if (!$detalle) return false; // No existe el registro
 
-        if (!empty($dataRetiro['idRetiro'])) {
-            $idRetiro = $dataRetiro['idRetiro'];
+    $idRetiro = $detalle['idRetiro'];
 
-            // Determinar la subtabla del detalle del retiro
-            $sqlSub = "SELECT * FROM retiros_proveedores WHERE idRetiro = $idRetiro
-                       UNION SELECT * FROM retiros_sueldos WHERE idRetiro = $idRetiro
-                       UNION SELECT * FROM retiros_servicios WHERE idRetiro = $idRetiro
-                       UNION SELECT * FROM retiros_insumos WHERE idRetiro = $idRetiro
-                       UNION SELECT * FROM retiros_varios WHERE idRetiro = $idRetiro";
-            $rsSub = mysqli_query($vConexion, $sqlSub);
-            if ($rsSub && $rsSub->num_rows > 0) {
-                $rowSub = mysqli_fetch_assoc($rsSub);
-                if (isset($rowSub['idProveedor'])) $subtabla = 'retiros_proveedores';
-                elseif (isset($rowSub['idUsuarioSueldo'])) $subtabla = 'retiros_sueldos';
-                elseif (isset($rowSub['tipo_servicio'])) $subtabla = 'retiros_servicios';
-                elseif (isset($rowSub['categoria']) && isset($rowSub['detalle_insumo'])) $subtabla = 'retiros_insumos';
-                else $subtabla = 'retiros_varios';
+    // 2️⃣ Si es un retiro, eliminar primero las subtablas y luego el retiro
+    if (!empty($idRetiro)) {
+        $subtablas = [
+            'retiros_proveedores',
+            'retiros_sueldos',
+            'retiros_servicios',
+            'retiros_insumos',
+            'retiros_varios'
+        ];
 
-                // Eliminar detalle del retiro
-                mysqli_query($vConexion, "DELETE FROM $subtabla WHERE idRetiro = $idRetiro");
-            }
-
-            // Eliminar el retiro
-            mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $idRetiro");
+        foreach ($subtablas as $tabla) {
+            mysqli_query($vConexion, "DELETE FROM $tabla WHERE idRetiro = $idRetiro");
         }
 
-        // Finalmente eliminar el detalle de caja
-        $SQL_Delete = "DELETE FROM detalle_caja WHERE idDetalleCaja = $vIdConsulta";
-        if (mysqli_query($vConexion, $SQL_Delete)) {
-            return true;
-        } else {
-            return false;
-        }
-    } else {
-        return false; // No se encontró el registro
+        mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $idRetiro");
     }
+
+    // 3️⃣ Finalmente eliminar el detalle de caja (ya sea venta o retiro)
+    $sqlDeleteDetalle = "DELETE FROM detalle_caja WHERE idDetalleCaja = $vIdDetalleCaja";
+    return mysqli_query($vConexion, $sqlDeleteDetalle);
 }
 
 function Modificar_Venta($vConexion) {
@@ -1281,70 +1264,44 @@ function Datos_Venta($vConexion, $vIdDetalleCaja) {
     $rs = mysqli_query($vConexion, $SQL);
     $data = mysqli_fetch_assoc($rs);
 
-    if (empty($data)) {
-        return array();
-    }
+    if (empty($data)) return array();
 
     $resultado = array(
-        'idDetalleCaja' => $data['idDetalleCaja'],
-        'idCaja' => $data['idCaja'],
-        'idRetiro' => $data['idRetiro'], // ← Este campo SÍ existe en detalle_caja
-        'idTipoPago' => $data['idTipoPago'],
-        'idTipoMovimiento' => $data['idTipoMovimiento'],
-        'Monto' => $data['monto'],
-        'observaciones' => $data['observaciones'],
-        'facturado' => $data['facturado'],
-        'idTipoFactura' => $data['idTipoFactura'],
-        'numeroFactura' => $data['numeroFactura'],
-        'es_salida' => $data['es_salida'],
+        'idDetalleCaja'   => $data['idDetalleCaja'],
+        'idCaja'          => $data['idCaja'],
+        'idRetiro'        => $data['idRetiro'], // puede ser null si es venta
+        'idTipoPago'      => $data['idTipoPago'],
+        'idTipoMovimiento'=> $data['idTipoMovimiento'],
+        'Monto'           => $data['monto'],
+        'observaciones'   => $data['observaciones'],
+        'facturado'       => $data['facturado'],
+        'idTipoFactura'   => $data['idTipoFactura'],
+        'numeroFactura'   => $data['numeroFactura'],
+        'es_salida'       => $data['es_salida'],
         'tipo_movimiento' => strtolower($data['tipo_movimiento'])
     );
 
-    // Si es salida y tiene un retiro asociado
+    // --- Si es retiro, buscar datos del detalle específico ---
     if (!empty($data['es_salida']) && !empty($data['idRetiro'])) {
         $idRetiro = $data['idRetiro'];
-        $tipoMovimiento = strtolower($data['tipo_movimiento']);
-        
-        // Buscar en las tablas específicas de retiros
-        if (strpos($tipoMovimiento, 'sueldo') !== false) {
-            $sqlExtra = "SELECT * FROM retiros_sueldos WHERE idRetiro = $idRetiro";
+
+        // Listado de subtablas posibles
+        $subTablas = [
+            'retiros_sueldos'     => ['campoId' => 'idUsuarioSueldo', 'campoDetalle' => 'detalle_sueldo'],
+            'retiros_proveedores' => ['campoId' => 'idProveedor', 'campoDetalle' => 'detalle_proveedor'],
+            'retiros_servicios'   => ['campoId' => 'tipo_servicio', 'campoDetalle' => 'detalle_servicio'],
+            'retiros_insumos'     => ['campoId' => 'categoria', 'campoDetalle' => 'detalle_insumo'],
+            'retiros_varios'      => ['campoId' => 'categoria', 'campoDetalle' => 'detalle_vario'],
+        ];
+
+        foreach ($subTablas as $tabla => $campos) {
+            $sqlExtra = "SELECT * FROM $tabla WHERE idRetiro = $idRetiro LIMIT 1";
             $rsExtra = mysqli_query($vConexion, $sqlExtra);
-            if ($rowExtra = mysqli_fetch_assoc($rsExtra)) {
-                $resultado['idUsuarioSueldo'] = $rowExtra['idUsuarioSueldo'];
-                $resultado['detalle_sueldo'] = $rowExtra['detalle_sueldo'];
-            }
-        } 
-        elseif (strpos($tipoMovimiento, 'proveedor') !== false) {
-            $sqlExtra = "SELECT * FROM retiros_proveedores WHERE idRetiro = $idRetiro";
-            $rsExtra = mysqli_query($vConexion, $sqlExtra);
-            if ($rowExtra = mysqli_fetch_assoc($rsExtra)) {
-                $resultado['idProveedor'] = $rowExtra['idProveedor'];
-                $resultado['detalle_proveedor'] = $rowExtra['detalle_proveedor'];
-            }
-        }
-        elseif (strpos($tipoMovimiento, 'servicio') !== false) {
-            $sqlExtra = "SELECT * FROM retiros_servicios WHERE idRetiro = $idRetiro";
-            $rsExtra = mysqli_query($vConexion, $sqlExtra);
-            if ($rowExtra = mysqli_fetch_assoc($rsExtra)) {
-                $resultado['tipo_servicio'] = $rowExtra['tipo_servicio'];
-                $resultado['detalle_servicio'] = $rowExtra['detalle_servicio'];
-            }
-        }
-        elseif (strpos($tipoMovimiento, 'insumo') !== false) {
-            $sqlExtra = "SELECT * FROM retiros_insumos WHERE idRetiro = $idRetiro";
-            $rsExtra = mysqli_query($vConexion, $sqlExtra);
-            if ($rowExtra = mysqli_fetch_assoc($rsExtra)) {
-                $resultado['categoria'] = $rowExtra['categoria'];
-                $resultado['detalle_insumo'] = $rowExtra['detalle_insumo'];
-            }
-        }
-        // Para retiros varios
-        else {
-            $sqlExtra = "SELECT * FROM retiros_varios WHERE idRetiro = $idRetiro";
-            $rsExtra = mysqli_query($vConexion, $sqlExtra);
-            if ($rowExtra = mysqli_fetch_assoc($rsExtra)) {
-                $resultado['categoria'] = $rowExtra['categoria'];
-                $resultado['detalle_vario'] = $rowExtra['detalle_vario'];
+            if ($rsExtra && mysqli_num_rows($rsExtra) > 0) {
+                $rowExtra = mysqli_fetch_assoc($rsExtra);
+                $resultado[$campos['campoId']]     = $rowExtra[$campos['campoId']];
+                $resultado[$campos['campoDetalle']] = $rowExtra[$campos['campoDetalle']];
+                break; // Solo hay un detalle activo
             }
         }
     }
@@ -1486,12 +1443,12 @@ function InsertarMovimientoRetiro($vConexion) {
     } elseif (strpos($nombreMovimiento, 'proveedor') !== false && !empty($_POST['proveedor'])) {
         mysqli_query($vConexion, "INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor)
                                   VALUES ($idRetiro, " . intval($_POST['proveedor']) . ", " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
-    } elseif (strpos($nombreMovimiento, 'servicio') !== false) {
-        mysqli_query($vConexion, "INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio)
-                                  VALUES ($idRetiro, 'Servicio', " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
-    } elseif (strpos($nombreMovimiento, 'insumo') !== false) {
-        mysqli_query($vConexion, "INSERT INTO retiros_insumos (idRetiro, categoria, detalle_insumo)
-                                  VALUES ($idRetiro, 'Insumo', " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
+    } elseif (strpos($nombreMovimiento, 'servicio') !== false && !empty($_POST['servicio'])) {
+        mysqli_query($vConexion, "INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio)
+                                  VALUES ($idRetiro, " . intval($_POST['servicio']) . ", " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
+    } elseif (strpos($nombreMovimiento, 'insumo') !== false && !empty($_POST['insumo']) && !empty($_POST['proveedorInsumo'])) {
+        mysqli_query($vConexion, "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo)
+                                  VALUES ($idRetiro, " . intval($_POST['proveedorInsumo']) . ", " . intval($_POST['insumo']) . ", " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
     } elseif ($nombreMovimiento == 'caja fuerte') {
         mysqli_query($vConexion, "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario)
                                   VALUES ($idRetiro, 'Caja Fuerte', " . ($observaciones ? "'$observaciones'" : "NULL") . ")");
