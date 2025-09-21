@@ -1,6 +1,7 @@
 <?php 
 session_start();
-require_once '../funciones/conexion.php';
+require(__DIR__ . '/../funciones/conexion.php');
+
 $MiConexion = ConexionBD();
 $MiConexion->set_charset("utf8mb4"); // Asegurar encoding correcto
 
@@ -8,7 +9,7 @@ date_default_timezone_set('America/Argentina/Cordoba');
 
 $Mensaje = '';
 if (!empty($_POST['BotonLogin'])) {
-    require_once '../funciones/login.php';
+    require(__DIR__ . '/../funciones/login.php');
     $UsuarioLogueado = DatosLogin($_POST['user'], $_POST['password'], $MiConexion);
 
     if (!empty($UsuarioLogueado)) {

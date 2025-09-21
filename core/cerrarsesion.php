@@ -3,7 +3,7 @@ session_start();
 $_SESSION=array();
 session_destroy();
 
-header('Location: http://localhost/Roberts/core/Login.php');
+header('Location: ../core/Login.php');
 exit;
 
 ?>

@@ -112,7 +112,7 @@ ob_start();
                 <p><strong>Contactos:</strong></p>
                 <p>Email: imprentaroberts@gmail.com</p>
                 <p>WhatsApp: 351 3525107</p>
-                <p>Laprida 25 - Villa Allende</p>
+                <p>Rivadavia 31 - Villa Allende</p>
             </div>
             <p class="thank-you">Gracias por su pedido</p>
         </div>
