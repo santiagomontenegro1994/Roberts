@@ -1,0 +1,14 @@
+# Ignorar archivo de variables de entorno
+.env
+
+# Ignorar carpeta de dependencias de Composer
+/vendor/
+
+# Archivos temporales de logs o caché
+*.log
+*.cache
+*.tmp
+
+# Configuración de IDEs (por si usás VSCode, PhpStorm, etc.)
+.vscode/
+.idea/

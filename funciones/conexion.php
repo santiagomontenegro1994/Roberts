@@ -1,14 +1,22 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php'; // ajusta la ruta según tu proyecto
 
-//aqui tengo parametros por defecto, cuando la llame con parentesis vacios, usarà estos:
-function ConexionBD($Host = 'localhost' ,  $User = 'u922707138_Roberts',  $Password = '@G0hpGgNW[N', $BaseDeDatos='u922707138_Roberts' ) {
+// Cargar variables de entorno desde .env
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
 
-    //procedo al intento de conexion con esos parametros
+function ConexionBD() {
+    $Host = $_ENV['DB_HOST'];
+    $User = $_ENV['DB_USER'];
+    $Password = $_ENV['DB_PASSWORD'];
+    $BaseDeDatos = $_ENV['DB_NAME'];
+
     $linkConexion = mysqli_connect($Host, $User, $Password, $BaseDeDatos);
-    if ($linkConexion!=false) 
-        return $linkConexion;
-    else 
-        die ('No se pudo establecer la conexión.');
 
+    if ($linkConexion) {
+        return $linkConexion;
+    } else {
+        die('No se pudo establecer la conexión: ' . mysqli_connect_error());
+    }
 }
 ?>
