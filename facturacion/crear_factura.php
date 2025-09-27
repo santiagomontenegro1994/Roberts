@@ -6,7 +6,7 @@ $config = ConfigFacturacion();
 $apiUrl = $config['API_URL'] . "/facturas";
 $apiKey = $config['API_KEY'];
 
-// Ejemplo: recibir datos de factura por POST
+// Ejemplo de datos (puedes recibirlos por $_POST)
 $data = [
     "cuit"        => $config['CUIT'],
     "pto_vta"     => $config['PTO_VTA'],
@@ -32,12 +32,21 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 
 $response = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$errorCurl = curl_error($ch);
 curl_close($ch);
 
-if ($httpcode === 200) {
-    $result = json_decode($response, true);
-    echo "✅ Factura creada correctamente. ID: " . $result['id'];
+if ($errorCurl) {
+    die("❌ Error de conexión con la API: " . $errorCurl);
+}
+
+$result = json_decode($response, true);
+
+if ($httpcode === 200 || $httpcode === 201) {
+    echo "✅ Factura creada correctamente. ID: " . ($result['id'] ?? 'No recibido');
 } else {
-    echo "❌ Error al crear la factura: " . $response;
+    echo "❌ Error al crear la factura.<br>";
+    if (isset($result['error'])) echo "➡️ " . $result['error'] . "<br>";
+    if (isset($result['errors'])) echo "<pre>" . print_r($result['errors'], true) . "</pre>";
+    echo "<hr>Respuesta completa:<br><pre>" . htmlspecialchars($response) . "</pre>";
 }
 ?>
