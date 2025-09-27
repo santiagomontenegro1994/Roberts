@@ -3,50 +3,85 @@ require_once __DIR__ . '/config_facturacion.php';
 
 $config = ConfigFacturacion();
 
-$apiUrl = $config['API_URL'] . "/facturas";
-$apiKey = $config['API_KEY'];
+$apiUrl = $config['API_URL'] . "/facturacion/nuevo";
 
-// Ejemplo de datos (puedes recibirlos por $_POST)
+// Datos de ejemplo (ajustalos a tus clientes reales)
 $data = [
-    "cuit"        => $config['CUIT'],
-    "pto_vta"     => $config['PTO_VTA'],
-    "concepto"    => 1,
-    "doc_tipo"    => $_POST['doc_tipo'] ?? 80,
-    "doc_nro"     => $_POST['doc_nro'] ?? "20111111112",
-    "cbte_tipo"   => $_POST['cbte_tipo'] ?? 1,
-    "cbte_nro"    => 0,
-    "imp_total"   => $_POST['imp_total'] ?? 1000.00,
-    "imp_neto"    => $_POST['imp_neto'] ?? 1000.00,
-    "imp_iva"     => $_POST['imp_iva'] ?? 0,
-    "moneda_id"   => "PES",
-    "moneda_ctz"  => 1
+    "apitoken"  => $config['API_TOKEN'],
+    "apikey"    => $config['API_KEY'],
+    "usertoken" => $config['USER_TOKEN'],
+
+    "cliente" => [
+        "documento_tipo"   => "DNI",
+        "condicion_iva"    => "CF",
+        "domicilio"        => "Av Sta Fe 123",
+        "condicion_pago"   => "201",
+        "documento_nro"    => "30111222333",
+        "razon_social"     => "Cliente de Prueba",
+        "provincia"        => "2",
+        "email"            => "cliente@test.com",
+        "envia_por_mail"   => "N",
+        "rg5329"           => "N"
+    ],
+
+    "comprobante" => [
+        "rubro"       => "Servicios web",
+        "tipo"        => "FACTURA B",
+        "numero"      => 1,
+        "operacion"   => "V",
+        "detalle"     => [
+            [
+                "cantidad" => 1,
+                "producto" => [
+                    "descripcion" => "Hosting página web",
+                    "codigo"      => 37,
+                    "alicuota"    => 21,
+                    "precio_unitario_sin_iva" => 1000.00
+                ]
+            ]
+        ],
+        "fecha"       => date("d/m/Y"),
+        "vencimiento" => date("d/m/Y", strtotime("+10 days")),
+        "total"       => 1210.00,
+        "moneda"      => "PES",
+        "punto_venta" => (int) $config['PTO_VTA'],
+        "tributos"    => []
+    ]
 ];
 
+// Enviar request
 $ch = curl_init($apiUrl);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json',
-    'Authorization: Bearer ' . $apiKey
-]);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json'
+]);
 
 $response = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $errorCurl = curl_error($ch);
 curl_close($ch);
 
+// Manejo de errores de conexión
 if ($errorCurl) {
     die("❌ Error de conexión con la API: " . $errorCurl);
 }
 
+// Decodificar respuesta
 $result = json_decode($response, true);
 
+// Mostrar según la API
 if ($httpcode === 200 || $httpcode === 201) {
-    echo "✅ Factura creada correctamente. ID: " . ($result['id'] ?? 'No recibido');
+    if (isset($result['id'])) {
+        echo "✅ Factura creada correctamente. ID: " . $result['id'];
+    } elseif (isset($result['cae'])) {
+        echo "✅ Factura autorizada por AFIP. CAE: " . $result['cae'];
+    } else {
+        echo "⚠️ Respuesta recibida pero sin ID/CAE:<br>";
+        echo "<pre>" . print_r($result, true) . "</pre>";
+    }
 } else {
-    echo "❌ Error al crear la factura.<br>";
-    if (isset($result['error'])) echo "➡️ " . $result['error'] . "<br>";
-    if (isset($result['errors'])) echo "<pre>" . print_r($result['errors'], true) . "</pre>";
-    echo "<hr>Respuesta completa:<br><pre>" . htmlspecialchars($response) . "</pre>";
+    echo "❌ Error al crear la factura (HTTP $httpcode):<br>";
+    echo "<pre>" . print_r($result, true) . "</pre>";
 }
 ?>
