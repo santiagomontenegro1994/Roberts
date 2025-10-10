@@ -27,7 +27,7 @@ if (!isset($_SESSION['Id_Caja']) || empty($_SESSION['Id_Caja'])) {
 $idCaja = (int)$_SESSION['Id_Caja'];
 
 // Manejar la actualización de Caja Inicial
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idCaja'])){
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idCaja'])) {
     $postIdCaja = (int)$_POST['idCaja'];
     $cajaInicial = (float)$_POST['cajaInicial'];
 
@@ -64,35 +64,24 @@ if ($resultadoCaja->num_rows === 0) {
     exit;
 }
 
-// Calcular los totales solo para esta caja
+// Calcular los totales solo para tipos de pago activos y de entrada
 $queryTotales = "SELECT tp.denominacion AS metodoPago, SUM(dc.monto) AS totalMonto
                  FROM detalle_caja dc
                  JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                 WHERE dc.idCaja = ? AND tm.es_entrada = 1
+                 WHERE dc.idCaja = ?
+                   AND tp.esEntrada = 1
+                   AND tp.idActivo = 1
+                   AND tm.es_entrada = 1
                  GROUP BY tp.denominacion";
 $stmtTotales = $MiConexion->prepare($queryTotales);
 $stmtTotales->bind_param("i", $idCaja);
 $stmtTotales->execute();
 $resultadoTotales = $stmtTotales->get_result();
 
-$totalesPorCaja = [
-    'totalEfectivo' => 0,
-    'totalTransferencia' => 0,
-    'totalTarjeta' => 0,
-];
-
+$totalesPorCaja = [];
 while ($fila = $resultadoTotales->fetch_assoc()) {
-    $metodoPago = $fila['metodoPago'];
-    $totalMonto = $fila['totalMonto'];
-
-    if ($metodoPago === 'Efectivo') {
-        $totalesPorCaja['totalEfectivo'] = $totalMonto;
-    } elseif ($metodoPago === 'Transferencia') {
-        $totalesPorCaja['totalTransferencia'] = $totalMonto;
-    } elseif ($metodoPago === 'Tarjeta') {
-        $totalesPorCaja['totalTarjeta'] = $totalMonto;
-    }
+    $totalesPorCaja[$fila['metodoPago']] = $fila['totalMonto'];
 }
 
 // Calcular el total de retiros (sin incluir Caja fuerte)
@@ -156,10 +145,37 @@ while ($fila = $resultadoDetalles->fetch_assoc()) {
 
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
-$totalEfectivo = (float)$totalesPorCaja['totalEfectivo'];
-$totalTransferencia = (float)$totalesPorCaja['totalTransferencia'];
-$totalTarjeta = (float)$totalesPorCaja['totalTarjeta'];
-$cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial;
+
+// Calcular ingresos en efectivo
+$queryIngresosEfectivo = "SELECT SUM(dc.monto) AS total
+                          FROM detalle_caja dc
+                          JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                          JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                          WHERE dc.idCaja = ?
+                            AND tp.denominacion = 'Efectivo'
+                            AND tm.es_entrada = 1";
+$stmtIngresosEfectivo = $MiConexion->prepare($queryIngresosEfectivo);
+$stmtIngresosEfectivo->bind_param("i", $idCaja);
+$stmtIngresosEfectivo->execute();
+$resIngresosEfectivo = $stmtIngresosEfectivo->get_result();
+$totalIngresosEfectivo = (float)($resIngresosEfectivo->fetch_assoc()['total'] ?? 0);
+
+// Calcular retiros en efectivo
+$queryRetirosEfectivo = "SELECT SUM(dc.monto) AS total
+                         FROM detalle_caja dc
+                         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                         JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                         WHERE dc.idCaja = ?
+                           AND tp.denominacion = 'Efectivo'
+                           AND tm.es_salida = 1";
+$stmtRetirosEfectivo = $MiConexion->prepare($queryRetirosEfectivo);
+$stmtRetirosEfectivo->bind_param("i", $idCaja);
+$stmtRetirosEfectivo->execute();
+$resRetirosEfectivo = $stmtRetirosEfectivo->get_result();
+$totalRetirosEfectivo = (float)($resRetirosEfectivo->fetch_assoc()['total'] ?? 0);
+
+// Total efectivo actual
+$cajaEfectivoActual = $cajaInicial + $totalIngresosEfectivo - $totalRetirosEfectivo;
 ?>
 
 <!DOCTYPE html>
@@ -178,11 +194,11 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte +
             justify-content: center;
             border-radius: 50%;
         }
-        
+
         .table td, .table th {
             vertical-align: middle;
         }
-        
+
         .factura-info {
             font-size: 0.85rem;
             color: #6c757d;
@@ -250,18 +266,12 @@ $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte +
 
                 <!-- Totales -->
                 <div class="row mt-4 border-top pt-3 text-center">
-                    <div class="col">
-                        <p class="mb-0"><strong>Efectivo:</strong></p>
-                        <p class="fs-6 fw-bold">$<?php echo number_format($totalEfectivo, 2); ?></p>
-                    </div>
-                    <div class="col">
-                        <p class="mb-0"><strong>Transferencia:</strong></p>
-                        <p class="fs-6 fw-bold">$<?php echo number_format($totalTransferencia, 2); ?></p>
-                    </div>
-                    <div class="col">
-                        <p class="mb-0"><strong>Tarjeta:</strong></p>
-                        <p class="fs-6 fw-bold">$<?php echo number_format($totalTarjeta, 2); ?></p>
-                    </div>
+                    <?php foreach ($totalesPorCaja as $metodo => $monto): ?>
+                        <div class="col">
+                            <p class="mb-0"><strong><?php echo htmlspecialchars($metodo); ?>:</strong></p>
+                            <p class="fs-6 fw-bold">$<?php echo number_format($monto, 2); ?></p>
+                        </div>
+                    <?php endforeach; ?>
                     <div class="col">
                         <p class="mb-0"><strong>Caja Fuerte:</strong></p>
                         <p class="fs-6 fw-bold">$<?php echo number_format($totalRetirosCajaFuerte, 2); ?></p>

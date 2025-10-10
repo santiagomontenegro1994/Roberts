@@ -56,7 +56,7 @@ $datosFactura = [
 ];
 
 // URL correcta para crear factura
-$urlApi = "https://api.tusfacturas.app/api/v2/facturacion/nuevo";
+$urlApi = "https://www.tusfacturas.app/api/v2/facturacion/nuevo";
 
 
 // Crear factura
