@@ -48,18 +48,21 @@ $resultadoDetalleCaja = $stmtDetalles->get_result();
 
 $detalles = [];
 $totales = [
-    'Efectivo' => ['entrada' => 0, 'salida' => 0],
-    'Transferencia' => ['entrada' => 0, 'salida' => 0],
-    'Tarjeta' => ['entrada' => 0, 'salida' => 0],
     'totalRetiros' => 0,
     'totalRetirosCajaFuerte' => 0
 ];
+$metodosUsados = [];
 
 while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
     $detalles[] = $fila;
-    
+
+    $metodo = $fila['metodoPago'];
+    if (!isset($totales[$metodo])) {
+        $totales[$metodo] = ['entrada' => 0, 'salida' => 0];
+    }
+
     if ($fila['es_entrada']) {
-        $totales[$fila['metodoPago']]['entrada'] += $fila['monto'];
+        $totales[$metodo]['entrada'] += $fila['monto'];
     } else {
         if (strpos($fila['tipoMovimiento'], 'Caja Fuerte') !== false) {
             $totales['totalRetirosCajaFuerte'] += $fila['monto'];
@@ -67,13 +70,19 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
             $totales['totalRetiros'] += $fila['monto'];
         }
     }
+
+    if (!in_array($metodo, $metodosUsados)) {
+        $metodosUsados[] = $metodo;
+    }
 }
+
+// Ordenar alfabéticamente los métodos de pago usados
+sort($metodosUsados);
 
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
-$totalEfectivo = (float)$totales['Efectivo']['entrada'];
-$totalTransferencia = (float)$totales['Transferencia']['entrada'];
-$totalTarjeta = (float)$totales['Tarjeta']['entrada'];
+
+$totalEfectivo = isset($totales['Efectivo']['entrada']) ? (float)$totales['Efectivo']['entrada'] : 0;
 $totalRetiros = (float)$totales['totalRetiros'];
 $totalRetirosCajaFuerte = (float)$totales['totalRetirosCajaFuerte'];
 $cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial;
@@ -228,36 +237,26 @@ ob_start();
                 <?php foreach ($detalles as $index => $fila): ?>
                     <tr class="<?php echo $fila['es_entrada'] ? '' : 'salida'; ?>">
                         <td><?php echo $index + 1; ?></td>
-                        <td>
-                            <?php echo $fila['es_entrada'] ? 'Entrada' : 'Salida'; ?>
-                        </td>
+                        <td><?php echo $fila['es_entrada'] ? 'Entrada' : 'Salida'; ?></td>
                         <td><?php echo $fila['metodoPago']; ?></td>
                         <td><?php echo $fila['detalle']; ?></td>
                         <td><?php echo $fila['usuario']; ?></td>
-                        <td class="text-right">
-                            $<?php echo number_format($fila['monto'], 2); ?>
-                        </td>
+                        <td class="text-right">$<?php echo number_format($fila['monto'], 2); ?></td>
                         <td><?php echo $fila['observaciones']; ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
 
-        <!-- TABLA DE TOTALES EN UNA SOLA FILA -->
+        <!-- TABLA DE TOTALES DINÁMICA -->
         <table class="totals">
             <tr>
-                <td>
-                    <div class="total-label">Efectivo</div>
-                    <div class="total-amount">$<?php echo number_format($totalEfectivo, 2); ?></div>
-                </td>
-                <td>
-                    <div class="total-label">Transferencia</div>
-                    <div class="total-amount">$<?php echo number_format($totalTransferencia, 2); ?></div>
-                </td>
-                <td>
-                    <div class="total-label">Tarjeta</div>
-                    <div class="total-amount">$<?php echo number_format($totalTarjeta, 2); ?></div>
-                </td>
+                <?php foreach ($metodosUsados as $metodo): ?>
+                    <td>
+                        <div class="total-label"><?php echo htmlspecialchars($metodo); ?></div>
+                        <div class="total-amount">$<?php echo number_format($totales[$metodo]['entrada'], 2); ?></div>
+                    </td>
+                <?php endforeach; ?>
                 <td>
                     <div class="total-label">Retiros</div>
                     <div class="total-amount">$<?php echo number_format($totalRetiros, 2); ?></div>
