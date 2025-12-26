@@ -23,7 +23,7 @@ $DatosPedidoActual = array();
 $DetallesPedido = array();
 $IdPedidoParaJs = 'null';
 
-// --- LOGICA PRINCIPAL: CARGA Y MODIFICACION DE SEÑA ---
+// --- LOGICA PRINCIPAL: CARGA Y MODIFICACION ---
 
 // Caso A: Se envió el formulario para Modificar Seña
 if (!empty($_POST['BotonModificarSenia'])) {
@@ -52,7 +52,7 @@ else if (!empty($_GET['ID_PEDIDO'])) {
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
-// Caso C: Retorno de error (POST sin acción específica)
+// Caso C: Retorno de error o redirección (POST sin acción específica)
 else if (!empty($_POST['IdPedido'])) {
     $idPedido = (int)$_POST['IdPedido'];
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
@@ -61,8 +61,8 @@ else if (!empty($_POST['IdPedido'])) {
 
 // Validar que exista el pedido
 if (empty($DatosPedidoActual['ID'])) {
-    // Si no se encontró, redirigir
-    header('Location: listados_pedidos_trabajo.php');
+    // Si no se encontró, redirigir al listado correcto
+    header('Location: listados_pedidos_trabajos.php');
     exit;
 }
 
@@ -77,7 +77,7 @@ ob_end_flush();
         <h1>Modificar Pedido #<?php echo $IdPedidoParaJs; ?></h1>
         <nav>
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="listados_pedidos_trabajo.php">Pedidos</a></li>
+                <li class="breadcrumb-item"><a href="listados_pedidos_trabajos.php">Pedidos</a></li>
                 <li class="breadcrumb-item active">Modificar</li>
             </ol>
         </nav>
@@ -201,7 +201,7 @@ ob_end_flush();
                                 <i class="bi bi-dash-circle me-2"></i>Quitar Seña
                             </button>
                             
-                            <a href="listados_pedidos_trabajo.php" class="btn btn-secondary">
+                            <a href="listados_pedidos_trabajos.php" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left-circle me-2"></i>Volver
                             </a>
                         </div>
@@ -216,11 +216,11 @@ ob_end_flush();
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Agregar Trabajo</h5>
+                <h5 class="modal-title">Agregar Nuevo Trabajo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form action="procesar_detalle.php" method="post">
+                <form id="formAgregar" action="procesar_detalle.php" method="post">
                     <input type="hidden" name="accion" value="agregar">
                     <input type="hidden" name="IdPedido" value="<?php echo $IdPedidoParaJs; ?>">
                     
@@ -242,25 +242,77 @@ ob_end_flush();
                             </select>
                         </div>
                     </div>
+
                     <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Proveedor</label>
+                            <select class="form-select" name="idProveedor" required>
+                                <?php 
+                                $proveedores = Listar_Proveedores($MiConexion); 
+                                foreach ($proveedores as $p): ?>
+                                    <option value="<?php echo $p['ID_PROVEEDOR']; ?>"><?php echo $p['NOMBRE']; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">Precio ($)</label>
                             <input type="number" class="form-control" name="precio" step="0.01" min="0" required>
                         </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Fecha Entrega</label>
                             <input type="date" class="form-control" name="fechaEntrega" value="<?php echo date('Y-m-d'); ?>" required>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hora Entrega</label>
+                            <select class="form-select" name="horaEntrega">
+                                <?php 
+                                $horas = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
+                                          '12:00', '12:30', '16:00', '16:30', '17:00', '17:30', 
+                                          '18:00', '18:30', '19:00', '19:30'];
+                                foreach ($horas as $h) {
+                                    echo "<option value='$h'>$h</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <input type="text" class="form-control" name="descripcion">
-                    </div>
-                    <input type="hidden" name="idProveedor" value="1">
 
-                    <div class="modal-footer">
+                    <div class="mb-3">
+                        <label class="form-label">Descripción / Detalles</label>
+                        <textarea class="form-control" name="descripcion" rows="2"></textarea>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkFacturadoAgregar" name="facturado" value="1">
+                        <label class="form-check-label fw-bold" for="checkFacturadoAgregar">¿Está Facturado?</label>
+                    </div>
+
+                    <div id="divFacturacionAgregar" style="display: none;" class="bg-light p-3 rounded border">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo Factura</label>
+                                <select class="form-select" name="idTipoFactura" id="selectTipoFacturaAgregar">
+                                    <option value="">Seleccione...</option>
+                                    <?php foreach ($TiposFactura as $tf): ?>
+                                        <option value="<?php echo $tf['idTipoFactura']; ?>"><?php echo $tf['denominacion']; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">N° Factura</label>
+                                <input type="text" class="form-control" name="numeroFactura" id="inputNumFacturaAgregar">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer mt-3">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Trabajo</button>
                     </div>
                 </form>
             </div>
@@ -362,7 +414,7 @@ ob_end_flush();
 document.addEventListener('DOMContentLoaded', function() {
     
     // ============================================
-    // 1. LOGICA RESTAURADA DE SEÑAS (LO QUE FUNCIONABA ANTES)
+    // 1. LOGICA SEÑAS
     // ============================================
     const btnAgregarSenia = document.getElementById('btnAgregarSenia');
     const btnQuitarSenia = document.getElementById('btnQuitarSenia');
@@ -438,16 +490,38 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
-    // 2. LOGICA DE TRABAJOS (ELIMINAR / EDITAR)
+    // 2. LOGICA FACTURACION EN MODAL AGREGAR
+    // ============================================
+    const checkFacturado = document.getElementById('checkFacturadoAgregar');
+    const divFacturacion = document.getElementById('divFacturacionAgregar');
+    const selectTipo = document.getElementById('selectTipoFacturaAgregar');
+    const inputNum = document.getElementById('inputNumFacturaAgregar');
+
+    if (checkFacturado) {
+        checkFacturado.addEventListener('change', function() {
+            if (this.checked) {
+                divFacturacion.style.display = 'block';
+                selectTipo.setAttribute('required', 'required');
+                inputNum.setAttribute('required', 'required');
+            } else {
+                divFacturacion.style.display = 'none';
+                selectTipo.removeAttribute('required');
+                inputNum.removeAttribute('required');
+                selectTipo.value = '';
+                inputNum.value = '';
+            }
+        });
+    }
+
+    // ============================================
+    // 3. LOGICA DE TRABAJOS (GLOBAL)
     // ============================================
 
-    // Función Global para ELIMINAR (Llamada desde el HTML)
     window.eliminarDetalle = function(id) {
         document.getElementById('idDetalleEliminar').value = id;
         new bootstrap.Modal(document.getElementById('eliminarDetalleModal')).show();
     };
 
-    // Función Global para EDITAR (Llamada desde el HTML)
     window.editarDetalle = function(id) {
         fetch(`obtener_detalle.php?id=${id}`)
             .then(res => {
