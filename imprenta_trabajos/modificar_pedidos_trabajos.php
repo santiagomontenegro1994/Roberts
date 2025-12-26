@@ -42,7 +42,7 @@ if (!empty($_POST['BotonModificarSenia'])) {
             $_SESSION['Estilo'] = 'success';
         }
     }
-    // Recargar datos para mostrar actualizados
+    // Recargar datos
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
@@ -52,7 +52,7 @@ else if (!empty($_GET['ID_PEDIDO'])) {
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
-// Caso C: Retorno de error o redirección (POST sin acción específica)
+// Caso C: Retorno de error o redirección
 else if (!empty($_POST['IdPedido'])) {
     $idPedido = (int)$_POST['IdPedido'];
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
@@ -61,7 +61,6 @@ else if (!empty($_POST['IdPedido'])) {
 
 // Validar que exista el pedido
 if (empty($DatosPedidoActual['ID'])) {
-    // Si no se encontró, redirigir al listado correcto
     header('Location: listados_pedidos_trabajos.php');
     exit;
 }
@@ -127,6 +126,7 @@ ob_end_flush();
                                     <th>Descripción</th>
                                     <th>Entrega</th>
                                     <th class="text-end">Precio</th>
+                                    <th class="text-center">Facturación</th>
                                     <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -134,6 +134,11 @@ ob_end_flush();
                                 <?php if (!empty($DetallesPedido)) { 
                                     foreach ($DetallesPedido as $detalle) { 
                                         list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']); 
+                                        
+                                        // LOGICA FACTURADO
+                                        // Verificamos si existe la clave FACTURADO (Puede venir mayuscula o minuscula según la query)
+                                        $isFacturado = !empty($detalle['FACTURADO']) || !empty($detalle['facturado']);
+                                        $numFactura = $detalle['NUMERO_FACTURA'] ?? $detalle['numeroFactura'] ?? '';
                                 ?>
                                 <tr class="<?php echo $Color; ?>">
                                     <td><?php echo htmlspecialchars($detalle['TRABAJO']); ?></td>
@@ -141,6 +146,19 @@ ob_end_flush();
                                     <td><?php echo htmlspecialchars($detalle['DESCRIPCION']); ?></td>
                                     <td><?php echo date("d/m", strtotime($detalle['FECHA_ENTREGA'])); ?></td>
                                     <td class="text-end">$<?php echo number_format($detalle['PRECIO'], 2, ',', '.'); ?></td>
+                                    
+                                    <td class="text-center">
+                                        <?php if ($isFacturado): ?>
+                                            <span class="badge bg-success" data-bs-toggle="tooltip" title="N°: <?php echo htmlspecialchars($numFactura); ?>">
+                                                <i class="bi bi-check-circle me-1"></i> Facturado
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary opacity-50">
+                                                <i class="bi bi-dash-circle me-1"></i> No
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+
                                     <td class="text-center">
                                         <button type="button" class="btn btn-xs btn-warning me-1" onclick="editarDetalle(<?php echo $detalle['ID_DETALLE']; ?>)" title="Editar">
                                             <i class="bi bi-pencil"></i>
@@ -152,7 +170,7 @@ ob_end_flush();
                                 </tr>
                                 <?php } } else { ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-3">No hay trabajos registrados</td>
+                                    <td colspan="7" class="text-center py-3">No hay trabajos registrados</td>
                                 </tr>
                                 <?php } ?>
                             </tbody>
@@ -272,16 +290,14 @@ ob_end_flush();
                                 $horas = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
                                           '12:00', '12:30', '16:00', '16:30', '17:00', '17:30', 
                                           '18:00', '18:30', '19:00', '19:30'];
-                                foreach ($horas as $h) {
-                                    echo "<option value='$h'>$h</option>";
-                                }
+                                foreach ($horas as $h) echo "<option value='$h'>$h</option>";
                                 ?>
                             </select>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Descripción / Detalles</label>
+                        <label class="form-label">Descripción</label>
                         <textarea class="form-control" name="descripcion" rows="2"></textarea>
                     </div>
 
@@ -330,12 +346,10 @@ ob_end_flush();
             <div class="modal-body">
                 <p>¿Seguro que deseas eliminar este trabajo?</p>
                 <p class="text-danger small">El precio se descontará del total del pedido.</p>
-                
                 <form action="procesar_detalle.php" method="POST">
                     <input type="hidden" name="accion" value="eliminar">
                     <input type="hidden" name="idDetalle" id="idDetalleEliminar">
                     <input type="hidden" name="IdPedido" value="<?php echo $IdPedidoParaJs; ?>">
-                    
                     <div class="text-end">
                         <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
@@ -353,8 +367,7 @@ ob_end_flush();
                 <h5 class="modal-title">Editar Trabajo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="contenidoEditarDetalle">
-                </div>
+            <div class="modal-body" id="contenidoEditarDetalle"></div>
         </div>
     </div>
 </div>
@@ -367,14 +380,8 @@ ob_end_flush();
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label>Monto</label>
-                    <input type="number" step="0.01" class="form-control" id="montoAgregar">
-                </div>
-                <div class="mb-3">
-                    <label>Método de Pago</label>
-                    <div class="d-flex flex-wrap" id="metodosAgregarContainer"></div>
-                </div>
+                <div class="mb-3"><label>Monto</label><input type="number" step="0.01" class="form-control" id="montoAgregar"></div>
+                <div class="mb-3"><label>Método</label><div class="d-flex flex-wrap" id="metodosAgregarContainer"></div></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -392,14 +399,8 @@ ob_end_flush();
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label>Monto a quitar (Máx: <span id="maxSenia"></span>)</label>
-                    <input type="number" step="0.01" class="form-control" id="montoQuitar">
-                </div>
-                <div class="mb-3">
-                    <label>Método de Devolución</label>
-                    <div class="d-flex flex-wrap" id="metodosQuitarContainer"></div>
-                </div>
+                <div class="mb-3"><label>Monto a quitar (Máx: <span id="maxSenia"></span>)</label><input type="number" step="0.01" class="form-control" id="montoQuitar"></div>
+                <div class="mb-3"><label>Devolución</label><div class="d-flex flex-wrap" id="metodosQuitarContainer"></div></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -412,25 +413,18 @@ ob_end_flush();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // ============================================
-    // 1. LOGICA SEÑAS
-    // ============================================
+    // 1. SEÑAS
     const btnAgregarSenia = document.getElementById('btnAgregarSenia');
     const btnQuitarSenia = document.getElementById('btnQuitarSenia');
     const inputMetodoPago = document.getElementById('inputMetodoPago');
     const inputEsReduccion = document.getElementById('inputEsReduccion');
     const inputMontoOperacion = document.getElementById('inputMontoOperacion');
     const formPrincipal = document.getElementById('formPrincipal');
-
     const agregarModal = new bootstrap.Modal(document.getElementById('agregarSeniaModal'));
     const quitarModal = new bootstrap.Modal(document.getElementById('quitarSeniaModal'));
-
     const metodosPagoEntrada = <?php echo json_encode($TiposPagosEntrada); ?>;
     const metodosPagoSalida = <?php echo json_encode($TiposPagosSalida); ?>;
-    
     let metodoSeleccionado = null;
-    let tipoOperacion = '';
 
     function crearBotonesPago(container, metodos, esReduccion) {
         container.innerHTML = '';
@@ -451,7 +445,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(btnAgregarSenia) {
         btnAgregarSenia.addEventListener('click', function() {
-            tipoOperacion = 'agregar';
             crearBotonesPago(document.getElementById('metodosAgregarContainer'), metodosPagoEntrada, false);
             agregarModal.show();
         });
@@ -459,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(btnQuitarSenia) {
         btnQuitarSenia.addEventListener('click', function() {
-            tipoOperacion = 'quitar';
             const actual = parseFloat(this.dataset.seniaActual);
             document.getElementById('maxSenia').textContent = actual;
             crearBotonesPago(document.getElementById('metodosQuitarContainer'), metodosPagoSalida, true);
@@ -471,32 +463,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const monto = document.getElementById('montoAgregar').value;
         if(!metodoSeleccionado) return alert('Seleccione método de pago');
         if(!monto || monto <= 0) return alert('Ingrese monto válido');
-        
-        inputEsReduccion.value = '0';
-        inputMetodoPago.value = metodoSeleccionado;
-        inputMontoOperacion.value = monto;
+        inputEsReduccion.value = '0'; inputMetodoPago.value = metodoSeleccionado; inputMontoOperacion.value = monto;
         formPrincipal.submit();
     });
 
     document.getElementById('confirmarQuitarBtn').addEventListener('click', function() {
         const monto = document.getElementById('montoQuitar').value;
-        if(!metodoSeleccionado) return alert('Seleccione método de devolución');
+        if(!metodoSeleccionado) return alert('Seleccione método');
         if(!monto || monto <= 0) return alert('Ingrese monto válido');
-        
-        inputEsReduccion.value = '1';
-        inputMetodoPago.value = metodoSeleccionado;
-        inputMontoOperacion.value = monto;
+        inputEsReduccion.value = '1'; inputMetodoPago.value = metodoSeleccionado; inputMontoOperacion.value = monto;
         formPrincipal.submit();
     });
 
-    // ============================================
-    // 2. LOGICA FACTURACION EN MODAL AGREGAR
-    // ============================================
+    // 2. FACTURACION (ADD MODAL)
     const checkFacturado = document.getElementById('checkFacturadoAgregar');
     const divFacturacion = document.getElementById('divFacturacionAgregar');
     const selectTipo = document.getElementById('selectTipoFacturaAgregar');
     const inputNum = document.getElementById('inputNumFacturaAgregar');
-
     if (checkFacturado) {
         checkFacturado.addEventListener('change', function() {
             if (this.checked) {
@@ -505,36 +488,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 inputNum.setAttribute('required', 'required');
             } else {
                 divFacturacion.style.display = 'none';
-                selectTipo.removeAttribute('required');
-                inputNum.removeAttribute('required');
-                selectTipo.value = '';
-                inputNum.value = '';
+                selectTipo.removeAttribute('required'); inputNum.removeAttribute('required');
+                selectTipo.value = ''; inputNum.value = '';
             }
         });
     }
 
-    // ============================================
-    // 3. LOGICA DE TRABAJOS (GLOBAL)
-    // ============================================
+    // 3. TOOLTIPS
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
 
+    // 4. GLOBALES
     window.eliminarDetalle = function(id) {
         document.getElementById('idDetalleEliminar').value = id;
         new bootstrap.Modal(document.getElementById('eliminarDetalleModal')).show();
     };
 
     window.editarDetalle = function(id) {
-        fetch(`obtener_detalle.php?id=${id}`)
-            .then(res => {
-                if(!res.ok) throw new Error("Error cargando detalle");
-                return res.text();
-            })
-            .then(html => {
-                document.getElementById('contenidoEditarDetalle').innerHTML = html;
-                new bootstrap.Modal(document.getElementById('editarDetalleModal')).show();
-            })
-            .catch(err => alert("Error: " + err));
+        fetch(`obtener_detalle.php?id=${id}`).then(r=>r.text()).then(html=>{
+            document.getElementById('contenidoEditarDetalle').innerHTML=html;
+            new bootstrap.Modal(document.getElementById('editarDetalleModal')).show();
+        });
     };
-
 });
 </script>
 
