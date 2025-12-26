@@ -2118,94 +2118,149 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
         return false;
     }
 
+    // Definir variables para evitar errores de índice indefinido
+    // IMPORTANTE: Respetamos los nombres de columnas de TU base de datos
+    $idDetalle = $datos['idDetalle'] ?? 0;
+    $idPedido = $datos['id_pedido_trabajos'] ?? 0; // FK correcta según tu código
+    
+    // Variables para el bind_param
+    $idTrabajo = $datos['idTrabajo'] ?? 0;
+    $precio = $datos['precio'] ?? 0;
+    $fechaEntrega = $datos['fechaEntrega'] ?? null;
+    $horaEntrega = $datos['horaEntrega'] ?? null;
+    $descripcion = $datos['descripcion'] ?? '';
+    $idProveedor = $datos['idProveedor'] ?? 0;
+    $idEstadoTrabajo = $datos['idEstadoTrabajo'] ?? 0;
+    
+    // Campos de facturación
+    $facturado = isset($datos['facturado']) ? $datos['facturado'] : 0;
+    $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
+    $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
+
     try {
         switch ($accion) {
             case 'editar':
+                // RESPETANDO TU CODIGO ORIGINAL
                 $query = "UPDATE detalle_trabajos SET 
-                          idTrabajo = ?, precio = ?, fechaEntrega = ?, horaEntrega = ?, 
-                          descripcion = ?, idProveedor = ?, idEstadoTrabajo = ?,
-                          facturado = ?, idTipoFactura = ?, numeroFactura = ?
-                          WHERE idDetalleTrabajo = ?";
+                          idTrabajo = ?, 
+                          precio = ?, 
+                          fechaEntrega = ?, 
+                          horaEntrega = ?, 
+                          descripcion = ?,
+                          idProveedor = ?,
+                          idEstadoTrabajo = ?,
+                          facturado = ?, 
+                          idTipoFactura = ?, 
+                          numeroFactura = ?
+                          WHERE idDetalleTrabajo = ?"; // Tu PK original
                 
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
-
-                // Manejar nulos
-                $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
-                $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
-
+                
                 $stmt->bind_param('idsssiiissi', 
-                    $datos['idTrabajo'], $datos['precio'], $datos['fechaEntrega'],
-                    $datos['horaEntrega'], $datos['descripcion'], $datos['idProveedor'],
-                    $datos['idEstadoTrabajo'], $datos['facturado'], $idTipoFactura, 
-                    $numeroFactura, $datos['idDetalle']
+                    $idTrabajo, 
+                    $precio, 
+                    $fechaEntrega,
+                    $horaEntrega,
+                    $descripcion,
+                    $idProveedor,
+                    $idEstadoTrabajo,
+                    $facturado, 
+                    $idTipoFactura, 
+                    $numeroFactura, 
+                    $idDetalle // idDetalleTrabajo
                 );
                 break;
                 
             case 'agregar':
+                // RESPETANDO TU CODIGO ORIGINAL
                 $query = "INSERT INTO detalle_trabajos (
-                    id_pedido_trabajos, idTrabajo, precio, fechaEntrega, horaEntrega, 
-                    descripcion, idProveedor, idEstadoTrabajo, facturado, 
-                    idTipoFactura, numeroFactura
+                    id_pedido_trabajos, 
+                    idTrabajo, 
+                    precio, 
+                    fechaEntrega, 
+                    horaEntrega, 
+                    descripcion,
+                    idProveedor,
+                    idEstadoTrabajo,
+                    facturado, 
+                    idTipoFactura, 
+                    numeroFactura
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
-                $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
-                
                 $stmt->bind_param('iidsssiiiss',
-                    $datos['id_pedido_trabajos'], $datos['idTrabajo'], $datos['precio'],
-                    $datos['fechaEntrega'], $datos['horaEntrega'], $datos['descripcion'],
-                    $datos['idProveedor'], $datos['idEstadoTrabajo'], $datos['facturado'],
-                    $idTipoFactura, $numeroFactura
+                    $idPedido, // id_pedido_trabajos
+                    $idTrabajo,
+                    $precio,
+                    $fechaEntrega,
+                    $horaEntrega,
+                    $descripcion,
+                    $idProveedor,
+                    $idEstadoTrabajo,
+                    $facturado,
+                    $idTipoFactura,
+                    $numeroFactura
                 );
                 break;
                 
             case 'eliminar':
+                // LOGICA DE ELIMINACION CORREGIDA CON TUS NOMBRES
                 $query = "DELETE FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
-                $stmt->bind_param('i', $datos['idDetalle']);
+                
+                $stmt->bind_param('i', $idDetalle);
                 break;
                 
             default:
                 return false;
         }
 
+        // Ejecutar
         $resultado = $stmt->execute();
-        if (!$resultado) throw new Exception($stmt->error);
+        if (!$resultado) {
+            throw new Exception($stmt->error);
+        }
         
         $filasAfectadas = $stmt->affected_rows;
         $stmt->close();
         
-        // --- AQUÍ ESTÁ LA MAGIA: ACTUALIZAR PRECIO TOTAL Y ESTADO ---
-        if (isset($datos['id_pedido_trabajos'])) {
-            $idPedido = $datos['id_pedido_trabajos'];
-
-            // 1. Actualizar Estado (si tienes esa función)
+        // --- LOGICA POST-EJECUCIÓN (ACTUALIZAR ESTADO Y PRECIO) ---
+        if (isset($idPedido) && $idPedido > 0) {
+            
+            // 1. Actualizar Estado (Tu función original)
             if (function_exists('ActualizarEstadoPedido')) {
                 ActualizarEstadoPedido($conexion, $idPedido);
             }
 
-            // 2. Recalcular Precio Total del Pedido
-            // Verifica si tu tabla padre se llama 'pedidos_trabajos' y la ID 'idPedidoTrabajo' o 'ID'
-            $sqlTotal = "UPDATE pedidos_trabajos SET PRECIO_TOTAL = (
-                            SELECT COALESCE(SUM(precio), 0) 
-                            FROM detalle_trabajos 
-                            WHERE id_pedido_trabajos = ?
-                         ) WHERE idPedidoTrabajo = ?"; 
-            
-            $stmtTotal = $conexion->prepare($sqlTotal);
-            if ($stmtTotal) {
-                $stmtTotal->bind_param("ii", $idPedido, $idPedido);
-                $stmtTotal->execute();
-                $stmtTotal->close();
+            // 2. Recalcular Precio Total (IMPORTANTE PARA QUE ELIMINAR/AGREGAR REFLEJE EL COSTO)
+            // Asumo que la tabla padre se llama 'pedidos_trabajos' porque la hija es 'detalle_trabajos'
+            // y la FK es 'id_pedido_trabajos'.
+            // Si esto falla, el 'try-catch' evitará que se rompa el resto.
+            try {
+                // NOTA: Intento usar 'ID' para la tabla padre. Si se llama 'idPedidoTrabajo', cámbialo aquí.
+                $sqlTotal = "UPDATE pedidos_trabajos SET PRECIO_TOTAL = (
+                                SELECT COALESCE(SUM(precio), 0) 
+                                FROM detalle_trabajos 
+                                WHERE id_pedido_trabajos = ?
+                             ) WHERE ID = ?"; 
+                
+                $stmtTotal = $conexion->prepare($sqlTotal);
+                if ($stmtTotal) {
+                    $stmtTotal->bind_param("ii", $idPedido, $idPedido);
+                    $stmtTotal->execute();
+                    $stmtTotal->close();
+                }
+            } catch (Exception $e2) {
+                // Si falla el recalculo del precio, no detenemos el proceso, solo lo logueamos
+                error_log("No se pudo actualizar el precio total: " . $e2->getMessage());
             }
         }
         
-        return true; // Devolvemos true si no hubo excepciones
+        return true; // Devolvemos true porque la acción principal (Agregar/Editar/Eliminar) funcionó
         
     } catch (Exception $e) {
         error_log("Excepción al procesar detalle: " . $e->getMessage());

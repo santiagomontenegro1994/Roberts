@@ -1,4 +1,9 @@
 <?php
+// --- ACTIVAR ERRORES PARA VERIFICAR EN HOSTINGER ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 require_once '../funciones/conexion.php';
 require_once '../funciones/imprenta.php';
@@ -9,27 +14,25 @@ if (empty($_SESSION['Usuario_Nombre'])) {
     exit;
 }
 
-// Obtener datos y normalizar nombres
-$accion = $_REQUEST['accion'] ?? '';
-$idDetalle = $_REQUEST['idDetalle'] ?? 0;
-// A veces viene como IdPedido, a veces como ID_PEDIDO, aseguramos ambos:
+// Obtener ID Pedido (Soporta POST y GET)
 $idPedido = $_REQUEST['IdPedido'] ?? $_REQUEST['ID_PEDIDO'] ?? 0;
 
+// Validar datos mínimos
+$accion = $_REQUEST['accion'] ?? '';
 $conexion = ConexionBD();
 
-// Validaciones básicas
 if (!$conexion || empty($accion) || empty($idPedido)) {
-    $_SESSION['Mensaje'] = 'Error: Datos incompletos o fallo de conexión.';
+    $_SESSION['Mensaje'] = 'Error: Faltan datos obligatorios (Acción o ID Pedido).';
     $_SESSION['Estilo'] = 'danger';
-    header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
+    // Intentar volver aunque sea sin ID
+    if($idPedido) header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
+    else echo "Error crítico: No se recibió ID de pedido.";
     exit;
 }
 
-// Preparar array de datos
-$facturado = isset($_POST['facturado']) ? 1 : 0; // Checkbox suele no enviarse si no está marcado
-
+// Preparar datos para la función
 $datos = [
-    'idDetalle' => $idDetalle,
+    'idDetalle' => $_REQUEST['idDetalle'] ?? 0,
     'id_pedido_trabajos' => $idPedido,
     'idTrabajo' => $_POST['idTrabajo'] ?? 0,
     'precio' => $_POST['precio'] ?? 0,
@@ -38,23 +41,24 @@ $datos = [
     'descripcion' => $_POST['descripcion'] ?? '',
     'idProveedor' => $_POST['idProveedor'] ?? 0,
     'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
-    'facturado' => $facturado,
+    'facturado' => isset($_POST['facturado']) ? 1 : 0,
     'idTipoFactura' => $_POST['idTipoFactura'] ?? null,
     'numeroFactura' => $_POST['numeroFactura'] ?? null
 ];
 
-// Ejecutar Función
+// EJECUTAR
 $resultado = Procesar_Detalle_Trabajo($conexion, $accion, $datos);
 
 if ($resultado) {
-    $_SESSION['Mensaje'] = 'Operación realizada correctamente';
+    $_SESSION['Mensaje'] = 'Cambios guardados correctamente.';
     $_SESSION['Estilo'] = 'success';
 } else {
-    $_SESSION['Mensaje'] = 'Hubo un error al procesar la solicitud.';
+    // Si falla, probablemente quedó un error en el log de errores de PHP
+    $_SESSION['Mensaje'] = 'Error al guardar. Verifica los datos ingresados.';
     $_SESSION['Estilo'] = 'danger';
 }
 
-// Volver al pedido
+// VOLVER
 header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido&t=".time());
 exit;
 ?>
