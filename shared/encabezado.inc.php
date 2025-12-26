@@ -115,7 +115,7 @@ $MiConexion->close();
                     <li>
                         <a class="dropdown-item d-flex align-items-center" href="../imprenta_usuarios/modificar_cuenta.php">
                             <i class="bi bi-gear"></i>
-                            <span>Modificar Cuenta</span>
+                            <span>Modificar Cuentas</span>
                         </a>
                     </li>
                                         <li>
