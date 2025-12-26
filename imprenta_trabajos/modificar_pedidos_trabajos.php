@@ -52,7 +52,7 @@ else if (!empty($_GET['ID_PEDIDO'])) {
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
-// Caso C: Retorno de error o redirección
+// Caso C: Retorno de error
 else if (!empty($_POST['IdPedido'])) {
     $idPedido = (int)$_POST['IdPedido'];
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
@@ -136,7 +136,6 @@ ob_end_flush();
                                         list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']); 
                                         
                                         // LOGICA FACTURADO
-                                        // Verificamos si existe la clave FACTURADO (Puede venir mayuscula o minuscula según la query)
                                         $isFacturado = !empty($detalle['FACTURADO']) || !empty($detalle['facturado']);
                                         $numFactura = $detalle['NUMERO_FACTURA'] ?? $detalle['numeroFactura'] ?? '';
                                 ?>
@@ -509,6 +508,33 @@ document.addEventListener('DOMContentLoaded', function() {
     window.editarDetalle = function(id) {
         fetch(`obtener_detalle.php?id=${id}`).then(r=>r.text()).then(html=>{
             document.getElementById('contenidoEditarDetalle').innerHTML=html;
+            
+            // --- AQUI SE INYECTA LA LOGICA DEL EDITAR ---
+            const chk = document.getElementById('facturado'); // IDs de obtener_detalle.php
+            const div = document.getElementById('facturacionFields');
+            const sel = document.getElementById('tipo_factura');
+            const inp = document.getElementById('numero_factura');
+            const hid = document.getElementById('hiddenFacturado');
+
+            if(chk) {
+                const toggle = () => {
+                    hid.value = chk.checked ? '1' : '0';
+                    if(chk.checked) {
+                        div.style.display = 'block';
+                        sel.disabled = false; inp.disabled = false;
+                        sel.required = true; inp.required = true;
+                    } else {
+                        div.style.display = 'none';
+                        sel.disabled = true; inp.disabled = true;
+                        sel.required = false; inp.required = false;
+                    }
+                };
+                chk.addEventListener('change', toggle);
+                // No llamamos a toggle() al inicio porque PHP ya define el style.display
+                // y el disabled/required inicial. Solo escuchamos cambios.
+            }
+            // --------------------------------------------
+
             new bootstrap.Modal(document.getElementById('editarDetalleModal')).show();
         });
     };
