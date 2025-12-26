@@ -3,56 +3,34 @@ session_start();
 require_once '../funciones/conexion.php';
 require_once '../funciones/imprenta.php';
 
-// Validar sesión y permisos
+// Validar sesión
 if (empty($_SESSION['Usuario_Nombre'])) {
-    $_SESSION['Mensaje'] = 'Acceso no autorizado';
-    $_SESSION['Estilo'] = 'danger';
     header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
-// Obtener datos del formulario - ahora de GET y POST
-$accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
-$idDetalle = $_GET['id'] ?? $_POST['idDetalle'] ?? 0;
-$idPedido = $_GET['ID_PEDIDO'] ?? $_POST['IdPedido'] ?? 0;
-
-// Validar acción y IDs
-if (!in_array($accion, ['agregar', 'editar', 'eliminar'])) {
-    $_SESSION['Mensaje'] = 'Acción no válida: ' . $accion;
-    $_SESSION['Estilo'] = 'danger';
-    header('Location: listados_pedidos_trabajos.php');
-    exit;
-}
-
-// Validación específica para eliminación
-if ($accion === 'eliminar' && ($idDetalle <= 0 || $idPedido <= 0)) {
-    $_SESSION['Mensaje'] = 'Parámetros inválidos para eliminación';
-    $_SESSION['Estilo'] = 'danger';
-    header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
-    exit;
-}
-
-// Validación específica para agregar
-if ($accion === 'agregar' && $idPedido <= 0) {
-    $_SESSION['Mensaje'] = 'ID de pedido inválido para agregar trabajo';
-    $_SESSION['Estilo'] = 'danger';
-    header('Location: listados_pedidos_trabajos.php');
-    exit;
-}
+// Obtener datos y normalizar nombres
+$accion = $_REQUEST['accion'] ?? '';
+$idDetalle = $_REQUEST['idDetalle'] ?? 0;
+// A veces viene como IdPedido, a veces como ID_PEDIDO, aseguramos ambos:
+$idPedido = $_REQUEST['IdPedido'] ?? $_REQUEST['ID_PEDIDO'] ?? 0;
 
 $conexion = ConexionBD();
-if (!$conexion) {
-    $_SESSION['Mensaje'] = 'Error de conexión a la base de datos';
+
+// Validaciones básicas
+if (!$conexion || empty($accion) || empty($idPedido)) {
+    $_SESSION['Mensaje'] = 'Error: Datos incompletos o fallo de conexión.';
     $_SESSION['Estilo'] = 'danger';
     header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
     exit;
 }
 
-// Preparar datos para la función - CORREGIDO EL MANEJO DEL CHECKBOX
-$facturado = isset($_POST['facturado']) ? (int)$_POST['facturado'] : 0;
+// Preparar array de datos
+$facturado = isset($_POST['facturado']) ? 1 : 0; // Checkbox suele no enviarse si no está marcado
 
 $datos = [
     'idDetalle' => $idDetalle,
+    'id_pedido_trabajos' => $idPedido,
     'idTrabajo' => $_POST['idTrabajo'] ?? 0,
     'precio' => $_POST['precio'] ?? 0,
     'fechaEntrega' => $_POST['fechaEntrega'] ?? '',
@@ -60,33 +38,23 @@ $datos = [
     'descripcion' => $_POST['descripcion'] ?? '',
     'idProveedor' => $_POST['idProveedor'] ?? 0,
     'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
-    'id_pedido_trabajos' => $idPedido,
-    // Campos de facturación - CORREGIDO
     'facturado' => $facturado,
-    'idTipoFactura' => !empty($_POST['idTipoFactura']) ? $_POST['idTipoFactura'] : null,
-    'numeroFactura' => !empty($_POST['numeroFactura']) ? $_POST['numeroFactura'] : null
+    'idTipoFactura' => $_POST['idTipoFactura'] ?? null,
+    'numeroFactura' => $_POST['numeroFactura'] ?? null
 ];
 
-// Log para debugging
-error_log("Datos recibidos - facturado: " . $datos['facturado']);
-error_log("Datos recibidos - idTipoFactura: " . ($datos['idTipoFactura'] ?? 'NULL'));
-error_log("Datos recibidos - numeroFactura: " . ($datos['numeroFactura'] ?? 'NULL'));
-
-// Procesar la acción
+// Ejecutar Función
 $resultado = Procesar_Detalle_Trabajo($conexion, $accion, $datos);
 
 if ($resultado) {
     $_SESSION['Mensaje'] = 'Operación realizada correctamente';
     $_SESSION['Estilo'] = 'success';
 } else {
-    $error = $conexion->error ?? 'Error desconocido';
-    $_SESSION['Mensaje'] = 'Error al procesar el detalle: ' . $error;
+    $_SESSION['Mensaje'] = 'Hubo un error al procesar la solicitud.';
     $_SESSION['Estilo'] = 'danger';
-    error_log("Error en procesar_detalle: $error");
-    error_log("Datos enviados: " . print_r($datos, true));
 }
 
-// Redireccionar de vuelta a la página del pedido
-header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido&refresh=" . time());
+// Volver al pedido
+header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido&t=".time());
 exit;
 ?>

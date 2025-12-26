@@ -2121,94 +2121,52 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     try {
         switch ($accion) {
             case 'editar':
-                // CONSULTA ACTUALIZADA PARA INCLUIR CAMPOS DE FACTURACIÓN
                 $query = "UPDATE detalle_trabajos SET 
-                         idTrabajo = ?, 
-                         precio = ?, 
-                         fechaEntrega = ?, 
-                         horaEntrega = ?, 
-                         descripcion = ?,
-                         idProveedor = ?,
-                         idEstadoTrabajo = ?,
-                         facturado = ?,           -- NUEVO CAMPO
-                         idTipoFactura = ?,       -- NUEVO CAMPO
-                         numeroFactura = ?        -- NUEVO CAMPO
-                         WHERE idDetalleTrabajo = ?";
+                          idTrabajo = ?, precio = ?, fechaEntrega = ?, horaEntrega = ?, 
+                          descripcion = ?, idProveedor = ?, idEstadoTrabajo = ?,
+                          facturado = ?, idTipoFactura = ?, numeroFactura = ?
+                          WHERE idDetalleTrabajo = ?";
                 
                 $stmt = $conexion->prepare($query);
-                if (!$stmt) {
-                    error_log("Error al preparar la consulta: " . $conexion->error);
-                    return false;
-                }
-                
-                // Manejar valores NULL para campos de facturación
+                if (!$stmt) throw new Exception($conexion->error);
+
+                // Manejar nulos
                 $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
                 $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
-                
+
                 $stmt->bind_param('idsssiiissi', 
-                    $datos['idTrabajo'], 
-                    $datos['precio'], 
-                    $datos['fechaEntrega'],
-                    $datos['horaEntrega'],
-                    $datos['descripcion'],
-                    $datos['idProveedor'],
-                    $datos['idEstadoTrabajo'],
-                    $datos['facturado'],        // NUEVO
-                    $idTipoFactura,             // NUEVO
-                    $numeroFactura,             // NUEVO
-                    $datos['idDetalle']
+                    $datos['idTrabajo'], $datos['precio'], $datos['fechaEntrega'],
+                    $datos['horaEntrega'], $datos['descripcion'], $datos['idProveedor'],
+                    $datos['idEstadoTrabajo'], $datos['facturado'], $idTipoFactura, 
+                    $numeroFactura, $datos['idDetalle']
                 );
                 break;
                 
             case 'agregar':
-                // CONSULTA ACTUALIZADA PARA INCLUIR CAMPOS DE FACTURACIÓN
                 $query = "INSERT INTO detalle_trabajos (
-                    id_pedido_trabajos, 
-                    idTrabajo, 
-                    precio, 
-                    fechaEntrega, 
-                    horaEntrega, 
-                    descripcion,
-                    idProveedor,
-                    idEstadoTrabajo,
-                    facturado,           -- NUEVO CAMPO
-                    idTipoFactura,       -- NUEVO CAMPO
-                    numeroFactura        -- NUEVO CAMPO
+                    id_pedido_trabajos, idTrabajo, precio, fechaEntrega, horaEntrega, 
+                    descripcion, idProveedor, idEstadoTrabajo, facturado, 
+                    idTipoFactura, numeroFactura
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $stmt = $conexion->prepare($query);
-                if (!$stmt) {
-                    error_log("Error al preparar la consulta: " . $conexion->error);
-                    return false;
-                }
+                if (!$stmt) throw new Exception($conexion->error);
                 
-                // Manejar valores NULL para campos de facturación
                 $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
                 $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
                 
                 $stmt->bind_param('iidsssiiiss',
-                    $datos['id_pedido_trabajos'],
-                    $datos['idTrabajo'],
-                    $datos['precio'],
-                    $datos['fechaEntrega'],
-                    $datos['horaEntrega'],
-                    $datos['descripcion'],
-                    $datos['idProveedor'],
-                    $datos['idEstadoTrabajo'],
-                    $datos['facturado'],        // NUEVO
-                    $idTipoFactura,             // NUEVO
-                    $numeroFactura              // NUEVO
+                    $datos['id_pedido_trabajos'], $datos['idTrabajo'], $datos['precio'],
+                    $datos['fechaEntrega'], $datos['horaEntrega'], $datos['descripcion'],
+                    $datos['idProveedor'], $datos['idEstadoTrabajo'], $datos['facturado'],
+                    $idTipoFactura, $numeroFactura
                 );
                 break;
                 
             case 'eliminar':
                 $query = "DELETE FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
                 $stmt = $conexion->prepare($query);
-                if (!$stmt) {
-                    error_log("Error al preparar la consulta: " . $conexion->error);
-                    return false;
-                }
-                
+                if (!$stmt) throw new Exception($conexion->error);
                 $stmt->bind_param('i', $datos['idDetalle']);
                 break;
                 
@@ -2217,21 +2175,37 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
         }
 
         $resultado = $stmt->execute();
-        if (!$resultado) {
-            error_log("Error al ejecutar la consulta: " . $stmt->error);
-            $stmt->close();
-            return false;
-        }
+        if (!$resultado) throw new Exception($stmt->error);
         
         $filasAfectadas = $stmt->affected_rows;
         $stmt->close();
         
-        // Llamar a ActualizarEstadoPedido después de ejecutar la consulta
-        if ($filasAfectadas > 0 && isset($datos['id_pedido_trabajos'])) {
-            ActualizarEstadoPedido($conexion, $datos['id_pedido_trabajos']);
+        // --- AQUÍ ESTÁ LA MAGIA: ACTUALIZAR PRECIO TOTAL Y ESTADO ---
+        if (isset($datos['id_pedido_trabajos'])) {
+            $idPedido = $datos['id_pedido_trabajos'];
+
+            // 1. Actualizar Estado (si tienes esa función)
+            if (function_exists('ActualizarEstadoPedido')) {
+                ActualizarEstadoPedido($conexion, $idPedido);
+            }
+
+            // 2. Recalcular Precio Total del Pedido
+            // Verifica si tu tabla padre se llama 'pedidos_trabajos' y la ID 'idPedidoTrabajo' o 'ID'
+            $sqlTotal = "UPDATE pedidos_trabajos SET PRECIO_TOTAL = (
+                            SELECT COALESCE(SUM(precio), 0) 
+                            FROM detalle_trabajos 
+                            WHERE id_pedido_trabajos = ?
+                         ) WHERE idPedidoTrabajo = ?"; 
+            
+            $stmtTotal = $conexion->prepare($sqlTotal);
+            if ($stmtTotal) {
+                $stmtTotal->bind_param("ii", $idPedido, $idPedido);
+                $stmtTotal->execute();
+                $stmtTotal->close();
+            }
         }
         
-        return $filasAfectadas > 0;
+        return true; // Devolvemos true si no hubo excepciones
         
     } catch (Exception $e) {
         error_log("Excepción al procesar detalle: " . $e->getMessage());
