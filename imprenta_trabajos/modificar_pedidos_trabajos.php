@@ -23,9 +23,8 @@ $DatosPedidoActual = array();
 $DetallesPedido = array();
 $IdPedidoParaJs = 'null';
 
-// --- LOGICA PRINCIPAL: CARGA Y MODIFICACION ---
+// --- LOGICA PRINCIPAL ---
 
-// Caso A: Se envió el formulario para Modificar Seña
 if (!empty($_POST['BotonModificarSenia'])) {
     $idPedido = (int)$_POST['IdPedido'];
     $montoOperacion = (float)($_POST['montoOperacion'] ?? 0);
@@ -42,24 +41,20 @@ if (!empty($_POST['BotonModificarSenia'])) {
             $_SESSION['Estilo'] = 'success';
         }
     }
-    // Recargar datos
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
-// Caso B: Carga normal por GET
 else if (!empty($_GET['ID_PEDIDO'])) {
     $idPedido = (int)$_GET['ID_PEDIDO'];
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
-// Caso C: Retorno de error
 else if (!empty($_POST['IdPedido'])) {
     $idPedido = (int)$_POST['IdPedido'];
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
     $DetallesPedido = Detalles_Pedido_Trabajo($MiConexion, $idPedido);
 }
 
-// Validar que exista el pedido
 if (empty($DatosPedidoActual['ID'])) {
     header('Location: listados_pedidos_trabajos.php');
     exit;
@@ -92,7 +87,6 @@ ob_end_flush();
         <?php } ?>
 
         <form method="post" id="formPrincipal">
-            
             <div class="card mb-3">
                 <div class="card-body py-3">
                     <div class="row">
@@ -135,7 +129,6 @@ ob_end_flush();
                                     foreach ($DetallesPedido as $detalle) { 
                                         list($Title, $Color) = ColorDeFilaTrabajo($detalle['ESTADO_ID']); 
                                         
-                                        // LOGICA FACTURADO
                                         $isFacturado = !empty($detalle['FACTURADO']) || !empty($detalle['facturado']);
                                         $numFactura = $detalle['NUMERO_FACTURA'] ?? $detalle['numeroFactura'] ?? '';
                                 ?>
@@ -168,9 +161,7 @@ ob_end_flush();
                                     </td>
                                 </tr>
                                 <?php } } else { ?>
-                                <tr>
-                                    <td colspan="7" class="text-center py-3">No hay trabajos registrados</td>
-                                </tr>
+                                <tr><td colspan="7" class="text-center py-3">No hay trabajos registrados</td></tr>
                                 <?php } ?>
                             </tbody>
                         </table>
@@ -229,7 +220,7 @@ ob_end_flush();
     </section>
 </main>
 
-<div class="modal fade" id="agregarDetalleModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="agregarDetalleModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -259,7 +250,6 @@ ob_end_flush();
                             </select>
                         </div>
                     </div>
-
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Proveedor</label>
@@ -276,7 +266,6 @@ ob_end_flush();
                             <input type="number" class="form-control" name="precio" step="0.01" min="0" required>
                         </div>
                     </div>
-
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Fecha Entrega</label>
@@ -286,27 +275,21 @@ ob_end_flush();
                             <label class="form-label">Hora Entrega</label>
                             <select class="form-select" name="horaEntrega">
                                 <?php 
-                                $horas = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
-                                          '12:00', '12:30', '16:00', '16:30', '17:00', '17:30', 
-                                          '18:00', '18:30', '19:00', '19:30'];
+                                $horas = ['08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30'];
                                 foreach ($horas as $h) echo "<option value='$h'>$h</option>";
                                 ?>
                             </select>
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
                         <textarea class="form-control" name="descripcion" rows="2"></textarea>
                     </div>
-
                     <hr>
-
                     <div class="mb-3 form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="checkFacturadoAgregar" name="facturado" value="1">
                         <label class="form-check-label fw-bold" for="checkFacturadoAgregar">¿Está Facturado?</label>
                     </div>
-
                     <div id="divFacturacionAgregar" style="display: none;" class="bg-light p-3 rounded border">
                         <div class="row">
                             <div class="col-md-6">
@@ -324,7 +307,6 @@ ob_end_flush();
                             </div>
                         </div>
                     </div>
-
                     <div class="modal-footer mt-3">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Guardar Trabajo</button>
@@ -335,7 +317,7 @@ ob_end_flush();
     </div>
 </div>
 
-<div class="modal fade" id="eliminarDetalleModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="eliminarDetalleModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -344,7 +326,7 @@ ob_end_flush();
             </div>
             <div class="modal-body">
                 <p>¿Seguro que deseas eliminar este trabajo?</p>
-                <p class="text-danger small">El precio se descontará del total del pedido.</p>
+                <p class="text-danger small">El precio se descontará del total.</p>
                 <form action="procesar_detalle.php" method="POST">
                     <input type="hidden" name="accion" value="eliminar">
                     <input type="hidden" name="idDetalle" id="idDetalleEliminar">
@@ -359,7 +341,7 @@ ob_end_flush();
     </div>
 </div>
 
-<div class="modal fade" id="editarDetalleModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editarDetalleModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -374,37 +356,18 @@ ob_end_flush();
 <div class="modal fade" id="agregarSeniaModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Agregar Seña</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3"><label>Monto</label><input type="number" step="0.01" class="form-control" id="montoAgregar"></div>
-                <div class="mb-3"><label>Método</label><div class="d-flex flex-wrap" id="metodosAgregarContainer"></div></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" id="confirmarAgregarBtn">Confirmar</button>
-            </div>
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Agregar Seña</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div class="mb-3"><label>Monto</label><input type="number" step="0.01" class="form-control" id="montoAgregar"></div><div class="mb-3"><label>Método</label><div class="d-flex flex-wrap" id="metodosAgregarContainer"></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-success" id="confirmarAgregarBtn">Confirmar</button></div>
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="quitarSeniaModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Quitar Seña</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3"><label>Monto a quitar (Máx: <span id="maxSenia"></span>)</label><input type="number" step="0.01" class="form-control" id="montoQuitar"></div>
-                <div class="mb-3"><label>Devolución</label><div class="d-flex flex-wrap" id="metodosQuitarContainer"></div></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirmarQuitarBtn">Confirmar</button>
-            </div>
+            <div class="modal-header bg-danger text-white"><h5 class="modal-title">Quitar Seña</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div class="mb-3"><label>Monto a quitar (Máx: <span id="maxSenia"></span>)</label><input type="number" step="0.01" class="form-control" id="montoQuitar"></div><div class="mb-3"><label>Devolución</label><div class="d-flex flex-wrap" id="metodosQuitarContainer"></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-danger" id="confirmarQuitarBtn">Confirmar</button></div>
         </div>
     </div>
 </div>
@@ -448,7 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
             agregarModal.show();
         });
     }
-
     if(btnQuitarSenia) {
         btnQuitarSenia.addEventListener('click', function() {
             const actual = parseFloat(this.dataset.seniaActual);
@@ -460,16 +422,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('confirmarAgregarBtn').addEventListener('click', function() {
         const monto = document.getElementById('montoAgregar').value;
-        if(!metodoSeleccionado) return alert('Seleccione método de pago');
-        if(!monto || monto <= 0) return alert('Ingrese monto válido');
+        if(!metodoSeleccionado) return alert('Seleccione método'); if(!monto || monto <= 0) return alert('Monto inválido');
         inputEsReduccion.value = '0'; inputMetodoPago.value = metodoSeleccionado; inputMontoOperacion.value = monto;
         formPrincipal.submit();
     });
-
     document.getElementById('confirmarQuitarBtn').addEventListener('click', function() {
         const monto = document.getElementById('montoQuitar').value;
-        if(!metodoSeleccionado) return alert('Seleccione método');
-        if(!monto || monto <= 0) return alert('Ingrese monto válido');
+        if(!metodoSeleccionado) return alert('Seleccione método'); if(!monto || monto <= 0) return alert('Monto inválido');
         inputEsReduccion.value = '1'; inputMetodoPago.value = metodoSeleccionado; inputMontoOperacion.value = monto;
         formPrincipal.submit();
     });
@@ -483,11 +442,10 @@ document.addEventListener('DOMContentLoaded', function() {
         checkFacturado.addEventListener('change', function() {
             if (this.checked) {
                 divFacturacion.style.display = 'block';
-                selectTipo.setAttribute('required', 'required');
-                inputNum.setAttribute('required', 'required');
+                selectTipo.required = true; inputNum.required = true;
             } else {
                 divFacturacion.style.display = 'none';
-                selectTipo.removeAttribute('required'); inputNum.removeAttribute('required');
+                selectTipo.required = false; inputNum.required = false;
                 selectTipo.value = ''; inputNum.value = '';
             }
         });
@@ -495,9 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 3. TOOLTIPS
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl) })
 
     // 4. GLOBALES
     window.eliminarDetalle = function(id) {
@@ -509,17 +465,15 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`obtener_detalle.php?id=${id}`).then(r=>r.text()).then(html=>{
             document.getElementById('contenidoEditarDetalle').innerHTML=html;
             
-            // --- AQUI SE INYECTA LA LOGICA DEL EDITAR ---
-            const chk = document.getElementById('facturado'); // IDs de obtener_detalle.php
-            const div = document.getElementById('facturacionFields');
-            const sel = document.getElementById('tipo_factura');
-            const inp = document.getElementById('numero_factura');
-            const hid = document.getElementById('hiddenFacturado');
+            // --- LOGICA EDITAR CORREGIDA ---
+            const chk = document.getElementById('facturadoEditar');
+            const div = document.getElementById('facturacionFieldsEditar');
+            const sel = document.getElementById('tipo_factura_editar');
+            const inp = document.getElementById('numero_factura_editar');
 
             if(chk) {
-                const toggle = () => {
-                    hid.value = chk.checked ? '1' : '0';
-                    if(chk.checked) {
+                chk.addEventListener('change', function() {
+                    if(this.checked) {
                         div.style.display = 'block';
                         sel.disabled = false; inp.disabled = false;
                         sel.required = true; inp.required = true;
@@ -527,14 +481,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         div.style.display = 'none';
                         sel.disabled = true; inp.disabled = true;
                         sel.required = false; inp.required = false;
+                        // Opcional: limpiar valores
+                        // sel.value = ''; inp.value = ''; 
                     }
-                };
-                chk.addEventListener('change', toggle);
-                // No llamamos a toggle() al inicio porque PHP ya define el style.display
-                // y el disabled/required inicial. Solo escuchamos cambios.
+                });
             }
-            // --------------------------------------------
-
+            // -------------------------------
             new bootstrap.Modal(document.getElementById('editarDetalleModal')).show();
         });
     };

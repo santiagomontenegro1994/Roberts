@@ -2,15 +2,14 @@
 require_once '../funciones/conexion.php';
 require_once '../funciones/imprenta.php';
 
-// Validar sesión (opcional, pero recomendado)
+// Validar sesión
 session_start();
 if (empty($_SESSION['Usuario_Nombre'])) exit('Acceso denegado');
 
-// Obtener ID
 $idDetalle = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $MiConexion = ConexionBD();
 
-// Obtener datos
+// Consulta
 $sql = "SELECT * FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
 $stmt = $MiConexion->prepare($sql);
 $stmt->bind_param("i", $idDetalle);
@@ -25,7 +24,7 @@ $trabajos = Datos_Trabajos($MiConexion);
 $proveedores = Listar_Proveedores($MiConexion);
 $tiposFactura = Listar_Tipos_Factura($MiConexion);
 
-// Verificar facturado (para lógica PHP inicial)
+// Verificar facturado
 $isFacturado = ($detalle['facturado'] == 1);
 ?>
 
@@ -33,8 +32,7 @@ $isFacturado = ($detalle['facturado'] == 1);
     <input type="hidden" name="accion" value="editar">
     <input type="hidden" name="idDetalle" value="<?php echo $detalle['idDetalleTrabajo']; ?>">
     <input type="hidden" name="IdPedido" value="<?php echo $detalle['id_pedido_trabajos']; ?>">
-    <input type="hidden" name="facturado" value="0" id="hiddenFacturado">
-
+    
     <div class="row mb-3">
         <div class="col-md-4">
             <label class="form-label">Estado</label>
@@ -99,15 +97,15 @@ $isFacturado = ($detalle['facturado'] == 1);
     </div>   
         
     <div class="mb-3 form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="facturado" value="1" <?php echo $isFacturado ? 'checked' : ''; ?>>
-        <label class="form-check-label fw-bold" for="facturado">¿Facturado?</label>
+        <input class="form-check-input" type="checkbox" id="facturadoEditar" name="facturado" value="1" <?php echo $isFacturado ? 'checked' : ''; ?>>
+        <label class="form-check-label fw-bold" for="facturadoEditar">¿Facturado?</label>
     </div>
 
-    <div id="facturacionFields" style="display: <?php echo $isFacturado ? 'block' : 'none'; ?>;" class="bg-light p-3 rounded border">
+    <div id="facturacionFieldsEditar" style="display: <?php echo $isFacturado ? 'block' : 'none'; ?>;" class="bg-light p-3 rounded border">
         <div class="row">
             <div class="col-md-6">
                 <label class="form-label">Tipo de Factura</label>
-                <select class="form-select" id="tipo_factura" name="idTipoFactura" <?php echo $isFacturado ? 'required' : 'disabled'; ?>>
+                <select class="form-select" id="tipo_factura_editar" name="idTipoFactura" <?php echo $isFacturado ? 'required' : 'disabled'; ?>>
                     <option value="">Seleccione...</option>
                     <?php foreach ($tiposFactura as $tipo): ?>
                         <option value="<?php echo $tipo['idTipoFactura']; ?>" <?php echo ($tipo['idTipoFactura'] == $detalle['idTipoFactura']) ? 'selected' : ''; ?>>
@@ -118,7 +116,7 @@ $isFacturado = ($detalle['facturado'] == 1);
             </div>
             <div class="col-md-6">
                 <label class="form-label">Número de Factura</label>
-                <input type="text" class="form-control" id="numero_factura" name="numeroFactura" 
+                <input type="text" class="form-control" id="numero_factura_editar" name="numeroFactura" 
                     value="<?php echo htmlspecialchars($detalle['numeroFactura']); ?>" <?php echo $isFacturado ? 'required' : 'disabled'; ?>>
             </div>
         </div>
