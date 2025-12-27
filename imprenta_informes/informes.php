@@ -1,90 +1,317 @@
 <?php
-// Incluimos la lógica de negocio antes de imprimir nada
-require_once 'procesar_informe.php';
+ob_start();
+session_start();
+
+if (empty($_SESSION['Usuario_Nombre'])) {
+    header('Location: ../core/cerrarsesion.php');
+    exit;
+}
+
+require('../shared/encabezado.inc.php');
+require('../shared/barraLateral.inc.php');
 ?>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Informes - Imprenta Roberts</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
-        
-        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .header-container h1 { color: #333; margin: 0; font-size: 24px; }
-        .btn-print { background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-size: 14px; transition: background 0.3s; }
-        .btn-print:hover { background-color: #0056b3; }
+<main id="main" class="main">
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Informe Financiero Mensual</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item active">Resumen de Ingresos y Egresos</li>
+        </ol>
 
-        /* Contenedor de Tarjetas */
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-
-        /* Estilo de Tarjeta */
-        .card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid transparent; }
-        
-        .card h3 { margin: 0 0 10px 0; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        .card .amount { font-size: 32px; font-weight: bold; color: #333; margin-bottom: 5px; }
-        
-        /* Estilos de Variación (Porcentajes) */
-        .variation { font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; }
-        .variation span { margin-left: 5px; font-weight: normal; color: #999; }
-
-        /* Colores específicos de borde para tarjetas */
-        .card.expenses { border-left-color: #dc3545; } /* Rojo */
-        .card.profit { border-left-color: #28a745; }   /* Verde */
-        .card.income { border-left-color: #17a2b8; }   /* Azul */
-
-    </style>
-</head>
-<body>
-
-    <div class="header-container">
-        <div>
-            <h1>Informe Financiero</h1>
-            <p style="color: #666; margin: 5px 0 0;">Período: <?php echo $nombreMesActual . ' ' . $anioActual; ?></p>
-        </div>
-        <a href="imprimir_informe.php" target="_blank" class="btn-print">
-            Imprimir Informe PDF
-        </a>
-    </div>
-
-    <div class="dashboard-grid">
-        
-        <div class="card income">
-            <h3>Ingresos Totales</h3>
-            <div class="amount">$ <?php echo number_format($datosMesActual['ingresos'], 2, ',', '.'); ?></div>
-            <div class="variation" style="color: #6c757d;">
-                <small>Total facturado este mes</small>
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <form class="row g-3 align-items-end" id="formFiltros">
+                    <div class="col-md-4">
+                        <label for="mesSeleccionado" class="form-label">Seleccionar Mes</label>
+                        <input type="month" class="form-control" id="mesSeleccionado" value="<?php echo date('Y-m'); ?>">
+                    </div>
+                    <div class="col-md-8 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-success" id="btnExcel">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        
+                        <button type="button" class="btn btn-danger" id="btnPDF">
+                            <i class="bi bi-filetype-pdf me-1"></i>PDF
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div class="card expenses">
-            <h3>Salidas Totales</h3>
-            <div class="amount">$ <?php echo $txtGastosActual; ?></div>
-            
-            <div class="variation" style="color: <?php echo $colorGastos; ?>">
-                <?php echo $iconoGastos . ' ' . $txtVarGastos; ?>%
-                <span>respecto al mes anterior</span>
+        <div class="row mb-4">
+            <div class="col-xl-4 col-md-6">
+                <div class="card border-start border-4 border-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Banco</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valBanco">$0</div>
+                                <small id="porcBanco" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-bank fs-2 text-gray-300"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="card border-start border-4 border-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">MercadoPago</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valMP">$0</div>
+                                <small id="porcMP" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-qr-code-scan fs-2 text-gray-300"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="card border-start border-4 border-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Efectivo</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valEfectivo">$0</div>
+                                <small id="porcEfectivo" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-cash-stack fs-2 text-gray-300"></i></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="card profit">
-            <h3>Ganancia Neta</h3>
-            <div class="amount">$ <?php echo $txtNetoActual; ?></div>
-            
-            <div class="variation" style="color: <?php echo $colorNeto; ?>">
-                <?php echo $iconoNeto . ' ' . $txtVarNeto; ?>%
-                <span>respecto al mes anterior</span>
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <i class="bi bi-calculator me-1"></i> Balance del Mes
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row text-center">
+                            
+                            <div class="col-md-4 mb-3">
+                                <h5 class="text-muted">Ventas Totales</h5>
+                                <h2 class="text-primary fw-bold" id="valTotalVentas">$0</h2>
+                                <div id="porcTotalVentas" class="mb-2"></div>
+                                
+                                <button class="btn btn-sm btn-outline-primary mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#detalleVentas" aria-expanded="false">
+                                    Ver Origen <i class="bi bi-chevron-down"></i>
+                                </button>
+                                
+                                <div class="collapse mt-3" id="detalleVentas">
+                                    <ul class="list-group list-group-flush text-start small" id="listaDetalleVentas">
+                                        <li class="list-group-item">Cargando...</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3 border-start border-end">
+                                <h5 class="text-muted">Salidas Totales</h5>
+                                <h2 class="text-danger fw-bold" id="valTotalGastos">$0</h2>
+                                <div id="porcTotalGastos" class="mb-2"></div>
+                                
+                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#detalleGastos" aria-expanded="false">
+                                    Ver Detalle <i class="bi bi-chevron-down"></i>
+                                </button>
+                                
+                                <div class="collapse mt-3" id="detalleGastos">
+                                    <ul class="list-group list-group-flush text-start small" id="listaDetalleGastos">
+                                        <li class="list-group-item">Cargando...</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <h5 class="text-muted">Ganancia Neta</h5>
+                                <h2 class="text-success fw-bold" id="valGanancia">$0</h2>
+                                <div id="porcGanancia" class="mb-2"></div>
+                                <small class="text-muted d-block mt-2">Ingresos - Egresos</small>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
+        
     </div>
+</main>
 
-    <div style="margin-top: 40px;">
-        <h3 style="color: #444; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Resumen Rápido</h3>
-        <p style="color: #666;">Para ver el detalle completo de movimientos, por favor descargue el PDF.</p>
-    </div>
+<script>
+// --- CONFIGURACIÓN ---
+const API_URL = 'procesar_informe.php';
+// Formateador de moneda Argentina
+const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
 
-</body>
-</html>
+// --- FUNCIONES AUXILIARES ---
+
+// Genera el HTML del badge de porcentaje (+X% verde / -X% rojo)
+function htmlVariacion(actual, anterior, invertido = false) {
+    if (anterior === 0) return '<span class="badge bg-secondary">Sin datos previos</span>';
+    
+    let dif = ((actual - anterior) / anterior) * 100;
+    
+    // Si invertido es true (para gastos): Si sube es "malo" (rojo), si baja es "bueno" (verde)
+    let colorClass = 'text-success';
+    let iconClass = 'bi-arrow-up';
+    
+    if (!invertido) {
+        // Lógica normal (Ventas/Ganancia): Más es mejor
+        if (dif < 0) { colorClass = 'text-danger'; iconClass = 'bi-arrow-down'; }
+    } else {
+        // Lógica gastos: Más es peor
+        if (dif > 0) { colorClass = 'text-danger'; iconClass = 'bi-arrow-up'; }
+        else { colorClass = 'text-success'; iconClass = 'bi-arrow-down'; }
+    }
+
+    const signo = dif >= 0 ? '+' : '';
+    return `<span class="${colorClass} fw-bold"><i class="bi ${iconClass}"></i> ${signo}${dif.toFixed(1)}%</span> <span class="text-muted small">vs mes anterior</span>`;
+}
+
+// Renderiza una lista en el UL correspondiente
+function renderizarLista(idLista, datos, claseBadge = 'bg-primary') {
+    const lista = document.getElementById(idLista);
+    lista.innerHTML = '';
+    
+    if (datos && datos.length > 0) {
+        datos.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center bg-light';
+            li.innerHTML = `${item.concepto} <span class="badge ${claseBadge} rounded-pill">${dinero(item.monto)}</span>`;
+            lista.appendChild(li);
+        });
+    } else {
+        lista.innerHTML = '<li class="list-group-item text-center text-muted">Sin movimientos</li>';
+    }
+}
+
+// --- LÓGICA PRINCIPAL ---
+
+async function cargarDatos() {
+    const mesInput = document.getElementById('mesSeleccionado').value;
+    if(!mesInput) return;
+
+    try {
+        const response = await fetch(`${API_URL}?periodo=${mesInput}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            console.error('Error:', data.msg);
+            return;
+        }
+
+        const d = data.datos;   // Datos Mes Actual
+        const p = data.previo;  // Datos Mes Anterior
+
+        // 1. Tarjetas Superiores
+        document.getElementById('valBanco').innerText = dinero(d.banco);
+        document.getElementById('porcBanco').innerHTML = htmlVariacion(d.banco, p.banco);
+
+        document.getElementById('valMP').innerText = dinero(d.mp);
+        document.getElementById('porcMP').innerHTML = htmlVariacion(d.mp, p.mp);
+
+        document.getElementById('valEfectivo').innerText = dinero(d.efectivo);
+        document.getElementById('porcEfectivo').innerHTML = htmlVariacion(d.efectivo, p.efectivo);
+
+        // 2. Panel Central
+        
+        // Ventas Totales
+        document.getElementById('valTotalVentas').innerText = dinero(d.totalIngresos);
+        document.getElementById('porcTotalVentas').innerHTML = htmlVariacion(d.totalIngresos, p.totalIngresos);
+        renderizarLista('listaDetalleVentas', d.desgloseIngresos, 'bg-primary');
+
+        // Salidas Totales
+        document.getElementById('valTotalGastos').innerText = dinero(d.totalGastos);
+        document.getElementById('porcTotalGastos').innerHTML = htmlVariacion(d.totalGastos, p.totalGastos, true); // true = invertir colores
+        renderizarLista('listaDetalleGastos', d.desgloseGastos, 'bg-danger');
+
+        // Ganancia Neta
+        const gananciaActual = d.totalIngresos - d.totalGastos;
+        const gananciaPrevio = p.totalIngresos - p.totalGastos;
+        
+        const divGanancia = document.getElementById('valGanancia');
+        divGanancia.innerText = dinero(gananciaActual);
+        divGanancia.className = gananciaActual >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+        
+        document.getElementById('porcGanancia').innerHTML = htmlVariacion(gananciaActual, gananciaPrevio);
+
+        // Guardar datos en memoria para el Excel
+        window.datosReporte = { mes: mesInput, d, gananciaActual };
+
+    } catch (error) {
+        console.error('Error al cargar datos:', error);
+    }
+}
+
+// --- EVENTOS ---
+
+document.getElementById('mesSeleccionado').addEventListener('change', cargarDatos);
+document.addEventListener('DOMContentLoaded', cargarDatos);
+
+// Botón PDF: Redirige al script PHP que genera el PDF (Dompdf)
+document.getElementById('btnPDF').addEventListener('click', () => {
+    const mesInput = document.getElementById('mesSeleccionado').value; // Formato 2023-12
+    const [anio, mes] = mesInput.split('-');
+    // Abrir en nueva pestaña
+    window.open(`imprimir_informe.php?mes=${mes}&anio=${anio}`, '_blank');
+});
+
+// Botón Excel: Genera CSV limpio
+document.getElementById('btnExcel').addEventListener('click', () => {
+    if(!window.datosReporte) return;
+    const { mes, d, gananciaActual } = window.datosReporte;
+    
+    // Usamos ; como separador porque Excel en español lo prefiere
+    // y comillas para encerrar textos y evitar que se rompan las columnas
+    let csv = [];
+    csv.push(`"REPORTE FINANCIERO";"${mes}"`);
+    csv.push(``); // Fila vacía
+    
+    // Sección Ingresos
+    csv.push(`"DETALLE INGRESOS";"MONTO"`);
+    if(d.desgloseIngresos) {
+        d.desgloseIngresos.forEach(item => {
+            // Reemplazar puntos por comas en decimales si tu Excel es ES, o dejarlo así
+            csv.push(`"${item.concepto}";"${item.monto}"`);
+        });
+    }
+    csv.push(`"TOTAL VENTAS";"${d.totalIngresos}"`);
+    csv.push(``);
+
+    // Sección Egresos
+    csv.push(`"DETALLE SALIDAS";"MONTO"`);
+    if(d.desgloseGastos) {
+        d.desgloseGastos.forEach(item => {
+            csv.push(`"${item.concepto}";"${item.monto}"`);
+        });
+    }
+    csv.push(`"TOTAL SALIDAS";"${d.totalGastos}"`);
+    csv.push(``);
+    
+    // Resultado
+    csv.push(`"GANANCIA NETA";"${gananciaActual}"`);
+
+    // Unir todo con saltos de línea
+    const csvString = csv.join("\n");
+    
+    // Crear Blob con BOM (\uFEFF) para que Excel reconozca tildes y ñ
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    
+    // Descargar
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `informe_${mes}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+</script>
+
+<?php require('../shared/footer.inc.php'); ?>

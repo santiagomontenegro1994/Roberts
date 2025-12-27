@@ -1,119 +1,85 @@
 <?php
 // procesar_informe.php
+header('Content-Type: application/json');
 session_start();
 
-// Validar sesión
 if (empty($_SESSION['Usuario_Nombre'])) {
-    header('Location: ../core/cerrarsesion.php');
+    echo json_encode(['ok' => false, 'msg' => 'Sesión expirada']);
     exit;
 }
 
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// --- 1. FUNCIONES DE CÁLCULO ---
+// Recibimos el periodo por GET (formato YYYY-MM) o usamos el actual
+$periodo = isset($_GET['periodo']) ? $_GET['periodo'] : date('Y-m');
+list($anio, $mes) = explode('-', $periodo);
 
-/**
- * Obtiene Ingresos, Egresos y Neto para un mes y año específicos
- */
-function obtenerTotalesMes($conexion, $mes, $anio) {
-    // Usamos la relación entre detalle_caja -> caja (para la fecha) -> tipo_movimiento (para saber si suma o resta)
-    // NOTA: Asumo que en tu tabla 'tipo_movimiento', es_entrada=1 suma y es_salida=1 resta.
-    $sql = "
-        SELECT 
-            SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_entradas,
-            SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_salidas
-        FROM detalle_caja dc
-        INNER JOIN caja c ON dc.idCaja = c.idCaja
-        INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-        WHERE MONTH(c.Fecha) = '$mes' AND YEAR(c.Fecha) = '$anio'
-    ";
-    
+// Calculamos el mes anterior
+$fechaObj = new DateTime($periodo . '-01');
+$fechaObj->modify('-1 month');
+$mesAnt = $fechaObj->format('m');
+$anioAnt = $fechaObj->format('Y');
+
+// --- FUNCIONES ---
+
+function obtenerDatosMes($conexion, $m, $a) {
+    // 1. Totales Generales
+    $sql = "SELECT 
+                SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as ingresos,
+                SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as egresos,
+                -- Desglose por método de pago (ajustar según tus ID de tipo movimiento o descripciones si es necesario)
+                SUM(CASE WHEN tm.denominacion LIKE '%Banco%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as banco,
+                SUM(CASE WHEN tm.denominacion LIKE '%MercadoPago%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as mp,
+                SUM(CASE WHEN tm.denominacion LIKE '%Efectivo%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as efectivo
+            FROM detalle_caja dc
+            INNER JOIN caja c ON dc.idCaja = c.idCaja
+            INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+            WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a'";
+            
     $query = mysqli_query($conexion, $sql);
-    $data = mysqli_fetch_assoc($query);
-    
-    // Devolvemos un array con los 3 valores clave, asegurando que no sean null (0 por defecto)
-    $entradas = $data['total_entradas'] ?? 0;
-    $salidas  = $data['total_salidas'] ?? 0;
-    
+    $totales = mysqli_fetch_assoc($query);
+
+    // 2. Lista de Gastos (Detalle)
+    $sqlGastos = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
+                  FROM detalle_caja dc
+                  JOIN caja c ON dc.idCaja = c.idCaja
+                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                  WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND tm.es_salida = 1
+                  GROUP BY tm.denominacion ORDER BY monto DESC";
+    $qGastos = mysqli_query($conexion, $sqlGastos);
+    $listaGastos = [];
+    while($row = mysqli_fetch_assoc($qGastos)) $listaGastos[] = $row;
+
+    // 3. Lista de Ingresos (Detalle para el nuevo desplegable)
+    $sqlIngresos = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
+                  FROM detalle_caja dc
+                  JOIN caja c ON dc.idCaja = c.idCaja
+                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                  WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND tm.es_entrada = 1
+                  GROUP BY tm.denominacion ORDER BY monto DESC";
+    $qIngresos = mysqli_query($conexion, $sqlIngresos);
+    $listaIngresos = [];
+    while($row = mysqli_fetch_assoc($qIngresos)) $listaIngresos[] = $row;
+
     return [
-        'ingresos' => $entradas,
-        'gastos'   => $salidas,
-        'neto'     => $entradas - $salidas
+        'banco' => floatval($totales['banco']),
+        'mp' => floatval($totales['mp']),
+        'efectivo' => floatval($totales['efectivo']),
+        'totalIngresos' => floatval($totales['ingresos']), // Ventas Totales
+        'totalGastos' => floatval($totales['egresos']),
+        'desgloseGastos' => $listaGastos,
+        'desgloseIngresos' => $listaIngresos
     ];
 }
 
-/**
- * Calcula el porcentaje de crecimiento o decrecimiento
- */
-function calcularVariacion($actual, $anterior) {
-    if ($anterior == 0) {
-        // Si el mes anterior fue 0:
-        // - Si el actual es positivo, es un aumento del 100% (simbólico).
-        // - Si el actual es 0, no hubo cambio (0%).
-        return ($actual > 0) ? 100 : 0;
-    }
-    return (($actual - $anterior) / $anterior) * 100;
-}
+// Ejecutamos
+$datosActual = obtenerDatosMes($MiConexion, $mes, $anio);
+$datosPrevio = obtenerDatosMes($MiConexion, $mesAnt, $anioAnt);
 
-// --- 2. LOGICA DE FECHAS ---
-
-// Fechas actuales
-$mesActual = date('m');
-$anioActual = date('Y');
-
-// Fechas del mes pasado
-$mesAnterior = date('m', strtotime('-1 month'));
-$anioAnterior = date('Y', strtotime('-1 month'));
-
-// Nombre del mes para mostrar en el título
-$nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
-$nombreMesActual = $nombresMeses[$mesActual];
-
-// --- 3. EJECUCIÓN DE CONSULTAS ---
-
-// A. Obtener datos financieros
-$datosMesActual   = obtenerTotalesMes($MiConexion, $mesActual, $anioActual);
-$datosMesAnterior = obtenerTotalesMes($MiConexion, $mesAnterior, $anioAnterior);
-
-// B. Calcular porcentajes de variación
-// Para Salidas (Gastos)
-$varGastos = calcularVariacion($datosMesActual['gastos'], $datosMesAnterior['gastos']);
-// Para Ganancia Neta
-$varNeto   = calcularVariacion($datosMesActual['neto'], $datosMesAnterior['neto']);
-
-// --- 4. PREPARACIÓN DE ESTILOS VISUALES (Colores e Iconos) ---
-
-// Lógica Visual para GASTOS:
-// Si los gastos suben (positivo), es "malo" (rojo). Si bajan, es "bueno" (verde).
-if ($varGastos > 0) {
-    $colorGastos = '#dc3545'; // Rojo
-    $iconoGastos = '&#9650;'; // Flecha arriba
-} elseif ($varGastos < 0) {
-    $colorGastos = '#28a745'; // Verde
-    $iconoGastos = '&#9660;'; // Flecha abajo
-} else {
-    $colorGastos = '#6c757d'; // Gris (igual)
-    $iconoGastos = '=';
-}
-
-// Lógica Visual para GANANCIA NETA:
-// Si la ganancia sube, es "bueno" (verde). Si baja, es "malo" (rojo).
-if ($varNeto > 0) {
-    $colorNeto = '#28a745'; // Verde
-    $iconoNeto = '&#9650;'; 
-} elseif ($varNeto < 0) {
-    $colorNeto = '#dc3545'; // Rojo
-    $iconoNeto = '&#9660;'; 
-} else {
-    $colorNeto = '#6c757d'; 
-    $iconoNeto = '=';
-}
-
-// (Opcional) Guardamos los valores formateados en variables para imprimir fácil
-$txtGastosActual = number_format($datosMesActual['gastos'], 2, ',', '.');
-$txtNetoActual   = number_format($datosMesActual['neto'], 2, ',', '.');
-$txtVarGastos    = number_format(abs($varGastos), 1); // Valor absoluto para mostrar % sin el signo menos duplicado
-$txtVarNeto      = number_format(abs($varNeto), 1);
-
+echo json_encode([
+    'ok' => true,
+    'datos' => $datosActual,
+    'previo' => $datosPrevio
+]);
 ?>
