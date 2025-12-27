@@ -1,110 +1,119 @@
 <?php
 // procesar_informe.php
-header('Content-Type: application/json');
-require_once '../funciones/conexion.php';
-
-// Verificar sesión si es necesario
 session_start();
+
+// Validar sesión
 if (empty($_SESSION['Usuario_Nombre'])) {
-    echo json_encode(['ok' => false, 'msg' => 'No autorizado']);
+    header('Location: ../core/cerrarsesion.php');
     exit;
 }
 
+require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// Obtener el periodo enviado por GET (formato "YYYY-MM")
-$periodo = isset($_GET['periodo']) ? $_GET['periodo'] : date('Y-m');
+// --- 1. FUNCIONES DE CÁLCULO ---
 
-// Calcular fechas de inicio y fin del mes actual
-$fechaInicio = $periodo . '-01';
-$fechaFin = date("Y-m-t", strtotime($fechaInicio));
-
-// Calcular fechas del mes ANTERIOR (para comparar)
-$periodoPrevio = date("Y-m", strtotime($periodo . " -1 month"));
-$fechaInicioPrev = $periodoPrevio . '-01';
-$fechaFinPrev = date("Y-m-t", strtotime($fechaInicioPrev));
-
-/* ==========================================================================
-    IMPORTANTE: ZONA DE CONSULTAS SQL
-    Necesito que me pases tu BD para hacer esto real.
-    Por ahora, usaré DATOS DE EJEMPLO para que veas la interfaz funcionando.
- ==========================================================================
-*/
-
-// --- ESTRUCTURA DE RESPUESTA ---
-$respuesta = [
-    'ok' => true,
-    'periodo' => $periodo,
-    'datos' => [ // Mes seleccionado
-        'banco' => 0,
-        'mp' => 0,
-        'efectivo' => 0,
-        'totalGastos' => 0,
-        'desgloseGastos' => [] 
-    ],
-    'previo' => [ // Mes anterior (solo totales para calcular %)
-        'banco' => 0,
-        'mp' => 0,
-        'efectivo' => 0
-    ]
-];
-
-// ------------------------------------------------------------------------
-// AQUÍ HARÍAMOS LAS CONSULTAS REALES (Te dejo la estructura comentada)
-// ------------------------------------------------------------------------
-
-/*
-// EJEMPLO DE CÓMO SERÍA LA CONSULTA REAL (Ajustar a tus tablas)
-function obtenerVentasPorMetodo($conexion, $fInicio, $fFin, $metodo) {
-    $sql = "SELECT SUM(monto) as total FROM ventas 
-            WHERE fecha BETWEEN '$fInicio' AND '$fFin' 
-            AND metodo_pago = '$metodo'";
-    $res = mysqli_query($conexion, $sql);
-    $fila = mysqli_fetch_assoc($res);
-    return $fila['total'] ? floatval($fila['total']) : 0;
+/**
+ * Obtiene Ingresos, Egresos y Neto para un mes y año específicos
+ */
+function obtenerTotalesMes($conexion, $mes, $anio) {
+    // Usamos la relación entre detalle_caja -> caja (para la fecha) -> tipo_movimiento (para saber si suma o resta)
+    // NOTA: Asumo que en tu tabla 'tipo_movimiento', es_entrada=1 suma y es_salida=1 resta.
+    $sql = "
+        SELECT 
+            SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_entradas,
+            SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_salidas
+        FROM detalle_caja dc
+        INNER JOIN caja c ON dc.idCaja = c.idCaja
+        INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+        WHERE MONTH(c.Fecha) = '$mes' AND YEAR(c.Fecha) = '$anio'
+    ";
+    
+    $query = mysqli_query($conexion, $sql);
+    $data = mysqli_fetch_assoc($query);
+    
+    // Devolvemos un array con los 3 valores clave, asegurando que no sean null (0 por defecto)
+    $entradas = $data['total_entradas'] ?? 0;
+    $salidas  = $data['total_salidas'] ?? 0;
+    
+    return [
+        'ingresos' => $entradas,
+        'gastos'   => $salidas,
+        'neto'     => $entradas - $salidas
+    ];
 }
 
-$respuesta['datos']['banco'] = obtenerVentasPorMetodo($MiConexion, $fechaInicio, $fechaFin, 'Banco');
-$respuesta['datos']['mp'] = obtenerVentasPorMetodo($MiConexion, $fechaInicio, $fechaFin, 'MercadoPago');
-// ...etc
-*/
-
-// ------------------------------------------------------------------------
-// DATOS SIMULADOS (BORRAR ESTO CUANDO TENGAS LA BD CONECTADA)
-// ------------------------------------------------------------------------
-
-// Simulamos que los datos varían según el mes para probar el selector
-$seed = crc32($periodo); // Semilla basada en el mes
-srand($seed);
-
-$respuesta['datos']['banco'] = rand(150000, 300000);
-$respuesta['datos']['mp'] = rand(100000, 250000);
-$respuesta['datos']['efectivo'] = rand(50000, 120000);
-
-// Simulamos gastos detallados
-$respuesta['datos']['desgloseGastos'] = [
-    ['concepto' => 'Sueldos Empleados', 'monto' => rand(80000, 90000)],
-    ['concepto' => 'Alquiler Local', 'monto' => 45000],
-    ['concepto' => 'Servicios (Luz/Internet)', 'monto' => rand(12000, 18000)],
-    ['concepto' => 'Insumos de Impresión', 'monto' => rand(20000, 50000)],
-    ['concepto' => 'Cafetería / Varios', 'monto' => rand(2000, 5000)]
-];
-
-// Sumar gastos
-$totalGastos = 0;
-foreach($respuesta['datos']['desgloseGastos'] as $g) {
-    $totalGastos += $g['monto'];
+/**
+ * Calcula el porcentaje de crecimiento o decrecimiento
+ */
+function calcularVariacion($actual, $anterior) {
+    if ($anterior == 0) {
+        // Si el mes anterior fue 0:
+        // - Si el actual es positivo, es un aumento del 100% (simbólico).
+        // - Si el actual es 0, no hubo cambio (0%).
+        return ($actual > 0) ? 100 : 0;
+    }
+    return (($actual - $anterior) / $anterior) * 100;
 }
-$respuesta['datos']['totalGastos'] = $totalGastos;
 
-// Datos del mes previo (Simulados un poco más bajos para ver variación positiva)
-$respuesta['previo']['banco'] = $respuesta['datos']['banco'] * 0.9;
-$respuesta['previo']['mp'] = $respuesta['datos']['mp'] * 0.95;
-$respuesta['previo']['efectivo'] = $respuesta['datos']['efectivo'] * 1.1; // Efectivo bajó en el actual
+// --- 2. LOGICA DE FECHAS ---
 
-// ------------------------------------------------------------------------
-// FIN DATOS SIMULADOS
-// ------------------------------------------------------------------------
+// Fechas actuales
+$mesActual = date('m');
+$anioActual = date('Y');
 
-echo json_encode($respuesta);
+// Fechas del mes pasado
+$mesAnterior = date('m', strtotime('-1 month'));
+$anioAnterior = date('Y', strtotime('-1 month'));
+
+// Nombre del mes para mostrar en el título
+$nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
+$nombreMesActual = $nombresMeses[$mesActual];
+
+// --- 3. EJECUCIÓN DE CONSULTAS ---
+
+// A. Obtener datos financieros
+$datosMesActual   = obtenerTotalesMes($MiConexion, $mesActual, $anioActual);
+$datosMesAnterior = obtenerTotalesMes($MiConexion, $mesAnterior, $anioAnterior);
+
+// B. Calcular porcentajes de variación
+// Para Salidas (Gastos)
+$varGastos = calcularVariacion($datosMesActual['gastos'], $datosMesAnterior['gastos']);
+// Para Ganancia Neta
+$varNeto   = calcularVariacion($datosMesActual['neto'], $datosMesAnterior['neto']);
+
+// --- 4. PREPARACIÓN DE ESTILOS VISUALES (Colores e Iconos) ---
+
+// Lógica Visual para GASTOS:
+// Si los gastos suben (positivo), es "malo" (rojo). Si bajan, es "bueno" (verde).
+if ($varGastos > 0) {
+    $colorGastos = '#dc3545'; // Rojo
+    $iconoGastos = '&#9650;'; // Flecha arriba
+} elseif ($varGastos < 0) {
+    $colorGastos = '#28a745'; // Verde
+    $iconoGastos = '&#9660;'; // Flecha abajo
+} else {
+    $colorGastos = '#6c757d'; // Gris (igual)
+    $iconoGastos = '=';
+}
+
+// Lógica Visual para GANANCIA NETA:
+// Si la ganancia sube, es "bueno" (verde). Si baja, es "malo" (rojo).
+if ($varNeto > 0) {
+    $colorNeto = '#28a745'; // Verde
+    $iconoNeto = '&#9650;'; 
+} elseif ($varNeto < 0) {
+    $colorNeto = '#dc3545'; // Rojo
+    $iconoNeto = '&#9660;'; 
+} else {
+    $colorNeto = '#6c757d'; 
+    $iconoNeto = '=';
+}
+
+// (Opcional) Guardamos los valores formateados en variables para imprimir fácil
+$txtGastosActual = number_format($datosMesActual['gastos'], 2, ',', '.');
+$txtNetoActual   = number_format($datosMesActual['neto'], 2, ',', '.');
+$txtVarGastos    = number_format(abs($varGastos), 1); // Valor absoluto para mostrar % sin el signo menos duplicado
+$txtVarNeto      = number_format(abs($varNeto), 1);
+
 ?>
