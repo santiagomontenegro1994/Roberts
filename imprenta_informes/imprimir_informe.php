@@ -20,12 +20,10 @@ $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
 // 1. CONSULTA DE TOTALES GENERALES Y POR MEDIO DE PAGO
-// Usamos SUM con IF o CASE para sacar todo en una sola consulta eficiente
 $sqlTotales = "
     SELECT 
         SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_entradas,
         SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_salidas,
-        -- Desglose específico (Ajusta los LIKE si tus nombres en BD son distintos)
         SUM(CASE WHEN tm.denominacion LIKE '%Banco%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as banco,
         SUM(CASE WHEN tm.denominacion LIKE '%MercadoPago%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as mp,
         SUM(CASE WHEN tm.denominacion LIKE '%Efectivo%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as efectivo
@@ -70,20 +68,32 @@ ob_start();
     <style>
         body { font-family: 'Helvetica', Arial, sans-serif; color: #333; margin: 0; padding: 30px; }
         
-        /* HEADER CON MARGEN PARA EVITAR SOLAPAMIENTO */
-        .header { 
-            width: 100%; 
-            border-bottom: 2px solid #333; 
-            padding-bottom: 20px; 
-            margin-bottom: 50px; /* Aumentado para separar del contenido */
-            overflow: hidden; /* Importante para limpiar los floats */
+        /* --- CORRECCIÓN HEADER CON TABLA --- */
+        /* Eliminamos floats y usamos tabla para maquetación fija */
+        .header-table {
+            width: 100%;
+            border-bottom: 2px solid #333;
+            margin-bottom: 40px; /* Espacio antes del contenido */
+            padding-bottom: 15px;
         }
-        .header img { max-width: 180px; float: left; margin-top: 10px; }
-        .header-text { text-align: right; float: right; margin-top: 10px; }
-        .header-text h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #444; }
-        .header-text p { margin: 5px 0 0; color: #777; font-size: 14px; }
+        .header-logo {
+            width: 50%;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .header-logo img {
+            max-width: 180px;
+            max-height: 80px; /* Limite de altura para asegurar que no se estire */
+        }
+        .header-info {
+            width: 50%;
+            text-align: right;
+            vertical-align: middle;
+        }
+        .header-info h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #444; }
+        .header-info p { margin: 5px 0 0; color: #777; font-size: 14px; }
         
-        /* SISTEMA DE TARJETAS (Dompdf prefiere tablas a flexbox) */
+        /* --- RESTO DE ESTILOS --- */
         .row-cards { width: 100%; border-spacing: 15px 0; margin-bottom: 30px; margin-left: -15px; }
         .card-cell { 
             width: 33.33%; 
@@ -93,28 +103,22 @@ ob_start();
             text-align: center; 
             border: 1px solid #e9ecef; 
         }
-        
-        /* Estilos específicos para medios de pago */
-        .card-banco { border-top: 4px solid #0d6efd; } /* Azul */
-        .card-mp { border-top: 4px solid #0dcaf0; }    /* Celeste/Cian */
-        .card-efectivo { border-top: 4px solid #198754; } /* Verde */
+        .card-banco { border-top: 4px solid #0d6efd; }
+        .card-mp { border-top: 4px solid #0dcaf0; }    
+        .card-efectivo { border-top: 4px solid #198754; } 
 
         .card h3 { margin: 0 0 10px; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         .card .numero { font-size: 18px; font-weight: bold; color: #333; }
         
-        /* Estilos Balance General */
-        .balance-section { margin-top: 40px; margin-bottom: 20px; }
         .card-ingreso .numero { color: #198754; }
         .card-egreso .numero { color: #dc3545; }
         .card-neto .numero { color: #333; }
         
-        /* Títulos de sección */
         .section-title { font-size: 14px; font-weight: bold; color: #555; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase; }
 
-        /* TABLA */
-        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        table th { background: #eee; text-align: left; padding: 8px; border-bottom: 2px solid #ddd; font-weight: bold; color: #555; }
-        table td { padding: 8px; border-bottom: 1px solid #eee; }
+        table.datos { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        table.datos th { background: #eee; text-align: left; padding: 8px; border-bottom: 2px solid #ddd; font-weight: bold; color: #555; }
+        table.datos td { padding: 8px; border-bottom: 1px solid #eee; }
         .text-right { text-align: right; }
         .badge { padding: 3px 6px; border-radius: 4px; color: white; font-size: 10px; }
         .bg-in { background-color: #198754; }
@@ -125,26 +129,29 @@ ob_start();
 </head>
 <body>
 
-    <div class="header">
-        <?php
-            // Ajusta la ruta a tu logo si es necesario
-            $ruta_imagen = '../assets/img/logo.png';
-            if(file_exists($ruta_imagen)){
-                $tipo = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
-                $dataImg = file_get_contents($ruta_imagen);
-                $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($dataImg);
-                echo '<img src="'.$base64.'" alt="Logo">';
-            } else {
-                echo '<h2>IMPRENTA ROBERTS</h2>';
-            }
-        ?>
-        <div class="header-text">
-            <h1>Informe Económico</h1>
-            <p>Período: <strong><?php echo $nombreMes . ' ' . $anioReporte; ?></strong></p>
-            <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
-        </div>
-    </div>
-
+    <table class="header-table">
+        <tr>
+            <td class="header-logo">
+                <?php
+                    // Ajusta la ruta a tu logo si es necesario
+                    $ruta_imagen = '../assets/img/logo.png';
+                    if(file_exists($ruta_imagen)){
+                        $tipo = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
+                        $dataImg = file_get_contents($ruta_imagen);
+                        $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($dataImg);
+                        echo '<img src="'.$base64.'" alt="Logo">';
+                    } else {
+                        echo '<h2>IMPRENTA ROBERTS</h2>';
+                    }
+                ?>
+            </td>
+            <td class="header-info">
+                <h1>Informe Económico</h1>
+                <p>Período: <strong><?php echo $nombreMes . ' ' . $anioReporte; ?></strong></p>
+                <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
+            </td>
+        </tr>
+    </table>
     <div class="section-title">Desglose de Ingresos por Medio</div>
     <table class="row-cards">
         <tr>
@@ -185,7 +192,7 @@ ob_start();
 
     <div class="section-title" style="margin-top: 30px;">Detalle de Movimientos Agrupados</div>
     
-    <table>
+    <table class="datos">
         <thead>
             <tr>
                 <th>Concepto / Tipo de Movimiento</th>
@@ -230,9 +237,9 @@ ob_start();
 $html = ob_get_clean();
 $dompdf = new Dompdf();
 
-// Opciones para permitir imágenes externas y mejorar renderizado
+// Opciones obligatorias para imágenes y layouts complejos
 $options = $dompdf->getOptions();
-$options->set(array('isRemoteEnable' => true));
+$options->set(array('isRemoteEnabled' => true));
 $dompdf->setOptions($options);
 
 $dompdf->loadHtml($html);
