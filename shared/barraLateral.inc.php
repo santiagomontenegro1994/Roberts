@@ -162,6 +162,19 @@
       </li><!-- End Cuenta Corriente -->
     
       <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#informes-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi-file-earmark-bar-graph"></i><span>Informes</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="informes-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="../imprenta_informes/informes.php">
+            <i class="bi bi-circle"></i><span>Informes</span>
+          </a>
+        </li>
+        </ul>
+      </li><!-- End Informes -->      
+      
+      <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#contables-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-cash-stack"></i><span>Movimiento Contable</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
