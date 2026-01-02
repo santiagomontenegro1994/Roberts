@@ -23,11 +23,11 @@ $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
 // 1. CONSULTA DE TOTALES GENERALES Y CONTADORES
-// Se usan los mismos IDs que indicaste: Banco(3,13,23), MP(22), Efectivo(mov 9)
+// EXCLUYENDO DIFERENCIA DE CAJA (15 en Ingresos, 14 en Egresos)
 $sqlTotales = "
     SELECT 
-        SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_ingresos,
-        SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_egresos,
+        SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as total_ingresos,
+        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento != 14 THEN dc.monto ELSE 0 END) as total_egresos,
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
         SUM(CASE WHEN dc.idTipoMovimiento = 9 THEN dc.monto ELSE 0 END) as efectivo
@@ -72,8 +72,8 @@ ob_start();
         .text-right { text-align: right; }
         
         .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; color: #fff; text-transform: uppercase; }
-        .bg-in { background-color: #28a745; } /* Verde para ingresos */
-        .bg-out { background-color: #dc3545; } /* Rojo para egresos */
+        .bg-in { background-color: #28a745; }
+        .bg-out { background-color: #dc3545; }
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
 
@@ -139,13 +139,14 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            // Consultamos el desglose agrupado
+            // Consultamos el desglose agrupado EXCLUYENDO DIF DE CAJA (14 y 15)
             $sqlDetalle = "
                 SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
+                AND dc.idTipoMovimiento NOT IN (14, 15)
                 GROUP BY tm.denominacion, tm.es_entrada
                 ORDER BY tm.es_entrada DESC, subtotal DESC
             ";
@@ -192,7 +193,6 @@ ob_start();
 $html = ob_get_clean();
 $dompdf = new Dompdf();
 
-// Opciones obligatorias para imágenes y layouts complejos
 $options = $dompdf->getOptions();
 $options->set(array('isRemoteEnabled' => true));
 $dompdf->setOptions($options);
@@ -201,6 +201,5 @@ $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
-// Forzar descarga o visualización
 $dompdf->stream("Informe_" . $nombreMes . "_" . $anioReporte . ".pdf", array("Attachment" => false));
 ?>
