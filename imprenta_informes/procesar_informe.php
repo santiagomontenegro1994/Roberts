@@ -21,21 +21,20 @@ $fechaObj->modify('-1 month');
 $mesAnt = $fechaObj->format('m');
 $anioAnt = $fechaObj->format('Y');
 
-// --- FUNCIONES ---\
+// --- FUNCIONES ---
 
 function obtenerDatosMes($conexion, $m, $a) {
-    // 1. Totales Generales y Contadores Específicos
-    // Banco: idTipoPago 3, 13, 23
-    // MP: idTipoPago 22
-    // Efectivo: idTipoMovimiento 9
-    
+    // 1. Totales Generales y Contadores Específicos (IDs corregidos)
     $sql = "SELECT 
                 SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as ingresos,
                 SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as egresos,
                 
-                -- Contadores Específicos
+                -- Contadores Específicos según tus indicaciones:
+                -- Banco: idTipoPago 3, 13, 23
                 SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
+                -- MP: idTipoPago 22
                 SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
+                -- Efectivo: idTipoMovimiento 9
                 SUM(CASE WHEN dc.idTipoMovimiento = 9 THEN dc.monto ELSE 0 END) as efectivo
             FROM detalle_caja dc
             JOIN caja c ON dc.idCaja = c.idCaja
@@ -45,7 +44,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     $query = mysqli_query($conexion, $sql);
     $totales = mysqli_fetch_assoc($query);
 
-    // Asegurar que no sean nulos
+    // Asegurar valores numéricos
     $totalIngresos = floatval($totales['ingresos']);
     $totalEgresos = floatval($totales['egresos']);
 
@@ -59,14 +58,14 @@ function obtenerDatosMes($conexion, $m, $a) {
     $qGastos = mysqli_query($conexion, $sqlGastos);
     $listaGastos = [];
     while($row = mysqli_fetch_assoc($qGastos)) {
-        // Calcular porcentaje respecto al TOTAL DE INGRESOS
+        // Calculamos porcentaje sobre INGRESOS TOTALES
         $montoItem = floatval($row['monto']);
         $porc = ($totalIngresos > 0) ? ($montoItem / $totalIngresos) * 100 : 0;
         $row['porcentaje'] = number_format($porc, 1) . '%';
         $listaGastos[] = $row;
     }
 
-    // 3. Lista de Ingresos
+    // 3. Lista de Ingresos (Entradas)
     $sqlIngresos = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
                   FROM detalle_caja dc
                   JOIN caja c ON dc.idCaja = c.idCaja
@@ -76,7 +75,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     $qIngresos = mysqli_query($conexion, $sqlIngresos);
     $listaIngresos = [];
     while($row = mysqli_fetch_assoc($qIngresos)) {
-        // Calcular porcentaje respecto al TOTAL DE INGRESOS
+        // Calculamos porcentaje sobre INGRESOS TOTALES
         $montoItem = floatval($row['monto']);
         $porc = ($totalIngresos > 0) ? ($montoItem / $totalIngresos) * 100 : 0;
         $row['porcentaje'] = number_format($porc, 1) . '%';
@@ -89,8 +88,8 @@ function obtenerDatosMes($conexion, $m, $a) {
         'efectivo' => floatval($totales['efectivo']),
         'totalIngresos' => $totalIngresos,
         'totalGastos' => $totalEgresos,
-        'desgloseGastos' => $listaGastos,
-        'desgloseIngresos' => $listaIngresos
+        'desgloseIngresos' => $listaIngresos, // Nota: Tu frontend usa 'desgloseIngresos'
+        'desgloseGastos' => $listaGastos
     ];
 }
 
@@ -98,29 +97,10 @@ function obtenerDatosMes($conexion, $m, $a) {
 $actual = obtenerDatosMes($MiConexion, $mes, $anio);
 $anterior = obtenerDatosMes($MiConexion, $mesAnt, $anioAnt);
 
-// Calculamos variaciones (lógica visual para flechitas)
-$varIngresos = ($anterior['totalIngresos'] > 0) 
-    ? (($actual['totalIngresos'] - $anterior['totalIngresos']) / $anterior['totalIngresos']) * 100 
-    : 100;
-
-$varGastos = ($anterior['totalGastos'] > 0) 
-    ? (($actual['totalGastos'] - $anterior['totalGastos']) / $anterior['totalGastos']) * 100 
-    : 100;
-
-$gananciaActual = $actual['totalIngresos'] - $actual['totalGastos'];
-$gananciaAnt = $anterior['totalIngresos'] - $anterior['totalGastos'];
-$varGanancia = ($gananciaAnt != 0) 
-    ? (($gananciaActual - $gananciaAnt) / abs($gananciaAnt)) * 100 
-    : 100;
-
-// Devolvemos JSON
+// Devolvemos JSON con las llaves que tu frontend espera: "datos" y "previo"
 echo json_encode([
     'ok' => true,
-    'actual' => $actual,
-    'variaciones' => [
-        'ingresos' => round($varIngresos, 1),
-        'gastos' => round($varGastos, 1),
-        'ganancia' => round($varGanancia, 1)
-    ]
+    'datos' => $actual,  // Antes lo llamé 'actual' y por eso falló
+    'previo' => $anterior
 ]);
 ?>

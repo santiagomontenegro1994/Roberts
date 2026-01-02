@@ -30,305 +30,286 @@ require('../shared/barraLateral.inc.php');
                             <i class="bi bi-file-earmark-excel me-1"></i>Excel
                         </button>
                         
-                        <button type="button" class="btn btn-danger" id="btnImprimir">
-                            <i class="bi bi-file-earmark-pdf me-1"></i>Imprimir PDF
+                        <button type="button" class="btn btn-danger" id="btnPDF">
+                            <i class="bi bi-filetype-pdf me-1"></i>PDF
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="row">
+        <div class="row mb-4">
             <div class="col-xl-4 col-md-6">
-                <div class="card bg-success text-white mb-4 shadow">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">INGRESOS TOTALES</div>
-                            <div class="fs-4 fw-bold" id="lblIngresos">$ 0,00</div>
+                <div class="card border-start border-4 border-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Banco</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valBanco">$0</div>
+                                <small id="porcBanco" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-bank fs-2 text-gray-300"></i></div>
                         </div>
-                        <i class="bi bi-graph-up fs-1 text-white-50"></i>
-                    </div>
-                    <div class="card-footer d-flex align-items-center justify-content-between small">
-                        <span id="varIngresos" class="text-white">Variación: 0%</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-xl-4 col-md-6">
-                <div class="card bg-danger text-white mb-4 shadow">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">EGRESOS TOTALES</div>
-                            <div class="fs-4 fw-bold" id="lblGastos">$ 0,00</div>
-                        </div>
-                        <i class="bi bi-graph-down fs-1 text-white-50"></i>
-                    </div>
-                    <div class="card-footer d-flex align-items-center justify-content-between small">
-                        <span id="varGastos" class="text-white">Variación: 0%</span>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-4 col-md-6">
-                <div class="card bg-primary text-white mb-4 shadow">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">GANANCIA NETA</div>
-                            <div class="fs-4 fw-bold" id="lblGanancia">$ 0,00</div>
+                <div class="card border-start border-4 border-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">MercadoPago</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valMP">$0</div>
+                                <small id="porcMP" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-qr-code-scan fs-2 text-gray-300"></i></div>
                         </div>
-                        <i class="bi bi-wallet2 fs-1 text-white-50"></i>
                     </div>
-                    <div class="card-footer d-flex align-items-center justify-content-between small">
-                        <span id="varGanancia" class="text-white">Variación: 0%</span>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="card border-start border-4 border-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Efectivo</div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800" id="valEfectivo">$0</div>
+                                <small id="porcEfectivo" class="text-muted"></small>
+                            </div>
+                            <div class="col-auto"><i class="bi bi-cash-stack fs-2 text-gray-300"></i></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Banco (Transf.)</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="lblBanco">$ 0,00</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-bank fs-2 text-gray-300"></i>
-                            </div>
-                        </div>
+            <div class="col-lg-12">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <i class="bi bi-calculator me-1"></i> Balance del Mes
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-left-primary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">MercadoPago</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="lblMP">$ 0,00</div>
+                    <div class="card-body p-4">
+                        <div class="row text-center">
+                            
+                            <div class="col-md-4 mb-3">
+                                <h5 class="text-muted">Ventas Totales</h5>
+                                <h2 class="text-primary fw-bold" id="valTotalVentas">$0</h2>
+                                <div id="porcTotalVentas" class="mb-2"></div>
+                                
+                                <button class="btn btn-sm btn-outline-primary mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#detalleVentas" aria-expanded="false">
+                                    Ver Origen <i class="bi bi-chevron-down"></i>
+                                </button>
+                                
+                                <div class="collapse mt-3" id="detalleVentas">
+                                    <ul class="list-group list-group-flush text-start small" id="listaDetalleVentas">
+                                        <li class="list-group-item">Cargando...</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <div class="col-auto">
-                                <i class="bi bi-phone fs-2 text-gray-300"></i>
+                            
+                            <div class="col-md-4 mb-3 border-start border-end">
+                                <h5 class="text-muted">Salidas Totales</h5>
+                                <h2 class="text-danger fw-bold" id="valTotalGastos">$0</h2>
+                                <div id="porcTotalGastos" class="mb-2"></div>
+                                
+                                <button class="btn btn-sm btn-outline-danger mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#detalleGastos" aria-expanded="false">
+                                    Ver Detalle <i class="bi bi-chevron-down"></i>
+                                </button>
+                                
+                                <div class="collapse mt-3" id="detalleGastos">
+                                    <ul class="list-group list-group-flush text-start small" id="listaDetalleGastos">
+                                        <li class="list-group-item">Cargando...</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-left-success shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Efectivo</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="lblEfectivo">$ 0,00</div>
+
+                            <div class="col-md-4 mb-3">
+                                <h5 class="text-muted">Ganancia Neta</h5>
+                                <h2 class="text-success fw-bold" id="valGanancia">$0</h2>
+                                <div id="porcGanancia" class="mb-2"></div>
+                                <small class="text-muted d-block mt-2">Ingresos - Egresos</small>
                             </div>
-                            <div class="col-auto">
-                                <i class="bi bi-cash-stack fs-2 text-gray-300"></i>
-                            </div>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-lg-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-success">Detalle de Ingresos (Agrupado)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-bordered table-hover" id="tablaIngresos" width="100%" cellspacing="0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Concepto</th>
-                                        <th class="text-end">Monto y %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-danger">Detalle de Salidas (Agrupado)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-bordered table-hover" id="tablaGastos" width="100%" cellspacing="0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Concepto</th>
-                                        <th class="text-end">Monto y %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        
     </div>
 </main>
 
-<?php require('../shared/pie.inc.php'); ?>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Referencias
-    const inputMes = document.getElementById('mesSeleccionado');
-    const btnExcel = document.getElementById('btnExcel');
-    const btnImprimir = document.getElementById('btnImprimir');
-    
-    // Cargar datos iniciales
-    cargarDatos(inputMes.value);
-    
-    // Evento cambio de mes
-    inputMes.addEventListener('change', function() {
-        cargarDatos(this.value);
-    });
+// --- CONFIGURACIÓN ---
+const API_URL = 'procesar_informe.php';
+// Formateador de moneda Argentina
+const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
 
-    // Evento Imprimir PDF
-    btnImprimir.addEventListener('click', function() {
-        const [anio, mes] = inputMes.value.split('-');
-        window.open(`imprimir_informe.php?anio=${anio}&mes=${mes}`, '_blank');
-    });
+// --- FUNCIONES AUXILIARES ---
 
-    // Variable global para guardar datos actuales (para el excel)
-    let datosActuales = null;
-
-    // Función principal de carga
-    function cargarDatos(periodo) {
-        fetch(`procesar_informe.php?periodo=${periodo}`)
-            .then(response => response.json())
-            .then(data => {
-                if(data.ok) {
-                    actualizarInterfaz(data);
-                    datosActuales = data.actual; // Guardamos para el Excel
-                } else {
-                    alert('Error al cargar datos: ' + data.msg);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+// Genera el HTML del badge de porcentaje (+X% verde / -X% rojo)
+function htmlVariacion(actual, anterior, invertido = false) {
+    if (anterior === 0) return '<span class="badge bg-secondary">Sin datos previos</span>';
+    
+    let dif = ((actual - anterior) / anterior) * 100;
+    
+    // Si invertido es true (para gastos): Si sube es "malo" (rojo), si baja es "bueno" (verde)
+    let colorClass = 'text-success';
+    let iconClass = 'bi-arrow-up';
+    
+    if (!invertido) {
+        // Lógica normal (Ventas/Ganancia): Más es mejor
+        if (dif < 0) { colorClass = 'text-danger'; iconClass = 'bi-arrow-down'; }
+    } else {
+        // Lógica gastos: Más es peor
+        if (dif > 0) { colorClass = 'text-danger'; iconClass = 'bi-arrow-up'; }
+        else { colorClass = 'text-success'; iconClass = 'bi-arrow-down'; }
     }
 
-    // Actualizar DOM
-    function actualizarInterfaz(data) {
-        const d = data.actual;
-        const v = data.variaciones;
+    const signo = dif >= 0 ? '+' : '';
+    return `<span class="${colorClass} fw-bold"><i class="bi ${iconClass}"></i> ${signo}${dif.toFixed(1)}%</span> <span class="text-muted small">vs mes anterior</span>`;
+}
 
-        // Formateador de moneda
-        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-
-        // 1. Tarjetas Superiores
-        document.getElementById('lblIngresos').innerText = fmt.format(d.totalIngresos);
-        document.getElementById('lblGastos').innerText = fmt.format(d.totalGastos);
-        document.getElementById('lblGanancia').innerText = fmt.format(d.totalIngresos - d.totalGastos);
-
-        // 2. Variaciones (Flechas y colores)
-        pintarVariacion('varIngresos', v.ingresos);
-        pintarVariacion('varGastos', v.gastos);
-        pintarVariacion('varGanancia', v.ganancia);
-
-        // 3. Contadores Específicos (CORREGIDOS)
-        document.getElementById('lblBanco').innerText = fmt.format(d.banco);
-        document.getElementById('lblMP').innerText = fmt.format(d.mp);
-        document.getElementById('lblEfectivo').innerText = fmt.format(d.efectivo);
-
-        // 4. Tablas Detalle
-        renderTabla('tablaIngresos', d.desgloseIngresos, fmt);
-        renderTabla('tablaGastos', d.desgloseGastos, fmt);
+// Renderiza una lista en el UL correspondiente
+function renderizarLista(idLista, datos, claseBadge = 'bg-primary') {
+    const lista = document.getElementById(idLista);
+    lista.innerHTML = '';
+    
+    if (datos && datos.length > 0) {
+        datos.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center bg-light';
+            
+            // --- AQUI ESTA LA MODIFICACION DEL PORCENTAJE ---
+            // Usamos item.porcentaje que ahora viene del backend
+            li.innerHTML = `
+                ${item.concepto} 
+                <div>
+                    <span class="text-muted small me-2" style="font-size:0.85em;">(${item.porcentaje})</span>
+                    <span class="badge ${claseBadge} rounded-pill">${dinero(item.monto)}</span>
+                </div>
+            `;
+            lista.appendChild(li);
+        });
+    } else {
+        lista.innerHTML = '<li class="list-group-item text-center text-muted">Sin movimientos</li>';
     }
+}
 
-    // Función auxiliar para pintar variación
-    function pintarVariacion(idElemento, valor) {
-        const el = document.getElementById(idElemento);
-        const icono = valor >= 0 ? '<i class="bi bi-caret-up-fill"></i>' : '<i class="bi bi-caret-down-fill"></i>';
-        const signo = valor >= 0 ? '+' : '';
-        el.innerHTML = `${icono} ${signo}${valor}% vs mes anterior`;
-    }
+// --- LÓGICA PRINCIPAL ---
 
-    // Función auxiliar para renderizar tablas
-    function renderTabla(idTabla, lista, fmt) {
-        const tbody = document.querySelector(`#${idTabla} tbody`);
-        tbody.innerHTML = ''; // Limpiar
+async function cargarDatos() {
+    const mesInput = document.getElementById('mesSeleccionado').value;
+    if(!mesInput) return;
 
-        if(!lista || lista.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin movimientos</td></tr>';
+    try {
+        const response = await fetch(`${API_URL}?periodo=${mesInput}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            console.error('Error:', data.msg);
             return;
         }
 
-        lista.forEach(item => {
-            const tr = document.createElement('tr');
-            // AQUÍ ESTÁ EL CAMBIO DEL PORCENTAJE
-            tr.innerHTML = `
-                <td>${item.concepto}</td>
-                <td class="text-end">
-                    <span class="fw-bold">${fmt.format(item.monto)}</span>
-                    <span class="text-secondary small ms-2" style="font-size:0.85em;">(${item.porcentaje})</span>
-                </td>
-            `;
-            tbody.appendChild(tr);
+        const d = data.datos;   // Datos Mes Actual (Antes era data.actual, ahora corregido a data.datos)
+        const p = data.previo;  // Datos Mes Anterior
+
+        // 1. Tarjetas Superiores
+        document.getElementById('valBanco').innerText = dinero(d.banco);
+        document.getElementById('porcBanco').innerHTML = htmlVariacion(d.banco, p.banco);
+
+        document.getElementById('valMP').innerText = dinero(d.mp);
+        document.getElementById('porcMP').innerHTML = htmlVariacion(d.mp, p.mp);
+
+        document.getElementById('valEfectivo').innerText = dinero(d.efectivo);
+        document.getElementById('porcEfectivo').innerHTML = htmlVariacion(d.efectivo, p.efectivo);
+
+        // 2. Panel Central
+        
+        // Ventas Totales
+        document.getElementById('valTotalVentas').innerText = dinero(d.totalIngresos);
+        document.getElementById('porcTotalVentas').innerHTML = htmlVariacion(d.totalIngresos, p.totalIngresos);
+        renderizarLista('listaDetalleVentas', d.desgloseIngresos, 'bg-primary');
+
+        // Salidas Totales
+        document.getElementById('valTotalGastos').innerText = dinero(d.totalGastos);
+        document.getElementById('porcTotalGastos').innerHTML = htmlVariacion(d.totalGastos, p.totalGastos, true); 
+        renderizarLista('listaDetalleGastos', d.desgloseGastos, 'bg-danger');
+
+        // Ganancia Neta
+        const gananciaActual = d.totalIngresos - d.totalGastos;
+        const gananciaPrevio = p.totalIngresos - p.totalGastos;
+        
+        const divGanancia = document.getElementById('valGanancia');
+        divGanancia.innerText = dinero(gananciaActual);
+        divGanancia.className = gananciaActual >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+        
+        document.getElementById('porcGanancia').innerHTML = htmlVariacion(gananciaActual, gananciaPrevio);
+
+        // Guardar datos en memoria para el Excel
+        window.datosReporte = { mes: mesInput, d, gananciaActual };
+
+    } catch (error) {
+        console.error('Error al cargar datos:', error);
+    }
+}
+
+// --- EVENTOS ---
+
+document.getElementById('mesSeleccionado').addEventListener('change', cargarDatos);
+document.addEventListener('DOMContentLoaded', cargarDatos);
+
+// Botón PDF
+document.getElementById('btnPDF').addEventListener('click', () => {
+    const mesInput = document.getElementById('mesSeleccionado').value; 
+    const [anio, mes] = mesInput.split('-');
+    window.open(`imprimir_informe.php?mes=${mes}&anio=${anio}`, '_blank');
+});
+
+// Botón Excel
+document.getElementById('btnExcel').addEventListener('click', () => {
+    if(!window.datosReporte) return;
+    const { mes, d, gananciaActual } = window.datosReporte;
+    
+    let csv = [];
+    csv.push(`"REPORTE FINANCIERO";"${mes}"`);
+    csv.push(``); 
+    
+    // Sección Ingresos
+    csv.push(`"DETALLE INGRESOS";"MONTO";"% DEL TOTAL"`);
+    if(d.desgloseIngresos) {
+        d.desgloseIngresos.forEach(item => {
+            csv.push(`"${item.concepto}";"${item.monto}";"${item.porcentaje}"`);
         });
     }
+    csv.push(`"TOTAL VENTAS";"${d.totalIngresos}";"100%"`);
+    csv.push(``);
 
-    // Evento Excel (Sin tocar lógica, solo añadiendo el campo porcentaje al CSV)
-    btnExcel.addEventListener('click', function() {
-        if(!datosActuales) return;
+    // Sección Egresos
+    csv.push(`"DETALLE SALIDAS";"MONTO";"% S/INGRESOS"`);
+    if(d.desgloseGastos) {
+        d.desgloseGastos.forEach(item => {
+            csv.push(`"${item.concepto}";"${item.monto}";"${item.porcentaje}"`);
+        });
+    }
+    csv.push(`"TOTAL SALIDAS";"${d.totalGastos}"`);
+    csv.push(``);
+    
+    csv.push(`"GANANCIA NETA";"${gananciaActual}"`);
 
-        const d = datosActuales;
-        const mes = inputMes.value;
-        const gananciaActual = d.totalIngresos - d.totalGastos;
-
-        let csv = [];
-        csv.push(`"REPORTE FINANCIERO";"${mes}"`);
-        csv.push(``); 
-        
-        // Sección Ingresos
-        csv.push(`"DETALLE INGRESOS";"MONTO";"% DEL TOTAL"`);
-        if(d.desgloseIngresos) {
-            d.desgloseIngresos.forEach(item => {
-                csv.push(`"${item.concepto}";"${item.monto}";"${item.porcentaje}"`);
-            });
-        }
-        csv.push(`"TOTAL VENTAS";"${d.totalIngresos}";"100%"`);
-        csv.push(``);
-
-        // Sección Egresos
-        csv.push(`"DETALLE SALIDAS";"MONTO";"% S/INGRESOS"`);
-        if(d.desgloseGastos) {
-            d.desgloseGastos.forEach(item => {
-                csv.push(`"${item.concepto}";"${item.monto}";"${item.porcentaje}"`);
-            });
-        }
-        csv.push(`"TOTAL SALIDAS";"${d.totalGastos}"`);
-        csv.push(``);
-        
-        // Resultado
-        csv.push(`"GANANCIA NETA";"${gananciaActual}"`);
-
-        const csvString = csv.join("\n");
-        const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `informe_financiero_${mes}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-
+    const csvString = csv.join("\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `informe_${mes}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
 </script>
+
+<?php require('../shared/footer.inc.php'); ?>
