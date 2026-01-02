@@ -8,6 +8,9 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
+// --- CONFIGURACIÓN ZONA HORARIA ARGENTINA ---
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 // Incluir la librería Dompdf
 require_once '../libreria/dompdf/autoload.inc.php';
 use Dompdf\Dompdf;
@@ -19,193 +22,144 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. CONSULTA DE TOTALES GENERALES Y POR MEDIO DE PAGO
+// 1. CONSULTA DE TOTALES GENERALES Y CONTADORES
+// Se usan los mismos IDs que indicaste: Banco(3,13,23), MP(22), Efectivo(mov 9)
 $sqlTotales = "
     SELECT 
-        SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_entradas,
-        SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_salidas,
-        SUM(CASE WHEN tm.denominacion LIKE '%Banco%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as banco,
-        SUM(CASE WHEN tm.denominacion LIKE '%MercadoPago%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as mp,
-        SUM(CASE WHEN tm.denominacion LIKE '%Efectivo%' AND tm.es_entrada=1 THEN dc.monto ELSE 0 END) as efectivo
+        SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_ingresos,
+        SUM(CASE WHEN tm.es_salida = 1 THEN dc.monto ELSE 0 END) as total_egresos,
+        SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
+        SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
+        SUM(CASE WHEN dc.idTipoMovimiento = 9 THEN dc.monto ELSE 0 END) as efectivo
     FROM detalle_caja dc
-    INNER JOIN caja c ON dc.idCaja = c.idCaja
-    INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-";
+    JOIN caja c ON dc.idCaja = c.idCaja
+    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'";
+
 $queryTotales = mysqli_query($MiConexion, $sqlTotales);
-$resumen = mysqli_fetch_assoc($queryTotales);
+$dataTotales = mysqli_fetch_assoc($queryTotales);
 
-$ingresos = $resumen['total_entradas'] ?? 0;
-$gastos = $resumen['total_salidas'] ?? 0;
-$ganancia = $ingresos - $gastos;
+$totalIngresos = $dataTotales['total_ingresos'] ?? 0;
+$totalEgresos = $dataTotales['total_egresos'] ?? 0;
+$gananciaNeta = $totalIngresos - $totalEgresos;
 
-$valBanco = $resumen['banco'] ?? 0;
-$valMP = $resumen['mp'] ?? 0;
-$valEfectivo = $resumen['efectivo'] ?? 0;
-
-// 2. CONSULTA DETALLADA (LISTA)
-$sqlDetalle = "
-    SELECT tm.denominacion, 
-           SUM(dc.monto) as subtotal,
-           tm.es_entrada
-    FROM detalle_caja dc
-    INNER JOIN caja c ON dc.idCaja = c.idCaja
-    INNER JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-    GROUP BY tm.denominacion, tm.es_entrada
-    ORDER BY tm.es_entrada DESC, subtotal DESC
-";
-$queryDetalle = mysqli_query($MiConexion, $sqlDetalle);
-
+// Captura de buffering para HTML
 ob_start();
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Informe Mensual - <?php echo $nombreMes; ?></title>
+    <title>Informe Financiero - <?php echo $nombreMes . ' ' . $anioReporte; ?></title>
     <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; color: #333; margin: 0; padding: 30px; }
+        body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header p { margin: 5px 0 0; font-size: 14px; color: #666; }
         
-        /* --- CORRECCIÓN HEADER CON TABLA --- */
-        /* Eliminamos floats y usamos tabla para maquetación fija */
-        .header-table {
-            width: 100%;
-            border-bottom: 2px solid #333;
-            margin-bottom: 40px; /* Espacio antes del contenido */
-            padding-bottom: 15px;
-        }
-        .header-logo {
-            width: 50%;
-            text-align: left;
-            vertical-align: middle;
-        }
-        .header-logo img {
-            max-width: 180px;
-            max-height: 80px; /* Limite de altura para asegurar que no se estire */
-        }
-        .header-info {
-            width: 50%;
-            text-align: right;
-            vertical-align: middle;
-        }
-        .header-info h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #444; }
-        .header-info p { margin: 5px 0 0; color: #777; font-size: 14px; }
+        .resumen-cards { width: 100%; margin-bottom: 30px; }
+        .resumen-cards td { width: 33%; padding: 10px; text-align: center; background-color: #f8f9fa; border: 1px solid #ddd; }
+        .resumen-cards h3 { margin: 0 0 5px; font-size: 14px; color: #555; }
+        .resumen-cards .monto { font-size: 18px; font-weight: bold; color: #000; }
         
-        /* --- RESTO DE ESTILOS --- */
-        .row-cards { width: 100%; border-spacing: 15px 0; margin-bottom: 30px; margin-left: -15px; }
-        .card-cell { 
-            width: 33.33%; 
-            background: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: center; 
-            border: 1px solid #e9ecef; 
-        }
-        .card-banco { border-top: 4px solid #0d6efd; }
-        .card-mp { border-top: 4px solid #0dcaf0; }    
-        .card-efectivo { border-top: 4px solid #198754; } 
-
-        .card h3 { margin: 0 0 10px; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .card .numero { font-size: 18px; font-weight: bold; color: #333; }
+        .medios-pago { margin-bottom: 30px; width: 100%; border-collapse: collapse; }
+        .medios-pago td { border: 1px solid #eee; padding: 8px; text-align: center; width: 33%; }
+        .medios-pago .label { font-weight: bold; display: block; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; color: #777; }
         
-        .card-ingreso .numero { color: #198754; }
-        .card-egreso .numero { color: #dc3545; }
-        .card-neto .numero { color: #333; }
-        
-        .section-title { font-size: 14px; font-weight: bold; color: #555; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase; }
-
-        table.datos { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        table.datos th { background: #eee; text-align: left; padding: 8px; border-bottom: 2px solid #ddd; font-weight: bold; color: #555; }
-        table.datos td { padding: 8px; border-bottom: 1px solid #eee; }
+        .detalle-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .detalle-table th { background-color: #333; color: #fff; padding: 10px; text-align: left; font-size: 11px; }
+        .detalle-table td { border-bottom: 1px solid #eee; padding: 8px 10px; }
         .text-right { text-align: right; }
-        .badge { padding: 3px 6px; border-radius: 4px; color: white; font-size: 10px; }
-        .bg-in { background-color: #198754; }
-        .bg-out { background-color: #dc3545; }
+        
+        .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; color: #fff; text-transform: uppercase; }
+        .bg-in { background-color: #28a745; } /* Verde para ingresos */
+        .bg-out { background-color: #dc3545; } /* Rojo para egresos */
+        
+        .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
 
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
-    <table class="header-table">
-        <tr>
-            <td class="header-logo">
-                <?php
-                    // Ajusta la ruta a tu logo si es necesario
-                    $ruta_imagen = '../assets/img/logo.png';
-                    if(file_exists($ruta_imagen)){
-                        $tipo = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
-                        $dataImg = file_get_contents($ruta_imagen);
-                        $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($dataImg);
-                        echo '<img src="'.$base64.'" alt="Logo">';
-                    } else {
-                        echo '<h2>IMPRENTA ROBERTS</h2>';
-                    }
-                ?>
-            </td>
-            <td class="header-info">
-                <h1>Informe Económico</h1>
-                <p>Período: <strong><?php echo $nombreMes . ' ' . $anioReporte; ?></strong></p>
-                <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
-            </td>
-        </tr>
-    </table>
-    <div class="section-title">Desglose de Ingresos por Medio</div>
-    <table class="row-cards">
-        <tr>
-            <td class="card-cell card-banco">
-                <h3>Banco</h3>
-                <div class="numero">$ <?php echo number_format($valBanco, 2, ',', '.'); ?></div>
-            </td>
-            <td class="card-cell card-mp">
-                <h3>MercadoPago</h3>
-                <div class="numero">$ <?php echo number_format($valMP, 2, ',', '.'); ?></div>
-            </td>
-            <td class="card-cell card-efectivo">
-                <h3>Efectivo</h3>
-                <div class="numero">$ <?php echo number_format($valEfectivo, 2, ',', '.'); ?></div>
-            </td>
-        </tr>
-    </table>
+    <div class="header">
+        <h1>Informe Financiero</h1>
+        <p>Período: <?php echo $nombreMes . ' de ' . $anioReporte; ?></p>
+        <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
+    </div>
 
-    <div class="section-title" style="margin-top: 20px;">Balance General</div>
-    <table class="row-cards">
+    <table class="resumen-cards">
         <tr>
-            <td class="card-cell card-ingreso">
-                <h3>Ingresos Totales</h3>
-                <div class="numero">$ <?php echo number_format($ingresos, 2, ',', '.'); ?></div>
+            <td>
+                <h3>INGRESOS TOTALES</h3>
+                <div class="monto" style="color: #28a745;">
+                    $ <?php echo number_format($totalIngresos, 2, ',', '.'); ?>
+                </div>
             </td>
-            <td class="card-cell card-egreso">
-                <h3>Egresos Totales</h3>
-                <div class="numero">$ <?php echo number_format($gastos, 2, ',', '.'); ?></div>
+            <td>
+                <h3>EGRESOS TOTALES</h3>
+                <div class="monto" style="color: #dc3545;">
+                    $ <?php echo number_format($totalEgresos, 2, ',', '.'); ?>
+                </div>
             </td>
-            <td class="card-cell card-neto" style="background-color: #e8f5e9;">
-                <h3>Ganancia Neta</h3>
-                <div class="numero" style="color: <?php echo ($ganancia >= 0) ? '#198754' : '#dc3545'; ?>;">
-                    $ <?php echo number_format($ganancia, 2, ',', '.'); ?>
+            <td>
+                <h3>GANANCIA NETA</h3>
+                <div class="monto">
+                    $ <?php echo number_format($gananciaNeta, 2, ',', '.'); ?>
                 </div>
             </td>
         </tr>
     </table>
 
-    <div class="section-title" style="margin-top: 30px;">Detalle de Movimientos Agrupados</div>
-    
-    <table class="datos">
+    <table class="medios-pago">
+        <tr>
+            <td>
+                <span class="label">Banco (Transferencias)</span>
+                $ <?php echo number_format($dataTotales['banco'], 2, ',', '.'); ?>
+            </td>
+            <td>
+                <span class="label">MercadoPago</span>
+                $ <?php echo number_format($dataTotales['mp'], 2, ',', '.'); ?>
+            </td>
+            <td>
+                <span class="label">Efectivo (Trabajos)</span>
+                $ <?php echo number_format($dataTotales['efectivo'], 2, ',', '.'); ?>
+            </td>
+        </tr>
+    </table>
+
+    <h3>Detalle de Movimientos Agrupados</h3>
+    <table class="detalle-table">
         <thead>
             <tr>
-                <th>Concepto / Tipo de Movimiento</th>
-                <th style="width: 100px;">Tipo</th>
-                <th class="text-right" style="width: 150px;">Monto Total</th>
+                <th>CONCEPTO</th>
+                <th>TIPO</th>
+                <th class="text-right">MONTO Y % (s/Ingresos)</th>
             </tr>
         </thead>
         <tbody>
-            <?php 
-            if(mysqli_num_rows($queryDetalle) > 0) {
+            <?php
+            // Consultamos el desglose agrupado
+            $sqlDetalle = "
+                SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
+                FROM detalle_caja dc
+                JOIN caja c ON dc.idCaja = c.idCaja
+                JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
+                GROUP BY tm.denominacion, tm.es_entrada
+                ORDER BY tm.es_entrada DESC, subtotal DESC
+            ";
+            
+            $queryDetalle = mysqli_query($MiConexion, $sqlDetalle);
+            
+            if (mysqli_num_rows($queryDetalle) > 0) {
                 while($row = mysqli_fetch_assoc($queryDetalle)) { 
                     $tipoTxt = ($row['es_entrada'] == 1) ? 'Ingreso' : 'Egreso';
                     $badgeClass = ($row['es_entrada'] == 1) ? 'bg-in' : 'bg-out';
+                    
+                    // Cálculo de porcentaje sobre el TOTAL DE INGRESOS
+                    $montoItem = $row['subtotal'];
+                    $porcentaje = ($totalIngresos > 0) ? ($montoItem / $totalIngresos) * 100 : 0;
             ?>
             <tr>
                 <td><?php echo $row['denominacion']; ?></td>
@@ -213,7 +167,8 @@ ob_start();
                     <span class="badge <?php echo $badgeClass; ?>"><?php echo $tipoTxt; ?></span>
                 </td>
                 <td class="text-right">
-                    $ <?php echo number_format($row['subtotal'], 2, ',', '.'); ?>
+                    $ <?php echo number_format($montoItem, 2, ',', '.'); ?>
+                    <span class="porcentaje">(%<?php echo number_format($porcentaje, 1); ?>)</span>
                 </td>
             </tr>
             <?php 
@@ -245,5 +200,7 @@ $dompdf->setOptions($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-$dompdf->stream("Informe_".$nombreMes."_".$anioReporte.".pdf", array("Attachment" => false));
+
+// Forzar descarga o visualización
+$dompdf->stream("Informe_" . $nombreMes . "_" . $anioReporte . ".pdf", array("Attachment" => false));
 ?>
