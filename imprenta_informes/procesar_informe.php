@@ -132,7 +132,7 @@ function obtenerDatosMes($conexion, $m, $a) {
                            FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                            WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' 
                            AND tm.es_salida = 1 
-                           AND dc.idTipoMovimiento NOT IN (14, 9)
+                           AND tm.idTipoMovimiento NOT IN (14, 9)
                            GROUP BY tm.denominacion";
     $qGC = mysqli_query($conexion, $sqlListaGastosCaja);
     while($row = mysqli_fetch_assoc($qGC)){
