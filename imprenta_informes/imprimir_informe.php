@@ -22,46 +22,50 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. TOTALES GENERALES Y CONTADORES
-// NOTA: Se actualizó lógica según requerimientos:
-// - Ingresos Totales: Incluye TODO lo que es entrada (incluido Dif Caja ID 15)
-// - Efectivo: Suma (TipoPago=1 Entradas) + (Dif Caja Pos ID 15) - (Dif Caja Neg ID 14)
-$sqlTotales = "
+// 1. CÁLCULO DE TOTALES (Lógica corregida)
+
+// A. Datos de CAJA
+$sqlCaja = "
     SELECT 
-        -- TOTAL INGRESOS (Incluye ID 15 ahora)
-        SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_ingresos,
+        -- Ingresos Normales (Entradas excluyendo Dif Positiva 15 por si acaso, se suma aparte si se desea, o todo junto)
+        SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as ingresos_caja,
         
-        -- TOTAL EGRESOS (Mantenemos exclusión de 14 si queremos, o incluimos. Lo dejé igual que antes para gastos operativos)
-        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento != 14 THEN dc.monto ELSE 0 END) as total_egresos,
+        -- Dif Positiva (15)
+        SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_positiva,
+
+        -- Dif Negativa (14)
+        SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END) as dif_negativa,
         
-        -- BANCO
+        -- Egresos Caja (Salidas excluyendo ID 14 y Caja Fuerte)
+        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento != 14 AND tm.denominacion NOT LIKE '%Caja Fuerte%' THEN dc.monto ELSE 0 END) as egresos_caja,
+        
+        -- Desglose Medios Pago
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
-        
-        -- MP
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
-        
-        -- EFECTIVO (Nueva Fórmula)
-        (
-            SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) 
-            + 
-            SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) 
-            - 
-            SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END)
-        ) as efectivo
+        SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) as efectivo_puro
 
     FROM detalle_caja dc
     JOIN caja c ON dc.idCaja = c.idCaja
     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
     WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'";
 
-$queryTotales = mysqli_query($MiConexion, $sqlTotales);
-$dataTotales = mysqli_fetch_assoc($queryTotales);
+$dataCaja = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlCaja));
 
-$totalIngresos = $dataTotales['total_ingresos'] ?? 0;
-$totalEgresos = $dataTotales['total_egresos'] ?? 0;
+// B. Datos de RETIROS (Tabla 'retiros')
+$sqlRetiros = "SELECT SUM(monto) as total FROM retiros WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte'";
+$dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
+$totalRetirosContables = floatval($dataRetiros['total']);
+
+// C. Consolidación de Totales
+$totalIngresos = floatval($dataCaja['ingresos_caja']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
+$totalEgresos = floatval($dataCaja['egresos_caja']) + $totalRetirosContables;
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
-// Captura de buffering para HTML
+// Totales medios de pago (Efectivo ajustado con diferencias)
+$totalBanco = floatval($dataCaja['banco']);
+$totalMP = floatval($dataCaja['mp']);
+$totalEfectivo = floatval($dataCaja['efectivo_puro']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
+
 ob_start();
 ?>
 <!DOCTYPE html>
@@ -92,6 +96,7 @@ ob_start();
         .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; color: #fff; text-transform: uppercase; }
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; }
+        .bg-ret { background-color: #fd7e14; } /* Color naranja para retiros */
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
 
@@ -132,21 +137,21 @@ ob_start();
     <table class="medios-pago">
         <tr>
             <td>
-                <span class="label">Banco (Transferencias)</span>
-                $ <?php echo number_format($dataTotales['banco'], 2, ',', '.'); ?>
+                <span class="label">Banco</span>
+                $ <?php echo number_format($totalBanco, 2, ',', '.'); ?>
             </td>
             <td>
                 <span class="label">MercadoPago</span>
-                $ <?php echo number_format($dataTotales['mp'], 2, ',', '.'); ?>
+                $ <?php echo number_format($totalMP, 2, ',', '.'); ?>
             </td>
             <td>
-                <span class="label">Efectivo Neto</span>
-                $ <?php echo number_format($dataTotales['efectivo'], 2, ',', '.'); ?>
+                <span class="label">Efectivo (Neto)</span>
+                $ <?php echo number_format($totalEfectivo, 2, ',', '.'); ?>
             </td>
         </tr>
     </table>
 
-    <h3>Detalle de Movimientos Agrupados</h3>
+    <h3>Detalle de Movimientos</h3>
     <table class="detalle-table">
         <thead>
             <tr>
@@ -157,34 +162,54 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            // Consultamos el desglose. AQUI SÍ MOSTRAMOS TODO (incluyendo ID 15 y 14 si existen)
-            // para que cuadre con los totales.
-            $sqlDetalle = "
-                SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
+            // Preparamos los datos unificados para la tabla
+            $filasTabla = [];
+
+            // 1. Movimientos de Caja
+            $sqlDetalleCaja = "
+                SELECT tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-                -- Quitamos filtros de exclusión (14, 15) para que el desglose sea total
-                GROUP BY tm.denominacion, tm.es_entrada
-                ORDER BY tm.es_entrada DESC, subtotal DESC
+                -- Excluir Caja Fuerte y Dif Negativa (14) de este listado, ya que el 14 restó al total y CF no va
+                AND dc.idTipoMovimiento != 14 
+                AND tm.denominacion NOT LIKE '%Caja Fuerte%'
+                GROUP BY tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento
             ";
-            
-            $queryDetalle = mysqli_query($MiConexion, $sqlDetalle);
-            
-            if (mysqli_num_rows($queryDetalle) > 0) {
-                while($row = mysqli_fetch_assoc($queryDetalle)) { 
-                    $tipoTxt = ($row['es_entrada'] == 1) ? 'Ingreso' : 'Egreso';
-                    $badgeClass = ($row['es_entrada'] == 1) ? 'bg-in' : 'bg-out';
-                    
-                    // Cálculo de porcentaje sobre el TOTAL DE INGRESOS
-                    $montoItem = $row['subtotal'];
+            $qCaja = mysqli_query($MiConexion, $sqlDetalleCaja);
+            while($r = mysqli_fetch_assoc($qCaja)){
+                $tipo = ($r['es_entrada'] == 1) ? 'Ingreso' : 'Egreso';
+                $clase = ($r['es_entrada'] == 1) ? 'bg-in' : 'bg-out';
+                $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => $tipo, 'clase' => $clase, 'monto' => $r['subtotal']];
+            }
+
+            // 2. Movimientos de Retiros (Se consideran Egresos)
+            $sqlDetalleRetiros = "
+                SELECT tm.denominacion, SUM(r.monto) as subtotal
+                FROM retiros r
+                JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                WHERE MONTH(r.fecha) = '$mesReporte' AND YEAR(r.fecha) = '$anioReporte'
+                GROUP BY tm.denominacion
+            ";
+            $qRetiros = mysqli_query($MiConexion, $sqlDetalleRetiros);
+            while($r = mysqli_fetch_assoc($qRetiros)){
+                // Agregamos a la lista
+                $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => 'Retiro', 'clase' => 'bg-ret', 'monto' => $r['subtotal']];
+            }
+
+            // Ordenar por monto descendente para que se vea ordenado
+            usort($filasTabla, function($a, $b) { return $b['monto'] <=> $a['monto']; });
+
+            if (count($filasTabla) > 0) {
+                foreach($filasTabla as $row) { 
+                    $montoItem = $row['monto'];
                     $porcentaje = ($totalIngresos > 0) ? ($montoItem / $totalIngresos) * 100 : 0;
             ?>
             <tr>
-                <td><?php echo $row['denominacion']; ?></td>
+                <td><?php echo $row['concepto']; ?></td>
                 <td>
-                    <span class="badge <?php echo $badgeClass; ?>"><?php echo $tipoTxt; ?></span>
+                    <span class="badge <?php echo $row['clase']; ?>"><?php echo $row['tipo']; ?></span>
                 </td>
                 <td class="text-right">
                     $ <?php echo number_format($montoItem, 2, ',', '.'); ?>
@@ -194,7 +219,7 @@ ob_start();
             <?php 
                 } 
             } else {
-                echo '<tr><td colspan="3" style="text-align:center; padding: 20px;">No hay movimientos registrados en este período.</td></tr>';
+                echo '<tr><td colspan="3" style="text-align:center; padding: 20px;">No hay movimientos registrados.</td></tr>';
             }
             ?>
         </tbody>
@@ -211,14 +236,11 @@ ob_start();
 <?php
 $html = ob_get_clean();
 $dompdf = new Dompdf();
-
 $options = $dompdf->getOptions();
 $options->set(array('isRemoteEnabled' => true));
 $dompdf->setOptions($options);
-
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-
 $dompdf->stream("Informe_" . $nombreMes . "_" . $anioReporte . ".pdf", array("Attachment" => false));
 ?>
