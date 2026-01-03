@@ -49,7 +49,7 @@ function obtenerDatosMes($conexion, $m, $a) {
                        WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a'
                        AND tm.es_salida = 1
                        AND dc.idTipoMovimiento != 14 
-                       AND tm.denominacion NOT LIKE '%Caja Fuerte%'";
+                       AND dc.idTipoMovimiento != 9";
     $gastosCaja = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlSalidasCaja))['total']);
 
     // 2. OBTENER TOTALES DE RETIROS CONTABLES (TABLA retiros)
