@@ -22,15 +22,33 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. CONSULTA DE TOTALES GENERALES Y CONTADORES
-// EXCLUYENDO DIFERENCIA DE CAJA (15 en Ingresos, 14 en Egresos)
+// 1. TOTALES GENERALES Y CONTADORES
+// NOTA: Se actualizó lógica según requerimientos:
+// - Ingresos Totales: Incluye TODO lo que es entrada (incluido Dif Caja ID 15)
+// - Efectivo: Suma (TipoPago=1 Entradas) + (Dif Caja Pos ID 15) - (Dif Caja Neg ID 14)
 $sqlTotales = "
     SELECT 
-        SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as total_ingresos,
+        -- TOTAL INGRESOS (Incluye ID 15 ahora)
+        SUM(CASE WHEN tm.es_entrada = 1 THEN dc.monto ELSE 0 END) as total_ingresos,
+        
+        -- TOTAL EGRESOS (Mantenemos exclusión de 14 si queremos, o incluimos. Lo dejé igual que antes para gastos operativos)
         SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento != 14 THEN dc.monto ELSE 0 END) as total_egresos,
+        
+        -- BANCO
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
+        
+        -- MP
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
-        SUM(CASE WHEN dc.idTipoMovimiento = 9 THEN dc.monto ELSE 0 END) as efectivo
+        
+        -- EFECTIVO (Nueva Fórmula)
+        (
+            SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) 
+            + 
+            SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) 
+            - 
+            SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END)
+        ) as efectivo
+
     FROM detalle_caja dc
     JOIN caja c ON dc.idCaja = c.idCaja
     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
@@ -122,7 +140,7 @@ ob_start();
                 $ <?php echo number_format($dataTotales['mp'], 2, ',', '.'); ?>
             </td>
             <td>
-                <span class="label">Efectivo (Trabajos)</span>
+                <span class="label">Efectivo Neto</span>
                 $ <?php echo number_format($dataTotales['efectivo'], 2, ',', '.'); ?>
             </td>
         </tr>
@@ -139,14 +157,15 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            // Consultamos el desglose agrupado EXCLUYENDO DIF DE CAJA (14 y 15)
+            // Consultamos el desglose. AQUI SÍ MOSTRAMOS TODO (incluyendo ID 15 y 14 si existen)
+            // para que cuadre con los totales.
             $sqlDetalle = "
                 SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-                AND dc.idTipoMovimiento NOT IN (14, 15)
+                -- Quitamos filtros de exclusión (14, 15) para que el desglose sea total
                 GROUP BY tm.denominacion, tm.es_entrada
                 ORDER BY tm.es_entrada DESC, subtotal DESC
             ";
