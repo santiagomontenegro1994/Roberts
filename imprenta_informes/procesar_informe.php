@@ -65,7 +65,6 @@ function obtenerDatosMes($conexion, $m, $a) {
     // AGREGADO: Filtro para asegurar que Caja Fuerte (9) tampoco se sume si está en retiros
     $sqlRetiros = "SELECT SUM(monto) as total FROM retiros 
                    WHERE MONTH(fecha) = '$m' AND YEAR(fecha) = '$a'
-                   AND idTipoMovimiento != 9"; 
     $montoRetiros = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlRetiros))['total']);
 
 
