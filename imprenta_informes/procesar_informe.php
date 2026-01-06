@@ -1,11 +1,6 @@
 <?php
 // procesar_informe.php
 header('Content-Type: application/json');
-// Evitamos caché
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
-
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) {
@@ -16,7 +11,7 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// Configuración de Zona Horaria
+// Asegurar zona horaria para que coincida con tu sistema
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 $periodo = isset($_GET['periodo']) ? $_GET['periodo'] : date('Y-m');
@@ -50,8 +45,8 @@ function obtenerDatosMes($conexion, $m, $a) {
     $sqlDifNeg = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoMovimiento = 14";
     $difNegativa = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlDifNeg))['total']);
 
-    // C. Egresos de Caja 
-    // EXPLICITO: No Dif Neg (14), No Caja Fuerte (9)
+    // C. Egresos de Caja (Salidas normales)
+    // Ya tenías el filtro aquí, ESTO ESTABA BIEN
     $sqlSalidasCaja = "SELECT SUM(dc.monto) as total FROM detalle_caja dc
                        JOIN caja c ON dc.idCaja = c.idCaja
                        JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
@@ -61,10 +56,10 @@ function obtenerDatosMes($conexion, $m, $a) {
     $gastosCaja = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlSalidasCaja))['total']);
 
     // 2. OBTENER TOTALES DE RETIROS CONTABLES (TABLA retiros)
-    // CORRECCION: Agregado filtro para ignorar ID 9 (Caja Fuerte) también aquí
+    // ---> CORRECCIÓN AQUÍ: Faltaba filtrar ID 9 en los RETIROS <---
     $sqlRetiros = "SELECT SUM(monto) as total FROM retiros 
                    WHERE MONTH(fecha) = '$m' AND YEAR(fecha) = '$a'
-                   AND idTipoMovimiento != 9";
+                   AND idTipoMovimiento != 9"; 
     $montoRetiros = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlRetiros))['total']);
 
 
@@ -72,11 +67,11 @@ function obtenerDatosMes($conexion, $m, $a) {
     $totalIngresos = $ingresosCaja + $difPositiva - $difNegativa;
     $totalEgresos = $gastosCaja + $montoRetiros;
     
-    // CORRECCION: Calculamos la ganancia aquí para enviarla al frontend
-    $ganancia = $totalIngresos - $totalEgresos;
+    // ---> CORRECCIÓN AQUÍ: Calcular ganancia para el JSON <---
+    $gananciaNeta = $totalIngresos - $totalEgresos;
 
 
-    // 4. DETALLES TARJETAS SUPERIORES
+    // 4. DETALLES TARJETAS (Agregué alias 'concepto' para evitar undefined)
     
     // A) BANCO
     $sqlBanco = "SELECT tp.denominacion as concepto, SUM(dc.monto) as monto
@@ -125,28 +120,29 @@ function obtenerDatosMes($conexion, $m, $a) {
     $qListaIng = mysqli_query($conexion, $sqlListaIng);
     $listaIngresos = [];
     while($row = mysqli_fetch_assoc($qListaIng)) {
-        $row['monto'] = floatval($row['monto']); // Asegurar número
+        $row['monto'] = floatval($row['monto']);
         $listaIngresos[] = $row;
     }
-
-    // CORRECCION: Agregar manualmente la Diferencia Negativa para que se vea restando
+    
+    // ---> CORRECCIÓN AQUÍ: Agregar Diferencia Negativa visualmente restando <---
     if($difNegativa > 0) {
         $listaIngresos[] = [
             'concepto' => 'Diferencia de Caja (Faltante)', 
-            'monto' => floatval($difNegativa * -1)
+            'monto' => floatval($difNegativa) * -1 // Negativo
         ];
     }
     
-    // Recalcular porcentajes Ingresos
+    // Recalcular porcentajes con el nuevo ítem
     foreach($listaIngresos as &$row) {
         $porc = ($totalIngresos > 0) ? ($row['monto'] / $totalIngresos) * 100 : 0;
         $row['porcentaje'] = number_format($porc, 1) . '%';
     }
 
+
     // Lista Gastos (UNIÓN de Caja y Retiros)
     $listaGastos = [];
     
-    // a. Gastos desde Caja (excluyendo CF y ID 14)
+    // a. Gastos desde Caja (Ya tenía el filtro bien)
     $sqlListaGastosCaja = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
                            FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                            WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' 
@@ -159,7 +155,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     }
 
     // b. Gastos desde Retiros
-    // CORRECCION: Agregado filtro para ocultar ID 9 (Caja Fuerte) de la lista visual
+    // ---> CORRECCIÓN AQUÍ: Filtrar ID 9 para que NO aparezca en la lista <---
     $sqlListaRetiros = "SELECT tm.denominacion as concepto, SUM(r.monto) as monto
                         FROM retiros r
                         JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
@@ -197,7 +193,7 @@ function obtenerDatosMes($conexion, $m, $a) {
         'detallesEfectivo' => $detallesEfectivo,
         'totalIngresos' => $totalIngresos,
         'totalGastos' => $totalEgresos,
-        'ganancia' => $ganancia, // <--- Dato clave para el contador
+        'ganancia' => $gananciaNeta, // ---> CORRECCIÓN: Enviamos la ganancia
         'desgloseIngresos' => $listaIngresos,
         'desgloseGastos' => $listaGastos
     ];
