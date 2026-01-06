@@ -8,63 +8,56 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// --- CONFIGURACIÓN ZONA HORARIA ARGENTINA ---
 date_default_timezone_set('America/Argentina/Buenos_Aires');
-
-// Incluir la librería Dompdf
 require_once '../libreria/dompdf/autoload.inc.php';
 use Dompdf\Dompdf;
 
-// --- LÓGICA DE DATOS ---
 $mesReporte = isset($_GET['mes']) ? $_GET['mes'] : date('m');
 $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. CÁLCULO DE TOTALES 
-$sqlCaja = "
+// --- CONSULTAS ROBUSTAS (COALESCE para evitar NULL) ---
+
+// 1. Datos Totales
+$sqlTotales = "
     SELECT 
-        -- Ingresos Operativos (excluye dif 14 y 15 para sumarlos manual)
-        SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as ingresos_caja,
+        -- Ingresos Operativos (Entradas sin ID 14 ni 15)
+        COALESCE(SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END), 0) as ing_op,
         
         -- Diferencias
-        SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_positiva,
-        SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END) as dif_negativa,
+        COALESCE(SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END), 0) as dif_pos,
+        COALESCE(SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END), 0) as dif_neg,
         
-        -- Egresos Caja: IMPORTANTE excluir ID 14 (es resta de ingreso) y ID 9 (Caja Fuerte, oculto)
-        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento NOT IN (14, 9) THEN dc.monto ELSE 0 END) as egresos_caja,
+        -- Egresos Caja (Salidas sin ID 9 ni 14)
+        COALESCE(SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento NOT IN (9, 14) THEN dc.monto ELSE 0 END), 0) as egr_caja,
         
         -- Medios de Pago
-        SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
-        SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
-        SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) as efectivo_puro
-
+        COALESCE(SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END), 0) as banco,
+        COALESCE(SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END), 0) as mp,
+        COALESCE(SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END), 0) as efec_op
+        
     FROM detalle_caja dc
     JOIN caja c ON dc.idCaja = c.idCaja
     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'";
+    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
+";
+$qTotales = mysqli_query($MiConexion, $sqlTotales);
+$dCaja = mysqli_fetch_assoc($qTotales);
 
-$dataCaja = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlCaja));
+// 2. Retiros
+$sqlRet = "SELECT COALESCE(SUM(monto), 0) as total FROM retiros WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte'";
+$dRet = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRet));
 
-$sqlRetiros = "SELECT SUM(monto) as total FROM retiros WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte'";
-$dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
-$totalRetirosContables = floatval($dataRetiros['total']);
-
-// CÁLCULOS FINALES
-// Ingresos Totales = Operativos + Dif Positiva - Dif Negativa
-$totalIngresos = floatval($dataCaja['ingresos_caja']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
-
-// Egresos Totales = Gastos Operativos (sin CF ni Dif) + Retiros
-$totalEgresos = floatval($dataCaja['egresos_caja']) + $totalRetirosContables;
-
+// CÁLCULOS
+$totalIngresos = floatval($dCaja['ing_op']) + floatval($dCaja['dif_pos']) - floatval($dCaja['dif_neg']);
+$totalEgresos = floatval($dCaja['egr_caja']) + floatval($dRet['total']);
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
-// Contadores Medios de Pago
-$totalBanco = floatval($dataCaja['banco']);
-$totalMP = floatval($dataCaja['mp']);
-// Efectivo Neto = Efectivo Entrante + Sobrantes - Faltantes
-$totalEfectivo = floatval($dataCaja['efectivo_puro']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
+$totalBanco = floatval($dCaja['banco']);
+$totalMP = floatval($dCaja['mp']);
+$totalEfectivo = floatval($dCaja['efec_op']) + floatval($dCaja['dif_pos']) - floatval($dCaja['dif_neg']);
 
 ob_start();
 ?>
@@ -100,7 +93,7 @@ ob_start();
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; }
         .bg-ret { background-color: #fd7e14; }
-        .bg-neg { background-color: #6c757d; } /* Para diferencia negativa */
+        .bg-neg { background-color: #6c757d; }
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
@@ -196,17 +189,15 @@ ob_start();
             ";
             $qCaja = mysqli_query($MiConexion, $sqlDetalleCaja);
             while($r = mysqli_fetch_assoc($qCaja)){
-                
-                // Lógica Especial: Diferencia Negativa (ID 14)
+                // Diferencia Negativa (ID 14) -> Mostramos como ingreso negativo
                 if ($r['idTipoMovimiento'] == 14) {
                      $filasTabla[] = [
                          'concepto' => $r['denominacion'], 
-                         'tipo' => 'Ajuste Ingreso', // Nombre para mostrar
+                         'tipo' => 'Ajuste Ingreso', 
                          'clase' => 'bg-neg', 
-                         'monto' => -1 * abs($r['subtotal']) // Forzar negativo
+                         'monto' => -1 * abs($r['subtotal']) 
                      ];
                 } 
-                // Entradas Normales
                 elseif ($r['es_entrada'] == 1) {
                     $filasTabla[] = [
                         'concepto' => $r['denominacion'], 
@@ -215,7 +206,6 @@ ob_start();
                         'monto' => $r['subtotal']
                     ];
                 }
-                // Salidas Normales
                 elseif ($r['es_salida'] == 1) {
                     $filasTabla[] = [
                         'concepto' => $r['denominacion'], 
@@ -239,13 +229,12 @@ ob_start();
                 $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => 'Retiro', 'clase' => 'bg-ret', 'monto' => $r['subtotal']];
             }
 
-            // Ordenar por monto absoluto (mayor impacto primero)
+            // Ordenar por magnitud (absoluto)
             usort($filasTabla, function($a, $b) { return abs($b['monto']) <=> abs($a['monto']); });
 
             if (count($filasTabla) > 0) {
                 foreach($filasTabla as $row) { 
                     $montoItem = $row['monto'];
-                    // Para el porcentaje usamos valor absoluto para no romper la estética
                     $porcentaje = ($totalIngresos > 0) ? (abs($montoItem) / $totalIngresos) * 100 : 0;
             ?>
             <tr>
@@ -254,10 +243,7 @@ ob_start();
                     <span class="badge <?php echo $row['clase']; ?>"><?php echo $row['tipo']; ?></span>
                 </td>
                 <td class="text-right">
-                    <?php 
-                        // Formato: si es negativo pone el signo menos, si es positivo solo el numero
-                        echo '$ ' . number_format($montoItem, 2, ',', '.'); 
-                    ?>
+                    <?php echo '$ ' . number_format($montoItem, 2, ',', '.'); ?>
                     <span class="porcentaje">(%<?php echo number_format($porcentaje, 1); ?>)</span>
                 </td>
             </tr>
