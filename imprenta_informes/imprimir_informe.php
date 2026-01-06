@@ -22,24 +22,16 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. CÁLCULO DE TOTALES (Lógica corregida)
-
-// A. Datos de CAJA
+// 1. CÁLCULO DE TOTALES (Corregido filtro ID 9)
 $sqlCaja = "
     SELECT 
-        -- Ingresos Normales (Entradas excluyendo Dif Positiva 15 por si acaso, se suma aparte si se desea, o todo junto)
         SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as ingresos_caja,
-        
-        -- Dif Positiva (15)
         SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_positiva,
-
-        -- Dif Negativa (14)
         SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END) as dif_negativa,
         
-        -- Egresos Caja (Salidas excluyendo ID 14 y Caja Fuerte)
-        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento != 14 AND tm.denominacion NOT LIKE '%Caja Fuerte%' THEN dc.monto ELSE 0 END) as egresos_caja,
+        -- Egresos Caja: Excluimos ID 14 (dif neg) y ID 9 (Caja Fuerte) explícitamente
+        SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento NOT IN (14, 9) THEN dc.monto ELSE 0 END) as egresos_caja,
         
-        -- Desglose Medios Pago
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
         SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) as efectivo_puro
@@ -51,17 +43,14 @@ $sqlCaja = "
 
 $dataCaja = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlCaja));
 
-// B. Datos de RETIROS (Tabla 'retiros')
 $sqlRetiros = "SELECT SUM(monto) as total FROM retiros WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte'";
 $dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
 $totalRetirosContables = floatval($dataRetiros['total']);
 
-// C. Consolidación de Totales
 $totalIngresos = floatval($dataCaja['ingresos_caja']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
 $totalEgresos = floatval($dataCaja['egresos_caja']) + $totalRetirosContables;
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
-// Totales medios de pago (Efectivo ajustado con diferencias)
 $totalBanco = floatval($dataCaja['banco']);
 $totalMP = floatval($dataCaja['mp']);
 $totalEfectivo = floatval($dataCaja['efectivo_puro']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
@@ -75,9 +64,12 @@ ob_start();
     <title>Informe Financiero - <?php echo $nombreMes . ' ' . $anioReporte; ?></title>
     <style>
         body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #444; padding-bottom: 10px; }
-        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
-        .header p { margin: 5px 0 0; font-size: 14px; color: #666; }
+        .header-table { width: 100%; border-bottom: 2px solid #444; margin-bottom: 30px; padding-bottom: 10px; }
+        .header-logo { width: 50%; vertical-align: middle; }
+        .header-logo img { max-width: 180px; max-height: 80px; }
+        .header-info { width: 50%; text-align: right; vertical-align: middle; }
+        .header-info h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header-info p { margin: 5px 0 0; font-size: 14px; color: #666; }
         
         .resumen-cards { width: 100%; margin-bottom: 30px; }
         .resumen-cards td { width: 33%; padding: 10px; text-align: center; background-color: #f8f9fa; border: 1px solid #ddd; }
@@ -96,20 +88,36 @@ ob_start();
         .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; color: #fff; text-transform: uppercase; }
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; }
-        .bg-ret { background-color: #fd7e14; } /* Color naranja para retiros */
+        .bg-ret { background-color: #fd7e14; }
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
-
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Informe Financiero</h1>
-        <p>Período: <?php echo $nombreMes . ' de ' . $anioReporte; ?></p>
-        <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td class="header-logo">
+                <?php
+                    $ruta_imagen = '../assets/img/logo.png';
+                    if(file_exists($ruta_imagen)){
+                        $tipo = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
+                        $dataImg = file_get_contents($ruta_imagen);
+                        $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($dataImg);
+                        echo '<img src="'.$base64.'" alt="Logo">';
+                    } else {
+                        echo '<h2>IMPRENTA ROBERTS</h2>';
+                    }
+                ?>
+            </td>
+            <td class="header-info">
+                <h1>Informe Financiero</h1>
+                <p>Período: <?php echo $nombreMes . ' de ' . $anioReporte; ?></p>
+                <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
+            </td>
+        </tr>
+    </table>
 
     <table class="resumen-cards">
         <tr>
@@ -162,19 +170,16 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            // Preparamos los datos unificados para la tabla
             $filasTabla = [];
 
-            // 1. Movimientos de Caja
+            // 1. Movimientos de Caja (Excluyendo ID 14 y 9)
             $sqlDetalleCaja = "
                 SELECT tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-                -- Excluir Caja Fuerte y Dif Negativa (14) de este listado, ya que el 14 restó al total y CF no va
-                AND dc.idTipoMovimiento != 14 
-                AND tm.denominacion NOT LIKE '%Caja Fuerte%'
+                AND dc.idTipoMovimiento NOT IN (14, 9) 
                 GROUP BY tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento
             ";
             $qCaja = mysqli_query($MiConexion, $sqlDetalleCaja);
@@ -184,7 +189,7 @@ ob_start();
                 $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => $tipo, 'clase' => $clase, 'monto' => $r['subtotal']];
             }
 
-            // 2. Movimientos de Retiros (Se consideran Egresos)
+            // 2. Movimientos de Retiros
             $sqlDetalleRetiros = "
                 SELECT tm.denominacion, SUM(r.monto) as subtotal
                 FROM retiros r
@@ -194,11 +199,9 @@ ob_start();
             ";
             $qRetiros = mysqli_query($MiConexion, $sqlDetalleRetiros);
             while($r = mysqli_fetch_assoc($qRetiros)){
-                // Agregamos a la lista
                 $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => 'Retiro', 'clase' => 'bg-ret', 'monto' => $r['subtotal']];
             }
 
-            // Ordenar por monto descendente para que se vea ordenado
             usort($filasTabla, function($a, $b) { return $b['monto'] <=> $a['monto']; });
 
             if (count($filasTabla) > 0) {
