@@ -64,7 +64,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     // 2. OBTENER TOTALES DE RETIROS CONTABLES (TABLA retiros)
     // AGREGADO: Filtro para asegurar que Caja Fuerte (9) tampoco se sume si está en retiros
     $sqlRetiros = "SELECT SUM(monto) as total FROM retiros 
-                   WHERE MONTH(fecha) = '$m' AND YEAR(fecha) = '$a'
+                   WHERE MONTH(fecha) = '$m' AND YEAR(fecha) = '$a'"; 
     $montoRetiros = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlRetiros))['total']);
 
 
