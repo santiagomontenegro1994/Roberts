@@ -22,16 +22,20 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// 1. CÁLCULO DE TOTALES (Corregido filtro ID 9)
+// 1. CÁLCULO DE TOTALES 
 $sqlCaja = "
     SELECT 
+        -- Ingresos Operativos (excluye dif 14 y 15 para sumarlos manual)
         SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as ingresos_caja,
+        
+        -- Diferencias
         SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_positiva,
         SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END) as dif_negativa,
         
-        -- Egresos Caja: Excluimos ID 14 (dif neg) y ID 9 (Caja Fuerte) explícitamente
+        -- Egresos Caja: IMPORTANTE excluir ID 14 (es resta de ingreso) y ID 9 (Caja Fuerte, oculto)
         SUM(CASE WHEN tm.es_salida = 1 AND dc.idTipoMovimiento NOT IN (14, 9) THEN dc.monto ELSE 0 END) as egresos_caja,
         
+        -- Medios de Pago
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
         SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15) THEN dc.monto ELSE 0 END) as efectivo_puro
@@ -47,12 +51,19 @@ $sqlRetiros = "SELECT SUM(monto) as total FROM retiros WHERE MONTH(fecha) = '$me
 $dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
 $totalRetirosContables = floatval($dataRetiros['total']);
 
+// CÁLCULOS FINALES
+// Ingresos Totales = Operativos + Dif Positiva - Dif Negativa
 $totalIngresos = floatval($dataCaja['ingresos_caja']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
+
+// Egresos Totales = Gastos Operativos (sin CF ni Dif) + Retiros
 $totalEgresos = floatval($dataCaja['egresos_caja']) + $totalRetirosContables;
+
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
+// Contadores Medios de Pago
 $totalBanco = floatval($dataCaja['banco']);
 $totalMP = floatval($dataCaja['mp']);
+// Efectivo Neto = Efectivo Entrante + Sobrantes - Faltantes
 $totalEfectivo = floatval($dataCaja['efectivo_puro']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
 
 ob_start();
@@ -89,6 +100,7 @@ ob_start();
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; }
         .bg-ret { background-color: #fd7e14; }
+        .bg-neg { background-color: #6c757d; } /* Para diferencia negativa */
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
@@ -172,21 +184,46 @@ ob_start();
             <?php
             $filasTabla = [];
 
-            // 1. Movimientos de Caja (Excluyendo ID 14 y 9)
+            // 1. Movimientos de Caja (Excluyendo ID 9 totalmente)
             $sqlDetalleCaja = "
                 SELECT tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
-                AND dc.idTipoMovimiento NOT IN (14, 9) 
+                AND dc.idTipoMovimiento != 9 
                 GROUP BY tm.denominacion, tm.es_entrada, tm.es_salida, dc.idTipoMovimiento
             ";
             $qCaja = mysqli_query($MiConexion, $sqlDetalleCaja);
             while($r = mysqli_fetch_assoc($qCaja)){
-                $tipo = ($r['es_entrada'] == 1) ? 'Ingreso' : 'Egreso';
-                $clase = ($r['es_entrada'] == 1) ? 'bg-in' : 'bg-out';
-                $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => $tipo, 'clase' => $clase, 'monto' => $r['subtotal']];
+                
+                // Lógica Especial: Diferencia Negativa (ID 14)
+                if ($r['idTipoMovimiento'] == 14) {
+                     $filasTabla[] = [
+                         'concepto' => $r['denominacion'], 
+                         'tipo' => 'Ajuste Ingreso', // Nombre para mostrar
+                         'clase' => 'bg-neg', 
+                         'monto' => -1 * abs($r['subtotal']) // Forzar negativo
+                     ];
+                } 
+                // Entradas Normales
+                elseif ($r['es_entrada'] == 1) {
+                    $filasTabla[] = [
+                        'concepto' => $r['denominacion'], 
+                        'tipo' => 'Ingreso', 
+                        'clase' => 'bg-in', 
+                        'monto' => $r['subtotal']
+                    ];
+                }
+                // Salidas Normales
+                elseif ($r['es_salida'] == 1) {
+                    $filasTabla[] = [
+                        'concepto' => $r['denominacion'], 
+                        'tipo' => 'Egreso', 
+                        'clase' => 'bg-out', 
+                        'monto' => $r['subtotal']
+                    ];
+                }
             }
 
             // 2. Movimientos de Retiros
@@ -202,12 +239,14 @@ ob_start();
                 $filasTabla[] = ['concepto' => $r['denominacion'], 'tipo' => 'Retiro', 'clase' => 'bg-ret', 'monto' => $r['subtotal']];
             }
 
-            usort($filasTabla, function($a, $b) { return $b['monto'] <=> $a['monto']; });
+            // Ordenar por monto absoluto (mayor impacto primero)
+            usort($filasTabla, function($a, $b) { return abs($b['monto']) <=> abs($a['monto']); });
 
             if (count($filasTabla) > 0) {
                 foreach($filasTabla as $row) { 
                     $montoItem = $row['monto'];
-                    $porcentaje = ($totalIngresos > 0) ? ($montoItem / $totalIngresos) * 100 : 0;
+                    // Para el porcentaje usamos valor absoluto para no romper la estética
+                    $porcentaje = ($totalIngresos > 0) ? (abs($montoItem) / $totalIngresos) * 100 : 0;
             ?>
             <tr>
                 <td><?php echo $row['concepto']; ?></td>
@@ -215,7 +254,10 @@ ob_start();
                     <span class="badge <?php echo $row['clase']; ?>"><?php echo $row['tipo']; ?></span>
                 </td>
                 <td class="text-right">
-                    $ <?php echo number_format($montoItem, 2, ',', '.'); ?>
+                    <?php 
+                        // Formato: si es negativo pone el signo menos, si es positivo solo el numero
+                        echo '$ ' . number_format($montoItem, 2, ',', '.'); 
+                    ?>
                     <span class="porcentaje">(%<?php echo number_format($porcentaje, 1); ?>)</span>
                 </td>
             </tr>

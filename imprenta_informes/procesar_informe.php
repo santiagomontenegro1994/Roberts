@@ -24,7 +24,7 @@ $anioAnt = $fechaObj->format('Y');
 function obtenerDatosMes($conexion, $m, $a) {
     // 1. OBTENER TOTALES DE CAJA (TABLA detalle_caja)
     
-    // A. Ingresos Brutos (Entradas normales)
+    // A. Ingresos Brutos (Entradas normales, excluyendo diferencias positivas ID 15 para no duplicar si se procesan aparte)
     $sqlEntradas = "SELECT SUM(dc.monto) as total FROM detalle_caja dc
                     JOIN caja c ON dc.idCaja = c.idCaja
                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
@@ -35,20 +35,23 @@ function obtenerDatosMes($conexion, $m, $a) {
     $rowEntradas = mysqli_fetch_assoc($qEntradas);
     $ingresosCaja = floatval($rowEntradas['total']);
 
-    // B. Diferencias de Caja (Positiva 15, Negativa 14)
+    // B. Diferencias de Caja
+    // Positiva (ID 15) -> Suma a Ingresos
     $sqlDifPos = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoMovimiento = 15";
     $difPositiva = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlDifPos))['total']);
 
+    // Negativa (ID 14) -> SE RESTARÁ DE INGRESOS (No es gasto)
     $sqlDifNeg = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoMovimiento = 14";
     $difNegativa = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlDifNeg))['total']);
 
-    // C. Egresos de Caja (Salidas normales, EXCLUYENDO Caja Fuerte (9) y Dif Negativa (14))
+    // C. Egresos de Caja 
+    // IMPORTANTE: Excluimos ID 14 (porque va a ingresos restando) y ID 9 (Caja Fuerte, ignorar totalmente)
     $sqlSalidasCaja = "SELECT SUM(dc.monto) as total FROM detalle_caja dc
                        JOIN caja c ON dc.idCaja = c.idCaja
                        JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                        WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a'
                        AND tm.es_salida = 1
-                       AND dc.idTipoMovimiento NOT IN (14, 9)"; // EXPLICITO: No Dif Neg, No Caja Fuerte
+                       AND dc.idTipoMovimiento NOT IN (14, 9)"; 
     $gastosCaja = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlSalidasCaja))['total']);
 
     // 2. OBTENER TOTALES DE RETIROS CONTABLES (TABLA retiros)
@@ -58,13 +61,16 @@ function obtenerDatosMes($conexion, $m, $a) {
 
 
     // 3. CÁLCULO DE TOTALES FINALES
+    // Total Ingresos = Operativos + Sobrantes - Faltantes
     $totalIngresos = $ingresosCaja + $difPositiva - $difNegativa;
+    
+    // Total Egresos = Gastos Operativos (sin CF ni dif) + Retiros
     $totalEgresos = $gastosCaja + $montoRetiros;
 
 
-    // 4. DETALLES TARJETAS SUPERIORES (CORREGIDO 'undefined')
+    // 4. DETALLES MEDIOS DE PAGO
     
-    // A) BANCO - Agregado alias 'as concepto'
+    // A) BANCO
     $sqlBanco = "SELECT tp.denominacion as concepto, SUM(dc.monto) as monto
                  FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                  WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoPago IN (3, 13, 23)
@@ -74,7 +80,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     while($row = mysqli_fetch_assoc($qBanco)){ $totalBanco += $row['monto']; $detallesBanco[] = $row; }
     foreach($detallesBanco as &$item) { $item['porcentaje'] = ($totalBanco > 0) ? number_format(($item['monto'] / $totalBanco) * 100, 1) . '%' : '0%'; }
 
-    // B) MERCADOPAGO - Agregado alias 'as concepto'
+    // B) MERCADOPAGO
     $sqlMP = "SELECT tp.denominacion as concepto, SUM(dc.monto) as monto
               FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
               WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoPago = 22
@@ -85,25 +91,27 @@ function obtenerDatosMes($conexion, $m, $a) {
     foreach($detallesMP as &$item) { $item['porcentaje'] = ($totalMP > 0) ? number_format(($item['monto'] / $totalMP) * 100, 1) . '%' : '0%'; }
 
     // C) EFECTIVO
+    // Efectivo puro entrada
     $sqlEfecEnt = "SELECT SUM(dc.monto) as monto FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                    WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15)";
     $montoEntEfec = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlEfecEnt))['monto']);
     
+    // El efectivo total real incluye las diferencias
     $totalEfectivo = $montoEntEfec + $difPositiva - $difNegativa;
 
     $detallesEfectivo = [];
     if($montoEntEfec > 0) $detallesEfectivo[] = ['concepto' => 'Ingresos Operativos', 'monto' => $montoEntEfec];
     if($difPositiva > 0) $detallesEfectivo[] = ['concepto' => 'Diferencia a Favor', 'monto' => $difPositiva];
-    if($difNegativa > 0) $detallesEfectivo[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1];
+    if($difNegativa > 0) $detallesEfectivo[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1]; // Mostrar negativo
 
     foreach($detallesEfectivo as &$item) {
         $base = ($totalEfectivo != 0) ? $totalEfectivo : 1;
         $item['porcentaje'] = number_format((abs($item['monto']) / abs($base)) * 100, 1) . '%';
     }
 
-    // 5. LISTAS DE DESGLOSE (INGRESOS Y EGRESOS)
+    // 5. LISTAS DE DESGLOSE
 
-    // Lista Ingresos
+    // A. Lista Ingresos (Incluye la resta de dif negativa visualmente)
     $sqlListaIng = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
                     FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                     WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND tm.es_entrada = 1
@@ -111,16 +119,29 @@ function obtenerDatosMes($conexion, $m, $a) {
     $qListaIng = mysqli_query($conexion, $sqlListaIng);
     $listaIngresos = [];
     while($row = mysqli_fetch_assoc($qListaIng)) {
-        $monto = floatval($row['monto']);
-        $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
-        $row['porcentaje'] = number_format($porc, 1) . '%';
+        $row['monto'] = floatval($row['monto']);
         $listaIngresos[] = $row;
     }
+    
+    // Insertar Diferencia Negativa en la lista de INGRESOS (restando)
+    if ($difNegativa > 0) {
+        $listaIngresos[] = [
+            'concepto' => 'Diferencia de Caja (Faltante)',
+            'monto' => -$difNegativa // Negativo
+        ];
+    }
+    
+    // Calcular porcentajes de ingresos sobre el Total Neto
+    foreach($listaIngresos as &$row) {
+        $porc = ($totalIngresos > 0) ? ($row['monto'] / $totalIngresos) * 100 : 0;
+        $row['porcentaje'] = number_format($porc, 1) . '%';
+    }
 
-    // Lista Gastos (UNIÓN de Caja y Retiros)
+
+    // B. Lista Gastos (Excluir ID 9 y ID 14)
     $listaGastos = [];
     
-    // a. Gastos desde Caja (excluyendo CF y ID 14) - REFORZADO FILTRO ID 9
+    // Gastos Caja
     $sqlListaGastosCaja = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
                            FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                            WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' 
@@ -132,7 +153,7 @@ function obtenerDatosMes($conexion, $m, $a) {
         $listaGastos[] = $row;
     }
 
-    // b. Gastos desde Retiros
+    // Gastos Retiros
     $sqlListaRetiros = "SELECT tm.denominacion as concepto, SUM(r.monto) as monto
                         FROM retiros r
                         JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
