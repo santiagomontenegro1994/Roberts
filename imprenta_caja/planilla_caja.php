@@ -167,7 +167,8 @@ $queryRetirosEfectivo = "SELECT SUM(dc.monto) AS total
                          JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                          WHERE dc.idCaja = ?
                            AND tp.denominacion = 'Efectivo'
-                           AND tm.es_salida = 1";
+                           AND tm.es_salida = 1
+                           AND tm.idTipoMovimiento = 14"; // Diferencia de Caja salida
 $stmtRetirosEfectivo = $MiConexion->prepare($queryRetirosEfectivo);
 $stmtRetirosEfectivo->bind_param("i", $idCaja);
 $stmtRetirosEfectivo->execute();
