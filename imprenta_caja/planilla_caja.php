@@ -80,11 +80,12 @@ $stmtTotales->execute();
 $resultadoTotales = $stmtTotales->get_result();
 
 $totalesPorCaja = [];
+
 while ($fila = $resultadoTotales->fetch_assoc()) {
     $totalesPorCaja[$fila['metodoPago']] = $fila['totalMonto'];
 }
 
-// Ajustar efectivo restando retiros
+// Ajustar efectivo restando retiros (excepto Caja Fuerte)
 if (isset($totalesPorCaja['Efectivo'])) {
     $totalesPorCaja['Efectivo'] -= $totalRetirosEfectivo;
 }
