@@ -39,9 +39,7 @@ function obtenerDatosMes($conexion, $m, $a) {
     $rowEntradas = mysqli_fetch_assoc($qEntradas);
     $ingresosCaja = floatval($rowEntradas['total']);
 
-    // *** CAMBIO (RESTAURADO): Volvemos a calcular las Diferencias de Caja ***
-    
-    // B. Diferencias de Caja (Positiva 15, Negativa 14)
+    // B. Diferencias de Caja (Positiva 15, Negativa 14) - SE CALCULAN SOLO PARA EL EFECTIVO
     $sqlDifPos = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoMovimiento = 15";
     $difPositiva = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlDifPos))['total']);
 
@@ -60,11 +58,12 @@ function obtenerDatosMes($conexion, $m, $a) {
 
     // 3. CÁLCULO DE TOTALES FINALES
 
-    // *** CAMBIO: El Total Ingresos vuelve a contemplar el ajuste de diferencias ***
-    // (Si no lo sumamos acá, los números no cerrarán con el efectivo en mano)
-    $totalIngresos = $ingresosCaja + $difPositiva - $difNegativa;
+    // *** CAMBIO CRÍTICO: Ventas Totales ahora es SOLO ingresos operativos ***
+    // Se eliminó la parte de "+ $difPositiva - $difNegativa"
+    $totalIngresos = $ingresosCaja; 
     
-    // Egresos se mantiene solo con retiros
+    // *** CAMBIO CRÍTICO: Salidas Totales es SOLO retiros ***
+    // Confirmamos que NO se suma ninguna diferencia negativa aquí
     $totalEgresos = $montoRetiros;
 
 
@@ -95,13 +94,13 @@ function obtenerDatosMes($conexion, $m, $a) {
                    WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' AND dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento NOT IN (14, 15)";
     $montoEntEfec = floatval(mysqli_fetch_assoc(mysqli_query($conexion, $sqlEfecEnt))['monto']);
     
-    // *** CAMBIO (RESTAURADO): El total efectivo vuelve a sumar/restar las diferencias ***
+    // *** NOTA: El Efectivo SÍ mantiene las diferencias para reflejar la realidad física de la caja ***
     $totalEfectivo = $montoEntEfec + $difPositiva - $difNegativa;
 
     $detallesEfectivo = [];
     if($montoEntEfec > 0) $detallesEfectivo[] = ['concepto' => 'Ingresos Operativos', 'monto' => $montoEntEfec];
     
-    // *** CAMBIO (RESTAURADO): Se agregan los items visuales de diferencias ***
+    // Se muestran las diferencias en el desglose de efectivo
     if($difPositiva > 0) $detallesEfectivo[] = ['concepto' => 'Diferencia a Favor', 'monto' => $difPositiva];
     if($difNegativa > 0) $detallesEfectivo[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1];
 
