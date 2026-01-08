@@ -21,7 +21,7 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// --- CONSULTAS SQL IDÉNTICAS AL PROCESADOR ---
+// --- CONSULTAS SQL (IDÉNTICAS AL PROCESADOR) ---
 
 // 1. OBTENER DIFERENCIAS DE CAJA
 $sqlDifPos = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte' AND dc.idTipoMovimiento = 15";
@@ -30,7 +30,7 @@ $difPositiva = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlDifPos)
 $sqlDifNeg = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte' AND dc.idTipoMovimiento = 14";
 $difNegativa = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlDifNeg))['total']);
 
-// 2. OBTENER INGRESOS BRUTOS DE CAJA (Con filtro idActivo = 1)
+// 2. INGRESOS CAJA Y DESGLOSE
 $sqlEntradas = "SELECT SUM(dc.monto) as total,
                 SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
                 SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
@@ -51,25 +51,18 @@ $totalBanco = floatval($dataCaja['banco']);
 $totalMP = floatval($dataCaja['mp']);
 $montoEntEfec = floatval($dataCaja['efectivo_puro']);
 
-// 3. OBTENER TOTALES DE RETIROS
+// 3. RETIROS
 $sqlRetiros = "SELECT SUM(monto) as total FROM retiros 
                WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte'
                AND idTipoMovimiento NOT IN (9, 14, 15)"; 
 $dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
 $montoRetiros = floatval($dataRetiros['total']);
 
-// --- CÁLCULOS MATEMÁTICOS ---
+// --- CÁLCULOS (SIN TOCAR LÓGICA) ---
 
-// Ventas Totales = (Ventas Reales Activas) + (Sobra Plata) - (Falta Plata)
 $totalIngresos = $ingresosCaja + $difPositiva - $difNegativa;
-
-// Salidas Totales = Solo Retiros
 $totalEgresos = $montoRetiros;
-
-// Ganancia Neta
 $gananciaNeta = $totalIngresos - $totalEgresos;
-
-// Efectivo = (Ventas Efvo Activas) + (Sobra Plata) - (Falta Plata)
 $totalEfectivo = $montoEntEfec + $difPositiva - $difNegativa;
 
 ob_start();
@@ -87,27 +80,22 @@ ob_start();
         .header-info { width: 50%; text-align: right; vertical-align: middle; }
         .header-info h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
         .header-info p { margin: 5px 0 0; font-size: 14px; color: #666; }
-        
         .resumen-cards { width: 100%; margin-bottom: 30px; }
         .resumen-cards td { width: 33%; padding: 10px; text-align: center; background-color: #f8f9fa; border: 1px solid #ddd; }
         .resumen-cards h3 { margin: 0 0 5px; font-size: 14px; color: #555; }
         .resumen-cards .monto { font-size: 18px; font-weight: bold; color: #000; }
-        
         .medios-pago { margin-bottom: 30px; width: 100%; border-collapse: collapse; }
         .medios-pago td { border: 1px solid #eee; padding: 8px; text-align: center; width: 33%; }
         .medios-pago .label { font-weight: bold; display: block; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; color: #777; }
-        
         .detalle-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .detalle-table th { background-color: #333; color: #fff; padding: 10px; text-align: left; font-size: 11px; }
         .detalle-table td { border-bottom: 1px solid #eee; padding: 8px 10px; }
         .text-right { text-align: right; }
-        
         .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; color: #fff; text-transform: uppercase; }
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; } 
         .bg-ret { background-color: #fd7e14; }
         .bg-dif { background-color: #17a2b8; }
-        
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
@@ -190,7 +178,7 @@ ob_start();
             <?php
             $agrupados = [];
 
-            // 1. INGRESOS (DESGLOSE)
+            // 1. Ingresos Operativos
             $sqlDetalleCaja = "
                 SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
@@ -221,19 +209,25 @@ ob_start();
                 $agrupados[$nombre]['monto'] += $r['subtotal'];
             }
 
-            // 2. AGREGAR DIFERENCIA DE CAJA NETA (Manual)
-            $diferenciaNeta = $difPositiva - $difNegativa;
-            if($diferenciaNeta != 0) {
-                // Se agrega a la lista como un ítem más
-                $agrupados['DIFERENCIA_CAJA'] = [
-                    'concepto' => 'Diferencia de Caja',
+            // 2. INSERCIÓN MANUAL DE DIFERENCIAS (Sin tocar lógica general)
+            if($difPositiva > 0) {
+                $agrupados['DIF_POS'] = [
+                    'concepto' => 'Diferencia a Favor',
                     'tipo' => 'Entrada', 
                     'clase' => 'bg-dif', 
-                    'monto' => $diferenciaNeta
+                    'monto' => $difPositiva
+                ];
+            }
+            if($difNegativa > 0) {
+                $agrupados['DIF_NEG'] = [
+                    'concepto' => 'Diferencia en Contra',
+                    'tipo' => 'Entrada', // Ajuste sobre entrada
+                    'clase' => 'bg-out', 
+                    'monto' => ($difNegativa * -1) // Negativo para que reste en la lista visual
                 ];
             }
 
-            // 3. EGRESOS (DESGLOSE - SOLO RETIROS)
+            // 3. Salidas
             $sqlDetalleRetiros = "
                 SELECT tm.denominacion, SUM(r.monto) as subtotal
                 FROM retiros r
@@ -270,7 +264,6 @@ ob_start();
             if (count($filasTabla) > 0) {
                 foreach($filasTabla as $row) { 
                     $montoItem = $row['monto'];
-                    // Calculo porcentaje (cuidando division por cero)
                     $div = ($totalIngresos != 0) ? $totalIngresos : 1;
                     $porcentaje = ($montoItem / $div) * 100;
             ?>
