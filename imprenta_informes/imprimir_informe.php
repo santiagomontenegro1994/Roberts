@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// 1. VERIFICACIÓN DE SESIÓN
 if (empty($_SESSION['Usuario_Nombre'])) {
     header('Location: ../core/cerrarsesion.php');
     exit;
@@ -17,65 +16,66 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 require_once '../libreria/dompdf/autoload.inc.php';
 use Dompdf\Dompdf;
 
-// --- LÓGICA DE DATOS ---
+// --- DATOS BÁSICOS ---
 $mesReporte = isset($_GET['mes']) ? $_GET['mes'] : date('m');
 $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// --- CONSULTAS SQL ---
+// --- CONSULTAS SQL (Sincronizadas con procesar_informe) ---
 
-// 1. DATOS DE CAJA
-// Obtenemos Ingresos puros Y las diferencias para ajustar SOLO el efectivo
+// 1. DATOS DE CAJA + FILTRO ACTIVOS
 $sqlCaja = "
     SELECT 
-        -- Total Ingresos: Solo Entradas Reales (Sin Diferencias)
+        -- Ingresos Operativos (Solo activos, sin diferencias)
         SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as ingresos_reales,
         
-        -- Desglose por Medio de Pago
+        -- Desglose Medios Pago (Solo activos)
         SUM(CASE WHEN dc.idTipoPago IN (3, 13, 23) THEN dc.monto ELSE 0 END) as banco,
         SUM(CASE WHEN dc.idTipoPago = 22 THEN dc.monto ELSE 0 END) as mp,
         
-        -- Efectivo Base (Ventas puras en efectivo)
+        -- Efectivo Base (Solo activos, sin diferencias)
         SUM(CASE WHEN dc.idTipoPago = 1 AND tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 THEN dc.monto ELSE 0 END) as efectivo_puro,
 
-        -- Diferencias (Para ajustar el efectivo real en mano)
+        -- Diferencias (Para el cálculo neto)
         SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_positiva,
         SUM(CASE WHEN dc.idTipoMovimiento = 14 THEN dc.monto ELSE 0 END) as dif_negativa
 
     FROM detalle_caja dc
     JOIN caja c ON dc.idCaja = c.idCaja
     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'";
+    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+    WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
+    AND tp.idActivo = 1"; // FILTRO CRÍTICO
 
 $dataCaja = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlCaja));
 
-// 2. DATOS DE RETIROS (SALIDAS PURAS)
-// Excluimos ID 9 (Caja Fuerte) y 14/15 por seguridad
+// 2. DATOS DE RETIROS (Salidas Puras)
 $sqlRetiros = "SELECT SUM(monto) as total FROM retiros 
                WHERE MONTH(fecha) = '$mesReporte' AND YEAR(fecha) = '$anioReporte' 
                AND idTipoMovimiento NOT IN (9, 14, 15)";
 $dataRetiros = mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlRetiros));
 
-// --- CÁLCULO DE TOTALES FINALES ---
+// --- CÁLCULOS MATEMÁTICOS ---
 
-// 1. Ingresos Totales (Ventas Puras)
-$totalIngresos = floatval($dataCaja['ingresos_reales']);
+$diferenciaNeta = floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
 
-// 2. Egresos Totales (Retiros Puros)
+// Ventas Totales = Operativo + Diferencia Neta
+$totalIngresos = floatval($dataCaja['ingresos_reales']) + $diferenciaNeta;
+
+// Egresos = Solo Retiros
 $totalEgresos = floatval($dataRetiros['total']);
 
-// 3. Ganancia Neta
+// Ganancia Neta
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
-// 4. Medios de Pago
+// Medios de Pago
 $totalBanco = floatval($dataCaja['banco']);
 $totalMP = floatval($dataCaja['mp']);
 
-// 5. Efectivo REAL (Ventas Efectivo + Dif Positiva - Dif Negativa)
-// Esto iguala la lógica de 'procesar_informe.php'
-$totalEfectivo = floatval($dataCaja['efectivo_puro']) + floatval($dataCaja['dif_positiva']) - floatval($dataCaja['dif_negativa']);
+// Efectivo Real = Operativo + Diferencia Neta
+$totalEfectivo = floatval($dataCaja['efectivo_puro']) + $diferenciaNeta;
 
 ob_start();
 ?>
@@ -111,6 +111,7 @@ ob_start();
         .bg-in { background-color: #28a745; }
         .bg-out { background-color: #dc3545; } 
         .bg-ret { background-color: #fd7e14; }
+        .bg-dif { background-color: #17a2b8; }
         
         .porcentaje { color: #888; font-size: 10px; margin-left: 5px; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
@@ -192,24 +193,24 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            // Array auxiliar para agrupar conceptos
             $agrupados = [];
 
-            // 1. Movimientos de Ingresos (Caja) - Excluyendo IDs 14, 15 y 9
+            // 1. Ingresos Operativos (Caja) - Solo activos
             $sqlDetalleCaja = "
                 SELECT tm.denominacion, tm.es_entrada, SUM(dc.monto) as subtotal
                 FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                 WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte'
                 AND tm.es_entrada = 1
                 AND dc.idTipoMovimiento NOT IN (14, 15, 9) 
+                AND tp.idActivo = 1
                 GROUP BY tm.denominacion, tm.es_entrada
             ";
             $qCaja = mysqli_query($MiConexion, $sqlDetalleCaja);
             
             while($r = mysqli_fetch_assoc($qCaja)){
-                // Normalización de nombres
                 $nombre = mb_strtoupper(trim($r['denominacion']), 'UTF-8');
                 if($nombre == 'SUELDOS') $nombre = 'SUELDO';
                 if($nombre == 'INSUMOS') $nombre = 'INSUMO';
@@ -217,7 +218,7 @@ ob_start();
                 if(!isset($agrupados[$nombre])) {
                     $agrupados[$nombre] = [
                         'concepto' => ucfirst(strtolower($nombre)), 
-                        'tipo' => 'Entrada', // CAMBIO: Dice Entrada
+                        'tipo' => 'Entrada',
                         'clase' => 'bg-in', 
                         'monto' => 0
                     ];
@@ -225,7 +226,18 @@ ob_start();
                 $agrupados[$nombre]['monto'] += $r['subtotal'];
             }
 
-            // 2. Movimientos de Retiros (Salidas) - Excluyendo ID 9, 14, 15
+            // 2. AGREGAR DIFERENCIA DE CAJA NETA (Manual)
+            if($diferenciaNeta != 0) {
+                // Se agrega a la lista como un ítem más
+                $agrupados['DIFERENCIA_CAJA'] = [
+                    'concepto' => 'Diferencia de Caja',
+                    'tipo' => 'Entrada', // Se clasifica como entrada porque ajusta ventas
+                    'clase' => 'bg-dif', 
+                    'monto' => $diferenciaNeta
+                ];
+            }
+
+            // 3. Salidas (Retiros)
             $sqlDetalleRetiros = "
                 SELECT tm.denominacion, SUM(r.monto) as subtotal
                 FROM retiros r
@@ -237,7 +249,6 @@ ob_start();
             $qRetiros = mysqli_query($MiConexion, $sqlDetalleRetiros);
             
             while($r = mysqli_fetch_assoc($qRetiros)){
-                // Normalización de nombres
                 $nombre = mb_strtoupper(trim($r['denominacion']), 'UTF-8');
                 if($nombre == 'SUELDOS') $nombre = 'SUELDO';
                 if($nombre == 'INSUMOS') $nombre = 'INSUMO';
@@ -245,7 +256,7 @@ ob_start();
                 if(!isset($agrupados[$nombre])) {
                     $agrupados[$nombre] = [
                         'concepto' => ucfirst(strtolower($nombre)), 
-                        'tipo' => 'Salida', // CAMBIO: Dice Salida (no Retiros)
+                        'tipo' => 'Salida',
                         'clase' => 'bg-ret', 
                         'monto' => 0
                     ];
