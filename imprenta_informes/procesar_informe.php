@@ -240,43 +240,46 @@ function obtenerDatosMes($conexion, $m, $a) {
 
     // Lista Ingresos
 
-    // *** CAMBIO: Filtro idActivo = 1 también en la lista visual ***
+// Lista Ingresos
+$sqlListaIng = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
+                FROM detalle_caja dc 
+                JOIN caja c ON dc.idCaja = c.idCaja 
+                JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' 
+                AND tm.es_entrada = 1
+                AND dc.idTipoMovimiento != 15 
+                AND tp.idActivo = 1
+                GROUP BY tm.denominacion ORDER BY monto DESC";
 
-    $sqlListaIng = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto
+$qListaIng = mysqli_query($conexion, $sqlListaIng);
+$listaIngresos = [];
+while($row = mysqli_fetch_assoc($qListaIng)) {
+    $monto = floatval($row['monto']);
+    $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
+    $row['porcentaje'] = number_format($porc, 1) . '%';
+    $listaIngresos[] = $row;
+}
 
-                    FROM detalle_caja dc 
+// --- AGREGAR DIFERENCIAS A FAVOR / EN CONTRA ---
+if ($difPositiva > 0) {
+    $porc = ($totalIngresos > 0) ? ($difPositiva / $totalIngresos) * 100 : 0;
+    $listaIngresos[] = [
+        'concepto' => 'Diferencia a Favor',
+        'monto' => $difPositiva,
+        'porcentaje' => number_format($porc, 1) . '%'
+    ];
+}
 
-                    JOIN caja c ON dc.idCaja = c.idCaja 
+if ($difNegativa > 0) {
+    $porc = ($totalIngresos > 0) ? (($difNegativa * -1) / $totalIngresos) * 100 : 0;
+    $listaIngresos[] = [
+        'concepto' => 'Diferencia en Contra',
+        'monto' => $difNegativa * -1,
+        'porcentaje' => number_format($porc, 1) . '%'
+    ];
+}
 
-                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-
-                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-
-                    WHERE MONTH(c.Fecha) = '$m' AND YEAR(c.Fecha) = '$a' 
-
-                    AND tm.es_entrada = 1
-
-                    AND dc.idTipoMovimiento != 15 
-
-                    AND tp.idActivo = 1
-
-                    GROUP BY tm.denominacion ORDER BY monto DESC";
-
-    $qListaIng = mysqli_query($conexion, $sqlListaIng);
-
-    $listaIngresos = [];
-
-    while($row = mysqli_fetch_assoc($qListaIng)) {
-
-        $monto = floatval($row['monto']);
-
-        $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
-
-        $row['porcentaje'] = number_format($porc, 1) . '%';
-
-        $listaIngresos[] = $row;
-
-    }
 
 
 
