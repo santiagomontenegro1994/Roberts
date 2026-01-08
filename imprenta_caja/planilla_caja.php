@@ -85,11 +85,6 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     $totalesPorCaja[$fila['metodoPago']] = $fila['totalMonto'];
 }
 
-// Ajustar efectivo restando retiros (excepto Caja Fuerte)
-if (isset($totalesPorCaja['Efectivo'])) {
-    $totalesPorCaja['Efectivo'] -= $totalRetirosEfectivo;
-}
-
 // Calcular el total de retiros (sin incluir Caja fuerte)
 $queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
                  FROM detalle_caja dc
@@ -180,6 +175,11 @@ $stmtRetirosEfectivo->bind_param("i", $idCaja);
 $stmtRetirosEfectivo->execute();
 $resRetirosEfectivo = $stmtRetirosEfectivo->get_result();
 $totalRetirosEfectivo = (float)($resRetirosEfectivo->fetch_assoc()['total'] ?? 0);
+
+// Ajustar efectivo restando retiros (excepto Caja Fuerte)
+if (isset($totalesPorCaja['Efectivo'])) {
+    $totalesPorCaja['Efectivo'] -= $totalRetirosEfectivo;
+}
 
 // Total efectivo actual
 $cajaEfectivoActual = $cajaInicial + $totalIngresosEfectivo - $totalRetirosEfectivo;
