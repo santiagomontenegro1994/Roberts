@@ -161,7 +161,7 @@ $stmtIngresosEfectivo->execute();
 $resIngresosEfectivo = $stmtIngresosEfectivo->get_result();
 $totalIngresosEfectivo = (float)($resIngresosEfectivo->fetch_assoc()['total'] ?? 0);
 
-// Calcular retiros en efectivo
+// Calcular retiros en efectivo sin caja fuerte
 $queryRetirosEfectivo = "SELECT SUM(dc.monto) AS total
                          FROM detalle_caja dc
                          JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -169,12 +169,28 @@ $queryRetirosEfectivo = "SELECT SUM(dc.monto) AS total
                          WHERE dc.idCaja = ?
                            AND tp.denominacion = 'Efectivo'
                            AND tm.es_salida = 1
-                           AND tm.idTipoMovimiento <> 9"; // Diferencia de Caja salida
+                           AND tm.idTipoMovimiento <> 9"; // Excluir Caja Fuerte (asumiendo idTipoMovimiento = 9)
 $stmtRetirosEfectivo = $MiConexion->prepare($queryRetirosEfectivo);
 $stmtRetirosEfectivo->bind_param("i", $idCaja);
 $stmtRetirosEfectivo->execute();
 $resRetirosEfectivo = $stmtRetirosEfectivo->get_result();
 $totalRetirosEfectivo = (float)($resRetirosEfectivo->fetch_assoc()['total'] ?? 0);
+
+// Calcular retiros en efectivo de Caja Fuerte solamente
+$queryCajaFuerte = "SELECT SUM(dc.monto) AS total
+                    FROM detalle_caja dc
+                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                    WHERE dc.idCaja = ?
+                      AND tp.denominacion = 'Efectivo'
+                      AND tm.es_salida = 1
+                      AND tm.idTipoMovimiento = 9"; // Solo Caja Fuerte
+$stmtCajaFuerte = $MiConexion->prepare($queryCajaFuerte);
+$stmtCajaFuerte->bind_param("i", $idCaja);
+$stmtCajaFuerte->execute();
+$resCajaFuerte = $stmtCajaFuerte->get_result();
+$totalCajaFuerte = (float)($resCajaFuerte->fetch_assoc()['total'] ?? 0);
+
 
 // Ajustar efectivo restando retiros (excepto Caja Fuerte)
 if (isset($totalesPorCaja['Efectivo'])) {
@@ -182,7 +198,7 @@ if (isset($totalesPorCaja['Efectivo'])) {
 }
 
 // Total efectivo actual
-$cajaEfectivoActual = $cajaInicial + $totalIngresosEfectivo - $totalRetirosEfectivo;
+$cajaEfectivoActual = $cajaInicial + $totalIngresosEfectivo - $totalRetirosEfectivo - $totalCajaFuerte;
 ?>
 
 <!DOCTYPE html>
