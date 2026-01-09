@@ -28,23 +28,34 @@ $pagina = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
 $limite = 50;
 $offset = ($pagina - 1) * $limite;
 
-// Listado de movimientos y totales filtrados (Lógica original intacta)
+// Listado de movimientos y totales filtrados
 $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, $offset, $limite);
 $totalMovimientos = Contar_Movimientos_Contables($MiConexion, $filtros);
 $totalPaginas = ceil($totalMovimientos / $limite);
 
-// --- SECCIÓN MODIFICADA: CÁLCULO DE TOTALES ---
-// Totales de Saldos
+// --- SECCIÓN DE CÁLCULO DE TOTALES ---
+
+// 1. Caja Fuerte y Banco (Funciones originales)
 $totalCajaFuerte  = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
 $totalBanco       = Obtener_Total_Banco($MiConexion, $filtros);
-// Nuevos contadores usando la función genérica (Asegúrate de haber agregado la función en imprenta.php)
-$totalMercadoPago = Obtener_Total_Por_TipoPago($MiConexion, 22, $filtros); // ID 22
-$totalPayway      = Obtener_Total_Por_TipoPago($MiConexion, 23, $filtros); // ID 23
 
-// Total General (Suma de toda la liquidez)
+// 2. Mercado Pago
+// Entrada: ID 22 | Salida: ID 24
+// Sumamos ambos resultados: El de entrada será positivo y el de salida (al ser egreso) vendrá negativo.
+$mpEntradas = Obtener_Total_Por_TipoPago($MiConexion, 22, $filtros);
+$mpSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 24, $filtros); 
+$totalMercadoPago = $mpEntradas + $mpSalidas; 
+
+// 3. Payway
+// Entrada: ID 23 | Salida: ID 25
+$pwEntradas = Obtener_Total_Por_TipoPago($MiConexion, 23, $filtros);
+$pwSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 25, $filtros);
+$totalPayway = $pwEntradas + $pwSalidas;
+
+// Total General (Suma de todas las cajas)
 $granTotal = $totalCajaFuerte + $totalBanco + $totalMercadoPago + $totalPayway;
 
-// Dato informativo (antes era una tarjeta grande)
+// Dato informativo
 $totalMovimientosListados = $totalMovimientos; 
 ?>
 
@@ -63,34 +74,37 @@ $totalMovimientosListados = $totalMovimientos;
         
         <div class="row mb-3">
             <div class="col-md-3">
-                <div class="card text-white bg-success mb-3">
-                    <div class="card-header">Caja Fuerte</div>
+                <div class="card text-white bg-success mb-3 shadow-sm">
+                    <div class="card-header fw-bold"><i class="bi bi-safe"></i> Caja Fuerte</div>
                     <div class="card-body">
-                        <h4 class="card-title">$ <?= number_format($totalCajaFuerte, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalCajaFuerte, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-3">
-                <div class="card text-white bg-primary mb-3">
-                    <div class="card-header">Banco</div>
+                <div class="card text-white bg-primary mb-3 shadow-sm">
+                    <div class="card-header fw-bold"><i class="bi bi-bank"></i> Banco</div>
                     <div class="card-body">
-                        <h4 class="card-title">$ <?= number_format($totalBanco, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalBanco, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-3">
-                <div class="card text-white bg-info mb-3"> 
-                    <div class="card-header">Mercado Pago</div>
+                <div class="card text-white mb-3 shadow-sm" style="background-color: #009EE3;">
+                    <div class="card-header fw-bold"><i class="bi bi-phone"></i> Mercado Pago</div>
                     <div class="card-body">
-                        <h4 class="card-title">$ <?= number_format($totalMercadoPago, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalMercadoPago, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-3">
-                <div class="card text-white bg-warning mb-3"> 
-                    <div class="card-header">Payway</div>
+                <div class="card text-white mb-3 shadow-sm" style="background-color: #2D3277;">
+                    <div class="card-header fw-bold"><i class="bi bi-credit-card"></i> Payway</div>
                     <div class="card-body">
-                        <h4 class="card-title">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
@@ -98,13 +112,13 @@ $totalMovimientosListados = $totalMovimientos;
 
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card bg-light border-dark">
-                    <div class="card-body text-center">
-                        <h3 class="card-title text-dark">
+                <div class="card border-secondary shadow-sm">
+                    <div class="card-body text-center bg-light">
+                        <h3 class="card-title text-dark m-0 p-2">
                             Total General: <strong>$ <?= number_format($granTotal, 2, ',', '.') ?></strong>
                         </h3>
-                        <p class="card-text text-muted small mt-2">
-                            Visualizando <?= $totalMovimientosListados ?> movimientos registrados con los filtros actuales.
+                        <p class="card-text text-muted small mt-1 mb-0">
+                            <i class="bi bi-list-ul"></i> Listando <?= $totalMovimientosListados ?> movimientos con los filtros actuales.
                         </p>
                     </div>
                 </div>
@@ -151,7 +165,7 @@ $totalMovimientosListados = $totalMovimientos;
                                     <option value="Efectivo" <?= ($filtros['metodo_pago'] == 'Efectivo') ? 'selected' : '' ?>>Efectivo</option>
                                     <option value="Transferencia" <?= ($filtros['metodo_pago'] == 'Transferencia') ? 'selected' : '' ?>>Transferencia</option>
                                     <option value="Cheque" <?= ($filtros['metodo_pago'] == 'Cheque') ? 'selected' : '' ?>>Cheque</option>
-                                    </select>
+                                </select>
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary">Filtrar</button>
