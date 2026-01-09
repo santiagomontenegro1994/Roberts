@@ -2747,15 +2747,15 @@ function Obtener_Total_Caja_Fuerte($conexion, $filtros = []) {
 }
 
 function Obtener_Total_Banco($conexion, $filtros = []) {
-    // Entradas no efectivo
+    // 1. ENTRADAS (detalle_caja)
+    // Sumar todo lo que sea entrada, EXCEPTO: Efectivo (1), Mercado Pago (22), Payway (23)
     $queryEntrada = "SELECT SUM(dc.monto) as total
                      FROM detalle_caja dc
                      JOIN caja c ON dc.idCaja = c.idCaja
-                     JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                      JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                     WHERE tm.es_entrada = 1 AND tp.denominacion NOT LIKE '%Efectivo%'";
+                     WHERE tm.es_entrada = 1 
+                     AND dc.idTipoPago NOT IN (1, 22, 23)";
 
-    // Aplicar filtros
     if(!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $queryEntrada .= " AND c.Fecha >= '$fecha_desde'";
@@ -2764,27 +2764,19 @@ function Obtener_Total_Banco($conexion, $filtros = []) {
         $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
         $queryEntrada .= " AND c.Fecha <= '$fecha_hasta'";
     }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryEntrada .= " AND tp.denominacion = '$metodo_pago'";
-    }
-    if(!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] == 'Salida') {
-        $queryEntrada .= " AND 0"; // no queremos entradas si filtramos salida
-    }
 
     $resultEntrada = $conexion->query($queryEntrada);
     $totalEntrada = ($resultEntrada && $row = $resultEntrada->fetch_assoc()) ? floatval($row['total']) : 0;
 
-    // Salidas no efectivo
+    // 2. SALIDAS (detalle_caja)
+    // Sumar todo lo que sea salida, EXCEPTO: Efectivo (14), Mercado Pago (24), Payway (25)
     $querySalida = "SELECT SUM(dc.monto) as total
                     FROM detalle_caja dc
                     JOIN caja c ON dc.idCaja = c.idCaja
-                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                    LEFT JOIN retiros r ON dc.idRetiro = r.idRetiro
-                    WHERE tm.es_salida = 1 AND tp.denominacion NOT LIKE '%Efectivo%'";
+                    WHERE tm.es_salida = 1 
+                    AND dc.idTipoPago NOT IN (14, 24, 25)";
 
-    // Aplicar filtros
     if(!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $querySalida .= " AND c.Fecha >= '$fecha_desde'";
@@ -2793,43 +2785,32 @@ function Obtener_Total_Banco($conexion, $filtros = []) {
         $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
         $querySalida .= " AND c.Fecha <= '$fecha_hasta'";
     }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $querySalida .= " AND tp.denominacion = '$metodo_pago'";
-    }
-    if(!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] == 'Entrada') {
-        $querySalida .= " AND 0"; // no queremos salidas si filtramos entrada
-    }
 
     $resultSalida = $conexion->query($querySalida);
     $totalSalida = ($resultSalida && $row = $resultSalida->fetch_assoc()) ? floatval($row['total']) : 0;
 
-    // Retiros contables no efectivo (movimientos donde es_entrada = 0 y es_salida = 0)
-    $queryRetirosContables = "SELECT SUM(r.monto) as total
-                              FROM retiros r
-                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                              WHERE tm.es_entrada = 0 AND tm.es_salida = 0 
-                              AND tp.denominacion NOT LIKE '%Efectivo%'";
+    // 3. RETIROS CONTABLES (retiros) - Neutros
+    // Excluir todo lo que sea Efectivo, MP o Payway (todos los IDs de entrada y salida para asegurar)
+    $queryRetiros = "SELECT SUM(r.monto) as total
+                     FROM retiros r
+                     JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                     WHERE tm.es_entrada = 0 AND tm.es_salida = 0 
+                     AND r.idTipoPago NOT IN (1, 14, 22, 23, 24, 25)";
 
-    // Aplicar filtros
     if(!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetirosContables .= " AND r.fecha >= '$fecha_desde'";
+        $queryRetiros .= " AND r.fecha >= '$fecha_desde'";
     }
     if(!empty($filtros['fecha_hasta'])) {
         $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetirosContables .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryRetirosContables .= " AND tp.denominacion = '$metodo_pago'";
+        $queryRetiros .= " AND r.fecha <= '$fecha_hasta'";
     }
 
-    $resultRetirosContables = $conexion->query($queryRetirosContables);
-    $totalRetirosContables = ($resultRetirosContables && $row = $resultRetirosContables->fetch_assoc()) ? floatval($row['total']) : 0;
+    $resultRetiros = $conexion->query($queryRetiros);
+    $totalRetiros = ($resultRetiros && $row = $resultRetiros->fetch_assoc()) ? floatval($row['total']) : 0;
 
-    return $totalEntrada - $totalSalida - $totalRetirosContables;
+    // CÁLCULO FINAL
+    return $totalEntrada - $totalSalida - $totalRetiros;
 }
 
 // Función genérica para Payway (23), Mercado Pago (22), etc.

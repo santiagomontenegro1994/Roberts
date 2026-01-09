@@ -35,22 +35,24 @@ $totalPaginas = ceil($totalMovimientos / $limite);
 
 // --- SECCIÓN DE CÁLCULO DE TOTALES ---
 
-// 1. Caja Fuerte y Banco (Funciones originales)
+// 1. Caja Fuerte y Banco
+// Nota: La función Obtener_Total_Banco ahora filtra excluyendo IDs 1,14 (Efectivo), 22,24 (MP), 23,25 (PW)
 $totalCajaFuerte  = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
 $totalBanco       = Obtener_Total_Banco($MiConexion, $filtros);
 
 // 2. Mercado Pago
 // Entrada: ID 22 | Salida: ID 24
-// Sumamos ambos resultados: El de entrada será positivo y el de salida (al ser egreso) vendrá negativo.
 $mpEntradas = Obtener_Total_Por_TipoPago($MiConexion, 22, $filtros);
 $mpSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 24, $filtros); 
-$totalMercadoPago = $mpEntradas + $mpSalidas; 
+// Restamos la salida para obtener el saldo real
+$totalMercadoPago = $mpEntradas - $mpSalidas; 
 
 // 3. Payway
 // Entrada: ID 23 | Salida: ID 25
 $pwEntradas = Obtener_Total_Por_TipoPago($MiConexion, 23, $filtros);
 $pwSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 25, $filtros);
-$totalPayway = $pwEntradas + $pwSalidas;
+// Restamos la salida para obtener el saldo real
+$totalPayway = $pwEntradas - $pwSalidas;
 
 // Total General (Suma de todas las cajas)
 $granTotal = $totalCajaFuerte + $totalBanco + $totalMercadoPago + $totalPayway;
@@ -101,7 +103,7 @@ $totalMovimientosListados = $totalMovimientos;
             </div>
             
             <div class="col-md-3">
-                <div class="card text-white mb-3 shadow-sm" style="background-color: #2D3277;">
+                <div class="card text-white mb-3 shadow-sm" style="background-color: #4B0082;">
                     <div class="card-header fw-bold"><i class="bi bi-credit-card"></i> Payway</div>
                     <div class="card-body">
                         <h4 class="card-title text-white mb-0">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
