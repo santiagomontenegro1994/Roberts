@@ -78,10 +78,14 @@ ob_start();
     <meta charset="UTF-8">
     <style>
         body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; }
+        /* ESTILOS DEL ENCABEZADO RESTAURADOS */
         .header-table { width: 100%; border-bottom: 2px solid #444; margin-bottom: 30px; padding-bottom: 10px; }
-        .header-logo img { max-width: 180px; }
-        .header-info { text-align: right; }
-        .header-info h1 { margin: 0; font-size: 22px; }
+        .header-logo { width: 50%; vertical-align: middle; }
+        .header-logo img { max-width: 180px; max-height: 80px; }
+        .header-info { width: 50%; text-align: right; vertical-align: middle; }
+        .header-info h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header-info p { margin: 5px 0 0; font-size: 14px; color: #666; }
+        
         .resumen-cards { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
         .resumen-cards td { width: 33%; padding: 15px; text-align: center; background-color: #f9f9f9; border: 1px solid #ddd; }
         .monto { font-size: 16px; font-weight: bold; }
@@ -105,19 +109,23 @@ ob_start();
 
     <table class="header-table">
         <tr>
-            <td>
+            <td class="header-logo">
                 <?php
                     $ruta_imagen = '../assets/img/logo.png';
                     if(file_exists($ruta_imagen)){
                         $tipo = pathinfo($ruta_imagen, PATHINFO_EXTENSION);
-                        $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode(file_get_contents($ruta_imagen));
-                        echo '<img src="'.$base64.'">';
-                    } else { echo "<h2>IMPRENTA ROBERTS</h2>"; }
+                        $dataImg = file_get_contents($ruta_imagen);
+                        $base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($dataImg);
+                        echo '<img src="'.$base64.'" alt="Logo">';
+                    } else {
+                        echo '<h2>IMPRENTA ROBERTS</h2>';
+                    }
                 ?>
             </td>
             <td class="header-info">
                 <h1>Informe Financiero</h1>
-                <p><?php echo $nombreMes . ' ' . $anioReporte; ?><br>Generado: <?php echo date('d/m/Y H:i'); ?></p>
+                <p>Período: <?php echo $nombreMes . ' de ' . $anioReporte; ?></p>
+                <p>Generado el: <?php echo date('d/m/Y H:i'); ?></p>
             </td>
         </tr>
     </table>
