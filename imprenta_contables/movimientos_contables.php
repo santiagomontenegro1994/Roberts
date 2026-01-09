@@ -36,7 +36,7 @@ $totalPaginas = ceil($totalMovimientos / $limite);
 // --- SECCIÓN DE CÁLCULO DE TOTALES ---
 
 // 1. Caja Fuerte y Banco
-// Nota: La función Obtener_Total_Banco ahora filtra excluyendo IDs 1,14 (Efectivo), 22,24 (MP), 23,25 (PW)
+// Nota: 'Obtener_Total_Banco' ya contiene la lógica de exclusión (No Efectivo, No MP, No Payway)
 $totalCajaFuerte  = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
 $totalBanco       = Obtener_Total_Banco($MiConexion, $filtros);
 
@@ -44,17 +44,17 @@ $totalBanco       = Obtener_Total_Banco($MiConexion, $filtros);
 // Entrada: ID 22 | Salida: ID 24
 $mpEntradas = Obtener_Total_Por_TipoPago($MiConexion, 22, $filtros);
 $mpSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 24, $filtros); 
-// Restamos la salida para obtener el saldo real
+// RESTA: Entrada (Positivo) - Salida (Positivo)
 $totalMercadoPago = $mpEntradas - $mpSalidas; 
 
 // 3. Payway
 // Entrada: ID 23 | Salida: ID 25
 $pwEntradas = Obtener_Total_Por_TipoPago($MiConexion, 23, $filtros);
 $pwSalidas  = Obtener_Total_Por_TipoPago($MiConexion, 25, $filtros);
-// Restamos la salida para obtener el saldo real
+// RESTA: Entrada (Positivo) - Salida (Positivo)
 $totalPayway = $pwEntradas - $pwSalidas;
 
-// Total General (Suma de todas las cajas)
+// Total General (Suma de los saldos netos de cada cuenta)
 $granTotal = $totalCajaFuerte + $totalBanco + $totalMercadoPago + $totalPayway;
 
 // Dato informativo
@@ -77,7 +77,7 @@ $totalMovimientosListados = $totalMovimientos;
         <div class="row mb-3">
             <div class="col-md-3">
                 <div class="card text-white bg-success mb-3 shadow-sm">
-                    <div class="card-header fw-bold"><i class="bi bi-safe"></i> Caja Fuerte</div>
+                    <div class="card-header fw-bold text-white"><i class="bi bi-safe"></i> Caja Fuerte</div>
                     <div class="card-body">
                         <h4 class="card-title text-white mb-0">$ <?= number_format($totalCajaFuerte, 2, ',', '.') ?></h4>
                     </div>
@@ -86,7 +86,7 @@ $totalMovimientosListados = $totalMovimientos;
             
             <div class="col-md-3">
                 <div class="card text-white bg-primary mb-3 shadow-sm">
-                    <div class="card-header fw-bold"><i class="bi bi-bank"></i> Banco</div>
+                    <div class="card-header fw-bold text-white"><i class="bi bi-bank"></i> Banco</div>
                     <div class="card-body">
                         <h4 class="card-title text-white mb-0">$ <?= number_format($totalBanco, 2, ',', '.') ?></h4>
                     </div>
@@ -95,7 +95,7 @@ $totalMovimientosListados = $totalMovimientos;
             
             <div class="col-md-3">
                 <div class="card text-white mb-3 shadow-sm" style="background-color: #009EE3;">
-                    <div class="card-header fw-bold"><i class="bi bi-phone"></i> Mercado Pago</div>
+                    <div class="card-header fw-bold text-white"><i class="bi bi-phone"></i> Mercado Pago</div>
                     <div class="card-body">
                         <h4 class="card-title text-white mb-0">$ <?= number_format($totalMercadoPago, 2, ',', '.') ?></h4>
                     </div>
@@ -104,7 +104,7 @@ $totalMovimientosListados = $totalMovimientos;
             
             <div class="col-md-3">
                 <div class="card text-white mb-3 shadow-sm" style="background-color: #4B0082;">
-                    <div class="card-header fw-bold"><i class="bi bi-credit-card"></i> Payway</div>
+                    <div class="card-header fw-bold text-white"><i class="bi bi-credit-card"></i> Payway</div>
                     <div class="card-body">
                         <h4 class="card-title text-white mb-0">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
                     </div>
