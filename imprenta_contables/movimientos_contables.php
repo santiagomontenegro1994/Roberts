@@ -28,28 +28,24 @@ $pagina = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
 $limite = 50;
 $offset = ($pagina - 1) * $limite;
 
-// Listado de movimientos y totales filtrados
+// Listado de movimientos y totales filtrados (Lógica original intacta)
 $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, $offset, $limite);
 $totalMovimientos = Contar_Movimientos_Contables($MiConexion, $filtros);
 $totalPaginas = ceil($totalMovimientos / $limite);
 
-// Totales ajustados a filtros
-$totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
-$totalBanco = Obtener_Total_Banco($MiConexion, $filtros);
+// --- SECCIÓN MODIFICADA: CÁLCULO DE TOTALES ---
+// Totales de Saldos
+$totalCajaFuerte  = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
+$totalBanco       = Obtener_Total_Banco($MiConexion, $filtros);
+// Nuevos contadores usando la función genérica (Asegúrate de haber agregado la función en imprenta.php)
+$totalMercadoPago = Obtener_Total_Por_TipoPago($MiConexion, 22, $filtros); // ID 22
+$totalPayway      = Obtener_Total_Por_TipoPago($MiConexion, 23, $filtros); // ID 23
 
-// Opciones de filtros
-$metodosPagoOptions = [];
-$res = $MiConexion->query("SELECT DISTINCT denominacion 
-                          FROM tipo_pago 
-                          WHERE denominacion NOT IN ('Cta. Cte.', 'Caja Fuerte', 'Banco')");
-while($row = $res->fetch_assoc()) {
-    $metodosPagoOptions[$row['denominacion']] = $row['denominacion'];
-}
+// Total General (Suma de toda la liquidez)
+$granTotal = $totalCajaFuerte + $totalBanco + $totalMercadoPago + $totalPayway;
 
-$tipoEspecialOptions = Listar_Tipos_Especiales($MiConexion);
-
-$MiConexion->close();
-ob_end_flush();
+// Dato informativo (antes era una tarjeta grande)
+$totalMovimientosListados = $totalMovimientos; 
 ?>
 
 <main id="main" class="main">
@@ -57,166 +53,164 @@ ob_end_flush();
         <h1>Movimientos Contables</h1>
         <nav>
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="../core/index.php">Menu</a></li>
-                <li class="breadcrumb-item active">Movimientos Contables</li>
+                <li class="breadcrumb-item"><a href="../index.php">Home</a></li>
+                <li class="breadcrumb-item active">Contabilidad</li>
             </ol>
         </nav>
     </div>
 
-    <section class="section">
+    <section class="section dashboard">
+        
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-header">Caja Fuerte</div>
+                    <div class="card-body">
+                        <h4 class="card-title">$ <?= number_format($totalCajaFuerte, 2, ',', '.') ?></h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-header">Banco</div>
+                    <div class="card-body">
+                        <h4 class="card-title">$ <?= number_format($totalBanco, 2, ',', '.') ?></h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3"> 
+                    <div class="card-header">Mercado Pago</div>
+                    <div class="card-body">
+                        <h4 class="card-title">$ <?= number_format($totalMercadoPago, 2, ',', '.') ?></h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-3"> 
+                    <div class="card-header">Payway</div>
+                    <div class="card-body">
+                        <h4 class="card-title">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-light border-dark">
+                    <div class="card-body text-center">
+                        <h3 class="card-title text-dark">
+                            Total General: <strong>$ <?= number_format($granTotal, 2, ',', '.') ?></strong>
+                        </h3>
+                        <p class="card-text text-muted small mt-2">
+                            Visualizando <?= $totalMovimientosListados ?> movimientos registrados con los filtros actuales.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
+                        <h5 class="card-title">Filtros y Listado</h5>
 
-                        <!-- Mostrar mensaje si existe -->
                         <?php if (!empty($_SESSION['Mensaje'])): ?>
-                            <div class="alert alert-<?= $_SESSION['Estilo'] ?? 'info' ?> alert-dismissible fade show" role="alert">
+                            <div class="alert alert-<?= $_SESSION['Estilo'] ?> alert-dismissible fade show" role="alert">
                                 <?= $_SESSION['Mensaje'] ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
-                            <?php
-                                unset($_SESSION['Mensaje']);
-                                unset($_SESSION['Estilo']);
+                            <?php 
+                            unset($_SESSION['Mensaje']);
+                            unset($_SESSION['Estilo']);
                             ?>
                         <?php endif; ?>
 
-                        <!-- Contadores -->
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card stat-card bg-primary text-white p-3">
-                                    <i class="bi bi-safe"></i>
-                                    <h3 class="mb-0" style="letter-spacing:1px;">$<?= number_format($totalCajaFuerte, 2, ',', '.') ?></h3>
-                                    <p>Total Caja Fuerte</p>
-                                </div>
+                        <form method="GET" class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="fecha_desde" class="form-label">Desde</label>
+                                <input type="date" class="form-control" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
                             </div>
-                            <div class="col-md-4">
-                                <div class="card stat-card bg-light p-3">
-                                    <i class="bi bi-bank text-secondary"></i>
-                                    <h3 class="mb-0" style="letter-spacing:1px;">$<?= number_format($totalBanco, 2, ',', '.') ?></h3>
-                                    <p>Total Banco</p>
-                                </div>
+                            <div class="col-md-3">
+                                <label for="fecha_hasta" class="form-label">Hasta</label>
+                                <input type="date" class="form-control" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
                             </div>
-                            <div class="col-md-4">
-                                <div class="card stat-card bg-info text-white p-3">
-                                    <i class="bi bi-list-check"></i>
-                                    <h3 class="mb-0" style="letter-spacing:1px;"><?= $totalMovimientos ?></h3>
-                                    <p>Movimientos Filtrados</p>
-                                </div>
+                            <div class="col-md-3">
+                                <label for="tipo_movimiento" class="form-label">Tipo</label>
+                                <select class="form-select" name="tipo_movimiento">
+                                    <option value="">Todos</option>
+                                    <option value="Entrada" <?= ($filtros['tipo_movimiento'] == 'Entrada') ? 'selected' : '' ?>>Entrada</option>
+                                    <option value="Salida" <?= ($filtros['tipo_movimiento'] == 'Salida') ? 'selected' : '' ?>>Salida</option>
+                                </select>
                             </div>
-                        </div>
-
-                        <!-- Filtros -->
-                        <form method="GET" class="mb-3">
-                            <div class="row mb-4">
-                                <div class="col-md-2">
-                                    <label for="fecha_desde" class="form-label">Desde</label>
-                                    <input type="date" class="form-control" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde'] ?? '') ?>">
-                                </div>
-                                <div class="col-md-2">
-                                    <label for="fecha_hasta" class="form-label">Hasta</label>
-                                    <input type="date" class="form-control" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta'] ?? '') ?>">
-                                </div>
-                                <div class="col-md-2">
-                                    <label for="tipo_movimiento" class="form-label">Tipo de Movimiento</label>
-                                    <select class="form-select" name="tipo_movimiento">
-                                        <option value="">Todos</option>
-                                        <option value="Entrada" <?= ($filtros['tipo_movimiento'] ?? '') == 'Entrada' ? 'selected' : '' ?>>Entrada</option>
-                                        <option value="Salida" <?= ($filtros['tipo_movimiento'] ?? '') == 'Salida' ? 'selected' : '' ?>>Salida</option>
-                                        <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] ?? '') == 'Retiros Contables' ? 'selected' : '' ?>>Retiros Contables</option>
+                             <div class="col-md-3">
+                                <label for="metodo_pago" class="form-label">Método Pago</label>
+                                <select class="form-select" name="metodo_pago">
+                                    <option value="">Todos</option>
+                                    <option value="Efectivo" <?= ($filtros['metodo_pago'] == 'Efectivo') ? 'selected' : '' ?>>Efectivo</option>
+                                    <option value="Transferencia" <?= ($filtros['metodo_pago'] == 'Transferencia') ? 'selected' : '' ?>>Transferencia</option>
+                                    <option value="Cheque" <?= ($filtros['metodo_pago'] == 'Cheque') ? 'selected' : '' ?>>Cheque</option>
                                     </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label for="metodo_pago" class="form-label">Método de Pago</label>
-                                    <select class="form-select" name="metodo_pago">
-                                        <option value="">Todos</option>
-                                        <?php foreach($metodosPagoOptions as $value => $label): ?>
-                                            <option value="<?= $label ?>" <?= ($filtros['metodo_pago'] ?? '') == $label ? 'selected' : '' ?>><?= $label ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> Filtrar</button>
-                                    <a href="movimientos_contables.php" class="btn btn-secondary me-2"><i class="bi bi-arrow-clockwise"></i> Reiniciar</a>
-                                    <a href="agregar_movimiento_contable.php" class="btn btn-success">
-                                        <i class="bi bi-plus-lg"></i> Retirar
-                                    </a>
-                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Filtrar</button>
+                                <a href="movimientos_contables.php" class="btn btn-secondary">Limpiar</a>
+                                <a href="agregar_movimiento_contable.php" class="btn btn-success float-end">Nuevo Movimiento</a>
                             </div>
                         </form>
 
-                        <!-- Tabla de Movimientos -->
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-hover table-striped">
                                 <thead>
-                                    <tr class="table-primary">
-                                        <th scope="col">Fecha</th>
-                                        <th scope="col">Detalle</th>
-                                        <th scope="col">Tipo</th>
-                                        <th scope="col">Método</th>
-                                        <th scope="col">Usuario</th>
-                                        <th scope="col" class="text-end">Monto</th>
-                                        <th scope="col">Acciones</th>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Categoría/Detalle</th>
+                                        <th>Método Pago</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if(!empty($movimientos)): ?>
-                                        <?php foreach($movimientos as $mov): ?>
-                                            <?php
-                                                $esEntrada = $mov['es_entrada'] == 1;
-                                                $esSalida = $mov['es_salida'] == 1;
-                                                $esRetirosContables = !$esEntrada && !$esSalida;
-
-                                                $claseMonto = $esEntrada ? 'text-success' : ($esSalida || $esRetirosContables ? 'text-danger' : '');
-                                                $signo = $esEntrada ? '+' : '-';
-                                                $tipoBadge = $esRetirosContables ? 'Retiros Contables' : ($esEntrada ? 'Entrada' : 'Salida');
-
-                                                $detalle = htmlspecialchars($mov['detalle']);
-                                            ?>
+                                    <?php if (count($movimientos) > 0): ?>
+                                        <?php foreach ($movimientos as $mov): ?>
                                             <tr>
-                                                <td><?= date("d/m/Y", strtotime($mov['fecha'])) ?></td>
-                                                <td><?= $detalle ?></td>
+                                                <td><?= date('d/m/Y', strtotime($mov['fecha'])) ?></td>
                                                 <td>
-                                                    <?php if($tipoBadge === 'Entrada'): ?>
+                                                    <?php if ($mov['es_entrada']): ?>
                                                         <span class="badge bg-success">Entrada</span>
-                                                    <?php elseif($tipoBadge === 'Salida'): ?>
+                                                    <?php elseif ($mov['es_salida']): ?>
                                                         <span class="badge bg-danger">Salida</span>
-                                                    <?php elseif($tipoBadge === 'Retiros Contables'): ?>
-                                                        <span class="badge" style="background-color: purple; color: white;">Retiros Contables</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary">Neutro</span>
                                                     <?php endif; ?>
                                                 </td>
+                                                <td>
+                                                    <strong><?= htmlspecialchars($mov['nombre_movimiento']) ?></strong><br>
+                                                    <small class="text-muted"><?= htmlspecialchars($mov['detalle'] ?? '-') ?></small>
+                                                </td>
                                                 <td><?= htmlspecialchars($mov['metodo_pago']) ?></td>
-                                                <td><?= htmlspecialchars($mov['usuario'] ?? '-') ?></td>
-                                                <td class="text-end <?= $claseMonto ?>"><?= $signo . "$" . number_format($mov['monto'],2,',','.') ?></td>
-                                                <?php if($esRetirosContables): ?>
-                                                    <td>
-                                                        <a href="modificar_movimiento_contable.php?ID_MOVIMIENTO=<?= $mov['idMovimiento'] ?>"  
-                                                           class="btn btn-xs btn-warning me-2" title="Modificar">
-                                                            <i class="bi bi-pencil-fill"></i>
-                                                        </a>
-                                                        <a href="eliminar_movimiento_contable.php?id=<?= $mov['idMovimiento'] ?>" 
-                                                        class="btn btn-xs btn-danger me-2" title="Eliminar" 
-                                                        onclick="return confirm('¿Confirma eliminar este movimiento contable?');">
-                                                            <i class="bi bi-x-circle"></i>
-                                                        </a>
-                                                    </td>
-                                                <?php else: ?>
-                                                    <td></td>
-                                                <?php endif; ?>
+                                                <td class="text-end">
+                                                    $ <?= number_format($mov['monto'], 2, ',', '.') ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="modificar_movimiento_contable.php?id=<?= $mov['idRetiro'] ?>" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil"></i></a>
+                                                    <a href="eliminar_movimiento_contable.php?id=<?= $mov['idRetiro'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este movimiento?');" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="7" class="text-center">No se encontraron movimientos</td>
+                                            <td colspan="6" class="text-center">No se encontraron movimientos.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Paginación con flechas -->
-                        <?php if($totalPaginas > 1): ?>
-                            <nav aria-label="Page navigation example">
+                        <?php if ($totalPaginas > 1): ?>
+                            <nav aria-label="Page navigation">
                                 <ul class="pagination justify-content-center">
                                     <li class="page-item <?= ($pagina <= 1) ? 'disabled' : '' ?>">
                                         <a class="page-link" href="?<?= http_build_query(array_merge($filtros, ['pagina' => max(1, $pagina - 1)])) ?>">&laquo; Anterior</a>

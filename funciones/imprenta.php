@@ -2832,6 +2832,72 @@ function Obtener_Total_Banco($conexion, $filtros = []) {
     return $totalEntrada - $totalSalida - $totalRetirosContables;
 }
 
+// Función genérica para Payway (23), Mercado Pago (22), etc.
+function Obtener_Total_Por_TipoPago($conexion, $idTipoPago, $filtros = []) {
+    // 1. Entradas (detalle_caja)
+    $queryEntrada = "SELECT SUM(dc.monto) as total
+                     FROM detalle_caja dc
+                     JOIN caja c ON dc.idCaja = c.idCaja
+                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                     WHERE dc.idTipoPago = $idTipoPago AND tm.es_entrada = 1";
+
+    // Aplicar filtros a Entradas
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $queryEntrada .= " AND c.Fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $queryEntrada .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+    // Nota: No filtramos por 'metodo_pago' aquí porque YA estamos filtrando por ID específico
+
+    $resultEntrada = $conexion->query($queryEntrada);
+    $totalEntrada = ($resultEntrada && $row = $resultEntrada->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    // 2. Salidas (detalle_caja)
+    $querySalida = "SELECT SUM(dc.monto) as total
+                    FROM detalle_caja dc
+                    JOIN caja c ON dc.idCaja = c.idCaja
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                    WHERE dc.idTipoPago = $idTipoPago AND tm.es_salida = 1";
+
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $querySalida .= " AND c.Fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $querySalida .= " AND c.Fecha <= '$fecha_hasta'";
+    }
+
+    $resultSalida = $conexion->query($querySalida);
+    $totalSalida = ($resultSalida && $row = $resultSalida->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    // 3. Retiros Contables (retiros)
+    // Movimientos que no son ni entrada ni salida explícita de caja, pero afectan el saldo contable
+    $queryRetiros = "SELECT SUM(r.monto) as total
+                     FROM retiros r
+                     JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                     WHERE r.idTipoPago = $idTipoPago 
+                     AND tm.es_entrada = 0 AND tm.es_salida = 0";
+
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $queryRetiros .= " AND r.fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $queryRetiros .= " AND r.fecha <= '$fecha_hasta'";
+    }
+
+    $resultRetiros = $conexion->query($queryRetiros);
+    $totalRetiros = ($resultRetiros && $row = $resultRetiros->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    // Cálculo Final: Entradas - Salidas - Retiros
+    return $totalEntrada - $totalSalida - $totalRetiros;
+}
+
 function Listar_Pedidos_Trabajos_Detallado($vConexion) {
     $Listado = array();
 
