@@ -21,7 +21,7 @@ $anioReporte = isset($_GET['anio']) ? $_GET['anio'] : date('Y');
 $nombresMeses = ["01"=>"Enero","02"=>"Febrero","03"=>"Marzo","04"=>"Abril","05"=>"Mayo","06"=>"Junio","07"=>"Julio","08"=>"Agosto","09"=>"Septiembre","10"=>"Octubre","11"=>"Noviembre","12"=>"Diciembre"];
 $nombreMes = $nombresMeses[str_pad($mesReporte, 2, "0", STR_PAD_LEFT)];
 
-// --- LÓGICA IDÉNTICA A PROCESAR_INFORME.PHP ---
+// --- LÓGICA DE DATOS (Misma que tenías) ---
 
 // 1. DIFERENCIAS
 $sqlDifPos = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte' AND dc.idTipoMovimiento = 15";
@@ -41,7 +41,7 @@ $sqlEntradas = "SELECT SUM(dc.monto) as total FROM detalle_caja dc
                 AND tp.idActivo = 1"; 
 $ingresosCaja = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlEntradas))['total']);
 
-// 3. MEDIOS DE PAGO (Desglosados individualmente como en el procesador)
+// 3. MEDIOS DE PAGO
 // Banco
 $sqlBanco = "SELECT SUM(dc.monto) as monto FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte' AND dc.idTipoPago IN (3, 13, 23)";
 $totalBanco = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlBanco))['monto']);
@@ -50,7 +50,7 @@ $totalBanco = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlBanco))[
 $sqlMP = "SELECT SUM(dc.monto) as monto FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE MONTH(c.Fecha) = '$mesReporte' AND YEAR(c.Fecha) = '$anioReporte' AND dc.idTipoPago = 22";
 $totalMP = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlMP))['monto']);
 
-// Efectivo (Lógica: Ventas Efvo Activas + Diferencias)
+// Efectivo
 $sqlEfecEnt = "SELECT SUM(dc.monto) as monto FROM detalle_caja dc 
                JOIN caja c ON dc.idCaja = c.idCaja 
                JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -78,7 +78,7 @@ ob_start();
     <meta charset="UTF-8">
     <style>
         body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; }
-        /* ESTILOS DEL ENCABEZADO RESTAURADOS */
+        
         .header-table { width: 100%; border-bottom: 2px solid #444; margin-bottom: 30px; padding-bottom: 10px; }
         .header-logo { width: 50%; vertical-align: middle; }
         .header-logo img { max-width: 180px; max-height: 80px; }
@@ -89,19 +89,38 @@ ob_start();
         .resumen-cards { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
         .resumen-cards td { width: 33%; padding: 15px; text-align: center; background-color: #f9f9f9; border: 1px solid #ddd; }
         .monto { font-size: 16px; font-weight: bold; }
+        
         .medios-pago { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         .medios-pago td { border: 1px solid #eee; padding: 10px; text-align: center; }
         .label { font-size: 9px; text-transform: uppercase; color: #777; font-weight: bold; }
+        
         .detalle-table { width: 100%; border-collapse: collapse; }
         .detalle-table th { background-color: #444; color: #fff; padding: 8px; font-size: 10px; text-align: left; }
         .detalle-table td { border-bottom: 1px solid #eee; padding: 7px; }
+        
         .text-right { text-align: right; }
+        /* Clases de texto para los montos */
+        .text-green { color: #28a745; font-weight: bold; }
+        .text-red { color: #dc3545; font-weight: bold; }
+        
         .badge { padding: 2px 5px; border-radius: 3px; font-size: 9px; color: #fff; }
-        .bg-in { background-color: #28a745; }
-        .bg-ret { background-color: #fd7e14; }
-        .bg-dif { background-color: #17a2b8; }
-        .bg-out { background-color: #dc3545; }
-        .porcentaje { color: #888; font-size: 10px; }
+        .bg-in { background-color: #28a745; } /* Verde entrada */
+        .bg-out { background-color: #dc3545; } /* Rojo salida */
+        .bg-dif { background-color: #17a2b8; } /* Azul diferencia (opcional, ahora usaremos verde/rojo según sea) */
+        
+        .porcentaje { color: #888; font-size: 10px; font-weight: normal; margin-left: 5px; }
+        
+        .separator-row td { 
+            border-bottom: 2px dashed #ccc; 
+            padding: 10px 0; 
+            background-color: #fafafa; 
+            color: #999; 
+            text-align: center; 
+            font-size: 9px; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #eee; padding-top: 5px; }
     </style>
 </head>
@@ -166,9 +185,11 @@ ob_start();
         </thead>
         <tbody>
             <?php
-            $listaFinal = [];
+            // Inicializamos dos arrays separados
+            $entradasList = [];
+            $salidasList = [];
 
-            // A. Ingresos Operativos
+            // 1. Ingresos Operativos -> Entradas
             $sqlDetCaja = "SELECT tm.denominacion, SUM(dc.monto) as subtotal
                            FROM detalle_caja dc
                            JOIN caja c ON dc.idCaja = c.idCaja
@@ -179,19 +200,38 @@ ob_start();
                            GROUP BY tm.denominacion";
             $qCaja = mysqli_query($MiConexion, $sqlDetCaja);
             while($r = mysqli_fetch_assoc($qCaja)){
-                $listaFinal[] = [
+                $entradasList[] = [
                     'concepto' => $r['denominacion'],
                     'tipo' => 'Entrada',
-                    'clase' => 'bg-in',
+                    'clase_badge' => 'bg-in',
+                    'clase_text' => 'text-green',
                     'monto' => floatval($r['subtotal'])
                 ];
             }
 
-            // B. Diferencias
-            if($difPositiva > 0) $listaFinal[] = ['concepto' => 'Diferencia a Favor', 'tipo' => 'Entrada', 'clase' => 'bg-dif', 'monto' => $difPositiva];
-            if($difNegativa > 0) $listaFinal[] = ['concepto' => 'Diferencia en Contra', 'tipo' => 'Entrada', 'clase' => 'bg-out', 'monto' => ($difNegativa * -1)];
+            // 2. Diferencias
+            // Positiva -> Entradas
+            if($difPositiva > 0) {
+                $entradasList[] = [
+                    'concepto' => 'Diferencia a Favor', 
+                    'tipo' => 'Entrada', 
+                    'clase_badge' => 'bg-in', 
+                    'clase_text' => 'text-green',
+                    'monto' => $difPositiva
+                ];
+            }
+            // Negativa -> Salidas (IMPORTANTE: La tratamos como Salida visualmente y en rojo)
+            if($difNegativa > 0) {
+                $salidasList[] = [
+                    'concepto' => 'Diferencia en Contra', 
+                    'tipo' => 'Salida', // Cambiado a Salida
+                    'clase_badge' => 'bg-out', 
+                    'clase_text' => 'text-red',
+                    'monto' => $difNegativa // Guardamos valor absoluto para ordenar, luego mostramos signo segun prefieras
+                ];
+            }
 
-            // C. Gastos (Retiros)
+            // 3. Gastos (Retiros) -> Salidas
             $sqlDetRet = "SELECT tm.denominacion, SUM(r.monto) as subtotal
                           FROM retiros r
                           JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
@@ -200,30 +240,72 @@ ob_start();
                           GROUP BY tm.denominacion";
             $qRet = mysqli_query($MiConexion, $sqlDetRet);
             while($r = mysqli_fetch_assoc($qRet)){
-                $listaFinal[] = [
+                $salidasList[] = [
                     'concepto' => $r['denominacion'],
                     'tipo' => 'Salida',
-                    'clase' => 'bg-ret',
+                    'clase_badge' => 'bg-out',
+                    'clase_text' => 'text-red',
                     'monto' => floatval($r['subtotal'])
                 ];
             }
 
-            // Ordenar por monto descendente
-            usort($listaFinal, function($a, $b) { return abs($b['monto']) <=> abs($a['monto']); });
+            // Función de ordenamiento (mayor a menor absoluto)
+            $sortFunction = function($a, $b) { 
+                return abs($b['monto']) <=> abs($a['monto']); 
+            };
 
-            foreach($listaFinal as $row) {
+            // Ordenamos cada lista por separado
+            usort($entradasList, $sortFunction);
+            usort($salidasList, $sortFunction);
+
+            // --- RENDERIZADO DE ENTRADAS ---
+            foreach($entradasList as $row) {
                 $div = ($totalIngresos != 0) ? $totalIngresos : 1;
                 $porc = (abs($row['monto']) / abs($div)) * 100;
             ?>
             <tr>
                 <td><?php echo $row['concepto']; ?></td>
-                <td><span class="badge <?php echo $row['clase']; ?>"><?php echo $row['tipo']; ?></span></td>
-                <td class="text-right">
+                <td><span class="badge <?php echo $row['clase_badge']; ?>"><?php echo $row['tipo']; ?></span></td>
+                <td class="text-right <?php echo $row['clase_text']; ?>">
                     $ <?php echo number_format($row['monto'], 2, ',', '.'); ?>
                     <span class="porcentaje">(<?php echo number_format($porc, 1); ?>%)</span>
                 </td>
             </tr>
             <?php } ?>
+
+            <?php if (!empty($entradasList) && !empty($salidasList)) { ?>
+                <tr class="separator-row">
+                    <td colspan="3"> Detalle de Egresos </td>
+                </tr>
+            <?php } ?>
+
+            <?php
+            foreach($salidasList as $row) {
+                // Para el porcentaje de egresos, podríamos usar totalEgresos o totalIngresos según lógica contable.
+                // Usualmente se compara contra el Total de Egresos para ver "en qué se gastó".
+                // Si quieres ver cuánto representa del ingreso, usa $totalIngresos.
+                // Aquí usaré $totalEgresos para ver la composición del gasto.
+                $div = ($totalEgresos != 0) ? $totalEgresos : 1; 
+                // Si la diferencia negativa no está sumada en totalEgresos en tu lógica superior, 
+                // el porcentaje podría verse raro, pero visualmente funcionará.
+                
+                $porc = (abs($row['monto']) / abs($div)) * 100;
+                
+                // Si prefieres mostrar el monto con signo negativo visualmente:
+                // $montoMostrar = $row['monto'] * -1;
+                // Si prefieres valor absoluto pero en rojo (común en reportes de columnas):
+                $montoMostrar = $row['monto'];
+            ?>
+            <tr>
+                <td><?php echo $row['concepto']; ?></td>
+                <td><span class="badge <?php echo $row['clase_badge']; ?>"><?php echo $row['tipo']; ?></span></td>
+                <td class="text-right <?php echo $row['clase_text']; ?>">
+                    - $ <?php echo number_format($montoMostrar, 2, ',', '.'); ?>
+                    <span class="porcentaje">(<?php echo number_format($porc, 1); ?>%)</span>
+                </td>
+            </tr>
+            <?php } ?>
+
         </tbody>
     </table>
 
