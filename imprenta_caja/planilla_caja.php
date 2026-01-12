@@ -120,14 +120,14 @@ if ($filaRetirosCajaFuerte = $resultadoRetirosCajaFuerte->fetch_assoc()) {
     $totalRetirosCajaFuerte = (float)$filaRetirosCajaFuerte['totalRetiros'];
 }
 
-// Calcular el total de retiros solo de Diferencia de caja
+// Calcular el total de retiros solo de Diferencia de Caja
 $queryRetirosDifCaja = "SELECT SUM(dc.monto) AS totalRetiros
-                           FROM detalle_caja dc
-                           JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                           WHERE dc.idCaja = ?
-                             AND tm.es_salida = 1
-                             AND tm.denominacion LIKE '%Diferencia de Caja%'";
-$stmtRetirosDifCaja = $MiConexion->prepare($queryRetirosCajaFuerte);
+                        FROM detalle_caja dc
+                        JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                        WHERE dc.idCaja = ?
+                          AND tm.es_salida = 1
+                          AND tm.denominacion LIKE '%Diferencia de Caja%'";
+$stmtRetirosDifCaja = $MiConexion->prepare($queryRetirosDifCaja);
 $stmtRetirosDifCaja->bind_param("i", $idCaja);
 $stmtRetirosDifCaja->execute();
 $resultadoRetirosDifCaja = $stmtRetirosDifCaja->get_result();
@@ -210,7 +210,7 @@ $resCajaFuerte = $stmtCajaFuerte->get_result();
 $totalCajaFuerte = (float)($resCajaFuerte->fetch_assoc()['total'] ?? 0);
 
 
-// Ajustar efectivo restando retiros (excepto Caja Fuerte)
+// Ajustar efectivo restando retiros (excepto deferencia de caja negativa)
 if (isset($totalesPorCaja['Efectivo'])) {
     $totalesPorCaja['Efectivo'] -= $totalRetirosDifCaja;
 }
