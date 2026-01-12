@@ -51,6 +51,7 @@ $totales = [
     'totalRetiros' => 0,
     'totalRetirosCajaFuerte' => 0
 ];
+$totalDifCaja = 0; // Acumulador para Diferencia de Caja (ID 14)
 $metodosUsados = [];
 
 while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
@@ -64,9 +65,14 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
     if ($fila['es_entrada']) {
         $totales[$metodo]['entrada'] += $fila['monto'];
     } else {
-        if (strpos($fila['tipoMovimiento'], 'Caja Fuerte') !== false) {
+        // Lógica corregida para separar Caja Fuerte y Diferencia de Caja
+        if ($fila['idTipoMovimiento'] == 9) { // Caja Fuerte
             $totales['totalRetirosCajaFuerte'] += $fila['monto'];
+        } elseif ($fila['idTipoMovimiento'] == 14) { // Diferencia de Caja
+            // Sumamos a la diferencia pero NO a retiros generales
+            $totalDifCaja += $fila['monto'];
         } else {
+            // Resto de retiros normales
             $totales['totalRetiros'] += $fila['monto'];
         }
     }
@@ -82,10 +88,21 @@ sort($metodosUsados);
 $filaCaja = $resultadoCaja->fetch_assoc();
 $cajaInicial = (float)$filaCaja['cajaInicial'];
 
-$totalEfectivo = isset($totales['Efectivo']['entrada']) ? (float)$totales['Efectivo']['entrada'] : 0;
-$totalRetiros = (float)$totales['totalRetiros'];
+// Variables para cálculos
+$ingresoEfectivoReal = isset($totales['Efectivo']['entrada']) ? (float)$totales['Efectivo']['entrada'] : 0;
+$totalRetirosVisual = (float)$totales['totalRetiros']; // Ya excluye Dif Caja por el elseif del while
 $totalRetirosCajaFuerte = (float)$totales['totalRetirosCajaFuerte'];
-$cajaEfectivoActual = $totalEfectivo - $totalRetiros - $totalRetirosCajaFuerte + $cajaInicial;
+
+// AJUSTE VISUAL (Misma lógica que planilla_caja.php):
+// Al total de efectivo visual le restamos la diferencia de caja
+if (isset($totales['Efectivo'])) {
+    $totales['Efectivo']['entrada'] -= $totalDifCaja; 
+}
+
+// CÁLCULO DEL SALDO FINAL REAL
+// Saldo = Inicial + IngresosReales - (RetirosNormales + DifCaja) - CajaFuerte
+// Nota: Sumamos $totalRetirosVisual + $totalDifCaja porque ambos son salidas de dinero efectivo
+$cajaEfectivoActual = $cajaInicial + $ingresoEfectivoReal - ($totalRetirosVisual + $totalDifCaja) - $totalRetirosCajaFuerte;
 
 ob_start();
 ?>
@@ -248,7 +265,6 @@ ob_start();
             </tbody>
         </table>
 
-        <!-- TABLA DE TOTALES DINÁMICA -->
         <table class="totals">
             <tr>
                 <?php foreach ($metodosUsados as $metodo): ?>
@@ -259,7 +275,7 @@ ob_start();
                 <?php endforeach; ?>
                 <td>
                     <div class="total-label">Retiros</div>
-                    <div class="total-amount">$<?php echo number_format($totalRetiros, 2); ?></div>
+                    <div class="total-amount">$<?php echo number_format($totalRetirosVisual, 2); ?></div>
                 </td>
                 <td>
                     <div class="total-label">Caja Fuerte</div>
