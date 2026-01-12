@@ -85,14 +85,14 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     $totalesPorCaja[$fila['metodoPago']] = $fila['totalMonto'];
 }
 
-// Calcular el total de retiros (sin incluir Caja fuerte NI dif caja negativa)
+// Calcular el total de retiros (sin incluir Caja fuerte)
 $queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
                  FROM detalle_caja dc
                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                  WHERE dc.idCaja = ?
                    AND tm.es_salida = 1
                    AND tm.denominacion NOT LIKE '%Caja Fuerte%'
-                   AND tm.denominacion NOT LIKE 'Diferencia de Caja'";
+                   AND tm.denominacion NOT LIKE '%Diferencia de Caja%'";
 $stmtRetiros = $MiConexion->prepare($queryRetiros);
 $stmtRetiros->bind_param("i", $idCaja);
 $stmtRetiros->execute();
@@ -192,24 +192,10 @@ $stmtCajaFuerte->execute();
 $resCajaFuerte = $stmtCajaFuerte->get_result();
 $totalCajaFuerte = (float)($resCajaFuerte->fetch_assoc()['total'] ?? 0);
 
-// Calcular retiros en efectivo de Diferencia de Caja solamente
-$queryDifCaja = "SELECT SUM(dc.monto) AS total
-                    FROM detalle_caja dc
-                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                    WHERE dc.idCaja = ?
-                      AND tp.denominacion = 'Efectivo'
-                      AND tm.es_salida = 1
-                      AND tm.idTipoMovimiento = 14"; // Solo Dif Caja
-$stmtCDifCaja = $MiConexion->prepare($queryDifCaja);
-$stmtDifCaja->bind_param("i", $idCaja);
-$stmtCDifCaja->execute();
-$resCDifCaja = $stmtDifCaja->get_result();
-$totalDifCaja = (float)($resDifCaja->fetch_assoc()['total'] ?? 0);
 
-// Ajustar efectivo restando dif caja negativa
+// Ajustar efectivo restando retiros (excepto Caja Fuerte)
 if (isset($totalesPorCaja['Efectivo'])) {
-    $totalesPorCaja['Efectivo'] -= $totalDifCaja;
+    $totalesPorCaja['Efectivo'] -= $totalRetirosEfectivo;
 }
 
 // Total efectivo actual
