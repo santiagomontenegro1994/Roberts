@@ -85,13 +85,14 @@ while ($fila = $resultadoTotales->fetch_assoc()) {
     $totalesPorCaja[$fila['metodoPago']] = $fila['totalMonto'];
 }
 
-// Calcular el total de retiros (sin incluir Caja fuerte)
+// Calcular el total de retiros (sin incluir Caja fuerte NI dif caja negativa)
 $queryRetiros = "SELECT SUM(dc.monto) AS totalRetiros
                  FROM detalle_caja dc
                  JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
                  WHERE dc.idCaja = ?
                    AND tm.es_salida = 1
-                   AND tm.denominacion NOT LIKE '%Caja Fuerte%'";
+                   AND tm.denominacion NOT LIKE '%Caja Fuerte%'
+                   AND tm.denominacion NOT LIKE 'Diferencia de Caja'";
 $stmtRetiros = $MiConexion->prepare($queryRetiros);
 $stmtRetiros->bind_param("i", $idCaja);
 $stmtRetiros->execute();
@@ -206,15 +207,9 @@ $stmtCDifCaja->execute();
 $resCDifCaja = $stmtDifCaja->get_result();
 $totalDifCaja = (float)($resDifCaja->fetch_assoc()['total'] ?? 0);
 
-
 // Ajustar efectivo restando dif caja negativa
 if (isset($totalesPorCaja['Efectivo'])) {
     $totalesPorCaja['Efectivo'] -= $totalDifCaja;
-}
-
-// Ajustar retiros restando dif caja negativa
-if (isset($totalesPorCaja['Retiros'])) {
-    $totalesPorCaja['Retiros'] -= $totalDifCaja;
 }
 
 // Total efectivo actual
