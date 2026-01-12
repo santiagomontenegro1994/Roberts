@@ -191,10 +191,30 @@ $stmtCajaFuerte->execute();
 $resCajaFuerte = $stmtCajaFuerte->get_result();
 $totalCajaFuerte = (float)($resCajaFuerte->fetch_assoc()['total'] ?? 0);
 
+// Calcular retiros en efectivo de Diferencia de Caja solamente
+$queryDifCaja = "SELECT SUM(dc.monto) AS total
+                    FROM detalle_caja dc
+                    JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                    WHERE dc.idCaja = ?
+                      AND tp.denominacion = 'Efectivo'
+                      AND tm.es_salida = 1
+                      AND tm.idTipoMovimiento = 14"; // Solo Dif Caja
+$stmtCDifCaja = $MiConexion->prepare($queryDifCaja);
+$stmtDifCaja->bind_param("i", $idCaja);
+$stmtCDifCaja->execute();
+$resCDifCaja = $stmtDifCaja->get_result();
+$totalDifCaja = (float)($resDifCaja->fetch_assoc()['total'] ?? 0);
 
-// Ajustar efectivo restando retiros (excepto Caja Fuerte)
+
+// Ajustar efectivo restando dif caja negativa
 if (isset($totalesPorCaja['Efectivo'])) {
-    $totalesPorCaja['Efectivo'] -= $totalRetirosEfectivo;
+    $totalesPorCaja['Efectivo'] -= $totalDifCaja;
+}
+
+// Ajustar retiros restando dif caja negativa
+if (isset($totalesPorCaja['Retiros'])) {
+    $totalesPorCaja['Retiros'] -= $totalDifCaja;
 }
 
 // Total efectivo actual
