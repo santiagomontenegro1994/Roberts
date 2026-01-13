@@ -2769,7 +2769,10 @@ function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
 function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
     $movimientos = [];
 
-    // Movimientos de detalle_caja (entradas reales)
+    // ---------------------------------------------------------
+    // 1. DETALLE CAJA (Entradas o Movimientos puros de caja)
+    // ---------------------------------------------------------
+    // Estos SIEMPRE son origen 'caja' porque vienen directo de esa tabla
     $detalleCajaQuery = "
         SELECT 
             dc.idDetalleCaja AS idMovimiento,
@@ -2779,7 +2782,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             CONCAT(u.nombre,' ',u.apellido) AS usuario, 
             1 AS es_entrada,
             0 AS es_salida,
-            dc.observaciones AS detalle
+            dc.observaciones AS detalle,
+            'caja' as origen
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -2789,7 +2793,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
           AND tp.denominacion NOT LIKE '%Efectivo%' 
     ";
 
-    // Filtros sobre detalle_caja
+    // Filtros detalle_caja
     if (!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $detalleCajaQuery .= " AND c.Fecha >= '$fecha_desde'";
@@ -2802,15 +2806,15 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-    
-    // Excluir detalle_caja para "Retiros Contables"
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables') {
             $detalleCajaQuery .= " AND 0";
         }
     }
 
-    // Movimientos de retiros (incluye Caja Fuerte y Contables)
+    // ---------------------------------------------------------
+    // 2. RETIROS (Aquí aplicamos la lógica de detección)
+    // ---------------------------------------------------------
     $retirosQuery = "
         SELECT 
             r.idRetiro AS idMovimiento,
@@ -2818,6 +2822,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             r.monto,
             tp.denominacion AS metodo_pago,
             CONCAT(uCreador.nombre,' ',uCreador.apellido) AS usuario, 
+            
+            /* Lógica de Entrada/Salida */
             CASE 
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
                 ELSE 0 
@@ -2827,16 +2833,31 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 0
                 ELSE 1 
             END AS es_salida,
+
+            /* Detalle del movimiento */
             CASE
-                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - Categoría: ', i.denominacion)
+                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
                 WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
                 WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
-            END AS detalle
+            END AS detalle,
+
+            /* AQUÍ ESTÁ LA SOLUCIÓN:
+               Si existe un idRetiro en la tabla detalle_caja (dc_check.idRetiro no es nulo),
+               entonces el origen es 'caja' (Automático/No editable).
+               Si es NULL, es 'retiro' (Manual/Editable).
+            */
+            CASE 
+                WHEN dc_check.idRetiro IS NOT NULL THEN 'caja'
+                ELSE 'retiro'
+            END as origen
+
         FROM retiros r
+        
+        /* JOINS existentes */
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
         LEFT JOIN insumos i ON ri.idInsumo = i.idInsumo
         LEFT JOIN proveedores_insumos pi ON ri.idProveedorInsumo = pi.idProveedorInsumo
@@ -2850,10 +2871,14 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
         LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
         LEFT JOIN usuarios uCreador ON r.idUsuario = uCreador.idUsuario
+
+        /* EL JOIN NUEVO PARA DETECTAR SI VIENE DE CAJA */
+        LEFT JOIN detalle_caja dc_check ON r.idRetiro = dc_check.idRetiro
+
         WHERE 1=1
     ";
 
-    // Filtros sobre retiros
+    // Filtros Retiros
     if (!empty($filtros['fecha_desde'])) {
         $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
         $retirosQuery .= " AND r.fecha >= '$fecha_desde'";
@@ -2867,7 +2892,6 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
     
-    // Filtro de tipo de movimiento completo
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
             $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
@@ -2878,7 +2902,6 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         }
     }
 
-    // Unión de consultas
     $finalQuery = "($detalleCajaQuery) UNION ALL ($retirosQuery) 
                    ORDER BY fecha DESC, idMovimiento DESC 
                    LIMIT $offset, $limite";
