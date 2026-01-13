@@ -2989,6 +2989,60 @@ function Listar_Tipos_Especiales($conexion) {
     return $tipos;
 }
 
+function Obtener_Total_Caja_Fuerte($conexion, $filtros = []) {
+    // Retiros con detalle "Caja Fuerte" (esto será el nuevo total de entrada)
+    $queryRetirosCajaFuerte = "SELECT SUM(r.monto) as total
+                              FROM retiros r
+                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
+                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                              JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro
+                              WHERE rv.categoria LIKE '%Caja Fuerte%'";
+
+    // Aplicar filtros a retiros Caja Fuerte
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $queryRetirosCajaFuerte .= " AND r.fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $queryRetirosCajaFuerte .= " AND r.fecha <= '$fecha_hasta'";
+    }
+    if(!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $queryRetirosCajaFuerte .= " AND tp.denominacion = '$metodo_pago'";
+    }
+
+    $resultRetirosCajaFuerte = $conexion->query($queryRetirosCajaFuerte);
+    $totalEntrada = ($resultRetirosCajaFuerte && $row = $resultRetirosCajaFuerte->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    // Retiros contables en efectivo (movimientos donde es_entrada = 0 y es_salida = 0)
+    $queryRetirosContables = "SELECT SUM(r.monto) as total
+                              FROM retiros r
+                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
+                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                              WHERE tm.es_entrada = 0 AND tm.es_salida = 0 
+                              AND tp.denominacion LIKE '%Efectivo%'";
+
+    // Aplicar filtros a retiros contables
+    if(!empty($filtros['fecha_desde'])) {
+        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
+        $queryRetirosContables .= " AND r.fecha >= '$fecha_desde'";
+    }
+    if(!empty($filtros['fecha_hasta'])) {
+        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
+        $queryRetirosContables .= " AND r.fecha <= '$fecha_hasta'";
+    }
+    if(!empty($filtros['metodo_pago'])) {
+        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
+        $queryRetirosContables .= " AND tp.denominacion = '$metodo_pago'";
+    }
+
+    $resultRetirosContables = $conexion->query($queryRetirosContables);
+    $totalRetirosContables = ($resultRetirosContables && $row = $resultRetirosContables->fetch_assoc()) ? floatval($row['total']) : 0;
+
+    return $totalEntrada - $totalRetirosContables;
+}
+
 function Obtener_Total_Banco($conexion, $filtros = []) {
     // 1. ENTRADAS (detalle_caja): Tarjeta(2), Transferencia(3), eChek(13)
     $sqlEntrada = "SELECT SUM(dc.monto) as total 
