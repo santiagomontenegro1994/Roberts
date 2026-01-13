@@ -53,7 +53,8 @@ $tipoMovimientoMap = [
 $mensaje = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha = $_POST['fecha'] ?? date('Y-m-d');
-    $monto = floatval($_POST['monto'] ?? 0);
+    // Aquí el PHP recibe el valor limpio del input hidden (ej: 20000.50)
+    $monto = floatval($_POST['monto'] ?? 0); 
     $idTipoPago = intval($_POST['metodo_pago'] ?? 0);
     $subtipo = $_POST['subtipo'] ?? '';
     $detalle = $_POST['detalle'] ?? '';
@@ -84,10 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             switch($subtipo) {
                 case 'insumos':
                     $idProveedorInsumo = intval($_POST['idProveedorInsumo'] ?? 0);
-                    $idCategoria = intval($_POST['idCategoriaInsumo'] ?? 0);
+                    $idCategoria = intval($_POST['idInsumo'] ?? 0); // Corregido según tu código anterior
                     $detalle_insumo = $_POST['detalle_insumo'] ?? '';
                     $stmt = $MiConexion->prepare("INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) VALUES (?, ?, ?, ?)");
-                    $idCategoria = intval($_POST['idInsumo'] ?? 0); // Asegurarse que se use el nombre correcto del select
                     $stmt->bind_param("iiis", $idRetiro, $idProveedorInsumo, $idCategoria, $detalle_insumo);
                     $stmt->execute();
                     $stmt->close();
@@ -101,10 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->close();
                     break;
                 case 'servicios':
-                    $idTipoServicio = intval($_POST['tipo_servicio'] ?? 0);
+                    $idTipoServicio = intval($_POST['idServicio'] ?? 0); // Corregido según tu código anterior
                     $detalle_servicio = $_POST['detalle_servicio'] ?? '';
                     $stmt = $MiConexion->prepare("INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) VALUES (?, ?, ?)");
-                    $idTipoServicio = intval($_POST['idServicio'] ?? 0);
                     $stmt->bind_param("iis", $idRetiro, $idTipoServicio, $detalle_servicio);
                     $stmt->execute();
                     $stmt->close();
@@ -164,10 +163,13 @@ $MiConexion->close();
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Monto</label>
-                                <input type="number" step="0.01" name="monto" class="form-control" required>
+                                <label for="monto_visual" class="form-label">Monto</label>
+                                <div class="input-group">
+                                    <input type="text" id="monto_visual" class="form-control" placeholder="$ 0,00" autocomplete="off" required>
+                                    
+                                    <input type="hidden" name="monto" id="monto_real">
+                                </div>
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label">Método de Pago</label>
                                 <select name="metodo_pago" class="form-select" required>
@@ -208,6 +210,47 @@ $MiConexion->close();
 <?php require('../shared/footer.inc.php'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- LÓGICA DE FORMATO DE MONEDA ($ 20.000,00) ---
+    const inputVisual = document.getElementById('monto_visual');
+    const inputReal = document.getElementById('monto_real');
+
+    if(inputVisual && inputReal) {
+        inputVisual.addEventListener('input', function(e) {
+            // 1. Obtener valor y dejar solo números y coma
+            let valor = this.value.replace(/[^0-9,]/g, '');
+
+            if (valor === '') {
+                this.value = '';
+                inputReal.value = '';
+                return;
+            }
+
+            // 2. Controlar que solo haya una coma
+            if ((valor.match(/,/g) || []).length > 1) {
+                valor = valor.substring(0, valor.lastIndexOf(','));
+            }
+
+            // 3. Separar enteros y decimales
+            let partes = valor.split(',');
+            let parteEntera = partes[0];
+            let parteDecimal = partes.length > 1 ? ',' + partes[1].substring(0, 2) : '';
+
+            // 4. Agregar puntos de mil a la parte entera
+            parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+            // 5. Mostrar en pantalla con el signo $
+            this.value = '$ ' + parteEntera + parteDecimal;
+
+            // 6. Guardar en el hidden el valor limpio para la BD (Punto como decimal)
+            // Quitamos puntos visuales y cambiamos coma por punto
+            let valorParaBD = valor.replace(/\./g, '').replace(',', '.');
+            inputReal.value = valorParaBD;
+        });
+    }
+    // --- FIN LÓGICA MONEDA ---
+
+
+    // --- LÓGICA DE SUBTIPOS (ORIGINAL) ---
     const subtipoSelect = document.getElementById('subtipo');
     const detallesDiv = document.getElementById('detalles-dinamicos');
 
@@ -238,6 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `<option value="${id}">${categoriasInsumo[id]}</option>`;
                 }
                 html += `</select>
+                         </div>
                          <div class="mb-3">
                             <label class="form-label">Detalle Insumo (opcional)</label>
                             <input type="text" name="detalle_insumo" class="form-control">
@@ -252,6 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `<option value="${id}">${proveedores[id]}</option>`;
                 }
                 html += `</select>
+                         </div>
                          <div class="mb-3">
                             <label class="form-label">Detalle Proveedor (opcional)</label>
                             <input type="text" name="detalle_proveedor" class="form-control">
@@ -266,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `<option value="${id}">${tiposServicios[id]}</option>`;
                 }
                 html += `</select>
+                         </div>
                          <div class="mb-3">
                             <label class="form-label">Detalle Servicio (opcional)</label>
                             <input type="text" name="detalle_servicio" class="form-control">
@@ -280,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `<option value="${id}">${usuarios[id]}</option>`;
                 }
                 html += `</select>
+                         </div>
                          <div class="mb-3">
                             <label class="form-label">Detalle Sueldo (opcional)</label>
                             <input type="text" name="detalle_sueldo" class="form-control">
