@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $datosNuevos = [
         'idRetiro'        => $idRetiro,
         'fecha'           => $_POST['fecha'],
-        'monto'           => $_POST['monto'],
+        'monto'           => $_POST['monto'], // Recibe el valor limpio del input hidden
         'idTipoPago'      => $_POST['tipoPago'],
         'idTipoMovimiento'=> $_POST['tipoMovimiento'], // viene del hidden
         'subtipo'         => $_POST['subtipo'],
@@ -126,8 +126,15 @@ $tipoMovimientoMap = [
 
                 <div class="mb-3">
                     <label class="form-label">Monto</label>
-                    <input type="number" step="0.01" name="monto" class="form-control" 
-                           value="<?= htmlspecialchars($datosActuales['cabecera']['monto']) ?>" required>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" id="monto_visual" class="form-control" 
+                               value="<?= number_format($datosActuales['cabecera']['monto'], 2, ',', '.') ?>" 
+                               required placeholder="0,00">
+                        
+                        <input type="hidden" name="monto" id="monto_hidden" 
+                               value="<?= $datosActuales['cabecera']['monto'] ?>">
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -154,18 +161,15 @@ $tipoMovimientoMap = [
                     </select>
                 </div>
 
-                <!-- Campo oculto para idTipoMovimiento -->
                 <input type="hidden" name="tipoMovimiento" id="tipoMovimiento" 
                        value="<?= $tipoMovimientoMap[$datosActuales['subtipo']] ?? '' ?>">
 
-                <!-- Subformularios dinámicos -->
                 <div id="subformularios">
                     <?php
                     $subtipo = $datosActuales['subtipo'];
                     $detalle = $datosActuales['detalle'];
                     ?>
 
-                    <!-- Detalle Insumos -->
                     <div id="form-insumos" class="subform" style="display: <?= $subtipo == 'insumos' ? 'block' : 'none' ?>">
                         <h5>Detalle Insumos</h5>
                         <select name="detalle[idProveedorInsumo]" class="form-select mb-2">
@@ -192,7 +196,6 @@ $tipoMovimientoMap = [
                                value="<?= htmlspecialchars($detalle['detalle_insumo'] ?? '') ?>">
                     </div>
 
-                    <!-- Detalle Proveedores -->
                     <div id="form-proveedores" class="subform" style="display: <?= $subtipo == 'proveedores' ? 'block' : 'none' ?>">
                         <h5>Detalle Proveedores</h5>
                         <select name="detalle[idProveedor]" class="form-select mb-2">
@@ -208,7 +211,6 @@ $tipoMovimientoMap = [
                                value="<?= htmlspecialchars($detalle['detalle_proveedor'] ?? '') ?>">
                     </div>
 
-                    <!-- Detalle Servicios -->
                     <div id="form-servicios" class="subform" style="display: <?= $subtipo == 'servicios' ? 'block' : 'none' ?>">
                         <h5>Detalle Servicios</h5>
                         <select name="detalle[idServicio]" class="form-select mb-2">
@@ -224,7 +226,6 @@ $tipoMovimientoMap = [
                                value="<?= htmlspecialchars($detalle['detalle_servicio'] ?? '') ?>">
                     </div>
 
-                    <!-- Detalle Sueldos -->
                     <div id="form-sueldos" class="subform" style="display: <?= $subtipo == 'sueldos' ? 'block' : 'none' ?>">
                         <h5>Detalle Sueldos</h5>
                         <select name="detalle[idUsuarioSueldo]" class="form-select mb-2">
@@ -240,7 +241,6 @@ $tipoMovimientoMap = [
                                value="<?= htmlspecialchars($detalle['detalle_sueldo'] ?? '') ?>">
                     </div>
 
-                    <!-- Detalle Varios -->
                     <div id="form-varios" class="subform" style="display: <?= $subtipo == 'varios' ? 'block' : 'none' ?>">
                         <h5>Detalle Varios</h5>
                         <input type="text" name="detalle[detalle_vario]" class="form-control mb-2" placeholder="Detalle" 
@@ -282,6 +282,55 @@ function mostrarSubform() {
 
 // Ejecutar al cargar para aplicar el valor inicial
 document.addEventListener("DOMContentLoaded", mostrarSubform);
+
+// --- SCRIPTS DE FORMATO DE MONEDA ---
+document.addEventListener('DOMContentLoaded', function() {
+    const inputVisual = document.getElementById('monto_visual');
+    const inputHidden = document.getElementById('monto_hidden');
+
+    inputVisual.addEventListener('input', function(e) {
+        let valor = e.target.value;
+
+        // 1. Eliminar todo lo que no sea número o coma
+        valor = valor.replace(/[^0-9,]/g, '');
+
+        // 2. Asegurar que solo haya una coma
+        const partes = valor.split(',');
+        if (partes.length > 2) {
+            valor = partes[0] + ',' + partes.slice(1).join('');
+        }
+
+        // 3. Formatear la parte entera con puntos de mil
+        let parteEntera = partes[0];
+        let parteDecimal = partes.length > 1 ? ',' + partes[1] : '';
+
+        // Eliminar ceros a la izquierda innecesarios
+        if (parteEntera.length > 1 && parteEntera.startsWith('0')) {
+            parteEntera = parteEntera.replace(/^0+/, '');
+        }
+        if (parteEntera === '') parteEntera = '0';
+
+        // Agregar puntos de mil
+        parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+        // 4. Actualizar el input visual
+        e.target.value = parteEntera + parteDecimal;
+
+        // 5. Actualizar el input hidden (formato SQL: 1500.50)
+        // Quitamos puntos y cambiamos coma por punto
+        let valorLimpio = (parteEntera.replace(/\./g, '') + parteDecimal).replace(',', '.');
+        inputHidden.value = valorLimpio;
+    });
+
+    // Validar al enviar el formulario (por seguridad)
+    document.querySelector('form').addEventListener('submit', function() {
+        if (!inputHidden.value || inputHidden.value === '') {
+             // Si por alguna razón está vacío, intentar recuperarlo del visual
+             let val = inputVisual.value.replace(/\./g, '').replace(',', '.');
+             inputHidden.value = val;
+        }
+    });
+});
 </script>
 
 <?php
