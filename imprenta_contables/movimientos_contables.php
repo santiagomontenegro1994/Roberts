@@ -36,8 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 // 2. Obtener lista dinámica de Métodos de Pago (para el select)
+// MODIFICADO: Se agrega DISTINCT para unificar duplicados y NOT IN para excluir Banco/Caja Fuerte
 $tiposPagoDisponibles = [];
-$sqlTP = "SELECT denominacion FROM tipo_pago WHERE idActivo = 1 ORDER BY denominacion ASC";
+$sqlTP = "SELECT DISTINCT denominacion 
+          FROM tipo_pago 
+          WHERE idActivo = 1 
+          AND denominacion NOT IN ('Banco', 'Caja Fuerte') 
+          ORDER BY denominacion ASC";
+
 $resTP = $MiConexion->query($sqlTP);
 if($resTP){
     while($rowTP = $resTP->fetch_assoc()){
