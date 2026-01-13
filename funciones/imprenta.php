@@ -2466,8 +2466,305 @@ function Anular_Tipo_Movimiento($vConexion, $vIdConsulta) {
     }
 }
 
-    // Obtener todos los movimientos contables históricos con fecha de caja
-// Listar movimientos contables con filtros y paginación
+
+// ===========================================================
+//  MOVIMIENTO CONTABLE
+// ===========================================================
+
+function Datos_Movimiento_Contable($conexion, $idRetiro) {
+    $salida = [
+        'cabecera' => [],
+        'subtipo' => null,
+        'detalle' => []
+    ];
+
+    // Cabecera
+    $sql = "SELECT * FROM retiros WHERE idRetiro = ?";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("i", $idRetiro);
+    $stmt->execute();
+    $cabecera = $stmt->get_result()->fetch_assoc();
+    $salida['cabecera'] = $cabecera;
+
+    if (!$cabecera) {
+        return null; // no existe
+    }
+
+    // Detectar subtipo buscando en las subtablas
+    $subtablas = [
+        'insumos'     => 'retiros_insumos',
+        'proveedores' => 'retiros_proveedores',
+        'servicios'   => 'retiros_servicios',
+        'sueldos'     => 'retiros_sueldos',
+        'varios'      => 'retiros_varios'
+    ];
+
+    foreach ($subtablas as $subtipo => $tabla) {
+        $sql = "SELECT * FROM $tabla WHERE idRetiro = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("i", $idRetiro);
+        $stmt->execute();
+        $detalle = $stmt->get_result()->fetch_assoc();
+        if ($detalle) {
+            $salida['subtipo'] = $subtipo;
+            $salida['detalle'] = $detalle;
+            break;
+        }
+    }
+
+    return $salida;
+}
+
+function Validar_Modificar_Movimiento_Contable($datos) {
+    $errores = [];
+
+    if (empty($datos['fecha'])) {
+        $errores[] = "La fecha es obligatoria.";
+    }
+    if (empty($datos['monto']) || $datos['monto'] <= 0) {
+        $errores[] = "El monto debe ser mayor a 0.";
+    }
+    if (empty($datos['idTipoPago'])) {
+        $errores[] = "Debe seleccionar un tipo de pago.";
+    }
+    if (empty($datos['idTipoMovimiento'])) {
+        $errores[] = "Debe seleccionar un tipo de movimiento.";
+    }
+    if (empty($datos['subtipo'])) {
+        $errores[] = "Debe seleccionar un subtipo.";
+    }
+
+    return $errores;
+}
+
+function Modificar_Movimiento_Contable($conexion, $datos) {
+    $errores = Validar_Modificar_Movimiento_Contable($datos);
+    if (!empty($errores)) {
+        return $errores;
+    }
+
+    $conexion->begin_transaction();
+
+    try {
+        // 1) Actualizar cabecera (sin facturado)
+        $fecha = $datos['fecha'];
+        $monto = $datos['monto'];
+        $idTipoMovimiento = $datos['idTipoMovimiento'];
+        $idTipoPago = $datos['idTipoPago'];
+        $idRetiro = $datos['idRetiro'];
+
+        $sql = "UPDATE retiros 
+                   SET fecha = ?, monto = ?, idTipoMovimiento = ?, idTipoPago = ?
+                 WHERE idRetiro = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("sdiii", $fecha, $monto, $idTipoMovimiento, $idTipoPago, $idRetiro);
+        $stmt->execute();
+
+        // 2) Detectar subtipo original
+        $datosOriginales = Datos_Movimiento_Contable($conexion, $idRetiro);
+        $subtipoOriginal = $datosOriginales['subtipo'] ?? null;
+
+        // 3) Si subtipo nuevo = original → UPDATE
+        if ($datos['subtipo'] === $subtipoOriginal) {
+            switch ($datos['subtipo']) {
+                case 'insumos':
+                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
+                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
+                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
+
+                    $sql = "UPDATE retiros_insumos 
+                               SET idProveedorInsumo = ?, idInsumo = ?, detalle_insumo = ?
+                             WHERE idRetiro = ?";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iisi", $idProveedorInsumo, $idInsumo, $detalle_insumo, $idRetiro);
+                    $stmt->execute();
+                    break;
+
+                case 'proveedores':
+                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
+                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
+
+                    $sql = "UPDATE retiros_proveedores 
+                               SET idProveedor = ?, detalle_proveedor = ?
+                             WHERE idRetiro = ?";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("isi", $idProveedor, $detalle_proveedor, $idRetiro);
+                    $stmt->execute();
+                    break;
+
+                case 'servicios':
+                    $idServicio = $datos['detalle']['idServicio'] ?? null;
+                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
+
+                    $sql = "UPDATE retiros_servicios 
+                               SET idServicio = ?, detalle_servicio = ?
+                             WHERE idRetiro = ?";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("isi", $idServicio, $detalle_servicio, $idRetiro);
+                    $stmt->execute();
+                    break;
+
+                case 'sueldos':
+                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
+                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
+
+                    $sql = "UPDATE retiros_sueldos 
+                               SET idUsuarioSueldo = ?, detalle_sueldo = ?
+                             WHERE idRetiro = ?";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("isi", $idUsuarioSueldo, $detalle_sueldo, $idRetiro);
+                    $stmt->execute();
+                    break;
+
+                case 'varios':
+                    $categoria = $datos['detalle']['categoria'] ?? null;
+                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
+
+                    $sql = "UPDATE retiros_varios 
+                               SET categoria = ?, detalle_vario = ?
+                             WHERE idRetiro = ?";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("ssi", $categoria, $detalle_vario, $idRetiro);
+                    $stmt->execute();
+                    break;
+            }
+        } else {
+            // 4) Si cambió de subtipo → borrar anterior e insertar en la nueva
+            $subtablas = [
+                'insumos'     => 'retiros_insumos',
+                'proveedores' => 'retiros_proveedores',
+                'servicios'   => 'retiros_servicios',
+                'sueldos'     => 'retiros_sueldos',
+                'varios'      => 'retiros_varios'
+            ];
+
+            // borrar detalle anterior
+            if ($subtipoOriginal && isset($subtablas[$subtipoOriginal])) {
+                $tablaVieja = $subtablas[$subtipoOriginal];
+                $conexion->query("DELETE FROM $tablaVieja WHERE idRetiro = " . intval($idRetiro));
+            }
+
+            // insertar en la nueva
+            switch ($datos['subtipo']) {
+                case 'insumos':
+                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
+                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
+                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
+
+                    $sql = "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) 
+                            VALUES (?, ?, ?, ?)";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $idInsumo, $detalle_insumo);
+                    $stmt->execute();
+                    break;
+
+                case 'proveedores':
+                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
+                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
+
+                    $sql = "INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) 
+                            VALUES (?, ?, ?)";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iis", $idRetiro, $idProveedor, $detalle_proveedor);
+                    $stmt->execute();
+                    break;
+
+                case 'servicios':
+                    $idServicio = $datos['detalle']['idServicio'] ?? null;
+                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
+
+                    $sql = "INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) 
+                            VALUES (?, ?, ?)";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iis", $idRetiro, $idServicio, $detalle_servicio);
+                    $stmt->execute();
+                    break;
+
+                case 'sueldos':
+                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
+                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
+
+                    $sql = "INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) 
+                            VALUES (?, ?, ?)";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iis", $idRetiro, $idUsuarioSueldo, $detalle_sueldo);
+                    $stmt->execute();
+                    break;
+
+                case 'varios':
+                    $categoria = $datos['detalle']['categoria'] ?? null;
+                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
+
+                    $sql = "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) 
+                            VALUES (?, ?, ?)";
+                    $stmt = $conexion->prepare($sql);
+                    $stmt->bind_param("iss", $idRetiro, $categoria, $detalle_vario);
+                    $stmt->execute();
+                    break;
+            }
+        }
+
+        $conexion->commit();
+        return true;
+    } catch (Exception $e) {
+        $conexion->rollback();
+        return ["Error al modificar: " . $e->getMessage()];
+    }
+}
+
+function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
+    $tablas = [
+        'retiros_proveedores' => 'idProveedor',
+        'retiros_sueldos' => 'idUsuarioSueldo',
+        'retiros_servicios' => 'tipo_servicio',
+        'retiros_insumos' => 'detalle_insumo', // o categoria + detalle_insumo
+        'retiros_varios' => null
+    ];
+
+    // Verificar que el retiro existe
+    $sql = "SELECT * FROM retiros WHERE idRetiro = $vIdRetiro";
+    $rs = mysqli_query($vConexion, $sql);
+    $data = mysqli_fetch_assoc($rs);
+
+    if (empty($data['idRetiro'])) {
+        return "No se encontró el movimiento contable.";
+    }
+
+    // Buscar en qué subtabla está
+    $subtabla = '';
+    foreach ($tablas as $tabla => $col) {
+        if ($col) {
+            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
+            if ($res && mysqli_num_rows($res) > 0) {
+                $subtabla = $tabla;
+                break;
+            }
+        } else {
+            // Si llega a retiros_varios
+            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
+            if ($res && mysqli_num_rows($res) > 0) {
+                $subtabla = $tabla;
+                break;
+            }
+        }
+    }
+
+    // Eliminar detalle del movimiento contable si existe subtabla
+    if ($subtabla) {
+        mysqli_query($vConexion, "DELETE FROM $subtabla WHERE idRetiro = $vIdRetiro");
+        if (mysqli_error($vConexion)) {
+            return "Error al eliminar detalle en $subtabla: " . mysqli_error($vConexion);
+        }
+    }
+
+    // Eliminar el retiro
+    mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $vIdRetiro");
+    if (mysqli_error($vConexion)) {
+        return "Error al eliminar retiro: " . mysqli_error($vConexion);
+    }
+
+    return true;
+}
 
 function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
     $movimientos = [];
@@ -2692,125 +2989,83 @@ function Listar_Tipos_Especiales($conexion) {
     return $tipos;
 }
 
-function Obtener_Total_Caja_Fuerte($conexion, $filtros = []) {
-    // Retiros con detalle "Caja Fuerte" (esto será el nuevo total de entrada)
-    $queryRetirosCajaFuerte = "SELECT SUM(r.monto) as total
-                              FROM retiros r
-                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                              JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro
-                              WHERE rv.categoria LIKE '%Caja Fuerte%'";
+function Obtener_Total_Banco($conexion, $filtros = []) {
+    // 1. ENTRADAS (detalle_caja): Tarjeta(2), Transferencia(3), eChek(13)
+    $sqlEntrada = "SELECT SUM(dc.monto) as total 
+                   FROM detalle_caja dc 
+                   JOIN caja c ON dc.idCaja = c.idCaja
+                   WHERE dc.idTipoPago IN (2, 3, 13)";
+    
+    // Aplicar filtros de fecha si existen
+    if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    // Aplicar filtros a retiros Caja Fuerte
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetirosCajaFuerte .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetirosCajaFuerte .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryRetirosCajaFuerte .= " AND tp.denominacion = '$metodo_pago'";
-    }
+    // 2. SALIDAS (retiros): Tarjeta(15), Transferencia(16), eChek(17)
+    $sqlSalida = "SELECT SUM(r.monto) as total 
+                  FROM retiros r 
+                  WHERE r.idTipoPago IN (15, 16, 17)";
+    
+    if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
 
-    $resultRetirosCajaFuerte = $conexion->query($queryRetirosCajaFuerte);
-    $totalEntrada = ($resultRetirosCajaFuerte && $row = $resultRetirosCajaFuerte->fetch_assoc()) ? floatval($row['total']) : 0;
+    // Ejecutar
+    $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
+    $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
 
-    // Retiros contables en efectivo (movimientos donde es_entrada = 0 y es_salida = 0)
-    $queryRetirosContables = "SELECT SUM(r.monto) as total
-                              FROM retiros r
-                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                              WHERE tm.es_entrada = 0 AND tm.es_salida = 0 
-                              AND tp.denominacion LIKE '%Efectivo%'";
-
-    // Aplicar filtros a retiros contables
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetirosContables .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetirosContables .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryRetirosContables .= " AND tp.denominacion = '$metodo_pago'";
-    }
-
-    $resultRetirosContables = $conexion->query($queryRetirosContables);
-    $totalRetirosContables = ($resultRetirosContables && $row = $resultRetirosContables->fetch_assoc()) ? floatval($row['total']) : 0;
-
-    return $totalEntrada - $totalRetirosContables;
+    return $totalEntrada - $totalSalida;
 }
 
-function Obtener_Total_Banco($conexion, $filtros = []) {
-    // 1. ENTRADAS (detalle_caja)
-    // Sumar todo lo que sea entrada, EXCEPTO: Efectivo (1), Mercado Pago (22), Payway (23)
-    $queryEntrada = "SELECT SUM(dc.monto) as total
-                     FROM detalle_caja dc
-                     JOIN caja c ON dc.idCaja = c.idCaja
-                     JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                     WHERE tm.es_entrada = 1 
-                     AND dc.idTipoPago NOT IN (1, 22, 23)";
+function Obtener_Total_MercadoPago($conexion, $filtros = []) {
+    // Asumiendo IDs de MP basados en tu historial: Entrada 22 / Salida 24
+    // Si tus IDs son diferentes, cámbialos aquí.
+    
+    // Sumar detalle_caja (Pagados con MP)
+    $sqlEntrada = "SELECT SUM(dc.monto) as total 
+                   FROM detalle_caja dc 
+                   JOIN caja c ON dc.idCaja = c.idCaja
+                   WHERE dc.idTipoPago = 22"; 
 
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryEntrada .= " AND c.Fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryEntrada .= " AND c.Fecha <= '$fecha_hasta'";
-    }
+    if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    $resultEntrada = $conexion->query($queryEntrada);
-    $totalEntrada = ($resultEntrada && $row = $resultEntrada->fetch_assoc()) ? floatval($row['total']) : 0;
+    // Restar retiros (Pagados con MP)
+    $sqlSalida = "SELECT SUM(r.monto) as total 
+                  FROM retiros r 
+                  WHERE r.idTipoPago = 24"; 
 
-    // 2. SALIDAS (detalle_caja)
-    // Sumar todo lo que sea salida, EXCEPTO: Efectivo (14), Mercado Pago (24), Payway (25)
-    $querySalida = "SELECT SUM(dc.monto) as total
-                    FROM detalle_caja dc
-                    JOIN caja c ON dc.idCaja = c.idCaja
-                    JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-                    WHERE tm.es_salida = 1 
-                    AND dc.idTipoPago NOT IN (14, 24, 25)";
+    if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
 
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $querySalida .= " AND c.Fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $querySalida .= " AND c.Fecha <= '$fecha_hasta'";
-    }
+    $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
+    $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
 
-    $resultSalida = $conexion->query($querySalida);
-    $totalSalida = ($resultSalida && $row = $resultSalida->fetch_assoc()) ? floatval($row['total']) : 0;
+    return $totalEntrada - $totalSalida;
+}
 
-    // 3. RETIROS CONTABLES (retiros) - Neutros
-    // Excluir todo lo que sea Efectivo, MP o Payway (todos los IDs de entrada y salida para asegurar)
-    $queryRetiros = "SELECT SUM(r.monto) as total
-                     FROM retiros r
-                     JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                     WHERE tm.es_entrada = 0 AND tm.es_salida = 0 
-                     AND r.idTipoPago NOT IN (1, 14, 22, 23, 24, 25)";
+function Obtener_Total_Payway($conexion, $filtros = []) {
+    // Asumiendo IDs de Payway: Entrada 23 / Salida 25
+    
+    // Sumar detalle_caja
+    $sqlEntrada = "SELECT SUM(dc.monto) as total 
+                   FROM detalle_caja dc 
+                   JOIN caja c ON dc.idCaja = c.idCaja
+                   WHERE dc.idTipoPago = 23"; 
 
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetiros .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetiros .= " AND r.fecha <= '$fecha_hasta'";
-    }
+    if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    $resultRetiros = $conexion->query($queryRetiros);
-    $totalRetiros = ($resultRetiros && $row = $resultRetiros->fetch_assoc()) ? floatval($row['total']) : 0;
+    // Restar retiros
+    $sqlSalida = "SELECT SUM(r.monto) as total 
+                  FROM retiros r 
+                  WHERE r.idTipoPago = 25"; 
 
-    // CÁLCULO FINAL
-    return $totalEntrada - $totalSalida - $totalRetiros;
+    if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
+    if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
+
+    $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
+    $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
+
+    return $totalEntrada - $totalSalida;
 }
 
 // Función genérica para Payway (23), Mercado Pago (22), etc.
@@ -3204,7 +3459,10 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
     
     return $estados;
 }
-    // Cuenta Corriente
+
+// ===========================================================
+//  CUENTA CORRIENTE
+// ===========================================================
 
 function Listar_Clientes_Cuenta_Corriente($vConexion) {
     $Listado = array();
@@ -4142,304 +4400,6 @@ function Obtener_Resumen_Movimientos($conexion) {
     }
 
     return $resumen;
-}
-
-// ===========================================================
-//  MOVIMIENTO CONTABLE
-// ===========================================================
-function Datos_Movimiento_Contable($conexion, $idRetiro) {
-    $salida = [
-        'cabecera' => [],
-        'subtipo' => null,
-        'detalle' => []
-    ];
-
-    // Cabecera
-    $sql = "SELECT * FROM retiros WHERE idRetiro = ?";
-    $stmt = $conexion->prepare($sql);
-    $stmt->bind_param("i", $idRetiro);
-    $stmt->execute();
-    $cabecera = $stmt->get_result()->fetch_assoc();
-    $salida['cabecera'] = $cabecera;
-
-    if (!$cabecera) {
-        return null; // no existe
-    }
-
-    // Detectar subtipo buscando en las subtablas
-    $subtablas = [
-        'insumos'     => 'retiros_insumos',
-        'proveedores' => 'retiros_proveedores',
-        'servicios'   => 'retiros_servicios',
-        'sueldos'     => 'retiros_sueldos',
-        'varios'      => 'retiros_varios'
-    ];
-
-    foreach ($subtablas as $subtipo => $tabla) {
-        $sql = "SELECT * FROM $tabla WHERE idRetiro = ?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("i", $idRetiro);
-        $stmt->execute();
-        $detalle = $stmt->get_result()->fetch_assoc();
-        if ($detalle) {
-            $salida['subtipo'] = $subtipo;
-            $salida['detalle'] = $detalle;
-            break;
-        }
-    }
-
-    return $salida;
-}
-
-function Validar_Modificar_Movimiento_Contable($datos) {
-    $errores = [];
-
-    if (empty($datos['fecha'])) {
-        $errores[] = "La fecha es obligatoria.";
-    }
-    if (empty($datos['monto']) || $datos['monto'] <= 0) {
-        $errores[] = "El monto debe ser mayor a 0.";
-    }
-    if (empty($datos['idTipoPago'])) {
-        $errores[] = "Debe seleccionar un tipo de pago.";
-    }
-    if (empty($datos['idTipoMovimiento'])) {
-        $errores[] = "Debe seleccionar un tipo de movimiento.";
-    }
-    if (empty($datos['subtipo'])) {
-        $errores[] = "Debe seleccionar un subtipo.";
-    }
-
-    return $errores;
-}
-
-function Modificar_Movimiento_Contable($conexion, $datos) {
-    $errores = Validar_Modificar_Movimiento_Contable($datos);
-    if (!empty($errores)) {
-        return $errores;
-    }
-
-    $conexion->begin_transaction();
-
-    try {
-        // 1) Actualizar cabecera (sin facturado)
-        $fecha = $datos['fecha'];
-        $monto = $datos['monto'];
-        $idTipoMovimiento = $datos['idTipoMovimiento'];
-        $idTipoPago = $datos['idTipoPago'];
-        $idRetiro = $datos['idRetiro'];
-
-        $sql = "UPDATE retiros 
-                   SET fecha = ?, monto = ?, idTipoMovimiento = ?, idTipoPago = ?
-                 WHERE idRetiro = ?";
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("sdiii", $fecha, $monto, $idTipoMovimiento, $idTipoPago, $idRetiro);
-        $stmt->execute();
-
-        // 2) Detectar subtipo original
-        $datosOriginales = Datos_Movimiento_Contable($conexion, $idRetiro);
-        $subtipoOriginal = $datosOriginales['subtipo'] ?? null;
-
-        // 3) Si subtipo nuevo = original → UPDATE
-        if ($datos['subtipo'] === $subtipoOriginal) {
-            switch ($datos['subtipo']) {
-                case 'insumos':
-                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
-                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
-                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
-
-                    $sql = "UPDATE retiros_insumos 
-                               SET idProveedorInsumo = ?, idInsumo = ?, detalle_insumo = ?
-                             WHERE idRetiro = ?";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iisi", $idProveedorInsumo, $idInsumo, $detalle_insumo, $idRetiro);
-                    $stmt->execute();
-                    break;
-
-                case 'proveedores':
-                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
-                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
-
-                    $sql = "UPDATE retiros_proveedores 
-                               SET idProveedor = ?, detalle_proveedor = ?
-                             WHERE idRetiro = ?";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("isi", $idProveedor, $detalle_proveedor, $idRetiro);
-                    $stmt->execute();
-                    break;
-
-                case 'servicios':
-                    $idServicio = $datos['detalle']['idServicio'] ?? null;
-                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
-
-                    $sql = "UPDATE retiros_servicios 
-                               SET idServicio = ?, detalle_servicio = ?
-                             WHERE idRetiro = ?";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("isi", $idServicio, $detalle_servicio, $idRetiro);
-                    $stmt->execute();
-                    break;
-
-                case 'sueldos':
-                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
-                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
-
-                    $sql = "UPDATE retiros_sueldos 
-                               SET idUsuarioSueldo = ?, detalle_sueldo = ?
-                             WHERE idRetiro = ?";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("isi", $idUsuarioSueldo, $detalle_sueldo, $idRetiro);
-                    $stmt->execute();
-                    break;
-
-                case 'varios':
-                    $categoria = $datos['detalle']['categoria'] ?? null;
-                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
-
-                    $sql = "UPDATE retiros_varios 
-                               SET categoria = ?, detalle_vario = ?
-                             WHERE idRetiro = ?";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("ssi", $categoria, $detalle_vario, $idRetiro);
-                    $stmt->execute();
-                    break;
-            }
-        } else {
-            // 4) Si cambió de subtipo → borrar anterior e insertar en la nueva
-            $subtablas = [
-                'insumos'     => 'retiros_insumos',
-                'proveedores' => 'retiros_proveedores',
-                'servicios'   => 'retiros_servicios',
-                'sueldos'     => 'retiros_sueldos',
-                'varios'      => 'retiros_varios'
-            ];
-
-            // borrar detalle anterior
-            if ($subtipoOriginal && isset($subtablas[$subtipoOriginal])) {
-                $tablaVieja = $subtablas[$subtipoOriginal];
-                $conexion->query("DELETE FROM $tablaVieja WHERE idRetiro = " . intval($idRetiro));
-            }
-
-            // insertar en la nueva
-            switch ($datos['subtipo']) {
-                case 'insumos':
-                    $idProveedorInsumo = $datos['detalle']['idProveedorInsumo'] ?? null;
-                    $idInsumo = $datos['detalle']['idInsumo'] ?? null;
-                    $detalle_insumo = $datos['detalle']['detalle_insumo'] ?? null;
-
-                    $sql = "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo) 
-                            VALUES (?, ?, ?, ?)";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iiss", $idRetiro, $idProveedorInsumo, $idInsumo, $detalle_insumo);
-                    $stmt->execute();
-                    break;
-
-                case 'proveedores':
-                    $idProveedor = $datos['detalle']['idProveedor'] ?? null;
-                    $detalle_proveedor = $datos['detalle']['detalle_proveedor'] ?? null;
-
-                    $sql = "INSERT INTO retiros_proveedores (idRetiro, idProveedor, detalle_proveedor) 
-                            VALUES (?, ?, ?)";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iis", $idRetiro, $idProveedor, $detalle_proveedor);
-                    $stmt->execute();
-                    break;
-
-                case 'servicios':
-                    $idServicio = $datos['detalle']['idServicio'] ?? null;
-                    $detalle_servicio = $datos['detalle']['detalle_servicio'] ?? null;
-
-                    $sql = "INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio) 
-                            VALUES (?, ?, ?)";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iis", $idRetiro, $idServicio, $detalle_servicio);
-                    $stmt->execute();
-                    break;
-
-                case 'sueldos':
-                    $idUsuarioSueldo = $datos['detalle']['idUsuarioSueldo'] ?? null;
-                    $detalle_sueldo = $datos['detalle']['detalle_sueldo'] ?? null;
-
-                    $sql = "INSERT INTO retiros_sueldos (idRetiro, idUsuarioSueldo, detalle_sueldo) 
-                            VALUES (?, ?, ?)";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iis", $idRetiro, $idUsuarioSueldo, $detalle_sueldo);
-                    $stmt->execute();
-                    break;
-
-                case 'varios':
-                    $categoria = $datos['detalle']['categoria'] ?? null;
-                    $detalle_vario = $datos['detalle']['detalle_vario'] ?? null;
-
-                    $sql = "INSERT INTO retiros_varios (idRetiro, categoria, detalle_vario) 
-                            VALUES (?, ?, ?)";
-                    $stmt = $conexion->prepare($sql);
-                    $stmt->bind_param("iss", $idRetiro, $categoria, $detalle_vario);
-                    $stmt->execute();
-                    break;
-            }
-        }
-
-        $conexion->commit();
-        return true;
-    } catch (Exception $e) {
-        $conexion->rollback();
-        return ["Error al modificar: " . $e->getMessage()];
-    }
-}
-
-function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
-    $tablas = [
-        'retiros_proveedores' => 'idProveedor',
-        'retiros_sueldos' => 'idUsuarioSueldo',
-        'retiros_servicios' => 'tipo_servicio',
-        'retiros_insumos' => 'detalle_insumo', // o categoria + detalle_insumo
-        'retiros_varios' => null
-    ];
-
-    // Verificar que el retiro existe
-    $sql = "SELECT * FROM retiros WHERE idRetiro = $vIdRetiro";
-    $rs = mysqli_query($vConexion, $sql);
-    $data = mysqli_fetch_assoc($rs);
-
-    if (empty($data['idRetiro'])) {
-        return "No se encontró el movimiento contable.";
-    }
-
-    // Buscar en qué subtabla está
-    $subtabla = '';
-    foreach ($tablas as $tabla => $col) {
-        if ($col) {
-            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
-            if ($res && mysqli_num_rows($res) > 0) {
-                $subtabla = $tabla;
-                break;
-            }
-        } else {
-            // Si llega a retiros_varios
-            $res = mysqli_query($vConexion, "SELECT * FROM $tabla WHERE idRetiro = $vIdRetiro LIMIT 1");
-            if ($res && mysqli_num_rows($res) > 0) {
-                $subtabla = $tabla;
-                break;
-            }
-        }
-    }
-
-    // Eliminar detalle del movimiento contable si existe subtabla
-    if ($subtabla) {
-        mysqli_query($vConexion, "DELETE FROM $subtabla WHERE idRetiro = $vIdRetiro");
-        if (mysqli_error($vConexion)) {
-            return "Error al eliminar detalle en $subtabla: " . mysqli_error($vConexion);
-        }
-    }
-
-    // Eliminar el retiro
-    mysqli_query($vConexion, "DELETE FROM retiros WHERE idRetiro = $vIdRetiro");
-    if (mysqli_error($vConexion)) {
-        return "Error al eliminar retiro: " . mysqli_error($vConexion);
-    }
-
-    return true;
 }
 
 ?>
