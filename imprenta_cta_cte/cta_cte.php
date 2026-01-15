@@ -116,23 +116,28 @@ $CantidadClientes = count($ListadoClientesCC);
                         <?php if ($CantidadClientes > 0): ?>
                             <?php foreach ($ListadoClientesCC as $cliente): ?>
                                 <?php 
-                                // --- LÓGICA DE CÁLCULO IDÉNTICA A DETALLE_CTA_CTE.PHP ---
-                                
-                                // 1. Obtenemos el ID del cliente actual del bucle
+                                // --- INICIO: LÓGICA IDÉNTICA A DETALLE_CTA_CTE.PHP ---
                                 $idCli = $cliente['ID_CLIENTE'];
 
-                                // 2. Buscamos sus trabajos pendientes (Usando la función que ya corregimos)
+                                // 1. Obtener saldo actual (Usamos la misma función que el detalle)
+                                // Esto evita errores si $cliente['TOTAL_DEUDA'] venía con formato de texto
+                                $saldoClienteReal = ObtenerSaldoCliente($MiConexion, $idCli);
+
+                                // 2. Obtener trabajos cta cte
                                 $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $idCli);
                                 
-                                // 3. Sumamos el precio de esos trabajos
+                                // 3. Sumar pendientes
+                                // Forzamos floatval para evitar errores de suma
                                 $totalPendiente = 0;
                                 if (!empty($trabajosPendientes)) {
-                                    $totalPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
+                                    foreach($trabajosPendientes as $tp) {
+                                        $totalPendiente += floatval($tp['PRECIO']);
+                                    }
                                 }
 
-                                // 4. Calculamos el proyectado: Saldo Actual (BD) - Pendientes
-                                // Nota: $cliente['TOTAL_DEUDA'] es el saldo actual que viene de la consulta principal
-                                $saldoProyectado = $cliente['TOTAL_DEUDA'] - $totalPendiente;
+                                // 4. Cálculo final (Saldo Actual - Pendientes)
+                                $saldoProyectado = $saldoClienteReal - $totalPendiente;
+                                // --- FIN LÓGICA ---
                                 ?>
 
                                 <tr>
