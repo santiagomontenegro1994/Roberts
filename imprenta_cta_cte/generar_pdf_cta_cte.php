@@ -49,6 +49,7 @@ $stmtSaldo->close();
 
 // Obtener trabajos pendientes en cuenta corriente (SOLO idEstado = 8)
 $SQLTrabajos = "SELECT 
+                pt.idPedidoTrabajos,  /* <-- AGREGADO: ID DEL PEDIDO PADRE */
                 dt.idDetalleTrabajo,
                 dt.descripcion,
                 dt.precio,
@@ -256,8 +257,7 @@ if (count($trabajosPendientes) > 0) {
 
     foreach ($trabajosPendientes as $trabajo) {
         $html .= '<tr>
-            <td>' . htmlspecialchars($trabajo['idDetalleTrabajo']) . '</td>
-            <td>' . htmlspecialchars($trabajo['tipoTrabajo']) . '</td>
+            <td>' . htmlspecialchars($trabajo['idPedidoTrabajos']) . '</td> <td>' . htmlspecialchars($trabajo['tipoTrabajo']) . '</td>
             <td>' . htmlspecialchars(substr($trabajo['descripcion'], 0, 50)) . (strlen($trabajo['descripcion']) > 50 ? '...' : '') . '</td>
             <td>' . date("d/m/Y", strtotime($trabajo['fechaPedido'])) . '</td>
             <td>' . date("d/m/Y", strtotime($trabajo['fechaEntrega'])) . '</td>
@@ -310,7 +310,7 @@ $html .= '
 // Generar PDF
 $dompdf = new Dompdf();
 
-// Activar opciones para imágenes remotas (aunque acá no haría falta por base64, no molesta)
+// Activar opciones para imágenes remotas
 $options = $dompdf->getOptions();
 $options->set(array('isRemoteEnabled' => true));
 $dompdf->setOptions($options);
@@ -324,3 +324,4 @@ $nombreArchivo = "Estado_CtaCte_" . str_replace(' ', '_', $DatosCliente['nombre'
 
 // Descargar PDF
 $dompdf->stream($nombreArchivo, array("Attachment" => true));
+?>
