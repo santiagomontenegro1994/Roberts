@@ -1,5 +1,5 @@
 <?php
-// --- ACTIVAR REPORTE DE ERRORES (Solo para depuración, quítalo cuando funcione) ---
+// --- ACTIVAR REPORTE DE ERRORES (Solo para depuración) ---
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -20,10 +20,9 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// --- VERIFICACIÓN DE SEGURIDAD DE FUNCIONES ---
-// Esto evita la pantalla blanca si faltan funciones en imprenta.php
+// --- VERIFICACIÓN DE SEGURIDAD ---
 if (!function_exists('Obtener_Total_MercadoPago')) {
-    die("ERROR FATAL: No se encuentran las nuevas funciones en 'imprenta.php'. Por favor actualiza ese archivo con el código de la respuesta anterior.");
+    die("ERROR FATAL: No se encuentran las nuevas funciones en 'imprenta.php'.");
 }
 
 // 1. Obtener filtros
@@ -35,8 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $filtros['metodo_pago'] = $_GET['metodo_pago'] ?? '';
 }
 
-// 2. Obtener lista dinámica de Métodos de Pago (para el select)
-// MODIFICADO: Se agrega DISTINCT para unificar duplicados y NOT IN para excluir Banco/Caja Fuerte
+// 2. Obtener lista dinámica de Métodos de Pago
 $tiposPagoDisponibles = [];
 $sqlTP = "SELECT DISTINCT denominacion 
           FROM tipo_pago 
@@ -56,19 +54,25 @@ $pagina = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
 $limite = 50;
 $offset = ($pagina - 1) * $limite;
 
-// 4. Listado de movimientos (Llama a la nueva función Listar_Movimientos_Contables)
+// 4. Listado de movimientos
 $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, $offset, $limite);
 $totalMovimientos = Contar_Movimientos_Contables($MiConexion, $filtros);
 $totalPaginas = ceil($totalMovimientos / $limite);
 
-// 5. CÁLCULO DE TOTALES (Usando las nuevas funciones específicas para corregir saldos)
+// 5. CÁLCULO DE TOTALES
+// Obtenemos los valores crudos de las funciones
 $totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
-$totalBanco      = Obtener_Total_Banco($MiConexion, $filtros);
-$totalMercadoPago= Obtener_Total_MercadoPago($MiConexion, $filtros);
-$totalPayway     = Obtener_Total_Payway($MiConexion, $filtros);
+$totalBanco_Original = Obtener_Total_Banco($MiConexion, $filtros); 
+$totalMercadoPago = Obtener_Total_MercadoPago($MiConexion, $filtros);
+$totalPayway = Obtener_Total_Payway($MiConexion, $filtros);
 
-// Total General
-$granTotal = $totalCajaFuerte + $totalBanco + $totalMercadoPago + $totalPayway;
+// --- LÓGICA MODIFICADA PARA VISUALIZACIÓN ---
+
+// 1. El Banco ahora visualmente incluye Payway
+$totalBancoVisual = $totalBanco_Original + $totalPayway;
+
+// 2. El Gran Total suma todo (Caja + Banco Unificado + MP)
+$granTotal = $totalCajaFuerte + $totalBancoVisual + $totalMercadoPago;
 
 // Variable para mostrar cantidad listada
 $totalMovimientosListados = $totalMovimientos; 
@@ -110,9 +114,11 @@ $totalMovimientosListados = $totalMovimientos;
             
             <div class="col-md-3">
                 <div class="card text-white bg-primary mb-3 shadow-sm">
-                    <div class="card-header fw-bold text-white"><i class="bi bi-bank"></i> Banco</div>
+                    <div class="card-header fw-bold text-white">
+                        <i class="bi bi-bank"></i> Banco <small class="fw-light">(+Payway)</small>
+                    </div>
                     <div class="card-body">
-                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalBanco, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalBancoVisual, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
@@ -127,10 +133,10 @@ $totalMovimientosListados = $totalMovimientos;
             </div>
             
             <div class="col-md-3">
-                <div class="card text-white mb-3 shadow-sm" style="background-color: #4B0082;">
-                    <div class="card-header fw-bold text-white"><i class="bi bi-credit-card"></i> Payway</div>
+                <div class="card text-white bg-secondary mb-3 shadow-sm">
+                    <div class="card-header fw-bold text-white"><i class="bi bi-cash-coin"></i> Total General</div>
                     <div class="card-body">
-                        <h4 class="card-title text-white mb-0">$ <?= number_format($totalPayway, 2, ',', '.') ?></h4>
+                        <h4 class="card-title text-white mb-0">$ <?= number_format($granTotal, 2, ',', '.') ?></h4>
                     </div>
                 </div>
             </div>
@@ -138,13 +144,10 @@ $totalMovimientosListados = $totalMovimientos;
 
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-secondary shadow-sm">
-                    <div class="card-body text-center bg-light">
-                        <h3 class="card-title text-dark m-0 p-2">
-                            Total General: <strong>$ <?= number_format($granTotal, 2, ',', '.') ?></strong>
-                        </h3>
-                        <p class="card-text text-muted small mt-1 mb-0">
-                            <i class="bi bi-list-ul"></i> Listando <?= $totalMovimientosListados ?> movimientos con los filtros actuales.
+                <div class="card border-light shadow-sm">
+                    <div class="card-body p-2 text-center">
+                        <p class="card-text text-muted mb-0">
+                            <i class="bi bi-list-ul"></i> Listando <strong><?= $totalMovimientosListados ?></strong> movimientos con los filtros actuales.
                         </p>
                     </div>
                 </div>
