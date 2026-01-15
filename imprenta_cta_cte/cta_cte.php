@@ -107,7 +107,7 @@ $CantidadClientes = count($ListadoClientesCC);
                             <th scope="col">ID</th>
                             <th scope="col">Cliente</th>
                             <th scope="col">Teléfono</th>
-                            <th scope="col" class="text-end">Total Deuda</th>
+                            <th scope="col" class="text-end">Saldo Proyectado</th>
                             <th scope="col" class="text-end">Trabajos CC</th>
                             <th scope="col">Acciones</th>
                         </tr>
@@ -115,15 +115,32 @@ $CantidadClientes = count($ListadoClientesCC);
                     <tbody>
                         <?php if ($CantidadClientes > 0): ?>
                             <?php foreach ($ListadoClientesCC as $cliente): ?>
+                                <?php 
+                                // --- MODIFICACIÓN: CÁLCULO DE SALDO PROYECTADO ---
+                                // 1. Obtenemos los trabajos pendientes para este cliente específico
+                                $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $cliente['ID_CLIENTE']);
+                                
+                                // 2. Sumamos el precio de esos trabajos
+                                $montoPendiente = 0;
+                                if (!empty($trabajosPendientes)) {
+                                    $montoPendiente = array_sum(array_column($trabajosPendientes, 'PRECIO'));
+                                }
+                                
+                                // 3. Aplicamos la fórmula: Saldo Actual (Base de datos) - Trabajos Pendientes
+                                $saldoProyectado = $cliente['TOTAL_DEUDA'] - $montoPendiente;
+                                // --------------------------------------------------
+                                ?>
                                 <tr>
                                     <td><?= $cliente['ID_CLIENTE'] ?></td>
                                     <td>
                                         <strong><?= htmlspecialchars($cliente['NOMBRE'] . ' ' . htmlspecialchars($cliente['APELLIDO'])) ?></strong>
                                     </td>
                                     <td><?= htmlspecialchars($cliente['TELEFONO']) ?></td>
-                                    <td class="text-end fw-bold <?= $cliente['TOTAL_DEUDA'] > 0 ? 'text-danger' : 'text-success' ?>">
-                                        $<?= number_format($cliente['TOTAL_DEUDA'], 2, ',', '.') ?>
+                                    
+                                    <td class="text-end fw-bold <?= $saldoProyectado < 0 ? 'text-danger' : 'text-success' ?>">
+                                        $<?= number_format($saldoProyectado, 2, ',', '.') ?>
                                     </td>
+
                                     <td class="text-end"><?= $cliente['CANTIDAD_TRABAJOS'] ?></td>
                                     <td>
                                         <div class="btn-group" role="group">

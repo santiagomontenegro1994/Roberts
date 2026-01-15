@@ -3690,7 +3690,8 @@ function Obtener_Trabajos_Pendientes($conexion, $idCliente) {
             INNER JOIN estado_trabajo et ON et.idEstado = dt.idEstadoTrabajo
             WHERE pt.idCliente = ? 
             AND dt.idEstadoTrabajo = 8 -- Estado cuenta corriente
-            AND dt.idActivo = 1
+            AND dt.idActivo = 1        -- Detalle activo
+            AND pt.idActivo != 2       -- EXCLUIR PEDIDOS ELIMINADOS
             ORDER BY pt.fecha ASC, dt.idDetalleTrabajo ASC";
     
     $stmt = $conexion->prepare($sql);
