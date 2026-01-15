@@ -4262,6 +4262,7 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
 }
 
 function Listar_Pedidos_Listos_Entregar($conexion, $idEstado) {
+    // Agregamos "AND pt.idActivo != 2" al final del WHERE
     $sql = "SELECT 
                 pt.*,
                 c.nombre AS CLIENTE_N, 
@@ -4286,7 +4287,8 @@ function Listar_Pedidos_Listos_Entregar($conexion, $idEstado) {
             LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
             JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
             JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
-            WHERE dt.idEstadoTrabajo = ?
+            WHERE dt.idEstadoTrabajo = ? 
+            AND pt.idActivo != 2
             ORDER BY dt.fechaEntrega ASC, pt.fecha ASC";
 
     $stmt = $conexion->prepare($sql);
