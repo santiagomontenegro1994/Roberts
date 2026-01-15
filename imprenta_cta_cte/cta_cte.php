@@ -116,18 +116,16 @@ $CantidadClientes = count($ListadoClientesCC);
                         <?php if ($CantidadClientes > 0): ?>
                             <?php foreach ($ListadoClientesCC as $cliente): ?>
                                 <?php 
-                                // --- INICIO: LÓGICA IDÉNTICA A DETALLE_CTA_CTE.PHP ---
+                                // --- LÓGICA DE CÁLCULO ---
                                 $idCli = $cliente['ID_CLIENTE'];
 
-                                // 1. Obtener saldo actual (Usamos la misma función que el detalle)
-                                // Esto evita errores si $cliente['TOTAL_DEUDA'] venía con formato de texto
+                                // 1. Obtener saldo actual (Base de Datos)
                                 $saldoClienteReal = ObtenerSaldoCliente($MiConexion, $idCli);
 
                                 // 2. Obtener trabajos cta cte
                                 $trabajosPendientes = Obtener_Trabajos_Pendientes($MiConexion, $idCli);
                                 
                                 // 3. Sumar pendientes
-                                // Forzamos floatval para evitar errores de suma
                                 $totalPendiente = 0;
                                 if (!empty($trabajosPendientes)) {
                                     foreach($trabajosPendientes as $tp) {
@@ -137,7 +135,6 @@ $CantidadClientes = count($ListadoClientesCC);
 
                                 // 4. Cálculo final (Saldo Actual - Pendientes)
                                 $saldoProyectado = $saldoClienteReal - $totalPendiente;
-                                // --- FIN LÓGICA ---
                                 ?>
 
                                 <tr>
@@ -148,7 +145,7 @@ $CantidadClientes = count($ListadoClientesCC);
                                     <td><?= htmlspecialchars($cliente['TELEFONO']) ?></td>
                                     
                                     <td class="text-end fw-bold <?= $saldoProyectado >= 0 ? 'text-success' : 'text-danger' ?>">
-                                        $<?= number_format($saldoProyectado, 2, ',', '.') ?>
+                                        $<?= number_format(abs($saldoProyectado), 2, ',', '.') ?>
                                     </td>
 
                                     <td class="text-end"><?= $cliente['CANTIDAD_TRABAJOS'] ?></td>
