@@ -1,4 +1,10 @@
 <?php
+// --- ACTIVAR VISUALIZACIÓN DE ERRORES (Solo para depuración) ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// -------------------------------------------------------------
+
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) {
@@ -6,28 +12,44 @@ if (empty($_SESSION['Usuario_Nombre'])) {
     exit;
 }
 
+// Verificamos que los archivos existan antes de incluirlos para evitar error fatal silencioso
+if (!file_exists('../shared/encabezado.inc.php')) die("Error: No se encuentra ../shared/encabezado.inc.php");
 require ('../shared/encabezado.inc.php');
+
+if (!file_exists('../shared/barraLateral.inc.php')) die("Error: No se encuentra ../shared/barraLateral.inc.php");
 require ('../shared/barraLateral.inc.php');
+
 require_once '../funciones/conexion.php';
 require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
+// Verificar conexión
+if ($MiConexion->connect_error) {
+    die("Error de conexión a la BD: " . $MiConexion->connect_error);
+}
+
 // Validar ID cliente
 $idCliente = isset($_GET['idCliente']) ? intval($_GET['idCliente']) : 0;
 
 if ($idCliente <= 0) {
-    header('Location: cta_cte.php');
-    exit;
+    // Si no hay ID, redirigir o mostrar error
+    die("Error: ID de cliente no válido o no proporcionado.");
 }
 
-// Obtener información del cliente (Para el título)
+// Verificar que la función existe
+if (!function_exists('Obtener_Cliente_Por_ID')) {
+    die("Error: La función 'Obtener_Cliente_Por_ID' no existe en imprenta.php");
+}
+
+// Obtener información del cliente
 $cliente = Obtener_Cliente_Por_ID($MiConexion, $idCliente);
 
 if (!$cliente) {
     $_SESSION['Mensaje'] = "Cliente no encontrado";
     $_SESSION['Estilo'] = "danger";
-    header('Location: cta_cte.php');
+    // Usar javascript para redirigir si header ya no funciona por el output
+    echo "<script>window.location.href='cta_cte.php';</script>";
     exit;
 }
 
@@ -36,17 +58,23 @@ $registrosPorPagina = 50;
 $paginaActual = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
 $offset = ($paginaActual - 1) * $registrosPorPagina;
 
-// 1. Contar total de registros para saber cuántas páginas son
+// 1. Contar total de registros
 $sqlCount = "SELECT COUNT(*) as total FROM movimientos_cta_cte WHERE idCliente = ?";
 $stmtCount = $MiConexion->prepare($sqlCount);
+
+if (!$stmtCount) {
+    die("Error en SQL Count: " . $MiConexion->error);
+}
+
 $stmtCount->bind_param("i", $idCliente);
 $stmtCount->execute();
 $resCount = $stmtCount->get_result();
 $rowCount = $resCount->fetch_assoc();
 $totalRegistros = $rowCount['total'];
 $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+$stmtCount->close();
 
-// 2. Obtener los registros de la página actual (LIMIT y OFFSET)
+// 2. Obtener los registros de la página actual
 $sqlMovimientos = "SELECT 
                     m.*, 
                     u.nombre as usuarioNombre, 
@@ -58,13 +86,23 @@ $sqlMovimientos = "SELECT
                    LIMIT ? OFFSET ?";
 
 $stmt = $MiConexion->prepare($sqlMovimientos);
+
+if (!$stmt) {
+    die("Error en SQL Movimientos: " . $MiConexion->error);
+}
+
 $stmt->bind_param("iii", $idCliente, $registrosPorPagina, $offset);
-$stmt->execute();
+
+if (!$stmt->execute()) {
+    die("Error al ejecutar consulta: " . $stmt->error);
+}
+
 $resultado = $stmt->get_result();
 $movimientos = [];
 while ($fila = $resultado->fetch_assoc()) {
     $movimientos[] = $fila;
 }
+$stmt->close();
 ?>
 
 <main id="main" class="main">
@@ -173,11 +211,10 @@ while ($fila = $resultado->fetch_assoc()) {
                                         $inicio = max(1, $paginaActual - $rango);
                                         $fin = min($totalPaginas, $paginaActual + $rango);
 
-                                        // Si estamos muy al principio, mostrar más del final
+                                        // Ajustes de rango
                                         if ($inicio == 1) {
                                             $fin = min($totalPaginas, $inicio + ($rango * 2));
                                         }
-                                        // Si estamos muy al final, mostrar más del principio
                                         if ($fin == $totalPaginas) {
                                             $inicio = max(1, $fin - ($rango * 2));
                                         }
