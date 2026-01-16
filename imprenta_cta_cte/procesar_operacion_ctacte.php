@@ -37,7 +37,7 @@ try {
         }
     }
 
-    $data['metodo'] = isset($_POST['metodo']) ? filter_input(INPUT_POST, 'metodo', FILTER_VALIDATE_INT) : 1; // Por defecto Efectivo (id 1)
+    $data['metodo'] = isset($_POST['metodo']) ? filter_input(INPUT_POST, 'metodo', FILTER_VALIDATE_INT) : 1;
     $data['observaciones'] = isset($_POST['observaciones']) ? filter_input(INPUT_POST, 'observaciones', FILTER_SANITIZE_STRING) : '';
     $data['idReferencia'] = isset($_POST['idReferencia']) ? filter_input(INPUT_POST, 'idReferencia', FILTER_VALIDATE_INT) : null;
     $data['usarSaldo'] = isset($_POST['usarSaldo']) ? filter_var($_POST['usarSaldo'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -48,10 +48,10 @@ try {
         throw new Exception('Error de conexión a la base de datos', 500);
     }
 
-    // Validar que el método de pago sea válido (solo los de entrada permitidos, excluyendo Cta. Cte.)
+    // Validar método de pago (excluyendo Cta Cte ID 18)
     $tiposPagoEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
     $tiposPagoPermitidos = array_column(array_filter($tiposPagoEntrada, function($tipo) {
-        return $tipo['idTipoPago'] != 18; // Excluir Cta. Cte. (id 18)
+        return $tipo['idTipoPago'] != 18; 
     }), 'idTipoPago');
 
     if (!in_array($data['metodo'], $tiposPagoPermitidos)) {
@@ -77,7 +77,7 @@ try {
                 throw new Exception('Para pagos directos debe seleccionar un trabajo', 400);
             }
             
-            // Obtener información del trabajo y validar
+            // Obtener información del trabajo
             $sqlTrabajo = "SELECT dt.id_pedido_trabajos, dt.precio, dt.idEstadoTrabajo, pt.idCliente
                            FROM detalle_trabajos dt
                            JOIN pedido_trabajos pt ON dt.id_pedido_trabajos = pt.idPedidoTrabajos
@@ -103,19 +103,16 @@ try {
             $saldoCliente = ObtenerSaldoCliente($MiConexion, $data['idCliente']);
             $saldoDisponible = max(0, $saldoCliente);
             
-            // Validar que el monto sea exactamente el precio del trabajo
             if (abs($data['monto'] - $precioTrabajo) > 0.01) {
                 throw new Exception("El monto debe ser exactamente $" . number_format($precioTrabajo, 2, ',', '.') . " (precio del trabajo)", 400);
             }
 
-            // Calcular cuánto se puede pagar con saldo y cuánto con otro método
             $montoUsarSaldo = $data['usarSaldo'] ? min($saldoDisponible, $precioTrabajo) : 0;
             $montoComplemento = $precioTrabajo - $montoUsarSaldo;
             
-            // Validar el monto de complemento si es necesario
             if ($montoComplemento > 0) {
                 if (abs($data['montoComplemento'] - $montoComplemento) > 0.01) {
-                    throw new Exception('El monto de complemento no coincide con el calculado ($' . number_format($montoComplemento, 2, ',', '.') . ')', 400);
+                    throw new Exception('El monto de complemento no coincide con el calculado', 400);
                 }
             }
 
@@ -123,25 +120,20 @@ try {
             $esPagoDirecto = true;
             $idPedidoTrabajos = $trabajo['id_pedido_trabajos'];
             
-            // Construir observaciones detalladas
             $nombreMetodoPago = ObtenerNombreTipoPago($MiConexion, $data['metodo']);
             if ($montoUsarSaldo > 0 && $montoComplemento > 0) {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Saldo: $" . number_format($montoUsarSaldo, 2, ',', '.') . ", {$nombreMetodoPago}: $" . number_format($montoComplemento, 2, ',', '.') . ". " . $data['observaciones'];
+                $observaciones = "Pago directo pedido #{$idPedidoTrabajos} - Saldo: $" . number_format($montoUsarSaldo, 2, ',', '.') . ", {$nombreMetodoPago}: $" . number_format($montoComplemento, 2, ',', '.') . ". " . $data['observaciones'];
             } elseif ($montoUsarSaldo > 0) {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} - Pagado completamente con saldo de cuenta corriente. " . $data['observaciones'];
+                $observaciones = "Pago directo pedido #{$idPedidoTrabajos} - Pagado completamente con saldo de cuenta corriente. " . $data['observaciones'];
             } else {
-                $observaciones = "Pago directo trabajo #{$data['idReferencia']} via {$nombreMetodoPago}. " . $data['observaciones'];
+                $observaciones = "Pago directo pedido #{$idPedidoTrabajos} via {$nombreMetodoPago}. " . $data['observaciones'];
             }
-            
             break;
             
         case 'AJUSTE':
             $tipoAjuste = isset($_POST['tipoAjuste']) ? strtoupper($_POST['tipoAjuste']) : 'A_FAVOR';
-            
-            // Obtener el saldo actual del cliente
             $saldoActual = ObtenerSaldoCliente($MiConexion, $data['idCliente']);
             
-            // Determinar el signo del monto basado en el tipo de ajuste
             if ($tipoAjuste === 'A_FAVOR') {
                 $montoAjuste = abs($data['monto']);
             } else {
@@ -155,7 +147,7 @@ try {
     }
 
     if ($esDeposito) {
-        // 1. Registrar el depósito completo (aumenta el saldo del cliente)
+        // --- PASO 1: Registrar el depósito (Esto aumenta el saldo en la BD) ---
         $success = ActualizarSaldoCliente(
             $MiConexion, 
             $data['idCliente'], 
@@ -168,27 +160,41 @@ try {
         );
         if (!$success) throw new Exception('Error al registrar el depósito', 500);
 
-        // 2. Obtener trabajos pendientes del cliente (ordenados por antigüedad)
+        // --- PASO 2: Obtener el NUEVO saldo total disponible ---
+        // Aquí está la clave: Consultamos la BD después del depósito para ver cuánto hay realmente en total.
+        $saldoTotalCliente = ObtenerSaldoCliente($MiConexion, $data['idCliente']);
+        
+        // Solo podemos usar dinero si el saldo es positivo.
+        // (Si el cliente debía $50k y depositó $20k, su saldo es -$30k, no puede pagar trabajos específicos aún).
+        $saldoParaPagar = max(0, $saldoTotalCliente);
+
+        // --- PASO 3: Obtener trabajos pendientes ---
         $trabajosPendientes = Obtener_Trabajos_Pendientes_Por_Antiguedad($MiConexion, $data['idCliente']);
-        $saldoRestante = $data['monto'];
+        
+        $saldoRestante = $saldoParaPagar; // Usamos el TOTAL disponible, no solo el depósito
         $trabajosPagados = [];
 
-        // 3. Pagar solo los trabajos que pueden cubrirse COMPLETAMENTE con el saldo
+        // --- PASO 4: Bucle de Pago Inteligente ---
         foreach ($trabajosPendientes as $trabajo) {
+            // Verificamos si nos alcanza para este trabajo específico
             if ($saldoRestante >= $trabajo['PRECIO']) {
                 $montoAplicar = $trabajo['PRECIO'];
+                
+                // Descontamos de nuestro contador local
                 $saldoRestante -= $montoAplicar;
 
-                // a. Registrar el movimiento de pago (reduce el saldo)
+                // a. Registrar el movimiento de pago (reduce el saldo en la BD)
+                $obsPagoAutomatico = "Pago automático pedido #{$trabajo['ID_PEDIDO']}";
+
                 $success = ActualizarSaldoCliente(
                     $MiConexion,
                     $data['idCliente'],
-                    -$montoAplicar,
+                    -$montoAplicar, // Restamos
                     'APLICACION_AUTOMATICA',
                     $_SESSION['Usuario_Id'],
                     $trabajo['ID_DETALLE'],
                     'TRABAJO',
-                    "Pago automático trabajo #{$trabajo['ID_DETALLE']}"
+                    $obsPagoAutomatico
                 );
                 if (!$success) throw new Exception('Error al aplicar pago automático', 500);
 
@@ -207,11 +213,13 @@ try {
                 // d. Actualizar estado del pedido
                 ActualizarEstadoPedido($MiConexion, $trabajo['ID_PEDIDO']);
 
-                $trabajosPagados[] = $trabajo['ID_DETALLE'];
+                $trabajosPagados[] = $trabajo['ID_DETALLE']; 
             }
+            // SI NO ALCANZA ($saldoRestante < precio), EL BUCLE CONTINÚA AL SIGUIENTE
+            // (No hay un 'else break', por lo que intentará pagar el siguiente trabajo más barato si lo hay)
         }
 
-        // 4. Actualizar observaciones del depósito con los trabajos pagados
+        // 5. Actualizar observaciones del depósito
         if (!empty($trabajosPagados)) {
             $obsTrabajos = "Trabajos pagados: " . implode(", #", $trabajosPagados);
             $observaciones .= " | " . $obsTrabajos;
@@ -222,9 +230,11 @@ try {
             $stmt->close();
         }
 
-        $response['saldoRestante'] = $saldoRestante;
+        // Devolvemos el saldo restante real en la cuenta
+        $response['saldoRestante'] = $saldoRestante; 
+
     } elseif ($esPagoDirecto) {
-        // 1. Si se usa saldo, registrar el movimiento de débito de cuenta corriente
+        // ... (Lógica de Pago Directo sin cambios, ya estaba correcta en la versión anterior) ...
         if ($montoUsarSaldo > 0) {
             $success = ActualizarSaldoCliente(
                 $MiConexion,
@@ -234,12 +244,11 @@ try {
                 $_SESSION['Usuario_Id'],
                 $data['idReferencia'],
                 'TRABAJO',
-                "Pago directo trabajo #{$data['idReferencia']} - Parte con saldo cuenta corriente: $" . number_format($montoUsarSaldo, 2, ',', '.')
+                "Pago directo pedido #{$idPedidoTrabajos} - Parte con saldo cuenta corriente: $" . number_format($montoUsarSaldo, 2, ',', '.')
             );
             if (!$success) throw new Exception('Error al descontar del saldo de cuenta corriente', 500);
         }
         
-        // 2. Si hay monto de complemento, registrar el pago externo
         if ($montoComplemento > 0) {
             $stmt = $MiConexion->prepare("INSERT INTO movimientos_ctacte (idCliente, tipo, monto, idUsuario, idReferencia, tipoReferencia, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $idCli = $data['idCliente'];
@@ -248,15 +257,14 @@ try {
             $idUsu = $_SESSION['Usuario_Id'];
             $idRef = $data['idReferencia'];
             $tipoRef = 'TRABAJO';
-            $obsComplemento = "Pago directo trabajo #{$data['idReferencia']} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']);
+            $obsComplemento = "Pago directo pedido #{$idPedidoTrabajos} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']);
             $stmt->bind_param("isdiiss", $idCli, $tipoMov, $montoExt, $idUsu, $idRef, $tipoRef, $obsComplemento);
             $stmt->execute();
             $stmt->close();
             
-            // Registrar en caja solo el monto del complemento
             if (isset($_SESSION['Id_Caja']) && is_numeric($_SESSION['Id_Caja'])) {
-                $idTipoPago = $data['metodo']; // Usamos directamente el ID del método de pago
-                $idTipoMovimientoCaja = 2; // Entrada de dinero
+                $idTipoPago = $data['metodo']; 
+                $idTipoMovimientoCaja = 2;
                 
                 $sqlCaja = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones) VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt = $MiConexion->prepare($sqlCaja);
@@ -265,7 +273,7 @@ try {
                 $idCaja = intval($_SESSION['Id_Caja']);
                 $idUsuario = intval($_SESSION['Usuario_Id']);
                 $montoCaja = floatval($montoComplemento);
-                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente #{$data['idCliente']} - Trabajo #{$data['idReferencia']} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']), 0, 255, 'UTF-8');
+                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente #{$data['idCliente']} - Pedido #{$idPedidoTrabajos} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']), 0, 255, 'UTF-8');
 
                 $stmt->bind_param("iiiids", $idCaja, $idTipoPago, $idTipoMovimientoCaja, $idUsuario, $montoCaja, $obsCaja);
                 $stmt->execute();
@@ -273,33 +281,28 @@ try {
             }
         }
         
-        // 3. Marcar el trabajo como pagado
         $stmt = $MiConexion->prepare("UPDATE detalle_trabajos SET idEstadoTrabajo = 7 WHERE idDetalleTrabajo = ?");
         $stmt->bind_param("i", $idRef);
         $stmt->execute();
         $stmt->close();
 
-        // 4. Actualizar la seña del pedido
         $stmt = $MiConexion->prepare("UPDATE pedido_trabajos SET senia = senia + ? WHERE idPedidoTrabajos = ?");
         $stmt->bind_param("di", $precioTrabajo, $idPedidoTrabajos);
         $stmt->execute();
         $stmt->close();
 
-        // 5. Actualizar estado del pedido
         ActualizarEstadoPedido($MiConexion, $idPedidoTrabajos);
         
         $procesarCaja = false;
     } else {
-        // Para ajustes, usar el monto ajustado calculado arriba
         $montoFinal = isset($montoAjuste) ? $montoAjuste : $data['monto'];
         $success = ActualizarSaldoCliente($MiConexion, $data['idCliente'], $montoFinal, $tipoMovimiento, $_SESSION['Usuario_Id'], null, null, $observaciones);
         if (!$success) throw new Exception('Error al registrar el ajuste', 500);
     }
 
-    // Solo procesar caja si no es pago directo (porque ya se procesó arriba) o si no se procesó arriba
     if ($procesarCaja && isset($_SESSION['Id_Caja']) && is_numeric($_SESSION['Id_Caja'])) {
-        $idTipoPago = $data['metodo']; // Usamos directamente el ID del método de pago
-        $idTipoMovimientoCaja = ($tipoMovimiento === 'DEPOSITO') ? 2 : 1; // 2=Entrada, 1=Salida
+        $idTipoPago = $data['metodo']; 
+        $idTipoMovimientoCaja = ($tipoMovimiento === 'DEPOSITO') ? 2 : 1;
         
         $sqlCaja = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $MiConexion->prepare($sqlCaja);
