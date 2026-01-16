@@ -3778,6 +3778,31 @@ function ObtenerMovimientosCliente($conexion, $idCliente, $limit = 10) {
     return $movimientos;
 }
 
+function ObtenerTodosLosMovimientosCliente($conexion, $idCliente) {
+    $movimientos = array();
+    
+    // NOTA: Usamos el nombre de tabla correcto: movimientos_ctacte
+    $sql = "SELECT 
+                mc.*,
+                CONCAT(u.nombre, ' ', u.apellido) AS usuarioNombre
+            FROM movimientos_ctacte mc
+            LEFT JOIN usuarios u ON u.idUsuario = mc.idUsuario
+            WHERE mc.idCliente = ?
+            ORDER BY mc.fecha DESC";
+    
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param("i", $idCliente);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $movimientos[] = $row;
+    }
+    
+    $stmt->close();
+    return $movimientos;
+}
+
 function Obtener_Trabajos_Pendientes_Por_Antiguedad($conexion, $idCliente) {
     $trabajos = array();
     

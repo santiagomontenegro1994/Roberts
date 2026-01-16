@@ -1,9 +1,8 @@
 <?php
-// --- ACTIVAR VISUALIZACIÓN DE ERRORES (Solo para depuración) ---
+// --- ACTIVAR VISUALIZACIÓN DE ERRORES ---
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// -------------------------------------------------------------
 
 session_start();
 
@@ -12,11 +11,11 @@ if (empty($_SESSION['Usuario_Nombre'])) {
     exit;
 }
 
-// Verificamos que los archivos existan antes de incluirlos para evitar error fatal silencioso
-if (!file_exists('../shared/encabezado.inc.php')) die("Error: No se encuentra ../shared/encabezado.inc.php");
+// Verificaciones de seguridad de archivos
+if (!file_exists('../shared/encabezado.inc.php')) die("Error: Falta encabezado.inc.php");
 require ('../shared/encabezado.inc.php');
 
-if (!file_exists('../shared/barraLateral.inc.php')) die("Error: No se encuentra ../shared/barraLateral.inc.php");
+if (!file_exists('../shared/barraLateral.inc.php')) die("Error: Falta barraLateral.inc.php");
 require ('../shared/barraLateral.inc.php');
 
 require_once '../funciones/conexion.php';
@@ -24,22 +23,17 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Verificar conexión
-if ($MiConexion->connect_error) {
-    die("Error de conexión a la BD: " . $MiConexion->connect_error);
-}
-
 // Validar ID cliente
 $idCliente = isset($_GET['idCliente']) ? intval($_GET['idCliente']) : 0;
 
 if ($idCliente <= 0) {
-    // Si no hay ID, redirigir o mostrar error
-    die("Error: ID de cliente no válido o no proporcionado.");
+    echo "<script>window.location.href='cta_cte.php';</script>";
+    exit;
 }
 
-// Verificar que la función existe
-if (!function_exists('Obtener_Cliente_Por_ID')) {
-    die("Error: La función 'Obtener_Cliente_Por_ID' no existe en imprenta.php");
+// Verificar que la nueva función existe antes de usarla
+if (!function_exists('ObtenerTodosLosMovimientosCliente')) {
+    die("Error crítico: Debes agregar la función 'ObtenerTodosLosMovimientosCliente' en el archivo imprenta.php tal como te indiqué en el PASO 1.");
 }
 
 // Obtener información del cliente
@@ -48,61 +42,26 @@ $cliente = Obtener_Cliente_Por_ID($MiConexion, $idCliente);
 if (!$cliente) {
     $_SESSION['Mensaje'] = "Cliente no encontrado";
     $_SESSION['Estilo'] = "danger";
-    // Usar javascript para redirigir si header ya no funciona por el output
     echo "<script>window.location.href='cta_cte.php';</script>";
     exit;
 }
 
-// --- LÓGICA DE PAGINACIÓN ---
+// --- LÓGICA DE PAGINACIÓN (Vía PHP) ---
 $registrosPorPagina = 50;
 $paginaActual = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
+
+// 1. Obtener TODOS los movimientos usando la NUEVA función
+$todosLosMovimientos = ObtenerTodosLosMovimientosCliente($MiConexion, $idCliente);
+
+// 2. Calcular totales y offsets usando Arrays de PHP
+$totalRegistros = count($todosLosMovimientos);
+$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 $offset = ($paginaActual - 1) * $registrosPorPagina;
 
-// 1. Contar total de registros
-$sqlCount = "SELECT COUNT(*) as total FROM movimientos_cta_cte WHERE idCliente = ?";
-$stmtCount = $MiConexion->prepare($sqlCount);
+// 3. Cortar el array para mostrar solo la página actual
+// Si no hay registros, array_slice devuelve array vacío sin error
+$movimientosPagina = array_slice($todosLosMovimientos, $offset, $registrosPorPagina);
 
-if (!$stmtCount) {
-    die("Error en SQL Count: " . $MiConexion->error);
-}
-
-$stmtCount->bind_param("i", $idCliente);
-$stmtCount->execute();
-$resCount = $stmtCount->get_result();
-$rowCount = $resCount->fetch_assoc();
-$totalRegistros = $rowCount['total'];
-$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
-$stmtCount->close();
-
-// 2. Obtener los registros de la página actual
-$sqlMovimientos = "SELECT 
-                    m.*, 
-                    u.nombre as usuarioNombre, 
-                    u.apellido as usuarioApellido
-                   FROM movimientos_cta_cte m
-                   LEFT JOIN usuarios u ON m.idUsuario = u.idUsuario
-                   WHERE m.idCliente = ?
-                   ORDER BY m.fecha DESC
-                   LIMIT ? OFFSET ?";
-
-$stmt = $MiConexion->prepare($sqlMovimientos);
-
-if (!$stmt) {
-    die("Error en SQL Movimientos: " . $MiConexion->error);
-}
-
-$stmt->bind_param("iii", $idCliente, $registrosPorPagina, $offset);
-
-if (!$stmt->execute()) {
-    die("Error al ejecutar consulta: " . $stmt->error);
-}
-
-$resultado = $stmt->get_result();
-$movimientos = [];
-while ($fila = $resultado->fetch_assoc()) {
-    $movimientos[] = $fila;
-}
-$stmt->close();
 ?>
 
 <main id="main" class="main">
@@ -144,38 +103,43 @@ $stmt->close();
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (count($movimientos) > 0): ?>
-                                        <?php foreach ($movimientos as $mov): ?>
+                                    <?php if (count($movimientosPagina) > 0): ?>
+                                        <?php foreach ($movimientosPagina as $mov): ?>
                                             <?php 
-                                            // Definir colores según tipo
+                                            // Lógica de colores idéntica a detalle_cta_cte.php
+                                            $tipo = $mov['tipo'] ?? 'DESCONOCIDO';
                                             $badgeClass = [
                                                 'DEPOSITO' => 'bg-success',
                                                 'PAGO_DIRECTO' => 'bg-primary',
                                                 'AJUSTE' => 'bg-warning text-dark',
                                                 'APLICACION_AUTOMATICA' => 'bg-info text-dark',
                                                 'NOTA_DEBITO' => 'bg-danger'
-                                            ][$mov['tipo']] ?? 'bg-secondary';
+                                            ][$tipo] ?? 'bg-secondary';
                                             
-                                            // Determinar si el monto suma o resta visualmente
-                                            $esPositivo = ($mov['tipo'] == 'DEPOSITO' || $mov['tipo'] == 'APLICACION_AUTOMATICA' || ($mov['tipo'] == 'AJUSTE' && $mov['monto'] > 0));
+                                            $monto = floatval($mov['monto']);
+                                            $esPositivo = ($tipo == 'DEPOSITO' || $tipo == 'APLICACION_AUTOMATICA' || ($tipo == 'AJUSTE' && $monto > 0));
+                                            
+                                            // Manejo seguro de campos opcionales
+                                            $observaciones = $mov['observaciones'] ?? '-';
+                                            $usuarioNombre = $mov['usuarioNombre'] ?? '-'; 
                                             ?>
                                             <tr>
                                                 <td style="white-space: nowrap;">
                                                     <?= date('d/m/Y H:i', strtotime($mov['fecha'])) ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge <?= $badgeClass ?>"><?= $mov['tipo'] ?></span>
+                                                    <span class="badge <?= $badgeClass ?>"><?= $tipo ?></span>
                                                 </td>
                                                 <td>
-                                                    <?= htmlspecialchars($mov['observaciones']) ?>
+                                                    <?= htmlspecialchars($observaciones) ?>
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">
-                                                        <?= htmlspecialchars($mov['usuarioNombre'] . ' ' . $mov['usuarioApellido']) ?>
+                                                        <?= htmlspecialchars($usuarioNombre) ?>
                                                     </small>
                                                 </td>
                                                 <td class="text-end fw-bold <?= $esPositivo ? 'text-success' : 'text-danger' ?>">
-                                                    $<?= number_format($mov['monto'], 2, ',', '.') ?>
+                                                    $<?= number_format($monto, 2, ',', '.') ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -193,7 +157,7 @@ $stmt->close();
                         
                         <div class="mt-3 d-flex justify-content-between align-items-center">
                             <small class="text-muted">
-                                Mostrando <?= count($movimientos) ?> de <?= $totalRegistros ?> registros.
+                                Mostrando <?= count($movimientosPagina) ?> de <?= $totalRegistros ?> registros.
                             </small>
 
                             <?php if ($totalPaginas > 1): ?>
@@ -206,12 +170,11 @@ $stmt->close();
                                         </li>
 
                                         <?php
-                                        // Rango de páginas a mostrar (actual +/- 2)
+                                        // Lógica para mostrar rango de páginas (Actual +/- 2)
                                         $rango = 2;
                                         $inicio = max(1, $paginaActual - $rango);
                                         $fin = min($totalPaginas, $paginaActual + $rango);
 
-                                        // Ajustes de rango
                                         if ($inicio == 1) {
                                             $fin = min($totalPaginas, $inicio + ($rango * 2));
                                         }
