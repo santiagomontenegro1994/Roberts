@@ -93,7 +93,11 @@ ob_end_flush();
                         <div class="col-md-6">
                             <label class="fw-bold">Cliente:</label>
                             <span><?php echo htmlspecialchars($DatosPedidoActual['CLIENTE'] . ' ' . $DatosPedidoActual['CLIENTE_A']); ?></span>
-                        </div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cambiarClienteModal" title="Cambiar Cliente">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            </div>
                         <div class="col-md-6 text-end">
                             <label class="fw-bold">Fecha:</label>
                             <span><?php echo htmlspecialchars($DatosPedidoActual['FECHA']); ?></span>
@@ -362,6 +366,7 @@ ob_end_flush();
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="quitarSeniaModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -372,6 +377,36 @@ ob_end_flush();
     </div>
 </div>
 
+<div class="modal fade" id="cambiarClienteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cambiar Cliente del Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="buscadorClienteInput" class="form-control mb-3" placeholder="Buscar por Nombre o Teléfono...">
+                
+                <div class="list-group mb-3" id="listaResultadosClientes" style="max-height: 200px; overflow-y: auto;">
+                    </div>
+
+                <form action="procesar_cambio_cliente.php" method="POST" id="formCambiarCliente">
+                    <input type="hidden" name="IdPedido" value="<?php echo $IdPedidoParaJs; ?>">
+                    <input type="hidden" name="idClienteNuevo" id="inputIdClienteNuevo" required>
+                    
+                    <div class="alert alert-info" id="clienteSeleccionadoBox" style="display:none;">
+                        Seleccionado: <strong id="nombreClienteSeleccionado"></strong>
+                    </div>
+                    
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnGuardarCliente" disabled>Guardar Cambio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -481,8 +516,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         div.style.display = 'none';
                         sel.disabled = true; inp.disabled = true;
                         sel.required = false; inp.required = false;
-                        // Opcional: limpiar valores
-                        // sel.value = ''; inp.value = ''; 
                     }
                 });
             }
@@ -490,6 +523,56 @@ document.addEventListener('DOMContentLoaded', function() {
             new bootstrap.Modal(document.getElementById('editarDetalleModal')).show();
         });
     };
+
+    // --- LOGICA BUSCADOR DE CLIENTES (AGREGADO) ---
+    const inputBuscador = document.getElementById('buscadorClienteInput');
+    const listaResultados = document.getElementById('listaResultadosClientes');
+    const inputIdCliente = document.getElementById('inputIdClienteNuevo');
+    const boxSeleccionado = document.getElementById('clienteSeleccionadoBox');
+    const txtSeleccionado = document.getElementById('nombreClienteSeleccionado');
+    const btnGuardar = document.getElementById('btnGuardarCliente');
+
+    if(inputBuscador) {
+        inputBuscador.addEventListener('keyup', function() {
+            const query = this.value;
+            // Solo buscar si hay al menos 2 letras para no sobrecargar
+            if (query.length < 2) {
+                listaResultados.innerHTML = '';
+                return;
+            }
+
+            fetch('buscar_clientes_json.php?q=' + query)
+                .then(response => response.json())
+                .then(data => {
+                    listaResultados.innerHTML = '';
+                    if(data.length === 0) {
+                        listaResultados.innerHTML = '<div class="list-group-item text-muted">No se encontraron resultados</div>';
+                    }
+                    data.forEach(cliente => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action';
+                        // Ajustado para mostrar solo Nombre, Apellido y Telefono
+                        item.innerHTML = `
+                            <div class="fw-bold">${cliente.nombre} ${cliente.apellido}</div>
+                            <small class="text-muted">Tel: ${cliente.telefono || '-'}</small>
+                        `;
+                        item.onclick = function() {
+                            // Seleccionar cliente
+                            inputIdCliente.value = cliente.idCliente;
+                            txtSeleccionado.textContent = `${cliente.nombre} ${cliente.apellido}`;
+                            boxSeleccionado.style.display = 'block';
+                            btnGuardar.disabled = false;
+                            
+                            // Limpiar lista visualmente
+                            listaResultados.innerHTML = '';
+                            inputBuscador.value = '';
+                        };
+                        listaResultados.appendChild(item);
+                    });
+                });
+        });
+    }
 });
 </script>
 

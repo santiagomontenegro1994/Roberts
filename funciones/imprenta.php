@@ -1785,6 +1785,22 @@ function Validar_Pedido_Trabajo() {
 
 //------------------------------------------------------MODIFICAR PEDIDO DE TRABAJO------------------------------------------------------
 
+function Cambiar_Cliente_Pedido($conexion, $idPedido, $nuevoIdCliente) {
+    // Validaciones básicas
+    if ($idPedido <= 0 || $nuevoIdCliente <= 0) return false;
+
+    try {
+        $sql = "UPDATE pedido_trabajos SET idCliente = ? WHERE idPedidoTrabajos = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("ii", $nuevoIdCliente, $idPedido);
+        $resultado = $stmt->execute();
+        $stmt->close();
+        return $resultado;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 function Datos_Pedido_Trabajo($conexion, $idPedido) {
     
     // Validar y sanear el ID del pedido para seguridad
