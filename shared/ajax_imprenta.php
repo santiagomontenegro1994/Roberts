@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (empty($_SESSION['Usuario_Nombre']) ) { // si el usuario no esta logueado no lo deja entrar
+if (empty($_SESSION['Usuario_Nombre']) ) {
   header('Location: ../core/cerrarsesion.php');
   exit;
 }
@@ -45,9 +45,18 @@ $MiConexion=ConexionBD();
         //registrar Cliente Pedidos Imprenta
         if($_POST['action'] == 'addCliente_imprenta'){
             
-            $nombre = $_POST['nom_cliente_imprenta'];
-            $apellido = $_POST['ape_cliente_imprenta'];
-            $telefono = $_POST['tel_cliente_imprenta'];
+            $nombre = trim($_POST['nom_cliente_imprenta']);
+            $apellido = trim($_POST['ape_cliente_imprenta']);
+            $telefono = trim($_POST['tel_cliente_imprenta']);
+
+            // --- VALIDACIÓN DE SEGURIDAD (NUEVO) ---
+            // Si el nombre o apellido están vacíos, NO GUARDAR y devolver error.
+            if(empty($nombre) || empty($apellido)) {
+                echo 'error_datos_vacios';
+                mysqli_close($MiConexion);
+                exit;
+            }
+            // ---------------------------------------
 
             $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, telefono)
                                                         VALUES ('$nombre' , '$apellido' ,'$telefono')");
@@ -127,40 +136,40 @@ $MiConexion=ConexionBD();
                     $total += $precioTotal;
 
                     $detalleTabla .= '<div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <tr>
-                                                <th>'.$data['estado_trabajo'].'</th>
-                                                <td>'.$data['tipo_trabajo'].'</td>
-                                                <td>'.$data['proveedor'].'</td>
-                                                <th>'.$data['fechaEntrega'].'</th>
-                                                <th>'.$data['horaEntrega'].'</th>
-                                                <th>'.number_format($data['precio'], 2).'</th>
-                                                <td>
-                                                    <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
-                                                        <i class="bi bi-trash-fill text-danger fs-5"></i>
-                                                    </a>
-                                                </td>   
-                                            </tr>
-                                        </table>
-                                    </div>';
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <th>'.$data['estado_trabajo'].'</th>
+                                                    <td>'.$data['tipo_trabajo'].'</td>
+                                                    <td>'.$data['proveedor'].'</td>
+                                                    <th>'.$data['fechaEntrega'].'</th>
+                                                    <th>'.$data['horaEntrega'].'</th>
+                                                    <th>'.number_format($data['precio'], 2).'</th>
+                                                    <td>
+                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
+                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                        </a>
+                                                    </td>   
+                                                </tr>
+                                            </table>
+                                        </div>';
                 }
 
                 $detalleTotales = '<div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <tr>
-                                                <td colspan="5" class="text-end">SUBTOTAL</td>
-                                                <td>'.number_format($subtotal, 2).'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">SEÑA</td>
-                                                <td><input type="number" id="seniaPedidoImprenta" value="0" min="0"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">TOTAL</td>
-                                                <td>'.number_format($total, 2).'</td>
-                                            </tr>
-                                        </table>
-                                    </div>';
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                    <td>'.number_format($subtotal, 2).'</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SEÑA</td>
+                                                    <td><input type="number" id="seniaPedidoImprenta" value="0" min="0"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">TOTAL</td>
+                                                    <td>'.number_format($total, 2).'</td>
+                                                </tr>
+                                            </table>
+                                        </div>';
 
                 $arrayData['detalle'] = $detalleTabla;
                 $arrayData['totales'] = $detalleTotales;
@@ -218,42 +227,42 @@ $MiConexion=ConexionBD();
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
                         $detalleTabla .= '<div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['estado_trabajo'].'</th>
-                                                    <td>'.$data['tipo_trabajo'].'</td>
-                                                    <td>'.$data['proveedor'].'</td>
-                                                    <th>'.$data['fechaEntrega'].'</th>
-                                                    <th>'.$data['horaEntrega'].'</th>
-                                                    <th>'.$data['precio'].'</th>
-                                                    <td>
-                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
-                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
-                                                        </a>
-                                                    </td>   
-                                                </tr>
-                                            </table>
-                                        </div>';
+                                                <table class="table table-striped">
+                                                    <tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                                        <th>'.$data['estado_trabajo'].'</th>
+                                                        <td>'.$data['tipo_trabajo'].'</td>
+                                                        <td>'.$data['proveedor'].'</td>
+                                                        <th>'.$data['fechaEntrega'].'</th>
+                                                        <th>'.$data['horaEntrega'].'</th>
+                                                        <th>'.$data['precio'].'</th>
+                                                        <td>
+                                                            <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
+                                                                <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                            </a>
+                                                        </td>   
+                                                    </tr>
+                                                </table>
+                                            </div>';
                     }
 
                     //genero la tabla con totales
                     $detalleTotales = '<div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <tr>
-                                                <td colspan="5" class="text-end">SUBTOTAL</td>
-                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">TOTAL</td>
-                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
-                                            </tr>
-                                        </table>
-                                    </div>';
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                    <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SEÑA</td>
+                                                    <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">TOTAL</td>
+                                                    <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
+                                                    <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                                </tr>
+                                            </table>
+                                        </div>';
                     
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
@@ -266,7 +275,6 @@ $MiConexion=ConexionBD();
                 mysqli_close($MiConexion);
             }
             exit;
-
         }
 
         //elimina datos del detalle temp Trabajo
@@ -297,42 +305,42 @@ $MiConexion=ConexionBD();
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
                         $detalleTabla .= '<div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <tr data-bs-toggle="tooltip" data-bs-placement="left">
-                                                    <th>'.$data['estado_trabajo'].'</th>
-                                                    <td>'.$data['tipo_trabajo'].'</td>
-                                                    <td>'.$data['proveedor'].'</td>
-                                                    <th>'.$data['fechaEntrega'].'</th>
-                                                    <th>'.$data['horaEntrega'].'</th>
-                                                    <th>'.$data['precio'].'</th>
-                                                    <td>
-                                                        <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
-                                                            <i class="bi bi-trash-fill text-danger fs-5"></i>
-                                                        </a>
-                                                    </td>   
-                                                </tr>
-                                            </table>
-                                        </div>';
+                                                <table class="table table-striped">
+                                                    <tr data-bs-toggle="tooltip" data-bs-placement="left">
+                                                        <th>'.$data['estado_trabajo'].'</th>
+                                                        <td>'.$data['tipo_trabajo'].'</td>
+                                                        <td>'.$data['proveedor'].'</td>
+                                                        <th>'.$data['fechaEntrega'].'</th>
+                                                        <th>'.$data['horaEntrega'].'</th>
+                                                        <th>'.$data['precio'].'</th>
+                                                        <td>
+                                                            <a href="#" onclick="event.preventDefault();del_trabajo_detalle('.$data['correlativo'].');">
+                                                                <i class="bi bi-trash-fill text-danger fs-5"></i>
+                                                            </a>
+                                                        </td>   
+                                                    </tr>
+                                                </table>
+                                            </div>';
                     }
 
                     //genero la tabla con totales
                     $detalleTotales = '<div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <tr>
-                                                <td colspan="5" class="text-end">SUBTOTAL</td>
-                                                <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">SEÑA</td>
-                                                <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="5" class="text-end">TOTAL</td>
-                                                <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
-                                                <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
-                                            </tr>
-                                        </table>
-                                    </div>';
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SUBTOTAL</td>
+                                                    <td colspan="5" class="text-end">'.number_format($subtotal, 2, '.', '').'</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">SEÑA</td>
+                                                    <td colspan="5" class="text-end"><input type="number" id="seniaPedidoImprenta" value="0" min="1"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="5" class="text-end">TOTAL</td>
+                                                    <td colspan="5" class="text-end" id="total_pedido">'.number_format($total, 2, '.', '').'</td>
+                                                    <td colspan="5" class="text-end" id="total_pedido_original" style="display: none;">'.$total.'</td>
+                                                </tr>
+                                            </table>
+                                        </div>';
                     
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
@@ -429,18 +437,8 @@ $MiConexion=ConexionBD();
                 mysqli_next_result($MiConexion);
             }
 
-            // Obtener el ID del pedido
-            //$query_last_id = mysqli_query($MiConexion, "SELECT LAST_INSERT_ID() as idPedido");
-            //$result = mysqli_fetch_assoc($query_last_id);
-            //$idPedido = $result['idPedido'] ?? 0;
-
             $result_pedido = mysqli_fetch_assoc($query_pedido);
             $idPedido = $result_pedido['idPedidoTrabajos'] ?? 0;
-
-            //if($idPedido == 0) {
-            //    echo json_encode(['status' => 'error', 'message' => 'No se pudo obtener ID del pedido']);
-            //    exit;
-            //}
 
             if($idPedido == 0) {
                 $errorMessage = $result_pedido['mensaje'] ?? 'No se pudo obtener ID del pedido';
@@ -543,7 +541,7 @@ $MiConexion=ConexionBD();
             } catch (Exception $e) {
                 echo json_encode([
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString() // Solo para desarrollo, quitar en producción
+                    'trace' => $e->getTraceAsString() 
                 ]);
             }
             exit;
@@ -564,7 +562,7 @@ $MiConexion=ConexionBD();
                 $detallesFacturar = isset($_POST['detallesFacturar']) ? explode(',', $_POST['detallesFacturar']) : [];
                 $usuario = intval($_SESSION['Usuario_Id']);
                 $idTipoPago = isset($_POST['idTipoPago']) ? intval($_POST['idTipoPago']) : null;
-                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3; // 3 = Tipo movimiento para trabajos
+                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3; 
                 $idCaja = intval($_SESSION['Id_Caja']);
 
                 // 1. Obtener orden de detalles temporales
