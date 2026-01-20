@@ -25,27 +25,69 @@ function InsertarClientes($vConexion) {
     return true;
 }
 
-function Listar_Clientes($vConexion) {
+function Listar_Clientes_Parametro($vConexion, $criterio, $parametro, $estado = 1) {
+    $Listado = array();
 
-    $Listado=array();
+    // 1) genero la consulta agregando el filtro de estado variable
+    $sql = "";
+    switch ($criterio) { 
+        case 'Nombre': 
+            $partes = explode(' ', trim($parametro));
+            $nombre = isset($partes[0]) ? $partes[0] : '';
+            $apellido = isset($partes[1]) ? $partes[1] : '';
+            
+            if ($nombre && $apellido) {
+                $sql = "SELECT * FROM clientes 
+                        WHERE (nombre LIKE '$nombre%' AND apellido LIKE '$apellido%') 
+                        AND idActivo = $estado";
+            } else {
+                $sql = "SELECT * FROM clientes 
+                        WHERE (nombre LIKE '%$parametro%' OR apellido LIKE '%$parametro%') 
+                        AND idActivo = $estado";
+            }
+            break;
+        case 'idCliente':
+            $sql = "SELECT * FROM clientes WHERE idCliente LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+        case 'Telefono':
+            $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+    }    
+    
+    $rs = mysqli_query($vConexion, $sql);
+    
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
+        $Listado[$i]['NOMBRE'] = $data['nombre'];
+        $Listado[$i]['APELLIDO'] = $data['apellido'];
+        $Listado[$i]['TELEFONO'] = $data['telefono'];
+        $Listado[$i]['ACTIVO'] = $data['idActivo']; // Agregamos este dato por si sirve visualmente
+        $i++;
+    }
 
-      //1) genero la consulta que deseo
-        $SQL = "SELECT * FROM clientes WHERE idActivo=1";
+    return $Listado;
+}
 
-        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
-        $rs = mysqli_query($vConexion, $SQL);
-        
-        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
-        $i=0;
-        while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
-            $Listado[$i]['NOMBRE'] = $data['nombre'];
-            $Listado[$i]['APELLIDO'] = $data['apellido'];
-            $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $i++;
-        }
+function Listar_Clientes($vConexion, $estado = 1) {
 
-    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
+    $Listado = array();
+
+    // 1) Buscamos según el estado que recibimos
+    $SQL = "SELECT * FROM clientes WHERE idActivo = $estado";
+
+    $rs = mysqli_query($vConexion, $SQL);
+    
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
+        $Listado[$i]['NOMBRE'] = $data['nombre'];
+        $Listado[$i]['APELLIDO'] = $data['apellido'];
+        $Listado[$i]['TELEFONO'] = $data['telefono'];
+        $Listado[$i]['ACTIVO'] = $data['idActivo'];
+        $i++;
+    }
+
     return $Listado;
 }
 
@@ -108,54 +150,6 @@ function Validar_Cliente(){
     }
 
     return $_SESSION['Mensaje'];
-}
-
-function Listar_Clientes_Parametro($vConexion,$criterio,$parametro) {
-    $Listado=array();
-
-      //1) genero la consulta que deseo segun el parametro
-        $sql = "";
-        switch ($criterio) { 
-            case 'Nombre': 
-        // Divide el parámetro en partes (nombre y apellido)
-        $partes = explode(' ', trim($parametro));
-        $nombre = isset($partes[0]) ? $partes[0] : '';
-        $apellido = isset($partes[1]) ? $partes[1] : '';
-        
-        if ($nombre && $apellido) {
-            // Si hay nombre y apellido (ej: "karen ba")
-            $sql = "SELECT * FROM clientes 
-                    WHERE (nombre LIKE '$nombre%' AND apellido LIKE '$apellido%') 
-                    AND idActivo = 1";
-        } else {
-            // Si solo hay un término (ej: "baz")
-            $sql = "SELECT * FROM clientes 
-                    WHERE (nombre LIKE '%$parametro%' OR apellido LIKE '%$parametro%') 
-                    AND idActivo = 1";
-        }
-        break;
-        case 'idCliente':
-        $sql = "SELECT * FROM clientes WHERE idCliente LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        case 'Telefono':
-        $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = 1";
-        break;
-        }    
-        //2) a la conexion actual le brindo mi consulta, y el resultado lo entrego a variable $rs
-        $rs = mysqli_query($vConexion, $sql);
-        
-        //3) el resultado deberá organizarse en una matriz, entonces lo recorro
-        $i=0;
-        while ($data = mysqli_fetch_array($rs)) {
-            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
-            $Listado[$i]['NOMBRE'] = $data['nombre'];
-            $Listado[$i]['APELLIDO'] = $data['apellido'];
-            $Listado[$i]['TELEFONO'] = $data['telefono'];
-            $i++;
-        }
-
-    //devuelvo el listado generado en el array $Listado. (Podra salir vacio o con datos)..
-    return $Listado;
 }
 
 function Modificar_Cliente($vConexion) {
