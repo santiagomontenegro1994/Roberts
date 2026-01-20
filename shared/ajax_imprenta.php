@@ -12,12 +12,13 @@ $MiConexion=ConexionBD();
 
     if(!empty($_POST)){
 
-        //Buscar Cliente
+        //Buscar Cliente (SOLO ACTIVOS)
         if($_POST['action'] == 'searchClienteImprenta'){
             if(!empty($_POST['cliente'])){
                 $tel = $_POST['cliente'];
 
-                $query = mysqli_query($MiConexion,"SELECT * FROM clientes WHERE telefono LIKE '$tel'");
+                // Filtramos por idActivo = 1 para ignorar eliminados (idActivo = 2)
+                $query = mysqli_query($MiConexion,"SELECT * FROM clientes WHERE telefono LIKE '$tel' AND idActivo = 1");
 
                 mysqli_close($MiConexion);
                 $result = mysqli_num_rows($query);
@@ -34,7 +35,7 @@ $MiConexion=ConexionBD();
                     ];
                 }else{
                     $data = 0;
-                    // Limpiar sesión si no hay cliente
+                    // Limpiar sesión si no hay cliente activo
                     unset($_SESSION['Cliente_Pedido']);
                 }
                 echo json_encode($data,JSON_UNESCAPED_UNICODE);
@@ -42,22 +43,22 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //registrar Cliente Pedidos Imprenta
+        //Registrar Cliente Pedidos Imprenta (CON VALIDACIÓN DE VACÍOS)
         if($_POST['action'] == 'addCliente_imprenta'){
             
             $nombre = trim($_POST['nom_cliente_imprenta']);
             $apellido = trim($_POST['ape_cliente_imprenta']);
             $telefono = trim($_POST['tel_cliente_imprenta']);
 
-            // --- VALIDACIÓN DE SEGURIDAD (NUEVO) ---
+            // --- VALIDACIÓN DE SEGURIDAD ---
             // Si el nombre o apellido están vacíos, NO GUARDAR y devolver error.
             if(empty($nombre) || empty($apellido)) {
                 echo 'error_datos_vacios';
                 mysqli_close($MiConexion);
                 exit;
             }
-            // ---------------------------------------
 
+            // Insertamos el cliente (Asumimos idActivo = 1 por defecto en BD)
             $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, telefono)
                                                         VALUES ('$nombre' , '$apellido' ,'$telefono')");
 
@@ -125,7 +126,7 @@ $MiConexion=ConexionBD();
                     throw new Exception("Error en base de datos: " . mysqli_error($MiConexion));
                 }
 
-                // Procesar resultados
+                // Procesar resultados para devolver HTML actualizado
                 $detalleTabla = '';
                 $subtotal = 0;
                 $total = 0;
@@ -182,10 +183,10 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //muestra datos del detalle temp
+        //Muestra datos del detalle temp (Refrescar tabla)
         if($_POST['action'] == 'searchforDetalleTrabajo'){
             if(empty($_POST['action'])){
-                echo 'error';//...
+                echo 'error';
             }else{
                 $usuario = $_SESSION['Usuario_Id'];
                 
@@ -218,12 +219,12 @@ $MiConexion=ConexionBD();
                 $total=0;
                 $arrayData=array();
 
-                if($result > 0){//si tiene algo el result
+                if($result > 0){
                     //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query)){
-                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
-                        $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
-                        $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
+                        $precioTotal = round($data['precio'], 2);
+                        $subtotal = round($subtotal + $precioTotal, 2); 
+                        $total = round($total + $precioTotal, 2); 
 
                         //concateno cada una de las tablas del detalle con los datos correspondientes
                         $detalleTabla .= '<div class="table-responsive">
@@ -267,7 +268,7 @@ $MiConexion=ConexionBD();
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
 
-                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);//retorno en formato JSON
+                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);
 
                 }else{
                     echo 'error';
@@ -277,10 +278,10 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //elimina datos del detalle temp Trabajo
+        //Elimina datos del detalle temp Trabajo
         if($_POST['action'] == 'delProductoDetalleTrabajo'){
             if(empty($_POST['id_detalle'])){
-                echo 'error';//si viene vacio retorna error
+                echo 'error';
             }else{
                 $id_detalle = $_POST['id_detalle'];
                 $usuario = $_SESSION['Usuario_Id'];
@@ -290,20 +291,17 @@ $MiConexion=ConexionBD();
                 $result = mysqli_num_rows($query_detalle_temp);
                 
                 
-                //Declaro variables que voy a usar
                 $detalleTabla='';
                 $subtotal=0;
                 $total=0;
                 $arrayData=array();
 
-                if($result > 0){//si tiene algo el result
-                    //recorro todos los detalle_temp
+                if($result > 0){
                     while($data = mysqli_fetch_assoc($query_detalle_temp)){
-                        $precioTotal = round($data['precio'], 2);//calculo el precio total con 2 decimales
-                        $subtotal = round($subtotal + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
-                        $total = round($total + $precioTotal, 2); //voy haciendo una sumatoria de totales con 2 decimales
+                        $precioTotal = round($data['precio'], 2);
+                        $subtotal = round($subtotal + $precioTotal, 2); 
+                        $total = round($total + $precioTotal, 2); 
 
-                        //concateno cada una de las tablas del detalle con los datos correspondientes
                         $detalleTabla .= '<div class="table-responsive">
                                                 <table class="table table-striped">
                                                     <tr data-bs-toggle="tooltip" data-bs-placement="left">
@@ -323,7 +321,6 @@ $MiConexion=ConexionBD();
                                             </div>';
                     }
 
-                    //genero la tabla con totales
                     $detalleTotales = '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr>
@@ -345,7 +342,7 @@ $MiConexion=ConexionBD();
                     $arrayData['detalle'] = $detalleTabla;
                     $arrayData['totales'] = $detalleTotales;
 
-                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);//retorno en formato JSON
+                    echo json_encode($arrayData,JSON_UNESCAPED_UNICODE);
 
                 }else{
                     echo 'error';
@@ -355,7 +352,7 @@ $MiConexion=ConexionBD();
             exit;
         }
         
-        //anular pedido trabajo
+        //Anular pedido trabajo
         if($_POST['action'] == 'anularPedidoTrabajo'){
 
             $usuario = $_SESSION['Usuario_Id'];
@@ -374,7 +371,7 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //confirmar pedido -------------------
+        //Confirmar pedido (Sin Pago) -------------------
         if($_POST['action'] == 'procesarPedidoTrabajo') {
             $codCliente = intval($_POST['codCliente']);
             $senia = floatval($_POST['senia']);
@@ -410,14 +407,14 @@ $MiConexion=ConexionBD();
             }
 
             echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
-            //Funcion para actualizar el estado del pedido
+            // Actualizar el estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
             // Limpiar también el cliente de la sesión
             unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
-        //confirmar pedido con seña -------------------
+        //Confirmar pedido con seña (Con Pago) -------------------
         if($_POST['action'] == 'procesarPedidoTrabajoConPago') {
             $codCliente = intval($_POST['codCliente']);
             $senia = floatval($_POST['senia']);
@@ -451,18 +448,9 @@ $MiConexion=ConexionBD();
 
             // 2. Registrar el movimiento en caja
             $SQL_Insert = "INSERT INTO detalle_caja (
-                idCaja, 
-                idTipoPago, 
-                idTipoMovimiento, 
-                idUsuario, 
-                monto, 
-                observaciones
+                idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
             ) VALUES (
-                $idCaja,
-                $idTipoPago,
-                3,  -- Tipo movimiento fijo para trabajos
-                $usuario,
-                $senia,
+                $idCaja, $idTipoPago, 3, $usuario, $senia, 
                 '" . mysqli_real_escape_string($MiConexion, $observaciones) . "'
             )";
 
@@ -483,14 +471,14 @@ $MiConexion=ConexionBD();
                 'idPedido' => $idPedido,
                 'idMovimiento' => mysqli_insert_id($MiConexion)
             ]);
-            //Funcion para actualizar el estado del pedido
+            // Actualizar estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
             // Limpiar también el cliente de la sesión
             unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
-        // Nueva acción para obtener detalles temporales
+        // Obtener detalles temporales (Para Modal de Facturación)
         if($_POST['action'] == 'getDetallesTempTrabajos') {
             header('Content-Type: application/json');
             
@@ -547,7 +535,7 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        // Nueva acción para procesar con facturación selectiva
+        // Procesar pedido CON Facturación
         if($_POST['action'] == 'procesarPedidoTrabajoConFactura') {
             header('Content-Type: application/json');
             
@@ -562,7 +550,7 @@ $MiConexion=ConexionBD();
                 $detallesFacturar = isset($_POST['detallesFacturar']) ? explode(',', $_POST['detallesFacturar']) : [];
                 $usuario = intval($_SESSION['Usuario_Id']);
                 $idTipoPago = isset($_POST['idTipoPago']) ? intval($_POST['idTipoPago']) : null;
-                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3; 
+                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3; // 3 = Tipo movimiento para trabajos
                 $idCaja = intval($_SESSION['Id_Caja']);
 
                 // 1. Obtener orden de detalles temporales
@@ -679,7 +667,12 @@ $MiConexion=ConexionBD();
             exit;
         }
 
+        // Limpiar cliente de sesión (Auxiliar)
+        if($_POST['action'] == 'limpiarClienteSession') {
+            unset($_SESSION['Cliente_Pedido']);
+            exit;
+        }
+
     }
     exit;
-
 ?>
