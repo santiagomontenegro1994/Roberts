@@ -12,12 +12,14 @@ $MiConexion=ConexionBD();
 
     if(!empty($_POST)){
 
-        //Buscar Cliente (SOLO ACTIVOS)
+        // -----------------------------------------------------------------------
+        // BUSCAR CLIENTE (SOLO ACTIVOS)
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'searchClienteImprenta'){
             if(!empty($_POST['cliente'])){
                 $tel = $_POST['cliente'];
 
-                // Filtramos por idActivo = 1 para ignorar eliminados (idActivo = 2)
+                // IMPORTANTE: Agregamos "AND idActivo = 1" para que ignore a los eliminados
                 $query = mysqli_query($MiConexion,"SELECT * FROM clientes WHERE telefono LIKE '$tel' AND idActivo = 1");
 
                 mysqli_close($MiConexion);
@@ -35,7 +37,7 @@ $MiConexion=ConexionBD();
                     ];
                 }else{
                     $data = 0;
-                    // Limpiar sesión si no hay cliente activo
+                    // Limpiar sesión si no hay cliente activo encontrado
                     unset($_SESSION['Cliente_Pedido']);
                 }
                 echo json_encode($data,JSON_UNESCAPED_UNICODE);
@@ -43,27 +45,34 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //Registrar Cliente Pedidos Imprenta (CON VALIDACIÓN DE VACÍOS)
+        // -----------------------------------------------------------------------
+        // REGISTRAR CLIENTE (COMPATIBLE CON TU TABLA)
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'addCliente_imprenta'){
             
             $nombre = trim($_POST['nom_cliente_imprenta']);
             $apellido = trim($_POST['ape_cliente_imprenta']);
             $telefono = trim($_POST['tel_cliente_imprenta']);
 
-            // --- VALIDACIÓN DE SEGURIDAD ---
-            // Si el nombre o apellido están vacíos, NO GUARDAR y devolver error.
-            if(empty($nombre) || empty($apellido)) {
+            // 1. Validación: Solo el NOMBRE es obligatorio por seguridad.
+            if(empty($nombre)) {
                 echo 'error_datos_vacios';
                 mysqli_close($MiConexion);
                 exit;
             }
 
-            // Insertamos el cliente (Asumimos idActivo = 1 por defecto en BD)
+            // 2. SOLUCIÓN PARA TU TABLA:
+            // Como tu tabla tiene apellido 'NO NULL', si está vacío le ponemos un guion.
+            if(empty($apellido)) {
+                $apellido = '-';
+            }
+
+            // Insertamos (idActivo se pone en 1 automáticamente por el Default de tu base de datos)
             $query_insert = mysqli_query($MiConexion,"INSERT INTO clientes (nombre, apellido, telefono)
                                                         VALUES ('$nombre' , '$apellido' ,'$telefono')");
 
 
-            if($query_insert){ // si se ejecuto bien la insercion
+            if($query_insert){ 
                 $codCliente = mysqli_insert_id($MiConexion);
                 // Guardar en sesión
                 $_SESSION['Cliente_Pedido'] = [
@@ -81,17 +90,14 @@ $MiConexion=ConexionBD();
             exit;                                          
         }
 
-        //Agregar trabajo al detalle temporal de trabajos
+        // -----------------------------------------------------------------------
+        // AGREGAR TRABAJO AL DETALLE
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'agregarTrabajoDetalle'){
             header('Content-Type: application/json');
-            $arrayData = array(
-                'detalle' => '',
-                'totales' => '',
-                'error' => ''
-            );
+            $arrayData = array('detalle' => '', 'totales' => '', 'error' => '');
 
             try {
-                // Validar parámetros requeridos
                 $required = ['estado', 'trabajo', 'enviado', 'fecha', 'hora'];
                 foreach($required as $field) {
                     if(empty($_POST[$field])) {
@@ -99,7 +105,6 @@ $MiConexion=ConexionBD();
                     }
                 }
 
-                // Asignar y sanitizar valores
                 $estado = intval($_POST['estado']);
                 $trabajo = intval($_POST['trabajo']);
                 $enviado = intval($_POST['enviado']);
@@ -109,24 +114,13 @@ $MiConexion=ConexionBD();
                 $descripcion = mysqli_real_escape_string($MiConexion, $_POST['descripcion'] ?? '');
                 $usuario = intval($_SESSION['Usuario_Id']);
 
-                // Llamar al procedimiento almacenado
                 $query = mysqli_query($MiConexion, 
-                    "CALL add_detalle_temp_trabajos(
-                        $estado, 
-                        $trabajo, 
-                        $enviado, 
-                        '$fecha', 
-                        '$hora', 
-                        $precio, 
-                        $usuario, 
-                        '$descripcion'
-                    )");
+                    "CALL add_detalle_temp_trabajos($estado, $trabajo, $enviado, '$fecha', '$hora', $precio, $usuario, '$descripcion')");
 
                 if(!$query) {
                     throw new Exception("Error en base de datos: " . mysqli_error($MiConexion));
                 }
 
-                // Procesar resultados para devolver HTML actualizado
                 $detalleTabla = '';
                 $subtotal = 0;
                 $total = 0;
@@ -183,14 +177,15 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //Muestra datos del detalle temp (Refrescar tabla)
+        // -----------------------------------------------------------------------
+        // MOSTRAR DATOS DETALLE TEMP
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'searchforDetalleTrabajo'){
             if(empty($_POST['action'])){
                 echo 'error';
             }else{
                 $usuario = $_SESSION['Usuario_Id'];
                 
-                //genero el Query para que me devuelva los datos de detalle temp
                 $query = mysqli_query($MiConexion,"SELECT 
                                                         tmp.correlativo, 
                                                         et.denominacion AS estado_trabajo,
@@ -213,20 +208,17 @@ $MiConexion=ConexionBD();
 
                 $result = mysqli_num_rows($query);
                 
-                //Declaro variables que voy a usar
                 $detalleTabla='';
                 $subtotal=0;
                 $total=0;
                 $arrayData=array();
 
                 if($result > 0){
-                    //recorro todos los detalle_temp
                     while($data = mysqli_fetch_assoc($query)){
                         $precioTotal = round($data['precio'], 2);
                         $subtotal = round($subtotal + $precioTotal, 2); 
                         $total = round($total + $precioTotal, 2); 
 
-                        //concateno cada una de las tablas del detalle con los datos correspondientes
                         $detalleTabla .= '<div class="table-responsive">
                                                 <table class="table table-striped">
                                                     <tr data-bs-toggle="tooltip" data-bs-placement="left">
@@ -246,7 +238,6 @@ $MiConexion=ConexionBD();
                                             </div>';
                     }
 
-                    //genero la tabla con totales
                     $detalleTotales = '<div class="table-responsive">
                                             <table class="table table-striped">
                                                 <tr>
@@ -278,7 +269,9 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //Elimina datos del detalle temp Trabajo
+        // -----------------------------------------------------------------------
+        // ELIMINAR DETALLE
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'delProductoDetalleTrabajo'){
             if(empty($_POST['id_detalle'])){
                 echo 'error';
@@ -286,10 +279,8 @@ $MiConexion=ConexionBD();
                 $id_detalle = $_POST['id_detalle'];
                 $usuario = $_SESSION['Usuario_Id'];
 
-                //llamo al procedimiento almacenado para eliminar un detalle temp
                 $query_detalle_temp = mysqli_query($MiConexion,"CALL del_detalle_temp_trabajos($id_detalle,$usuario)");
                 $result = mysqli_num_rows($query_detalle_temp);
-                
                 
                 $detalleTabla='';
                 $subtotal=0;
@@ -352,14 +343,14 @@ $MiConexion=ConexionBD();
             exit;
         }
         
-        //Anular pedido trabajo
+        // -----------------------------------------------------------------------
+        // ANULAR PEDIDO
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'anularPedidoTrabajo'){
 
             $usuario = $_SESSION['Usuario_Id'];
 
             $query_del = mysqli_query($MiConexion,"DELETE FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
-            
-            // Limpiar también el cliente de la sesión
             unset($_SESSION['Cliente_Pedido']);
             
             mysqli_close($MiConexion);
@@ -371,32 +362,30 @@ $MiConexion=ConexionBD();
             exit;
         }
 
-        //Confirmar pedido (Sin Pago) -------------------
+        // -----------------------------------------------------------------------
+        // CONFIRMAR PEDIDO (SIN PAGO)
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'procesarPedidoTrabajo') {
             $codCliente = intval($_POST['codCliente']);
             $senia = floatval($_POST['senia']);
             $usuario = intval($_SESSION['Usuario_Id']);
 
-            // Verificar si hay trabajos en el pedido
             $query = mysqli_query($MiConexion, "SELECT * FROM detalle_temp_trabajos WHERE idUsuario = $usuario");
             if(mysqli_num_rows($query) == 0) {
                 echo json_encode(['status' => 'error', 'message' => 'No hay trabajos en el pedido']);
                 exit;
             }
 
-            // Procesar el pedido
             $query_procesar = mysqli_query($MiConexion, "CALL procesar_pedido_trabajo($codCliente, $senia, $usuario)");
             if(!$query_procesar) {
                 echo json_encode(['status' => 'error', 'message' => 'Error al procesar pedido: '.mysqli_error($MiConexion)]);
                 exit;
             }
 
-            // Limpiar resultados del procedimiento almacenado
             while(mysqli_more_results($MiConexion)) {
                 mysqli_next_result($MiConexion);
             }
 
-            // Obtener el ID del pedido del resultado del procedimiento almacenado
             $result_pedido = mysqli_fetch_assoc($query_procesar);
             $idPedido = $result_pedido['idPedidoTrabajos'] ?? 0;
 
@@ -407,14 +396,14 @@ $MiConexion=ConexionBD();
             }
 
             echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
-            // Actualizar el estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
-            // Limpiar también el cliente de la sesión
             unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
-        //Confirmar pedido con seña (Con Pago) -------------------
+        // -----------------------------------------------------------------------
+        // CONFIRMAR PEDIDO CON SEÑA
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'procesarPedidoTrabajoConPago') {
             $codCliente = intval($_POST['codCliente']);
             $senia = floatval($_POST['senia']);
@@ -422,14 +411,12 @@ $MiConexion=ConexionBD();
             $usuario = intval($_SESSION['Usuario_Id']);
             $idCaja = intval($_SESSION['Id_Caja']);
 
-            // 1. Procesar el pedido
             $query_pedido = mysqli_query($MiConexion, "CALL procesar_pedido_trabajo($codCliente, $senia, $usuario)");
             if(!$query_pedido) {
                 echo json_encode(['status' => 'error', 'message' => 'Error al procesar pedido: '.mysqli_error($MiConexion)]);
                 exit;
             }
 
-            // Limpiar resultados del procedimiento almacenado
             while(mysqli_more_results($MiConexion)) {
                 mysqli_next_result($MiConexion);
             }
@@ -443,10 +430,8 @@ $MiConexion=ConexionBD();
                 exit;
             }
 
-            // Definir observaciones con el formato deseado
             $observaciones = "Seña de trabajo: " . $idPedido;
 
-            // 2. Registrar el movimiento en caja
             $SQL_Insert = "INSERT INTO detalle_caja (
                 idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones
             ) VALUES (
@@ -456,7 +441,6 @@ $MiConexion=ConexionBD();
 
             $query_pago = mysqli_query($MiConexion, $SQL_Insert);
             if(!$query_pago) {
-                // Eliminar el pedido si falla el registro en caja
                 mysqli_query($MiConexion, "DELETE FROM pedido_trabajos WHERE idPedidoTrabajos = $idPedido");
                 echo json_encode([
                     'status' => 'error', 
@@ -471,44 +455,29 @@ $MiConexion=ConexionBD();
                 'idPedido' => $idPedido,
                 'idMovimiento' => mysqli_insert_id($MiConexion)
             ]);
-            // Actualizar estado del pedido
             ActualizarEstadoPedido($MiConexion, $idPedido);
-            // Limpiar también el cliente de la sesión
             unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
-        // Obtener detalles temporales (Para Modal de Facturación)
+        // -----------------------------------------------------------------------
+        // GET DETALLES (PARA FACTURACIÓN)
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'getDetallesTempTrabajos') {
             header('Content-Type: application/json');
-            
             try {
                 $usuario = $_SESSION['Usuario_Id'];
                 
                 $query = mysqli_query($MiConexion, "SELECT 
-                    tmp.correlativo, 
-                    et.denominacion AS estado_trabajo,
-                    tt.denominacion AS tipo_trabajo,
-                    p.nombre AS proveedor,
-                    tmp.fechaEntrega, 
-                    tmp.horaEntrega, 
-                    tmp.precio,
-                    tmp.descripcion
-                FROM 
-                    detalle_temp_trabajos tmp
-                LEFT JOIN 
-                    estado_trabajo et ON tmp.idEstadoTrabajo = et.idEstado
-                LEFT JOIN 
-                    tipo_trabajo tt ON tmp.idTrabajo = tt.idTipoTrabajo
-                LEFT JOIN 
-                    proveedores p ON tmp.idProveedor = p.idProveedor
-                WHERE 
-                    tmp.idUsuario = $usuario
-                ORDER BY tmp.correlativo");
+                    tmp.correlativo, et.denominacion AS estado_trabajo, tt.denominacion AS tipo_trabajo,
+                    p.nombre AS proveedor, tmp.fechaEntrega, tmp.horaEntrega, tmp.precio, tmp.descripcion
+                FROM detalle_temp_trabajos tmp
+                LEFT JOIN estado_trabajo et ON tmp.idEstadoTrabajo = et.idEstado
+                LEFT JOIN tipo_trabajo tt ON tmp.idTrabajo = tt.idTipoTrabajo
+                LEFT JOIN proveedores p ON tmp.idProveedor = p.idProveedor
+                WHERE tmp.idUsuario = $usuario ORDER BY tmp.correlativo");
 
-                if(!$query) {
-                    throw new Exception("Error en la consulta: " . mysqli_error($MiConexion));
-                }
+                if(!$query) throw new Exception("Error en la consulta: " . mysqli_error($MiConexion));
 
                 $detalles = array();
                 while($row = mysqli_fetch_assoc($query)) {
@@ -523,24 +492,20 @@ $MiConexion=ConexionBD();
                         'horaEntrega' => $row['horaEntrega']
                     );
                 }
-
                 echo json_encode(['detalles' => $detalles]);
-                
             } catch (Exception $e) {
-                echo json_encode([
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString() 
-                ]);
+                echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             }
             exit;
         }
 
-        // Procesar pedido CON Facturación
+        // -----------------------------------------------------------------------
+        // PROCESAR CON FACTURA
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'procesarPedidoTrabajoConFactura') {
             header('Content-Type: application/json');
             
             try {
-                // Iniciar transacción
                 mysqli_begin_transaction($MiConexion);
 
                 $codCliente = intval($_POST['codCliente']);
@@ -550,67 +515,38 @@ $MiConexion=ConexionBD();
                 $detallesFacturar = isset($_POST['detallesFacturar']) ? explode(',', $_POST['detallesFacturar']) : [];
                 $usuario = intval($_SESSION['Usuario_Id']);
                 $idTipoPago = isset($_POST['idTipoPago']) ? intval($_POST['idTipoPago']) : null;
-                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3; // 3 = Tipo movimiento para trabajos
+                $idTipoMovimiento = isset($_POST['idTipoMovimiento']) ? intval($_POST['idTipoMovimiento']) : 3;
                 $idCaja = intval($_SESSION['Id_Caja']);
 
-                // 1. Obtener orden de detalles temporales
-                $query_temp_order = mysqli_query($MiConexion, 
-                    "SELECT correlativo FROM detalle_temp_trabajos 
-                    WHERE idUsuario = $usuario ORDER BY correlativo");
-                
+                $query_temp_order = mysqli_query($MiConexion, "SELECT correlativo FROM detalle_temp_trabajos WHERE idUsuario = $usuario ORDER BY correlativo");
                 $tempOrder = array();
-                while($row = mysqli_fetch_assoc($query_temp_order)) {
-                    $tempOrder[] = $row['correlativo'];
-                }
+                while($row = mysqli_fetch_assoc($query_temp_order)) { $tempOrder[] = $row['correlativo']; }
 
-                // 2. Procesar pedido principal
                 $query_pedido = mysqli_query($MiConexion, "CALL procesar_pedido_trabajo($codCliente, $senia, $usuario)");
-                
-                if(!$query_pedido) {
-                    throw new Exception("Error al procesar pedido: " . mysqli_error($MiConexion));
-                }
+                if(!$query_pedido) throw new Exception("Error al procesar pedido: " . mysqli_error($MiConexion));
 
-                // Obtener ID del pedido
                 $result_pedido = mysqli_fetch_assoc($query_pedido);
                 $idPedido = $result_pedido['idPedidoTrabajos'] ?? 0;
 
-                // Limpiar resultados del procedimiento
-                while(mysqli_more_results($MiConexion)) {
-                    mysqli_next_result($MiConexion);
-                }
+                while(mysqli_more_results($MiConexion)) { mysqli_next_result($MiConexion); }
 
-                if($idPedido == 0) {
-                    throw new Exception($result_pedido['mensaje'] ?? 'No se pudo obtener ID del pedido');
-                }
+                if($idPedido == 0) throw new Exception($result_pedido['mensaje'] ?? 'No se pudo obtener ID del pedido');
 
-                // 3. Registrar movimiento en caja si hay seña (CON NÚMERO DE PEDIDO Y FACTURA)
                 if($senia > 0 && $idTipoPago) {
                     $observaciones = "Seña por pedido #$idPedido";
-                    
                     $query_caja = mysqli_query($MiConexion,
                         "INSERT INTO detalle_caja (
-                            idCaja, idTipoPago, idTipoMovimiento, 
-                            idUsuario, monto, observaciones,
+                            idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones,
                             facturado, idTipoFactura, numeroFactura
                         ) VALUES (
-                            $idCaja, $idTipoPago, $idTipoMovimiento,
-                            $usuario, $senia, '$observaciones',
+                            $idCaja, $idTipoPago, $idTipoMovimiento, $usuario, $senia, '$observaciones',
                             1, $idTipoFactura, '$numeroFactura'
                         )");
-                    
-                    if(!$query_caja) {
-                        throw new Exception("Error al registrar movimiento en caja: " . mysqli_error($MiConexion));
-                    }
+                    if(!$query_caja) throw new Exception("Error al registrar movimiento en caja: " . mysqli_error($MiConexion));
                 }
 
-                // 4. Obtener detalles del pedido
-                $query_detalles = mysqli_query($MiConexion,
-                    "SELECT idDetalleTrabajo 
-                    FROM detalle_trabajos
-                    WHERE id_pedido_trabajos = $idPedido
-                    ORDER BY idDetalleTrabajo");
+                $query_detalles = mysqli_query($MiConexion, "SELECT idDetalleTrabajo FROM detalle_trabajos WHERE id_pedido_trabajos = $idPedido ORDER BY idDetalleTrabajo");
                 
-                // 5. Actualizar solo los detalles seleccionados (sin cambiar estado)
                 $idsParaFacturar = array();
                 $index = 0;
                 while($row = mysqli_fetch_assoc($query_detalles)) {
@@ -622,52 +558,29 @@ $MiConexion=ConexionBD();
                 
                 if(!empty($idsParaFacturar)) {
                     $idsParaFacturarStr = implode(',', $idsParaFacturar);
-                    
                     $query_factura = mysqli_query($MiConexion, 
-                        "UPDATE detalle_trabajos 
-                        SET facturado = 1, 
-                            idTipoFactura = $idTipoFactura, 
-                            numeroFactura = '$numeroFactura'
+                        "UPDATE detalle_trabajos SET facturado = 1, idTipoFactura = $idTipoFactura, numeroFactura = '$numeroFactura'
                         WHERE idDetalleTrabajo IN ($idsParaFacturarStr)");
-                    
-                    if(!$query_factura) {
-                        throw new Exception("Error al actualizar detalles con factura: " . mysqli_error($MiConexion));
-                    }
+                    if(!$query_factura) throw new Exception("Error al actualizar detalles con factura: " . mysqli_error($MiConexion));
                 }
 
-                // Confirmar transacción
                 mysqli_commit($MiConexion);
-
-                // Actualizar estado del pedido
                 ActualizarEstadoPedido($MiConexion, $idPedido);
-                
-                // Limpiar cliente de sesión
                 unset($_SESSION['Cliente_Pedido']);
 
-                echo json_encode([
-                    'status' => 'success', 
-                    'idPedido' => $idPedido,
-                    'message' => 'Pedido procesado correctamente'
-                ]);
+                echo json_encode(['status' => 'success', 'idPedido' => $idPedido, 'message' => 'Pedido procesado correctamente']);
                 
             } catch (Exception $e) {
-                // Revertir transacción en caso de error
                 mysqli_rollback($MiConexion);
-                
-                // Limpiar cualquier resultado pendiente
-                while(mysqli_more_results($MiConexion)) {
-                    mysqli_next_result($MiConexion);
-                }
-                
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ]);
+                while(mysqli_more_results($MiConexion)) { mysqli_next_result($MiConexion); }
+                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
             }
             exit;
         }
 
-        // Limpiar cliente de sesión (Auxiliar)
+        // -----------------------------------------------------------------------
+        // LIMPIAR SESIÓN
+        // -----------------------------------------------------------------------
         if($_POST['action'] == 'limpiarClienteSession') {
             unset($_SESSION['Cliente_Pedido']);
             exit;

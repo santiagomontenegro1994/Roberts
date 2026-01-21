@@ -69,12 +69,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     $('#formularioClientePedidoImprenta').submit(function(e){
         e.preventDefault();
 
-        // Validacion CRÍTICA: No permitir enviar si no hay nombre
+        // Validacion: SOLO EL NOMBRE ES OBLIGATORIO
         var nombre = $('#nom_cliente_imprenta').val().trim();
-        var apellido = $('#ape_cliente_imprenta').val().trim();
+        // var apellido = $('#ape_cliente_imprenta').val().trim(); // Ya no es obligatorio
 
-        if(nombre === '' || apellido === '') {
-            alert("Error: No se puede registrar un cliente sin Nombre y Apellido.");
+        if(nombre === '') {
+            alert("Error: Debe ingresar al menos el Nombre del cliente.");
             return false;
         }
 
@@ -87,7 +87,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             success: function(response)
             {
                 if(response == 'error_datos_vacios'){
-                    alert("Error: Los datos no pueden estar vacíos.");
+                    alert("Error: El nombre no puede estar vacío.");
                 }
                 else if(response != 'error'){
                     $('#idCliente_imprenta').val(response);
@@ -170,7 +170,7 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                 $('#estado_trabajo').val($('#estado_trabajo option:first').val());
                 $('#tipo_trabajo').val('6'); 
                 $('#enviado').val('7'); 
-                //$('#fecha_entrega_date').val(''); //Opcional: mantener fecha
+                // $('#fecha_entrega_date').val(''); // Opcional, mantener fecha
                 $('#hora_entrega').val('08:30'); 
                 $('#precio').val('0.00');
             },
