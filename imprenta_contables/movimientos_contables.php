@@ -59,22 +59,14 @@ $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, $offset, $lim
 $totalMovimientos = Contar_Movimientos_Contables($MiConexion, $filtros);
 $totalPaginas = ceil($totalMovimientos / $limite);
 
-// 5. CÁLCULO DE TOTALES
-// Obtenemos los valores crudos de las funciones
+// 5. CÁLCULO DE TOTALES GENERALES (Tarjetas superiores)
 $totalCajaFuerte = Obtener_Total_Caja_Fuerte($MiConexion, $filtros);
 $totalBanco_Original = Obtener_Total_Banco($MiConexion, $filtros); 
 $totalMercadoPago = Obtener_Total_MercadoPago($MiConexion, $filtros);
 $totalPayway = Obtener_Total_Payway($MiConexion, $filtros);
 
-// --- LÓGICA MODIFICADA PARA VISUALIZACIÓN ---
-
-// 1. El Banco ahora visualmente incluye Payway
 $totalBancoVisual = $totalBanco_Original + $totalPayway;
-
-// 2. El Gran Total suma todo (Caja + Banco Unificado + MP)
 $granTotal = $totalCajaFuerte + $totalBancoVisual + $totalMercadoPago;
-
-// Variable para mostrar cantidad listada
 $totalMovimientosListados = $totalMovimientos; 
 ?>
 
@@ -111,7 +103,6 @@ $totalMovimientosListados = $totalMovimientos;
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-3">
                 <div class="card text-white bg-primary mb-3 shadow-sm">
                     <div class="card-header fw-bold text-white">
@@ -122,7 +113,6 @@ $totalMovimientosListados = $totalMovimientos;
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-3">
                 <div class="card text-white mb-3 shadow-sm" style="background-color: #009EE3;">
                     <div class="card-header fw-bold text-white"><i class="bi bi-phone"></i> Mercado Pago</div>
@@ -131,7 +121,6 @@ $totalMovimientosListados = $totalMovimientos;
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-3">
                 <div class="card text-white bg-secondary mb-3 shadow-sm">
                     <div class="card-header fw-bold text-white"><i class="bi bi-cash-coin"></i> Total General</div>
@@ -194,18 +183,27 @@ $totalMovimientosListados = $totalMovimientos;
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-12 d-flex align-items-center gap-2">
-                                <button type="submit" class="btn btn-primary">Filtrar</button>
-                                <a href="movimientos_contables.php" class="btn btn-secondary">Limpiar</a>
-                                
-                                <div class="vr mx-2"></div>
-                                <a href="exportar_pdf_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-danger" title="Exportar a PDF">
-                                    <i class="bi bi-file-earmark-pdf"></i> PDF
-                                </a>
-                                <a href="exportar_excel_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-success" title="Exportar a Excel">
-                                    <i class="bi bi-file-earmark-excel"></i> Excel
-                                </a>
+                            
+                            <div class="col-12 d-flex justify-content-between align-items-center mt-3">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Filtrar
+                                    </button>
+                                    <a href="movimientos_contables.php" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> Limpiar
+                                    </a>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <a href="exportar_pdf_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-danger" title="Exportar a PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+                                    <a href="exportar_excel_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-success" title="Exportar a Excel">
+                                        <i class="bi bi-file-earmark-excel"></i> Excel
+                                    </a>
+                                </div>
                             </div>
+
                         </form>
 
                         <div class="table-responsive">
