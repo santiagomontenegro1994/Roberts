@@ -1,7 +1,7 @@
 <?php
 // Configuración de zona horaria y tiempo límite
 date_default_timezone_set('America/Argentina/Buenos_Aires');
-set_time_limit(300); // 5 minutos máximo para reportes largos
+set_time_limit(300); 
 ob_start();
 session_start();
 
@@ -28,7 +28,7 @@ $filtros['metodo_pago'] = $_GET['metodo_pago'] ?? '';
 // Obtener TODOS los datos
 $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, 0, 999999);
 
-// Inicializar contadores para el resumen del reporte
+// Inicializar contadores
 $sumaEntradas = 0;
 $sumaSalidas = 0;
 $sumaContables = 0;
@@ -69,7 +69,6 @@ $html = '<!DOCTYPE html>
         .bg-danger { background-color: #dc3545; color: #fff; }
         .bg-secondary { background-color: #6c757d; color: #fff; }
         
-        /* Estilos para la tabla de totales */
         .totales-box { margin-top: 20px; width: 50%; float: right; }
         .totales-table td { padding: 4px; border: none; border-bottom: 1px solid #eee; }
         .total-label { font-weight: bold; color: #555; }
@@ -105,7 +104,6 @@ $html = '<!DOCTYPE html>
 if (count($movimientos) > 0) {
     foreach ($movimientos as $m) {
         
-        // Calcular totales
         if ($m['es_entrada']) {
             $sumaEntradas += $m['monto'];
             $tipoHtml = '<span class="badge bg-success">ENTRADA</span>';
@@ -130,6 +128,9 @@ if (count($movimientos) > 0) {
     $html .= '<tr><td colspan="6" class="text-center">No hay datos para mostrar.</td></tr>';
 }
 
+// CÁLCULO FINAL CORREGIDO
+$resultadoPeriodo = $sumaEntradas - $sumaSalidas - $sumaContables;
+
 $html .= '  </tbody>
         </table>
         
@@ -148,8 +149,8 @@ $html .= '  </tbody>
                     <td class="total-value" style="color:#6c757d;">$ ' . number_format($sumaContables, 2, ',', '.') . '</td>
                 </tr>
                 <tr>
-                    <td class="total-label text-right" style="border-top: 2px solid #333; font-size:12px;">Resultado del Período (Entradas - Salidas):</td>
-                    <td class="total-value" style="border-top: 2px solid #333; font-size:12px;">$ ' . number_format($sumaEntradas - $sumaSalidas, 2, ',', '.') . '</td>
+                    <td class="total-label text-right" style="border-top: 2px solid #333; font-size:12px;">Resultado del Período (E - S - C):</td>
+                    <td class="total-value" style="border-top: 2px solid #333; font-size:12px;">$ ' . number_format($resultadoPeriodo, 2, ',', '.') . '</td>
                 </tr>
             </table>
         </div>
@@ -157,7 +158,6 @@ $html .= '  </tbody>
 </body>
 </html>';
 
-// Generar PDF
 $dompdf = new Dompdf();
 $options = $dompdf->getOptions();
 $options->set(array('isRemoteEnabled' => true));

@@ -1,5 +1,4 @@
 <?php
-// Zona horaria Argentina
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 ob_start();
@@ -30,7 +29,7 @@ $sumaEntradas = 0;
 $sumaSalidas = 0;
 $sumaContables = 0;
 
-// Headers para descarga Excel
+// Headers
 header("Content-Type: application/vnd.ms-excel; charset=utf-8");
 header("Content-Disposition: attachment; filename=Reporte_" . date('Y-m-d_Hi') . ".xls");
 header("Pragma: no-cache");
@@ -105,7 +104,9 @@ if (count($movimientos) > 0) {
     echo "<tr><td colspan='7'>No se encontraron registros.</td></tr>";
 }
 
-// FILAS DE TOTALES
+// CÁLCULO FINAL CORREGIDO
+$resultadoPeriodo = $sumaEntradas - $sumaSalidas - $sumaContables;
+
 echo "</tbody>
       <tfoot>
         <tr><td colspan='7'></td></tr>
@@ -124,8 +125,8 @@ echo "</tbody>
             <td colspan='2' class='text-muted'>$ " . number_format($sumaContables, 2, ',', '.') . "</td>
         </tr>
         <tr class='total-row' style='background-color:#e2e3e5;'>
-            <td colspan='5' style='text-align:right;'>RESULTADO (E - S):</td>
-            <td colspan='2'>$ " . number_format($sumaEntradas - $sumaSalidas, 2, ',', '.') . "</td>
+            <td colspan='5' style='text-align:right;'>RESULTADO (E - S - C):</td>
+            <td colspan='2'>$ " . number_format($resultadoPeriodo, 2, ',', '.') . "</td>
         </tr>
       </tfoot>
     </table>
