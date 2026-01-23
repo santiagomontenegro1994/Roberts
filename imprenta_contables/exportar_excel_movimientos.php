@@ -1,4 +1,5 @@
 <?php
+// Configuración de zona horaria
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 ob_start();
@@ -29,7 +30,7 @@ $sumaEntradas = 0;
 $sumaSalidas = 0;
 $sumaContables = 0;
 
-// Headers
+// Headers para descarga Excel
 header("Content-Type: application/vnd.ms-excel; charset=utf-8");
 header("Content-Disposition: attachment; filename=Reporte_" . date('Y-m-d_Hi') . ".xls");
 header("Pragma: no-cache");
@@ -47,6 +48,7 @@ echo "
         .text-danger { color: #dc3545; font-weight: bold; }
         .text-muted { color: #6c757d; font-weight: bold; }
         .total-row { background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #000; }
+        .text-right { text-align: right; }
     </style>
 </head>
 <body>
@@ -62,7 +64,7 @@ echo "
                 <th>Método Pago</th>
                 <th>Entrada</th>
                 <th>Salida</th>
-            </tr>
+                <th>Mov. Contable</th> </tr>
         </thead>
         <tbody>";
 
@@ -72,6 +74,7 @@ if (count($movimientos) > 0) {
         
         $entrada = '-';
         $salida = '-';
+        $contable = '-';
         $estilo = '';
 
         if ($m['es_entrada']) {
@@ -85,6 +88,8 @@ if (count($movimientos) > 0) {
             $tipoTexto = 'Salida';
             $sumaSalidas += $m['monto'];
         } else {
+            // AQUI MOSTRAMOS EL MONTO SI ES CONTABLE
+            $contable = '$ ' . number_format($m['monto'], 2, ',', '.');
             $tipoTexto = 'Contable';
             $estilo = "class='text-muted'";
             $sumaContables += $m['monto'];
@@ -96,37 +101,33 @@ if (count($movimientos) > 0) {
                 <td>{$m['detalle']}</td>
                 <td>{$tipoTexto}</td>
                 <td>{$m['metodo_pago']}</td>
-                <td $estilo>{$entrada}</td>
-                <td $estilo>{$salida}</td>
+                <td " . ($m['es_entrada'] ? $estilo : '') . ">{$entrada}</td>
+                <td " . ($m['es_salida'] ? $estilo : '') . ">{$salida}</td>
+                <td " . (!$m['es_entrada'] && !$m['es_salida'] ? $estilo : '') . ">{$contable}</td>
               </tr>";
     }
 } else {
-    echo "<tr><td colspan='7'>No se encontraron registros.</td></tr>";
+    echo "<tr><td colspan='8'>No se encontraron registros.</td></tr>";
 }
 
-// CÁLCULO FINAL CORREGIDO
+// CÁLCULO FINAL (E - S - C)
 $resultadoPeriodo = $sumaEntradas - $sumaSalidas - $sumaContables;
 
+// FOOTER CON TOTALES ALINEADOS A SUS COLUMNAS
 echo "</tbody>
       <tfoot>
-        <tr><td colspan='7'></td></tr>
+        <tr><td colspan='8'></td></tr>
+        
         <tr class='total-row'>
-            <td colspan='5' style='text-align:right;'>TOTAL ENTRADAS:</td>
+            <td colspan='5' class='text-right'>TOTALES POR COLUMNA:</td>
             <td class='text-success'>$ " . number_format($sumaEntradas, 2, ',', '.') . "</td>
-            <td></td>
-        </tr>
-        <tr class='total-row'>
-            <td colspan='5' style='text-align:right;'>TOTAL SALIDAS:</td>
-            <td></td>
             <td class='text-danger'>$ " . number_format($sumaSalidas, 2, ',', '.') . "</td>
+            <td class='text-muted'>$ " . number_format($sumaContables, 2, ',', '.') . "</td>
         </tr>
-        <tr class='total-row'>
-            <td colspan='5' style='text-align:right;'>TOTAL MOV. CONTABLES:</td>
-            <td colspan='2' class='text-muted'>$ " . number_format($sumaContables, 2, ',', '.') . "</td>
-        </tr>
+
         <tr class='total-row' style='background-color:#e2e3e5;'>
-            <td colspan='5' style='text-align:right;'>RESULTADO (E - S - C):</td>
-            <td colspan='2'>$ " . number_format($resultadoPeriodo, 2, ',', '.') . "</td>
+            <td colspan='5' class='text-right'>RESULTADO FINAL (Entradas - Salidas - Contables):</td>
+            <td colspan='3' style='text-align:center; font-size:1.1em;'>$ " . number_format($resultadoPeriodo, 2, ',', '.') . "</td>
         </tr>
       </tfoot>
     </table>
