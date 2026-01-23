@@ -194,9 +194,17 @@ $totalMovimientosListados = $totalMovimientos;
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12 d-flex align-items-center gap-2">
                                 <button type="submit" class="btn btn-primary">Filtrar</button>
                                 <a href="movimientos_contables.php" class="btn btn-secondary">Limpiar</a>
+                                
+                                <div class="vr mx-2"></div>
+                                <a href="exportar_pdf_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-danger" title="Exportar a PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                                </a>
+                                <a href="exportar_excel_movimientos.php?<?= http_build_query($filtros) ?>" target="_blank" class="btn btn-success" title="Exportar a Excel">
+                                    <i class="bi bi-file-earmark-excel"></i> Excel
+                                </a>
                             </div>
                         </form>
 
