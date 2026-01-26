@@ -3035,18 +3035,18 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     // ---------------------------------------------------------
     // 1. DETALLE CAJA 
     // ---------------------------------------------------------
-    // Aplicamos CONVERT(... USING utf8) a los campos de texto para evitar error de collation
+    // Usamos CAST(... AS CHAR CHARACTER SET utf8mb4) para forzar compatibilidad
     $detalleCajaQuery = "
         SELECT 
             dc.idDetalleCaja AS idMovimiento,
             c.Fecha AS fecha,
             dc.monto,
-            CONVERT(tp.denominacion USING utf8) AS metodo_pago,
-            CONVERT(CONCAT(u.nombre,' ',u.apellido) USING utf8) AS usuario, 
+            CAST(tp.denominacion AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
+            CAST(CONCAT(u.nombre,' ',u.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario, 
             1 AS es_entrada,
             0 AS es_salida,
-            CONVERT(dc.observaciones USING utf8) AS detalle,
-            CONVERT('caja' USING utf8) as origen
+            CAST(dc.observaciones AS CHAR CHARACTER SET utf8mb4) AS detalle,
+            CAST('caja' AS CHAR CHARACTER SET utf8mb4) as origen
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -3083,8 +3083,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             r.idRetiro AS idMovimiento,
             r.fecha,
             r.monto,
-            CONVERT(tp.denominacion USING utf8) AS metodo_pago,
-            CONVERT(CONCAT(uCreador.nombre,' ',uCreador.apellido) USING utf8) AS usuario, 
+            CAST(tp.denominacion AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
+            CAST(CONCAT(uCreador.nombre,' ',uCreador.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario, 
             
             CASE 
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
@@ -3096,7 +3096,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 ELSE 1 
             END AS es_salida,
 
-            CONVERT(CASE
+            CAST(CASE
                 WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
                 WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
@@ -3104,12 +3104,12 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
-            END USING utf8) AS detalle,
+            END AS CHAR CHARACTER SET utf8mb4) AS detalle,
 
-            CONVERT(CASE 
+            CAST(CASE 
                 WHEN dc_check.idRetiro IS NOT NULL THEN 'caja'
                 ELSE 'retiro'
-            END USING utf8) as origen
+            END AS CHAR CHARACTER SET utf8mb4) as origen
 
         FROM retiros r
         
@@ -3163,12 +3163,12 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             mi.idMovimientoInterno AS idMovimiento,
             mi.fecha,
             mi.monto,
-            CONVERT('Transferencia' USING utf8) AS metodo_pago,
-            CONVERT(CONCAT(u.nombre, ' ', u.apellido) USING utf8) AS usuario,
+            CAST('Transferencia' AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
+            CAST(CONCAT(u.nombre, ' ', u.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario,
             0 AS es_entrada,
             0 AS es_salida,
-            CONVERT(CONCAT('Transferencia: ', tpo.denominacion, ' -> ', tpd.denominacion, IF(mi.observacion IS NOT NULL AND mi.observacion != '', CONCAT(' (', mi.observacion, ')'), '')) USING utf8) AS detalle,
-            CONVERT('transferencia' USING utf8) as origen
+            CAST(CONCAT('Transferencia: ', tpo.denominacion, ' -> ', tpd.denominacion, IF(mi.observacion IS NOT NULL AND mi.observacion != '', CONCAT(' (', mi.observacion, ')'), '')) AS CHAR CHARACTER SET utf8mb4) AS detalle,
+            CAST('transferencia' AS CHAR CHARACTER SET utf8mb4) as origen
         FROM movimientos_internos mi
         JOIN tipo_pago tpo ON mi.idOrigen = tpo.idTipoPago
         JOIN tipo_pago tpd ON mi.idDestino = tpd.idTipoPago
