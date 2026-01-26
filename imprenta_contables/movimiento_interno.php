@@ -14,14 +14,20 @@ require_once '../funciones/conexion.php';
 
 $MiConexion = ConexionBD();
 
-// Obtener Cuentas Disponibles (Caja, Banco, MP, etc.)
-// Usamos la tabla tipo_pago
+// --- CONFIGURACIÓN DE CUENTAS PERMITIDAS ---
+// Buscamos solo las cuentas principales: Efectivo, Banco, Mercado Pago.
+// Usamos LIKE para ser flexibles si dice "Banco Galicia" o "MercadoPago" junto.
 $cuentas = [];
-$sql = "SELECT MIN(idTipoPago) as idTipoPago, denominacion 
+$sql = "SELECT idTipoPago, denominacion 
         FROM tipo_pago 
         WHERE idActivo = 1 
-        GROUP BY denominacion 
+        AND (denominacion LIKE '%Efectivo%' 
+             OR denominacion LIKE '%Banco%' 
+             OR denominacion LIKE '%Mercado%Pago%')
+        AND denominacion NOT LIKE '%Cheque%' 
+        AND denominacion NOT LIKE '%Payway%'
         ORDER BY denominacion ASC";
+
 $res = $MiConexion->query($sql);
 while($row = $res->fetch_assoc()) {
     $cuentas[$row['idTipoPago']] = $row['denominacion'];
@@ -33,7 +39,7 @@ $estilo = '';
 // --- PROCESAR FORMULARIO ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha = $_POST['fecha'] ?? date('Y-m-d');
-    $monto = floatval($_POST['monto'] ?? 0); // Recibe valor limpio del hidden
+    $monto = floatval($_POST['monto'] ?? 0); 
     $idOrigen = intval($_POST['idOrigen'] ?? 0);
     $idDestino = intval($_POST['idDestino'] ?? 0);
     $observacion = trim($_POST['observacion'] ?? '');
@@ -166,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // 1. LÓGICA DE MONEDA (Igual a tu sistema actual)
+    // 1. LÓGICA DE MONEDA
     const inputVisual = document.getElementById('monto_visual');
     const inputReal = document.getElementById('monto_real');
 
@@ -185,26 +191,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 2. VALIDACIÓN VISUAL: No permitir mismo origen y destino
+    // 2. LÓGICA DE EXCLUSIÓN DINÁMICA
     const selOrigen = document.getElementById('idOrigen');
     const selDestino = document.getElementById('idDestino');
 
-    function validarCuentas() {
-        // Restaurar colores
-        selOrigen.classList.remove('is-invalid');
-        selDestino.classList.remove('is-invalid');
+    function actualizarDestinos() {
+        const origenVal = selOrigen.value;
+        const destinoVal = selDestino.value;
 
-        if(selOrigen.value !== "" && selDestino.value !== "") {
-            if(selOrigen.value === selDestino.value) {
-                alert("No puede transferir a la misma cuenta.");
-                selDestino.value = ""; // Resetear destino
-                selDestino.classList.add('is-invalid');
+        for (let i = 0; i < selDestino.options.length; i++) {
+            const option = selDestino.options[i];
+            
+            if (option.value === origenVal && origenVal !== "") {
+                option.style.display = 'none';
+                option.disabled = true;
+                if (option.value === destinoVal) {
+                    selDestino.value = "";
+                }
+            } else {
+                option.style.display = 'block';
+                option.disabled = false;
             }
         }
     }
 
-    selOrigen.addEventListener('change', validarCuentas);
-    selDestino.addEventListener('change', validarCuentas);
+    selOrigen.addEventListener('change', actualizarDestinos);
+    actualizarDestinos();
 });
 </script>
 </body>

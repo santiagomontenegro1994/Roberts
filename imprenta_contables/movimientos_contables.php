@@ -231,7 +231,9 @@ $totalMovimientosListados = $totalMovimientos;
                                             <tr>
                                                 <td><?= date('d/m/Y', strtotime($mov['fecha'])) ?></td>
                                                 <td>
-                                                    <?php if ($mov['es_entrada']): ?>
+                                                    <?php if (isset($mov['origen']) && $mov['origen'] === 'transferencia'): ?>
+                                                        <span class="badge bg-info text-dark">Transferencia</span>
+                                                    <?php elseif ($mov['es_entrada']): ?>
                                                         <span class="badge bg-success">Entrada</span>
                                                     <?php elseif ($mov['es_salida']): ?>
                                                         <span class="badge bg-danger">Salida</span>
@@ -250,11 +252,16 @@ $totalMovimientosListados = $totalMovimientos;
                                                     $ <?= number_format($mov['monto'], 2, ',', '.') ?>
                                                 </td>
                                                 <td class="text-center">
-                                                    <?php if (isset($mov['origen']) && $mov['origen'] === 'retiro'): ?>
+                                                    <?php if (isset($mov['origen']) && $mov['origen'] === 'transferencia'): ?>
+                                                        <a href="modificar_movimiento_interno.php?id=<?= $mov['idMovimiento'] ?>" class="btn btn-sm btn-info text-white" title="Editar Transferencia"><i class="bi bi-pencil"></i></a>
+                                                        <a href="#" onclick="confirmarEliminacionInterna(<?= $mov['idMovimiento'] ?>)" class="btn btn-sm btn-danger" title="Eliminar Transferencia"><i class="bi bi-trash"></i></a>
+
+                                                    <?php elseif (isset($mov['origen']) && $mov['origen'] === 'retiro'): ?>
                                                         <a href="modificar_movimiento_contable.php?id=<?= $mov['idMovimiento'] ?>" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil"></i></a>
                                                         <a href="#" onclick="confirmarEliminacion(<?= $mov['idMovimiento'] ?>)" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></a>
+
                                                     <?php else: ?>
-                                                        <span class="badge bg-info text-dark" title="Generado desde Caja">Automático</span>
+                                                        <span class="badge bg-secondary text-white" title="Generado desde Caja">Automático</span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>
@@ -302,6 +309,11 @@ $totalMovimientosListados = $totalMovimientos;
 function confirmarEliminacion(id) {
     if (confirm('¿Está seguro de que desea eliminar este movimiento contable?')) {
         window.location.href = 'eliminar_movimiento_contable.php?id=' + id;
+    }
+}
+function confirmarEliminacionInterna(id) {
+    if (confirm('¿Está seguro de que desea eliminar esta TRANSFERENCIA interna?')) {
+        window.location.href = 'eliminar_movimiento_interno.php?id=' + id;
     }
 }
 </script>
