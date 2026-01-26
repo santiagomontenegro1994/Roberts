@@ -2869,30 +2869,43 @@ function Listar_Tipos_Especiales($conexion) {
     return $tipos;
 }
 
-function Calcular_Saldo_Transferencias($conexion, $idsCuentas, $filtros) {
-    // Si pasamos un solo ID, lo convertimos en array
-    if (!is_array($idsCuentas)) $idsCuentas = [$idsCuentas];
-    if (empty($idsCuentas)) return 0;
-
-    // Convertimos array a lista separada por comas para SQL (ej: "2,3,13")
-    $listaIds = implode(',', array_map('intval', $idsCuentas));
-
-    // 1. Sumar lo que ENTRA (Destino es una de estas cuentas)
-    $sqlEntra = "SELECT SUM(monto) as total FROM movimientos_internos WHERE idDestino IN ($listaIds)";
+function Calcular_Saldo_Transferencias($conexion, $palabrasClave, $filtros) {
+    // $palabrasClave puede ser un string 'Efectivo' o un array ['Banco', 'Cheque']
     
-    // 2. Sumar lo que SALE (Origen es una de estas cuentas)
-    $sqlSale  = "SELECT SUM(monto) as total FROM movimientos_internos WHERE idOrigen IN ($listaIds)";
+    // Construimos la condición SQL para los nombres
+    $condicionNombres = "";
+    if (is_array($palabrasClave)) {
+        $partes = [];
+        foreach($palabrasClave as $palabra) {
+            $partes[] = "tp.denominacion LIKE '%$palabra%'";
+        }
+        $condicionNombres = "(" . implode(" OR ", $partes) . ")";
+    } else {
+        $condicionNombres = "tp.denominacion LIKE '%$palabrasClave%'";
+    }
+
+    // 1. Sumar lo que ENTRA (El Destino tiene ese nombre)
+    $sqlEntra = "SELECT SUM(mi.monto) as total 
+                 FROM movimientos_internos mi
+                 JOIN tipo_pago tp ON mi.idDestino = tp.idTipoPago
+                 WHERE $condicionNombres";
+    
+    // 2. Sumar lo que SALE (El Origen tiene ese nombre)
+    $sqlSale  = "SELECT SUM(mi.monto) as total 
+                 FROM movimientos_internos mi
+                 JOIN tipo_pago tp ON mi.idOrigen = tp.idTipoPago
+                 WHERE $condicionNombres";
 
     // Aplicar filtros de fecha
     if (!empty($filtros['fecha_desde'])) {
         $fd = $conexion->real_escape_string($filtros['fecha_desde']);
-        $sqlEntra .= " AND fecha >= '$fd'";
-        $sqlSale  .= " AND fecha >= '$fd'";
+        $sqlEntra .= " AND mi.fecha >= '$fd'";
+        $sqlSale  .= " AND mi.fecha >= '$fd'";
     }
     if (!empty($filtros['fecha_hasta'])) {
         $fh = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $sqlEntra .= " AND fecha <= '$fh'";
-        $sqlSale  .= " AND fecha <= '$fh'";
+        $sqlEntra .= " AND mi.fecha <= '$fh'";
+        $sqlSale  .= " AND mi.fecha <= '$fh'";
     }
 
     $totalEntra = $conexion->query($sqlEntra)->fetch_assoc()['total'] ?? 0;
@@ -2902,334 +2915,86 @@ function Calcular_Saldo_Transferencias($conexion, $idsCuentas, $filtros) {
 }
 
 function Obtener_Total_Caja_Fuerte($conexion, $filtros = []) {
-    // --- LÓGICA ORIGINAL (NO TOCAR) ---
-    $queryRetirosCajaFuerte = "SELECT SUM(r.monto) as total
-                               FROM retiros r
-                               JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-                               JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                               JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro
-                               WHERE rv.categoria LIKE '%Caja Fuerte%'";
+    // --- LÓGICA ORIGINAL (VENTAS/GASTOS) ---
+    $queryRetirosCajaFuerte = "SELECT SUM(r.monto) as total FROM retiros r JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro WHERE rv.categoria LIKE '%Caja Fuerte%'";
+    if(!empty($filtros['fecha_desde'])) $queryRetirosCajaFuerte .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
+    if(!empty($filtros['fecha_hasta'])) $queryRetirosCajaFuerte .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
+    
+    $totalEntrada = $conexion->query($queryRetirosCajaFuerte)->fetch_assoc()['total'] ?? 0;
 
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetirosCajaFuerte .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetirosCajaFuerte .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryRetirosCajaFuerte .= " AND tp.denominacion = '$metodo_pago'";
-    }
-
-    $resultRetirosCajaFuerte = $conexion->query($queryRetirosCajaFuerte);
-    $totalEntrada = ($resultRetirosCajaFuerte && $row = $resultRetirosCajaFuerte->fetch_assoc()) ? floatval($row['total']) : 0;
-
-    $queryRetirosContables = "SELECT SUM(r.monto) as total
-                              FROM retiros r
-                              JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-                              JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                              WHERE tm.es_entrada = 0 AND tm.es_salida = 0
-                              AND tp.denominacion LIKE '%Efectivo%'";
-
-    if(!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $queryRetirosContables .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if(!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $queryRetirosContables .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if(!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $queryRetirosContables .= " AND tp.denominacion = '$metodo_pago'";
-    }
-
-    $resultRetirosContables = $conexion->query($queryRetirosContables);
-    $totalRetirosContables = ($resultRetirosContables && $row = $resultRetirosContables->fetch_assoc()) ? floatval($row['total']) : 0;
-
+    $queryRetirosContables = "SELECT SUM(r.monto) as total FROM retiros r JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento WHERE tm.es_entrada = 0 AND tm.es_salida = 0 AND tp.denominacion LIKE '%Efectivo%'";
+    if(!empty($filtros['fecha_desde'])) $queryRetirosContables .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
+    if(!empty($filtros['fecha_hasta'])) $queryRetirosContables .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
+    
+    $totalRetirosContables = $conexion->query($queryRetirosContables)->fetch_assoc()['total'] ?? 0;
     $saldoOriginal = $totalEntrada - $totalRetirosContables;
 
-    // --- NUEVO: TRANSFERENCIAS ---
-    // Buscamos el ID real de "Efectivo" en tu tabla para no fallar
-    $idCaja = 1; // Default
-    $res = $conexion->query("SELECT idTipoPago FROM tipo_pago WHERE denominacion LIKE '%Efectivo%' LIMIT 1");
-    if ($row = $res->fetch_assoc()) $idCaja = $row['idTipoPago'];
-
-    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, $idCaja, $filtros);
+    // --- NUEVO: TRANSFERENCIAS (Busca por nombre 'Efectivo') ---
+    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, 'Efectivo', $filtros);
 
     return $saldoOriginal + $saldoTransferencias;
 }
 
 function Obtener_Total_Banco($conexion, $filtros = []) {
-    // --- LÓGICA ORIGINAL (NO TOCAR) ---
-    $sqlEntrada = "SELECT SUM(dc.monto) as total
-                   FROM detalle_caja dc
-                   JOIN caja c ON dc.idCaja = c.idCaja
-                   WHERE dc.idTipoPago IN (2, 3, 13)";
-    
+    // --- LÓGICA ORIGINAL ---
+    $sqlEntrada = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE dc.idTipoPago IN (2, 3, 13)";
     if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    $sqlSalida = "SELECT SUM(r.monto) as total
-                  FROM retiros r
-                  WHERE r.idTipoPago IN (15, 16, 17)";
-    
+    $sqlSalida = "SELECT SUM(r.monto) as total FROM retiros r WHERE r.idTipoPago IN (15, 16, 17)";
     if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
 
     $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
     $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
-
     $saldoOriginal = $totalEntrada - $totalSalida;
 
-    // --- NUEVO: TRANSFERENCIAS ---
-    // AQUÍ ESTÁ EL ARREGLO: Sumamos transferencias que vayan a los IDs 2 (Banco), 3 (Transferencia) o 13 (Cheque)
-    // Así detecta tus movimientos de "Transferencia" correctamente.
-    $idsBanco = [2, 3, 13];
-    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, $idsBanco, $filtros);
+    // --- NUEVO: TRANSFERENCIAS (Busca 'Banco', 'Transf', 'Cheque', 'Payway') ---
+    // Aquí se soluciona tu problema: sumará cualquier ID que tenga estos nombres
+    $nombresBanco = ['Banco', 'Transferencia', 'Cheque', 'eCheq', 'Payway'];
+    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, $nombresBanco, $filtros);
 
     return $saldoOriginal + $saldoTransferencias;
 }
 
 function Obtener_Total_MercadoPago($conexion, $filtros = []) {
-    // --- LÓGICA ORIGINAL (NO TOCAR) ---
-    $sqlEntrada = "SELECT SUM(dc.monto) as total
-                   FROM detalle_caja dc
-                   JOIN caja c ON dc.idCaja = c.idCaja
-                   WHERE dc.idTipoPago = 22";
-
+    // --- LÓGICA ORIGINAL ---
+    $sqlEntrada = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE dc.idTipoPago = 22";
     if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    $sqlSalida = "SELECT SUM(r.monto) as total
-                  FROM retiros r
-                  WHERE r.idTipoPago = 24";
-
+    $sqlSalida = "SELECT SUM(r.monto) as total FROM retiros r WHERE r.idTipoPago = 24";
     if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
 
     $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
     $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
-
     $saldoOriginal = $totalEntrada - $totalSalida;
 
-    // --- NUEVO: TRANSFERENCIAS ---
-    // Sumamos transferencias que entren/salgan del ID 22 (MercadoPago)
-    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, 22, $filtros);
+    // --- NUEVO: TRANSFERENCIAS (Busca por nombre 'Mercado') ---
+    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, ['Mercado', 'MP'], $filtros);
 
     return $saldoOriginal + $saldoTransferencias;
 }
 
 function Obtener_Total_Payway($conexion, $filtros = []) {
-    // --- LÓGICA ORIGINAL (NO TOCAR) ---
-    $sqlEntrada = "SELECT SUM(dc.monto) as total
-                   FROM detalle_caja dc
-                   JOIN caja c ON dc.idCaja = c.idCaja
-                   WHERE dc.idTipoPago = 23";
-
+    // Payway ya se suma visualmente al banco, pero dejamos la funcion por si la usas sola
+    $sqlEntrada = "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE dc.idTipoPago = 23";
     if (!empty($filtros['fecha_desde'])) $sqlEntrada .= " AND c.Fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlEntrada .= " AND c.Fecha <= '{$filtros['fecha_hasta']}'";
 
-    $sqlSalida = "SELECT SUM(r.monto) as total
-                  FROM retiros r
-                  WHERE r.idTipoPago = 25";
-
+    $sqlSalida = "SELECT SUM(r.monto) as total FROM retiros r WHERE r.idTipoPago = 25";
     if (!empty($filtros['fecha_desde'])) $sqlSalida .= " AND r.fecha >= '{$filtros['fecha_desde']}'";
     if (!empty($filtros['fecha_hasta'])) $sqlSalida .= " AND r.fecha <= '{$filtros['fecha_hasta']}'";
 
     $totalEntrada = $conexion->query($sqlEntrada)->fetch_assoc()['total'] ?? 0;
     $totalSalida = $conexion->query($sqlSalida)->fetch_assoc()['total'] ?? 0;
-
     $saldoOriginal = $totalEntrada - $totalSalida;
 
     // --- NUEVO: TRANSFERENCIAS ---
-    // Sumamos transferencias que entren/salgan del ID 23 (Payway)
-    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, 23, $filtros);
+    $saldoTransferencias = Calcular_Saldo_Transferencias($conexion, 'Payway', $filtros);
 
     return $saldoOriginal + $saldoTransferencias;
-}
-
-function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
-    $movimientos = [];
-
-    // ---------------------------------------------------------
-    // 1. DETALLE CAJA (Ventas)
-    // ---------------------------------------------------------
-    $detalleCajaQuery = "
-        SELECT 
-            dc.idDetalleCaja AS idMovimiento,
-            c.Fecha AS fecha,
-            dc.monto,
-            CAST(tp.denominacion AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
-            CAST(CONCAT(u.nombre,' ',u.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario, 
-            1 AS es_entrada,
-            0 AS es_salida,
-            CAST(dc.observaciones AS CHAR CHARACTER SET utf8mb4) AS detalle,
-            CAST('caja' AS CHAR CHARACTER SET utf8mb4) as origen
-        FROM detalle_caja dc
-        JOIN caja c ON dc.idCaja = c.idCaja
-        JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
-        JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
-        LEFT JOIN usuarios u ON dc.idUsuario = u.idUsuario
-        WHERE tm.es_entrada = 1 
-          AND tp.denominacion NOT LIKE '%Efectivo%' 
-    ";
-
-    // Filtros detalle_caja
-    if (!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $detalleCajaQuery .= " AND c.Fecha >= '$fecha_desde'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $detalleCajaQuery .= " AND c.Fecha <= '$fecha_hasta'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
-    }
-    // LÓGICA FILTRO TIPO
-    if (!empty($filtros['tipo_movimiento'])) {
-        // Si filtra por Salida, Retiro o TRANSFERENCIA, ocultamos Ventas
-        if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables' || $filtros['tipo_movimiento'] === 'Transferencia') {
-            $detalleCajaQuery .= " AND 0";
-        }
-    }
-
-    // ---------------------------------------------------------
-    // 2. RETIROS (Gastos)
-    // ---------------------------------------------------------
-    $retirosQuery = "
-        SELECT 
-            r.idRetiro AS idMovimiento,
-            r.fecha,
-            r.monto,
-            CAST(tp.denominacion AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
-            CAST(CONCAT(uCreador.nombre,' ',uCreador.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario, 
-            CASE WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 ELSE 0 END AS es_entrada,
-            CASE 
-                WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 0
-                WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 0
-                ELSE 1 
-            END AS es_salida,
-            CAST(CASE
-                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
-                WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
-                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
-                WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
-                WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
-                WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
-                ELSE 'Retiro Contable'
-            END AS CHAR CHARACTER SET utf8mb4) AS detalle,
-            CAST(CASE WHEN dc_check.idRetiro IS NOT NULL THEN 'caja' ELSE 'retiro' END AS CHAR CHARACTER SET utf8mb4) as origen
-        FROM retiros r
-        LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
-        LEFT JOIN insumos i ON ri.idInsumo = i.idInsumo
-        LEFT JOIN proveedores_insumos pi ON ri.idProveedorInsumo = pi.idProveedorInsumo
-        LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
-        LEFT JOIN proveedores p ON rp.idProveedor = p.idProveedor
-        LEFT JOIN retiros_servicios rs ON r.idRetiro = rs.idRetiro
-        LEFT JOIN servicios s ON rs.idServicio = s.idServicio
-        LEFT JOIN retiros_sueldos rsu ON r.idRetiro = rsu.idRetiro
-        LEFT JOIN usuarios uSueldo ON rsu.idUsuarioSueldo = uSueldo.idUsuario
-        LEFT JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro
-        LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
-        LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-        LEFT JOIN usuarios uCreador ON r.idUsuario = uCreador.idUsuario
-        LEFT JOIN detalle_caja dc_check ON r.idRetiro = dc_check.idRetiro
-        WHERE 1=1
-    ";
-
-    // Filtros Retiros
-    if (!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $retirosQuery .= " AND r.fecha >= '$fecha_desde'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $retirosQuery .= " AND r.fecha <= '$fecha_hasta'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
-        $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
-    }
-    // LÓGICA FILTRO TIPO
-    if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Entrada') {
-            $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
-        } elseif ($filtros['tipo_movimiento'] === 'Salida') {
-            $retirosQuery .= " AND ((rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0))";
-        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
-            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
-        } elseif ($filtros['tipo_movimiento'] === 'Transferencia') {
-            // Si busca transferencia, ocultamos retiros
-            $retirosQuery .= " AND 0";
-        }
-    }
-
-    // ---------------------------------------------------------
-    // 3. MOVIMIENTOS INTERNOS 
-    // ---------------------------------------------------------
-    $internosQuery = "
-        SELECT 
-            mi.idMovimientoInterno AS idMovimiento,
-            mi.fecha,
-            mi.monto,
-            CAST('Transferencia' AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
-            CAST(CONCAT(u.nombre, ' ', u.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario,
-            0 AS es_entrada,
-            0 AS es_salida,
-            CAST(CONCAT('Transferencia: ', tpo.denominacion, ' -> ', tpd.denominacion, IF(mi.observacion IS NOT NULL AND mi.observacion != '', CONCAT(' (', mi.observacion, ')'), '')) AS CHAR CHARACTER SET utf8mb4) AS detalle,
-            CAST('transferencia' AS CHAR CHARACTER SET utf8mb4) as origen
-        FROM movimientos_internos mi
-        JOIN tipo_pago tpo ON mi.idOrigen = tpo.idTipoPago
-        JOIN tipo_pago tpd ON mi.idDestino = tpd.idTipoPago
-        LEFT JOIN usuarios u ON mi.idUsuario = u.idUsuario
-        WHERE 1=1
-    ";
-
-    // Filtros Internos
-    if (!empty($filtros['fecha_desde'])) {
-        $fecha_desde = $conexion->real_escape_string($filtros['fecha_desde']);
-        $internosQuery .= " AND mi.fecha >= '$fecha_desde'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $internosQuery .= " AND mi.fecha <= '$fecha_hasta'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $mp = $conexion->real_escape_string($filtros['metodo_pago']);
-        $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')";
-    }
-    // Si filtran Entrada/Salida/RetiroContable, ocultamos transferencias
-    if (!empty($filtros['tipo_movimiento']) && ($filtros['tipo_movimiento'] == 'Entrada' || $filtros['tipo_movimiento'] == 'Salida' || $filtros['tipo_movimiento'] == 'Retiros Contables')) {
-        $internosQuery .= " AND 0";
-    }
-
-    // --- UNION FINAL ---
-    $finalQuery = "($detalleCajaQuery) UNION ALL ($retirosQuery) UNION ALL ($internosQuery) 
-                   ORDER BY fecha DESC, idMovimiento DESC 
-                   LIMIT $offset, $limite";
-
-    $result = $conexion->query($finalQuery);
-
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $esRetiroContable = ($row['es_entrada'] == 0 && $row['es_salida'] == 0);
-            
-            if ($row['origen'] === 'transferencia') {
-                $row['tipo'] = 'Transferencia';
-            } else {
-                $row['tipo'] = $esRetiroContable ? 'Retiros Contables' : ($row['es_entrada'] ? 'Entrada' : 'Salida');
-            }
-            
-            $movimientos[] = $row;
-        }
-    }
-
-    return $movimientos;
 }
 
 // Función genérica para Payway (23), Mercado Pago (22), etc.

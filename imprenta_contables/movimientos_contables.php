@@ -176,7 +176,7 @@ $totalMovimientosListados = $totalMovimientos;
                                     <option value="Entrada" <?= ($filtros['tipo_movimiento'] == 'Entrada') ? 'selected' : '' ?>>Entrada</option>
                                     <option value="Salida" <?= ($filtros['tipo_movimiento'] == 'Salida') ? 'selected' : '' ?>>Salida</option>
                                     <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables') ? 'selected' : '' ?>>Retiros Contables</option>
-                                    <option value="Transferencia" <?= ($filtros['tipo_movimiento'] == 'Transferencia') ? 'selected' : '' ?>>Transferencia (Interno)</option>
+                                    <option value="Transferencia" <?= ($filtros['tipo_movimiento'] == 'Transferencia') ? 'selected' : '' ?>>Mov. Interno</option>
                                 </select>
                             </div>
                              <div class="col-md-3">

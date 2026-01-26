@@ -17,7 +17,7 @@ $MiConexion = ConexionBD();
 // Recibir ID
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// Obtener datos actuales
+// 1. Obtener datos del movimiento actual
 $stmt = $MiConexion->prepare("SELECT * FROM movimientos_internos WHERE idMovimientoInterno = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -30,24 +30,42 @@ if (!$datos) {
     exit;
 }
 
-// Obtener Cuentas Permitidas (Efectivo, Banco, MP)
+// 2. Obtener los NOMBRES reales de las cuentas guardadas actualmente
+// Esto es vital: El ID guardado (ej: 15) puede ser distinto al ID que mostramos en la lista (ej: 2),
+// pero ambos se llaman "Banco". Necesitamos el nombre para marcar el 'selected' correctamente.
+function obtenerNombreCuenta($conexion, $id) {
+    if (!$id) return '';
+    $q = $conexion->query("SELECT denominacion FROM tipo_pago WHERE idTipoPago = $id");
+    return ($r = $q->fetch_assoc()) ? $r['denominacion'] : '';
+}
+
+$nombreOrigenGuardado = obtenerNombreCuenta($MiConexion, $datos['idOrigen']);
+$nombreDestinoGuardado = obtenerNombreCuenta($MiConexion, $datos['idDestino']);
+
+// 3. Obtener Lista de Cuentas (Agrupadas por Nombre para evitar duplicados)
 $cuentas = [];
-$sql = "SELECT idTipoPago, denominacion 
+// Usamos MIN(idTipoPago) para tener un ID de referencia, y GROUP BY para unificar nombres
+$sql = "SELECT MIN(idTipoPago) as idRef, denominacion 
         FROM tipo_pago 
         WHERE idActivo = 1 
         AND (denominacion LIKE '%Efectivo%' 
              OR denominacion LIKE '%Banco%' 
-             OR denominacion LIKE '%Mercado%Pago%')
+             OR denominacion LIKE '%Mercado%Pago%'
+             OR denominacion LIKE '%Transferencia%')
         AND denominacion NOT LIKE '%Cheque%' 
         AND denominacion NOT LIKE '%Payway%'
+        GROUP BY denominacion
         ORDER BY denominacion ASC";
 
 $resCuentas = $MiConexion->query($sql);
 while($row = $resCuentas->fetch_assoc()) {
-    $cuentas[$row['idTipoPago']] = $row['denominacion'];
+    // Array Clave = ID, Valor = Nombre
+    $cuentas[$row['idRef']] = $row['denominacion'];
 }
 
-// Procesar Actualización
+$error = '';
+
+// --- PROCESAR FORMULARIO ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha = $_POST['fecha'];
     $monto = floatval($_POST['monto']);
@@ -55,20 +73,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idDestino = intval($_POST['idDestino']);
     $observacion = trim($_POST['observacion']);
 
-    if ($monto > 0 && $idOrigen != $idDestino) {
+    // Validar Nombres para evitar Banco -> Banco (distintos IDs)
+    $nombreOrigenSel = $cuentas[$idOrigen] ?? '';
+    $nombreDestinoSel = $cuentas[$idDestino] ?? '';
+
+    if ($monto <= 0) {
+        $error = "El monto debe ser mayor a 0.";
+    } elseif ($idOrigen == 0 || $idDestino == 0) {
+        $error = "Debe seleccionar ambas cuentas.";
+    } elseif ($nombreOrigenSel === $nombreDestinoSel) {
+        // AQUÍ ESTÁ LA CORRECCIÓN CLAVE: Validamos por nombre
+        $error = "El origen y el destino no pueden ser la misma cuenta ($nombreOrigenSel).";
+    } else {
         $upd = $MiConexion->prepare("UPDATE movimientos_internos SET fecha=?, monto=?, idOrigen=?, idDestino=?, observacion=? WHERE idMovimientoInterno=?");
         $upd->bind_param("sdiisi", $fecha, $monto, $idOrigen, $idDestino, $observacion, $id);
         
         if ($upd->execute()) {
-            $_SESSION['Mensaje'] = "Transferencia actualizada.";
+            $_SESSION['Mensaje'] = "Transferencia actualizada correctamente.";
             $_SESSION['Estilo'] = "success";
             header("Location: movimientos_contables.php");
             exit;
         } else {
-            $error = "Error al actualizar.";
+            $error = "Error al actualizar la base de datos.";
         }
-    } else {
-        $error = "Verifique los datos (Monto > 0 y cuentas distintas).";
     }
 }
 ?>
@@ -84,8 +111,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="card shadow">
                     <div class="card-body mt-3">
                         
-                        <?php if(isset($error)): ?>
-                            <div class="alert alert-danger"><?= $error ?></div>
+                        <?php if(!empty($error)): ?>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill"></i> <?= $error ?>
+                            </div>
                         <?php endif; ?>
 
                         <form method="POST">
@@ -96,23 +125,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Monto</label>
-                                <input type="number" step="0.01" name="monto" class="form-control" value="<?= $datos['monto'] ?>" required>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" name="monto" class="form-control" value="<?= $datos['monto'] ?>" required>
+                                </div>
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-danger">Sale de</label>
-                                    <select name="idOrigen" class="form-select" required>
+                                    <select name="idOrigen" id="idOrigen" class="form-select" required>
+                                        <option value="">Seleccione...</option>
                                         <?php foreach($cuentas as $id => $nom): ?>
-                                            <option value="<?= $id ?>" <?= ($datos['idOrigen'] == $id) ? 'selected' : '' ?>><?= $nom ?></option>
+                                            <?php 
+                                            // Comparamos por NOMBRE para marcar el selected correctamente
+                                            $sel = ($nom === $nombreOrigenGuardado) ? 'selected' : ''; 
+                                            ?>
+                                            <option value="<?= $id ?>" <?= $sel ?>><?= $nom ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-success">Entra a</label>
-                                    <select name="idDestino" class="form-select" required>
+                                    <select name="idDestino" id="idDestino" class="form-select" required>
+                                        <option value="">Seleccione...</option>
                                         <?php foreach($cuentas as $id => $nom): ?>
-                                            <option value="<?= $id ?>" <?= ($datos['idDestino'] == $id) ? 'selected' : '' ?>><?= $nom ?></option>
+                                            <?php 
+                                            // Comparamos por NOMBRE
+                                            $sel = ($nom === $nombreDestinoGuardado) ? 'selected' : ''; 
+                                            ?>
+                                            <option value="<?= $id ?>" <?= $sel ?>><?= $nom ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -134,4 +176,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </section>
 </main>
+
 <?php require('../shared/footer.inc.php'); ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selOrigen = document.getElementById('idOrigen');
+    const selDestino = document.getElementById('idDestino');
+
+    function actualizarDestinos() {
+        // Obtenemos el TEXTO de la opción seleccionada en Origen
+        const textoOrigen = selOrigen.options[selOrigen.selectedIndex].text;
+        
+        for (let i = 0; i < selDestino.options.length; i++) {
+            const option = selDestino.options[i];
+            
+            // Si el texto coincide, lo ocultamos (así evitamos Banco -> Banco)
+            if (option.text === textoOrigen && selOrigen.value !== "") {
+                option.style.display = 'none'; // Ocultar
+                option.disabled = true;        // Deshabilitar
+                
+                // Si justo estaba seleccionado, reseteamos el destino
+                if (option.selected) {
+                    selDestino.value = "";
+                }
+            } else {
+                option.style.display = 'block';
+                option.disabled = false;
+            }
+        }
+    }
+
+    selOrigen.addEventListener('change', actualizarDestinos);
+    // Ejecutar al cargar para validar lo que viene de la BD
+    actualizarDestinos();
+});
+</script>
+</body>
+</html>
