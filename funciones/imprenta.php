@@ -2776,7 +2776,6 @@ function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
     return true;
 }
 
-
 function Contar_Movimientos_Contables($conexion, $filtros = []) {
     $total = 0;
 
@@ -3034,19 +3033,20 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     $movimientos = [];
 
     // ---------------------------------------------------------
-    // 1. DETALLE CAJA (TU CÓDIGO ORIGINAL INTACTO)
+    // 1. DETALLE CAJA 
     // ---------------------------------------------------------
+    // Aplicamos CONVERT(... USING utf8) a los campos de texto para evitar error de collation
     $detalleCajaQuery = "
         SELECT 
             dc.idDetalleCaja AS idMovimiento,
             c.Fecha AS fecha,
             dc.monto,
-            tp.denominacion AS metodo_pago,
-            CONCAT(u.nombre,' ',u.apellido) AS usuario, 
+            CONVERT(tp.denominacion USING utf8) AS metodo_pago,
+            CONVERT(CONCAT(u.nombre,' ',u.apellido) USING utf8) AS usuario, 
             1 AS es_entrada,
             0 AS es_salida,
-            dc.observaciones AS detalle,
-            'caja' as origen
+            CONVERT(dc.observaciones USING utf8) AS detalle,
+            CONVERT('caja' USING utf8) as origen
         FROM detalle_caja dc
         JOIN caja c ON dc.idCaja = c.idCaja
         JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
@@ -3076,15 +3076,15 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     }
 
     // ---------------------------------------------------------
-    // 2. RETIROS (TU CÓDIGO ORIGINAL INTACTO)
+    // 2. RETIROS
     // ---------------------------------------------------------
     $retirosQuery = "
         SELECT 
             r.idRetiro AS idMovimiento,
             r.fecha,
             r.monto,
-            tp.denominacion AS metodo_pago,
-            CONCAT(uCreador.nombre,' ',uCreador.apellido) AS usuario, 
+            CONVERT(tp.denominacion USING utf8) AS metodo_pago,
+            CONVERT(CONCAT(uCreador.nombre,' ',uCreador.apellido) USING utf8) AS usuario, 
             
             CASE 
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
@@ -3096,7 +3096,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 ELSE 1 
             END AS es_salida,
 
-            CASE
+            CONVERT(CASE
                 WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
                 WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
@@ -3104,12 +3104,12 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
-            END AS detalle,
+            END USING utf8) AS detalle,
 
-            CASE 
+            CONVERT(CASE 
                 WHEN dc_check.idRetiro IS NOT NULL THEN 'caja'
                 ELSE 'retiro'
-            END as origen
+            END USING utf8) as origen
 
         FROM retiros r
         
@@ -3126,7 +3126,6 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago
         LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
         LEFT JOIN usuarios uCreador ON r.idUsuario = uCreador.idUsuario
-
         LEFT JOIN detalle_caja dc_check ON r.idRetiro = dc_check.idRetiro
 
         WHERE 1=1
@@ -3157,20 +3156,19 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     }
 
     // ---------------------------------------------------------
-    // 3. MOVIMIENTOS INTERNOS (NUEVO BLOQUE DE UNIÓN)
+    // 3. MOVIMIENTOS INTERNOS 
     // ---------------------------------------------------------
-    // Es entrada=0 y salida=0 (Contable), pero con detalle visual de transferencia.
     $internosQuery = "
         SELECT 
             mi.idMovimientoInterno AS idMovimiento,
             mi.fecha,
             mi.monto,
-            'Transferencia' AS metodo_pago,
-            CONCAT(u.nombre, ' ', u.apellido) AS usuario,
+            CONVERT('Transferencia' USING utf8) AS metodo_pago,
+            CONVERT(CONCAT(u.nombre, ' ', u.apellido) USING utf8) AS usuario,
             0 AS es_entrada,
             0 AS es_salida,
-            CONCAT('Transferencia: ', tpo.denominacion, ' -> ', tpd.denominacion, IF(mi.observacion IS NOT NULL AND mi.observacion != '', CONCAT(' (', mi.observacion, ')'), '')) AS detalle,
-            'transferencia' as origen
+            CONVERT(CONCAT('Transferencia: ', tpo.denominacion, ' -> ', tpd.denominacion, IF(mi.observacion IS NOT NULL AND mi.observacion != '', CONCAT(' (', mi.observacion, ')'), '')) USING utf8) AS detalle,
+            CONVERT('transferencia' USING utf8) as origen
         FROM movimientos_internos mi
         JOIN tipo_pago tpo ON mi.idOrigen = tpo.idTipoPago
         JOIN tipo_pago tpd ON mi.idDestino = tpd.idTipoPago
@@ -3187,12 +3185,10 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $fecha_hasta = $conexion->real_escape_string($filtros['fecha_hasta']);
         $internosQuery .= " AND mi.fecha <= '$fecha_hasta'";
     }
-    // Si filtra por 'Efectivo', mostramos las transferencias que involucren Efectivo (Origen o Destino)
     if (!empty($filtros['metodo_pago'])) {
         $mp = $conexion->real_escape_string($filtros['metodo_pago']);
         $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')";
     }
-    // Si filtran Entrada/Salida pura, no mostramos transferencias (o podrías decidir mostrarlas). Aquí se ocultan.
     if (!empty($filtros['tipo_movimiento']) && ($filtros['tipo_movimiento'] == 'Entrada' || $filtros['tipo_movimiento'] == 'Salida')) {
         $internosQuery .= " AND 0";
     }
@@ -3208,7 +3204,6 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         while ($row = $result->fetch_assoc()) {
             $esRetiroContable = ($row['es_entrada'] == 0 && $row['es_salida'] == 0);
             
-            // Etiqueta visual para la tabla
             if ($row['origen'] === 'transferencia') {
                 $row['tipo'] = 'Transferencia';
             } else {
