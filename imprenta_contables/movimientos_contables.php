@@ -149,9 +149,15 @@ $totalMovimientosListados = $totalMovimientos;
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">Filtros y Listado</h5>
-                            <a href="agregar_movimiento_contable.php" class="btn btn-success">
-                                <i class="bi bi-plus-circle"></i> Nuevo Movimiento
-                            </a>
+                            <div>
+                                <a href="movimiento_interno.php" class="btn btn-info text-white me-2">
+                                    <i class="bi bi-arrow-left-right"></i> Movimiento Interno
+                                </a>
+                                
+                                <a href="agregar_movimiento_contable.php" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Nuevo Movimiento
+                                </a>
+                            </div>
                         </div>
 
                         <form method="GET" class="row g-3 mb-4">
