@@ -26,6 +26,7 @@ $sql = "SELECT idTipoPago, denominacion
              OR denominacion LIKE '%Mercado%Pago%')
         AND denominacion NOT LIKE '%Cheque%' 
         AND denominacion NOT LIKE '%Payway%'
+        GROUP BY denominacion
         ORDER BY denominacion ASC";
 
 $res = $MiConexion->query($sql);

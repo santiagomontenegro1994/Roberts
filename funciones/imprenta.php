@@ -3055,9 +3055,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     $movimientos = [];
 
     // ---------------------------------------------------------
-    // 1. DETALLE CAJA 
+    // 1. DETALLE CAJA (Ventas)
     // ---------------------------------------------------------
-    // Usamos CAST(... AS CHAR CHARACTER SET utf8mb4) para forzar compatibilidad
     $detalleCajaQuery = "
         SELECT 
             dc.idDetalleCaja AS idMovimiento,
@@ -3091,14 +3090,16 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $detalleCajaQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
+    // LÓGICA FILTRO TIPO
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables') {
+        // Si filtra por Salida, Retiro o TRANSFERENCIA, ocultamos Ventas
+        if ($filtros['tipo_movimiento'] === 'Salida' || $filtros['tipo_movimiento'] === 'Retiros Contables' || $filtros['tipo_movimiento'] === 'Transferencia') {
             $detalleCajaQuery .= " AND 0";
         }
     }
 
     // ---------------------------------------------------------
-    // 2. RETIROS
+    // 2. RETIROS (Gastos)
     // ---------------------------------------------------------
     $retirosQuery = "
         SELECT 
@@ -3107,17 +3108,12 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             r.monto,
             CAST(tp.denominacion AS CHAR CHARACTER SET utf8mb4) AS metodo_pago,
             CAST(CONCAT(uCreador.nombre,' ',uCreador.apellido) AS CHAR CHARACTER SET utf8mb4) AS usuario, 
-            
-            CASE 
-                WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 
-                ELSE 0 
-            END AS es_entrada,
+            CASE WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 1 ELSE 0 END AS es_entrada,
             CASE 
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 0
                 WHEN tm.es_entrada = 0 AND tm.es_salida = 0 THEN 0
                 ELSE 1 
             END AS es_salida,
-
             CAST(CASE
                 WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
                 WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
@@ -3127,14 +3123,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
             END AS CHAR CHARACTER SET utf8mb4) AS detalle,
-
-            CAST(CASE 
-                WHEN dc_check.idRetiro IS NOT NULL THEN 'caja'
-                ELSE 'retiro'
-            END AS CHAR CHARACTER SET utf8mb4) as origen
-
+            CAST(CASE WHEN dc_check.idRetiro IS NOT NULL THEN 'caja' ELSE 'retiro' END AS CHAR CHARACTER SET utf8mb4) as origen
         FROM retiros r
-        
         LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
         LEFT JOIN insumos i ON ri.idInsumo = i.idInsumo
         LEFT JOIN proveedores_insumos pi ON ri.idProveedorInsumo = pi.idProveedorInsumo
@@ -3149,7 +3139,6 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
         LEFT JOIN usuarios uCreador ON r.idUsuario = uCreador.idUsuario
         LEFT JOIN detalle_caja dc_check ON r.idRetiro = dc_check.idRetiro
-
         WHERE 1=1
     ";
 
@@ -3166,7 +3155,7 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $metodo_pago = $conexion->real_escape_string($filtros['metodo_pago']);
         $retirosQuery .= " AND tp.denominacion = '$metodo_pago'";
     }
-    
+    // LÓGICA FILTRO TIPO
     if (!empty($filtros['tipo_movimiento'])) {
         if ($filtros['tipo_movimiento'] === 'Entrada') {
             $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
@@ -3174,6 +3163,9 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
             $retirosQuery .= " AND ((rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0))";
         } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
             $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
+        } elseif ($filtros['tipo_movimiento'] === 'Transferencia') {
+            // Si busca transferencia, ocultamos retiros
+            $retirosQuery .= " AND 0";
         }
     }
 
@@ -3211,7 +3203,8 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         $mp = $conexion->real_escape_string($filtros['metodo_pago']);
         $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')";
     }
-    if (!empty($filtros['tipo_movimiento']) && ($filtros['tipo_movimiento'] == 'Entrada' || $filtros['tipo_movimiento'] == 'Salida')) {
+    // Si filtran Entrada/Salida/RetiroContable, ocultamos transferencias
+    if (!empty($filtros['tipo_movimiento']) && ($filtros['tipo_movimiento'] == 'Entrada' || $filtros['tipo_movimiento'] == 'Salida' || $filtros['tipo_movimiento'] == 'Retiros Contables')) {
         $internosQuery .= " AND 0";
     }
 

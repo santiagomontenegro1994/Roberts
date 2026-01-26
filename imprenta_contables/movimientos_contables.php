@@ -169,15 +169,6 @@ $totalMovimientosListados = $totalMovimientos;
                                 <label for="fecha_hasta" class="form-label">Hasta</label>
                                 <input type="date" class="form-control" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
                             </div>
-                            <div class="col-md-3">
-                                <label for="tipo_movimiento" class="form-label">Tipo</label>
-                                <select class="form-select" name="tipo_movimiento">
-                                    <option value="">Todos</option>
-                                    <option value="Entrada" <?= ($filtros['tipo_movimiento'] == 'Entrada') ? 'selected' : '' ?>>Entrada</option>
-                                    <option value="Salida" <?= ($filtros['tipo_movimiento'] == 'Salida') ? 'selected' : '' ?>>Salida</option>
-                                    <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables') ? 'selected' : '' ?>>Retiros Contables</option>
-                                </select>
-                            </div>
                              <div class="col-md-3">
                                 <label for="metodo_pago" class="form-label">Método Pago</label>
                                 <select class="form-select" name="metodo_pago">
