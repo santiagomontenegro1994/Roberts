@@ -17,7 +17,11 @@ $MiConexion = ConexionBD();
 // Obtener Cuentas Disponibles (Caja, Banco, MP, etc.)
 // Usamos la tabla tipo_pago
 $cuentas = [];
-$sql = "SELECT idTipoPago, denominacion FROM tipo_pago WHERE idActivo = 1 ORDER BY denominacion ASC";
+$sql = "SELECT MIN(idTipoPago) as idTipoPago, denominacion 
+        FROM tipo_pago 
+        WHERE idActivo = 1 
+        GROUP BY denominacion 
+        ORDER BY denominacion ASC";
 $res = $MiConexion->query($sql);
 while($row = $res->fetch_assoc()) {
     $cuentas[$row['idTipoPago']] = $row['denominacion'];
