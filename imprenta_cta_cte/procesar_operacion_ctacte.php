@@ -48,6 +48,10 @@ try {
         throw new Exception('Error de conexión a la base de datos', 500);
     }
 
+    // --- NUEVO: Obtener datos del cliente para usar el nombre en la caja ---
+    $datosCliente = Obtener_Cliente_Por_ID($MiConexion, $data['idCliente']);
+    $nombreCompletoCliente = $datosCliente ? ($datosCliente['NOMBRE'] . ' ' . $datosCliente['APELLIDO']) : 'Cliente #' . $data['idCliente'];
+
     // Validar método de pago (excluyendo Cta Cte ID 18)
     $tiposPagoEntrada = Listar_Tipos_Pagos_Entrada($MiConexion);
     $tiposPagoPermitidos = array_column(array_filter($tiposPagoEntrada, function($tipo) {
@@ -213,7 +217,7 @@ try {
                 // d. Actualizar estado del pedido
                 ActualizarEstadoPedido($MiConexion, $trabajo['ID_PEDIDO']);
 
-                $trabajosPagados[] = $trabajo['ID_DETALLE']; 
+                $trabajosPagados[] = $trabajo['ID_PEDIDO']; 
             }
             // SI NO ALCANZA ($saldoRestante < precio), EL BUCLE CONTINÚA AL SIGUIENTE
             // (No hay un 'else break', por lo que intentará pagar el siguiente trabajo más barato si lo hay)
@@ -311,7 +315,7 @@ try {
         $idCaja = intval($_SESSION['Id_Caja']);
         $idUsuario = intval($_SESSION['Usuario_Id']);
         $montoCaja = floatval($data['monto']);
-        $obsCaja = mb_substr("$tipoMovimiento - Cliente #{$data['idCliente']} - $observaciones", 0, 255, 'UTF-8');
+        $obsCaja = mb_substr("$tipoMovimiento - Cliente: $nombreCompletoCliente - $observaciones", 0, 255, 'UTF-8');
 
         $stmt->bind_param("iiiids", $idCaja, $idTipoPago, $idTipoMovimientoCaja, $idUsuario, $montoCaja, $obsCaja);
         $stmt->execute();
