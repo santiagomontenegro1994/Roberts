@@ -374,7 +374,7 @@ $tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
                             <?php foreach ($trabajosPendientes as $trabajo): ?>
                             <div class="list-group-item">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">#<?= $trabajo['ID_DETALLE'] ?></h6>
+                                    <h6 class="mb-1">Pedido #<?= $trabajo['ID_PEDIDO'] ?></h6>
                                     <small><?= date('d/m/Y', strtotime($trabajo['FECHA_PEDIDO'])) ?></small>
                                 </div>
                                 <p class="mb-1"><?= htmlspecialchars($trabajo['TIPO_TRABAJO']) ?></p>

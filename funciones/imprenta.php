@@ -3702,6 +3702,7 @@ function Obtener_Trabajos_Pendientes($conexion, $idCliente) {
     $trabajos = array();
     
     $sql = "SELECT 
+                pt.idPedidoTrabajos AS ID_PEDIDO,   -- <--- NUEVA LÍNEA AGREGADA
                 dt.idDetalleTrabajo AS ID_DETALLE,
                 pt.fecha AS FECHA_PEDIDO,
                 tt.denominacion AS TIPO_TRABAJO,
