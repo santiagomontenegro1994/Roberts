@@ -50,10 +50,10 @@ $sql = "SELECT MIN(idTipoPago) as idRef, denominacion
         WHERE idActivo = 1 
         AND (denominacion LIKE '%Efectivo%' 
              OR denominacion LIKE '%Banco%' 
-             OR denominacion LIKE '%Mercado%Pago%'
-             OR denominacion LIKE '%Transferencia%')
+             OR denominacion LIKE '%Mercado%Pago%')
         AND denominacion NOT LIKE '%Cheque%' 
         AND denominacion NOT LIKE '%Payway%'
+        AND denominacion NOT LIKE '%Transferencia%'
         GROUP BY denominacion
         ORDER BY denominacion ASC";
 
