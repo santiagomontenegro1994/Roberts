@@ -29,6 +29,7 @@ $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, 0, 999999);
 $sumaEntradas = 0;
 $sumaSalidas = 0;
 $sumaContables = 0;
+$sumaTransferencias = 0; // Solo estadístico
 
 // Headers para descarga Excel
 header("Content-Type: application/vnd.ms-excel; charset=utf-8");
@@ -46,6 +47,7 @@ echo "
         td { border: 1px solid #000; padding: 5px; vertical-align: top; }
         .text-success { color: #198754; font-weight: bold; }
         .text-danger { color: #dc3545; font-weight: bold; }
+        .text-info { color: #0dcaf0; font-weight: bold; } /* Color para transferencias */
         .text-muted { color: #6c757d; font-weight: bold; }
         .total-row { background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #000; }
         .text-right { text-align: right; }
@@ -64,7 +66,8 @@ echo "
                 <th>Método Pago</th>
                 <th>Entrada</th>
                 <th>Salida</th>
-                <th>Mov. Contable</th> </tr>
+                <th>Mov. Contable</th> 
+                <th>Transferencia</th> </tr>
         </thead>
         <tbody>";
 
@@ -75,20 +78,32 @@ if (count($movimientos) > 0) {
         $entrada = '-';
         $salida = '-';
         $contable = '-';
+        $transferencia = '-'; // Variable para la celda
         $estilo = '';
 
-        if ($m['es_entrada']) {
+        // DETECTAR TIPO DE MOVIMIENTO
+        // Prioridad 1: Es Transferencia (Interno)
+        if ((isset($m['origen']) && $m['origen'] === 'transferencia') || (isset($m['tipo']) && $m['tipo'] === 'Transferencia')) {
+            $transferencia = '$ ' . number_format($m['monto'], 2, ',', '.');
+            $estilo = "class='text-info'";
+            $tipoTexto = 'Mov. Interno';
+            $sumaTransferencias += $m['monto'];
+            // IMPORTANTE: No sumamos a Entradas ni Salidas para no afectar el total
+            
+        } elseif ($m['es_entrada']) {
             $entrada = '$ ' . number_format($m['monto'], 2, ',', '.');
             $estilo = "class='text-success'";
             $tipoTexto = 'Entrada';
             $sumaEntradas += $m['monto'];
+            
         } elseif ($m['es_salida']) {
             $salida = '$ ' . number_format($m['monto'], 2, ',', '.');
             $estilo = "class='text-danger'";
             $tipoTexto = 'Salida';
             $sumaSalidas += $m['monto'];
+            
         } else {
-            // AQUI MOSTRAMOS EL MONTO SI ES CONTABLE
+            // Contable puro
             $contable = '$ ' . number_format($m['monto'], 2, ',', '.');
             $tipoTexto = 'Contable';
             $estilo = "class='text-muted'";
@@ -103,31 +118,32 @@ if (count($movimientos) > 0) {
                 <td>{$m['metodo_pago']}</td>
                 <td " . ($m['es_entrada'] ? $estilo : '') . ">{$entrada}</td>
                 <td " . ($m['es_salida'] ? $estilo : '') . ">{$salida}</td>
-                <td " . (!$m['es_entrada'] && !$m['es_salida'] ? $estilo : '') . ">{$contable}</td>
+                <td " . (!$m['es_entrada'] && !$m['es_salida'] && $tipoTexto !== 'Mov. Interno' ? $estilo : '') . ">{$contable}</td>
+                <td " . ($tipoTexto === 'Mov. Interno' ? $estilo : '') . ">{$transferencia}</td>
               </tr>";
     }
 } else {
-    echo "<tr><td colspan='8'>No se encontraron registros.</td></tr>";
+    echo "<tr><td colspan='9'>No se encontraron registros.</td></tr>";
 }
 
-// CÁLCULO FINAL (E - S - C)
+// CÁLCULO FINAL (Solo Entradas - Salidas - Contables). Transferencias se ignoran.
 $resultadoPeriodo = $sumaEntradas - $sumaSalidas - $sumaContables;
 
-// FOOTER CON TOTALES ALINEADOS A SUS COLUMNAS
 echo "</tbody>
       <tfoot>
-        <tr><td colspan='8'></td></tr>
+        <tr><td colspan='9'></td></tr>
         
         <tr class='total-row'>
             <td colspan='5' class='text-right'>TOTALES POR COLUMNA:</td>
             <td class='text-success'>$ " . number_format($sumaEntradas, 2, ',', '.') . "</td>
             <td class='text-danger'>$ " . number_format($sumaSalidas, 2, ',', '.') . "</td>
             <td class='text-muted'>$ " . number_format($sumaContables, 2, ',', '.') . "</td>
+            <td class='text-info'>$ " . number_format($sumaTransferencias, 2, ',', '.') . "</td>
         </tr>
 
         <tr class='total-row' style='background-color:#e2e3e5;'>
             <td colspan='5' class='text-right'>RESULTADO FINAL (Entradas - Salidas - Contables):</td>
-            <td colspan='3' style='text-align:center; font-size:1.1em;'>$ " . number_format($resultadoPeriodo, 2, ',', '.') . "</td>
+            <td colspan='4' style='text-align:center; font-size:1.1em;'>$ " . number_format($resultadoPeriodo, 2, ',', '.') . "</td>
         </tr>
       </tfoot>
     </table>

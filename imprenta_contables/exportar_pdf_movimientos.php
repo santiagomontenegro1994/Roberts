@@ -32,6 +32,7 @@ $movimientos = Listar_Movimientos_Contables($MiConexion, $filtros, 0, 999999);
 $sumaEntradas = 0;
 $sumaSalidas = 0;
 $sumaContables = 0;
+$sumaTransferencias = 0; // Solo informativo
 
 // Preparar Logo
 $ruta_imagen = __DIR__ . '/../assets/img/logo.png'; 
@@ -68,6 +69,7 @@ $html = '<!DOCTYPE html>
         .bg-success { background-color: #198754; color: #fff; }
         .bg-danger { background-color: #dc3545; color: #fff; }
         .bg-secondary { background-color: #6c757d; color: #fff; }
+        .bg-info { background-color: #0dcaf0; color: #000; } /* Para transferencias */
         
         .totales-box { margin-top: 20px; width: 50%; float: right; }
         .totales-table td { padding: 4px; border: none; border-bottom: 1px solid #eee; }
@@ -104,7 +106,13 @@ $html = '<!DOCTYPE html>
 if (count($movimientos) > 0) {
     foreach ($movimientos as $m) {
         
-        if ($m['es_entrada']) {
+        // 1. Detectar si es Transferencia PRIMERO
+        if ((isset($m['origen']) && $m['origen'] === 'transferencia') || (isset($m['tipo']) && $m['tipo'] === 'Transferencia')) {
+            $sumaTransferencias += $m['monto'];
+            $tipoHtml = '<span class="badge bg-info">INTERNO</span>';
+        
+        // 2. Si no es transferencia, procesamos el resto
+        } elseif ($m['es_entrada']) {
             $sumaEntradas += $m['monto'];
             $tipoHtml = '<span class="badge bg-success">ENTRADA</span>';
         } elseif ($m['es_salida']) {
@@ -128,7 +136,7 @@ if (count($movimientos) > 0) {
     $html .= '<tr><td colspan="6" class="text-center">No hay datos para mostrar.</td></tr>';
 }
 
-// CÁLCULO FINAL CORREGIDO
+// CÁLCULO FINAL (IGNORANDO TRANSFERENCIAS)
 $resultadoPeriodo = $sumaEntradas - $sumaSalidas - $sumaContables;
 
 $html .= '  </tbody>
@@ -147,6 +155,10 @@ $html .= '  </tbody>
                 <tr>
                     <td class="total-label text-right">Total Mov. Contables:</td>
                     <td class="total-value" style="color:#6c757d;">$ ' . number_format($sumaContables, 2, ',', '.') . '</td>
+                </tr>
+                <tr>
+                    <td class="total-label text-right">Mov. Internos (Neutros):</td>
+                    <td class="total-value" style="color:#0dcaf0;">$ ' . number_format($sumaTransferencias, 2, ',', '.') . '</td>
                 </tr>
                 <tr>
                     <td class="total-label text-right" style="border-top: 2px solid #333; font-size:12px;">Resultado del Período (E - S - C):</td>
