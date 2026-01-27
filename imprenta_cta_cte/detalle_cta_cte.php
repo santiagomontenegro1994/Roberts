@@ -180,7 +180,7 @@ $tiposPagoEntrada = array_filter($tiposPagoEntrada, function($tipo) {
                                                     <option value="">-- Seleccione un trabajo --</option>
                                                     <?php foreach ($trabajosPendientes as $trabajo): ?>
                                                     <option value="<?= $trabajo['ID_DETALLE'] ?>" data-precio="<?= $trabajo['PRECIO'] ?>">
-                                                        #<?= $trabajo['ID_DETALLE'] ?> - <?= htmlspecialchars(substr($trabajo['DESCRIPCION'], 0, 30)) ?>... ($<?= number_format($trabajo['PRECIO'], 2, ',', '.') ?>)
+                                                        #<?= $trabajo['ID_PEDIDO'] ?> - <?= htmlspecialchars(substr($trabajo['DESCRIPCION'], 0, 30)) ?>... ($<?= number_format($trabajo['PRECIO'], 2, ',', '.') ?>)
                                                     </option>
                                                     <?php endforeach; ?>
                                                 </select>

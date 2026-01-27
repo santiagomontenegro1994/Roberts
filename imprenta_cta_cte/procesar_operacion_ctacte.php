@@ -277,8 +277,8 @@ try {
                 $idCaja = intval($_SESSION['Id_Caja']);
                 $idUsuario = intval($_SESSION['Usuario_Id']);
                 $montoCaja = floatval($montoComplemento);
-                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente #{$data['idCliente']} - Pedido #{$idPedidoTrabajos} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']), 0, 255, 'UTF-8');
-
+                $obsCaja = mb_substr("PAGO_DIRECTO - Cliente: $nombreCompletoCliente - Pedido #{$idPedidoTrabajos} via " . ObtenerNombreTipoPago($MiConexion, $data['metodo']), 0, 255, 'UTF-8');
+                
                 $stmt->bind_param("iiiids", $idCaja, $idTipoPago, $idTipoMovimientoCaja, $idUsuario, $montoCaja, $obsCaja);
                 $stmt->execute();
                 $stmt->close();
