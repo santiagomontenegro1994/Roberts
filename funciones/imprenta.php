@@ -2173,12 +2173,16 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
         $rsAnterior = $conexion->query("SELECT idEstadoTrabajo, fecha_envio, idUsuario_envio FROM detalle_trabajos WHERE idDetalleTrabajo = $idDetalle");
         if ($rowAnterior = $rsAnterior->fetch_assoc()) {
             if ($idEstadoTrabajo === 3 || $idEstadoTrabajo === 5) {
-                if ($rowAnterior['idEstadoTrabajo'] == 3 || $rowAnterior['idEstadoTrabajo'] == 5) {
-                    // Ya estaba enviado antes, mantenemos sus datos
+                // Validación estricta: Solo mantiene datos si ya estaba en estado 3/5 Y la fecha NO está rota
+                if (($rowAnterior['idEstadoTrabajo'] == 3 || $rowAnterior['idEstadoTrabajo'] == 5) && 
+                    !empty($rowAnterior['fecha_envio']) && 
+                    $rowAnterior['fecha_envio'] !== '0000-00-00 00:00:00') {
+                    
+                    // Ya estaba enviado de antes correctamente, mantenemos sus datos
                     $fechaEnvio = $rowAnterior['fecha_envio'];
                     $idUsuarioEnvio = $rowAnterior['idUsuario_envio'];
                 } else {
-                    // Recién ahora se envía (Guardamos Fecha/Hora Argentina y Usuario)
+                    // Recién ahora se envía (o tenía la fecha corrompida), guardamos Fecha/Hora Argentina y Usuario
                     $fechaEnvio = date('Y-m-d H:i:s');
                     $idUsuarioEnvio = $idUsuarioActual;
                 }
@@ -2213,7 +2217,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $stmt->bind_param('idsssiiisssii', 
+                $stmt->bind_param('idsssiiiissii', 
                     $idTrabajo, 
                     $precio, 
                     $fechaEntrega,
@@ -2250,7 +2254,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $stmt->bind_param('iidsssiiisssi',
+                $stmt->bind_param('iidsssiiiissi',
                     $idPedido, 
                     $idTrabajo,
                     $precio,
