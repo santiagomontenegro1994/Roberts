@@ -2122,66 +2122,75 @@ function Obtener_Detalle_Trabajo($conexion, $idDetalle) {
 }
 
 function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
+    // 1. FIJAR LA ZONA HORARIA DE ARGENTINA
+    date_default_timezone_set('America/Argentina/Buenos_Aires');
+
     // Validar parámetros básicos
     if (!in_array($accion, ['agregar', 'editar', 'eliminar'])) {
         error_log("Acción no válida: $accion");
         return false;
     }
 
-    // Definir variables para evitar errores de índice indefinido
-    $idDetalle = $datos['idDetalle'] ?? 0;
-    $idPedido = $datos['id_pedido_trabajos'] ?? 0;
+    // Definir variables asegurando que sean del tipo correcto
+    $idDetalle = isset($datos['idDetalle']) ? (int)$datos['idDetalle'] : 0;
+    $idPedido = isset($datos['id_pedido_trabajos']) ? (int)$datos['id_pedido_trabajos'] : 0;
     
-    // Variables para el bind_param
-    $idTrabajo = $datos['idTrabajo'] ?? 0;
-    $precio = $datos['precio'] ?? 0;
-    $fechaEntrega = $datos['fechaEntrega'] ?? null;
-    $horaEntrega = $datos['horaEntrega'] ?? null;
+    $idTrabajo = isset($datos['idTrabajo']) ? (int)$datos['idTrabajo'] : 0;
+    $precio = isset($datos['precio']) ? (float)$datos['precio'] : 0;
+    $fechaEntrega = !empty($datos['fechaEntrega']) ? $datos['fechaEntrega'] : null;
+    $horaEntrega = !empty($datos['horaEntrega']) ? $datos['horaEntrega'] : null;
     $descripcion = $datos['descripcion'] ?? '';
-    $idProveedor = $datos['idProveedor'] ?? 0;
-    $idEstadoTrabajo = $datos['idEstadoTrabajo'] ?? 0;
+    $idProveedor = isset($datos['idProveedor']) ? (int)$datos['idProveedor'] : 0;
+    $idEstadoTrabajo = isset($datos['idEstadoTrabajo']) ? (int)$datos['idEstadoTrabajo'] : 0;
     
-    // Campos de facturación
-    $facturado = isset($datos['facturado']) ? $datos['facturado'] : 0;
-    $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
+    $facturado = isset($datos['facturado']) ? (int)$datos['facturado'] : 0;
+    $idTipoFactura = !empty($datos['idTipoFactura']) ? (int)$datos['idTipoFactura'] : null;
     $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
 
-    // --- NUEVA LÓGICA: FECHA Y USUARIO DE ENVÍO ---
-    // Intentamos capturar el ID del usuario de diferentes variables comunes de sesión
-    $idUsuarioActual = $_SESSION['idUsuario'] ?? $_SESSION['Usuario_ID'] ?? $_SESSION['ID_USUARIO'] ?? 0;
-    
+    // 2. BUSCAR EL ID DEL USUARIO DE FORMA INFALIBLE (A través del Nombre que sí está en sesión)
+    $idUsuarioActual = 0;
+    $nombreUsuarioSesion = $_SESSION['Usuario_Nombre'] ?? '';
+
+    if (!empty($nombreUsuarioSesion)) {
+        // Buscamos el ID exacto en la tabla usuarios
+        $stmtUser = $conexion->prepare("SELECT idUsuario FROM usuarios WHERE usuario = ? OR nombre = ? LIMIT 1");
+        if ($stmtUser) {
+            $stmtUser->bind_param("ss", $nombreUsuarioSesion, $nombreUsuarioSesion);
+            $stmtUser->execute();
+            $resUser = $stmtUser->get_result();
+            if ($rowUser = $resUser->fetch_assoc()) {
+                $idUsuarioActual = (int)$rowUser['idUsuario'];
+            }
+            $stmtUser->close();
+        }
+    }
+
+    // Lógica para Fecha y Usuario de Envío
     $fechaEnvio = null;
     $idUsuarioEnvio = null;
 
     if ($accion == 'editar') {
-        // Buscamos cómo estaba el trabajo ANTES de este cambio para no pisar la fecha original
-        $rsAnterior = $conexion->query("SELECT idEstadoTrabajo, fecha_envio, idUsuario_envio FROM detalle_trabajos WHERE idDetalleTrabajo = " . intval($idDetalle));
+        $rsAnterior = $conexion->query("SELECT idEstadoTrabajo, fecha_envio, idUsuario_envio FROM detalle_trabajos WHERE idDetalleTrabajo = $idDetalle");
         if ($rowAnterior = $rsAnterior->fetch_assoc()) {
-            if ($idEstadoTrabajo == 3 || $idEstadoTrabajo == 5) {
-                // Si el estado NUEVO es Enviado (3 o 5)
+            if ($idEstadoTrabajo === 3 || $idEstadoTrabajo === 5) {
                 if ($rowAnterior['idEstadoTrabajo'] == 3 || $rowAnterior['idEstadoTrabajo'] == 5) {
-                    // Ya estaba enviado antes, mantenemos la fecha y usuario que ya tenía la base de datos
+                    // Ya estaba enviado antes, mantenemos sus datos
                     $fechaEnvio = $rowAnterior['fecha_envio'];
                     $idUsuarioEnvio = $rowAnterior['idUsuario_envio'];
                 } else {
-                    // Recién ahora se está enviando, guardamos fecha/hora actual y el usuario
+                    // Recién ahora se envía (Guardamos Fecha/Hora Argentina y Usuario)
                     $fechaEnvio = date('Y-m-d H:i:s');
                     $idUsuarioEnvio = $idUsuarioActual;
                 }
-            } else {
-                // Si lo cambian a cualquier otro estado (ej: Pendiente), limpiamos el envío
-                $fechaEnvio = null;
-                $idUsuarioEnvio = null;
             }
         }
     } elseif ($accion == 'agregar') {
-        // Si el trabajo se crea directamente en estado 3 o 5
-        if ($idEstadoTrabajo == 3 || $idEstadoTrabajo == 5) {
+        if ($idEstadoTrabajo === 3 || $idEstadoTrabajo === 5) {
+            // Se crea directamente como Enviado
             $fechaEnvio = date('Y-m-d H:i:s');
             $idUsuarioEnvio = $idUsuarioActual;
         }
     }
-    // ----------------------------------------------
 
     try {
         switch ($accion) {
@@ -2204,7 +2213,6 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                // Se agregaron dos strings (s, i) antes del ID final (i)
                 $stmt->bind_param('idsssiiissisi', 
                     $idTrabajo, 
                     $precio, 
@@ -2242,7 +2250,6 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                // Se agregaron (s, i) al final
                 $stmt->bind_param('iidsssiiisssi',
                     $idPedido, 
                     $idTrabajo,
@@ -2284,7 +2291,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
         // --- LOGICA POST-EJECUCIÓN (ACTUALIZAR ESTADO Y PRECIO) ---
         if (isset($idPedido) && $idPedido > 0) {
             
-            // 1. Actualizar Estado (Tu función original)
+            // 1. Actualizar Estado
             if (function_exists('ActualizarEstadoPedido')) {
                 ActualizarEstadoPedido($conexion, $idPedido);
             }
