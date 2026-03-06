@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 
 if (empty($_SESSION['Usuario_Nombre'])) {
@@ -229,7 +233,7 @@ if (file_exists($ruta_imagen)) {
                     <?php endif; ?>
                 </tbody>
             </table>
-                
+
         <?php elseif ($tipo == 'pendientes' || $tipo == 'listos'): ?>
             <!-- Vista para pendientes y listos (misma estructura) -->
             <table>
