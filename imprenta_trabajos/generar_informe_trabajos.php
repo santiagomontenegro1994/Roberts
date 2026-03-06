@@ -219,7 +219,7 @@ if (file_exists($ruta_imagen)) {
                                 <td class="descripcion"><?= htmlspecialchars($item['DESCRIPCION'] ?? '') ?></td>
                                 <td><?= htmlspecialchars($item['PROVEEDOR'] ?? '') ?></td>
                                 <td><?= htmlspecialchars($item['ESTADO'] ?? '') ?></td>
-                                <td><?= !empty($item['FECHA_ENVIO']) ? date('d/m/Y H:i', strtotime($item['FECHA_ENVIO'])) : 'Sin registro' ?></td>
+                                <td><?= (!empty($item['FECHA_ENVIO']) && $item['FECHA_ENVIO'] !== '0000-00-00 00:00:00') ? date('d/m/Y H:i', strtotime($item['FECHA_ENVIO'])) : 'Sin registro' ?></td>
                                 <td><?= htmlspecialchars($item['USUARIO_ENVIO'] ?? '-') ?></td>
                                 <td class="nowrap"><?= date('d/m/Y', strtotime($item['FECHA_ENTREGA'] ?? '')) ?> <?= htmlspecialchars($item['HORA_ENTREGA'] ?? '') ?></td>
                             </tr>

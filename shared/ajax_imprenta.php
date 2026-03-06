@@ -395,9 +395,14 @@ $MiConexion=ConexionBD();
                 exit;
             }
 
-            echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
+            // --- NUEVO: REGISTRAR ENVÍO SI SE CREÓ DIRECTAMENTE EN ESTADO 3 O 5 ---
+            date_default_timezone_set('America/Argentina/Buenos_Aires');
+            $fechaActual = date('Y-m-d H:i:s');
+            mysqli_query($MiConexion, "UPDATE detalle_trabajos SET fecha_envio = '$fechaActual', idUsuario_envio = $usuario WHERE id_pedido_trabajos = $idPedido AND idEstadoTrabajo IN (3, 5)");
+
             ActualizarEstadoPedido($MiConexion, $idPedido);
             unset($_SESSION['Cliente_Pedido']);
+            echo json_encode(['status' => 'success', 'idPedido' => $idPedido]);
             exit;
         }
 
@@ -450,13 +455,18 @@ $MiConexion=ConexionBD();
                 exit;
             }
 
+            // --- NUEVO: REGISTRAR ENVÍO SI SE CREÓ DIRECTAMENTE EN ESTADO 3 O 5 ---
+            date_default_timezone_set('America/Argentina/Buenos_Aires');
+            $fechaActual = date('Y-m-d H:i:s');
+            mysqli_query($MiConexion, "UPDATE detalle_trabajos SET fecha_envio = '$fechaActual', idUsuario_envio = $usuario WHERE id_pedido_trabajos = $idPedido AND idEstadoTrabajo IN (3, 5)");
+
+            ActualizarEstadoPedido($MiConexion, $idPedido);
+            unset($_SESSION['Cliente_Pedido']);
             echo json_encode([
                 'status' => 'success', 
                 'idPedido' => $idPedido,
                 'idMovimiento' => mysqli_insert_id($MiConexion)
             ]);
-            ActualizarEstadoPedido($MiConexion, $idPedido);
-            unset($_SESSION['Cliente_Pedido']);
             exit;
         }
 
@@ -563,6 +573,11 @@ $MiConexion=ConexionBD();
                         WHERE idDetalleTrabajo IN ($idsParaFacturarStr)");
                     if(!$query_factura) throw new Exception("Error al actualizar detalles con factura: " . mysqli_error($MiConexion));
                 }
+
+                // --- NUEVO: REGISTRAR ENVÍO SI SE CREÓ DIRECTAMENTE EN ESTADO 3 O 5 ---
+                date_default_timezone_set('America/Argentina/Buenos_Aires');
+                $fechaActual = date('Y-m-d H:i:s');
+                mysqli_query($MiConexion, "UPDATE detalle_trabajos SET fecha_envio = '$fechaActual', idUsuario_envio = $usuario WHERE id_pedido_trabajos = $idPedido AND idEstadoTrabajo IN (3, 5)");
 
                 mysqli_commit($MiConexion);
                 ActualizarEstadoPedido($MiConexion, $idPedido);
