@@ -2213,7 +2213,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $stmt->bind_param('idsssiiissisi', 
+                $stmt->bind_param('idsssiiisssii', 
                     $idTrabajo, 
                     $precio, 
                     $fechaEntrega,
@@ -4253,6 +4253,7 @@ function VerificarDisponibilidadUsuario($conexion, $idUsuario, $nuevoUsuario) {
 
     // Listas trabajos
 function Listar_Pedidos_Trabajo_Pendientes($conexion) {
+    // Se agregó la exclusión de los estados 3 y 5 en el WHERE
     $sql = "SELECT 
                 pt.idPedidoTrabajos,
                 pt.fecha,
@@ -4281,6 +4282,7 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
             LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
             WHERE pt.idActivo = 1 
               AND pt.idEstado = 1
+              AND (dt.idEstadoTrabajo NOT IN (3, 5) OR dt.idEstadoTrabajo IS NULL)
             ORDER BY dt.fechaEntrega ASC, dt.horaEntrega ASC, pt.idPedidoTrabajos DESC";
 
     $stmt = $conexion->prepare($sql);
