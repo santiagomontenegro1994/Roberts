@@ -4352,7 +4352,7 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
 }
 
 function Listar_Trabajos_En_Proceso($MiConexion) {
-    // Busca los estados 3 (Muestra Enviada) y 5 (Enviado)
+    // Corrección: p.idActivo (el pedido está activo) en lugar de dt.idActivo
     $SQL = "SELECT p.idPedidoTrabajos AS ID, p.fecha AS FECHA_PEDIDO, 
                    CONCAT(c.nombre, ' ', c.apellido) AS CLIENTE, c.telefono AS TELEFONO,
                    t.denominacion AS TRABAJO, dt.descripcion AS DESCRIPCION, 
@@ -4366,10 +4366,16 @@ function Listar_Trabajos_En_Proceso($MiConexion) {
             JOIN proveedores pr ON dt.idProveedor = pr.idProveedor
             JOIN estado_trabajo e ON dt.idEstadoTrabajo = e.idEstado
             LEFT JOIN usuarios u ON dt.idUsuario_envio = u.idUsuario
-            WHERE dt.idEstadoTrabajo IN (3, 5) AND dt.idActivo = 1
+            WHERE dt.idEstadoTrabajo IN (3, 5) AND p.idActivo = 1
             ORDER BY dt.fechaEntrega ASC, dt.horaEntrega ASC";
     
     $rs = mysqli_query($MiConexion, $SQL);
+    
+    // Trampa de errores: Si algo falla en el SQL, detendrá el proceso y te mostrará el error real
+    if (!$rs) {
+        die("Error SQL en Listar_Trabajos_En_Proceso: " . mysqli_error($MiConexion));
+    }
+
     $datos = array();
     while ($data = mysqli_fetch_assoc($rs)) {
         $datos[] = $data;
