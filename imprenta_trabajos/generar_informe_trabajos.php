@@ -26,7 +26,12 @@ switch ($tipo) {
         $titulo = "Trabajos Listos para Entrega";
         $ListadoPedidos = Listar_Pedidos_Listos_Entregar($MiConexion, 6);
         break;
-        
+    
+    case 'en_proceso':
+    $titulo = "Trabajos en Proceso (Enviados / Muestra)";
+    $ListadoPedidos = Listar_Trabajos_En_Proceso($MiConexion);
+    break;
+
     case 'impresos':
         $titulo = "Trabajos en Taller";
         $ListadoPedidos = Listar_Trabajos_En_Taller($MiConexion);
@@ -184,7 +189,47 @@ if (file_exists($ruta_imagen)) {
                     <?php endif; ?>
                 </tbody>
             </table>
-            
+        
+        <?php elseif ($tipo == 'en_proceso'): ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Pedido</th>
+                        <th>Cliente</th>
+                        <th>Trabajo</th>
+                        <th class="descripcion">Descripción</th>
+                        <th>Proveedor</th>
+                        <th>Estado</th>
+                        <th>Enviado el</th>
+                        <th>Enviado por</th>
+                        <th class="nowrap">Entrega Prometida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($ListadoPedidos)): ?>
+                        <?php foreach ($ListadoPedidos as $item): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($item['ID'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['CLIENTE'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['TRABAJO'] ?? '') ?></td>
+                                <td class="descripcion"><?= htmlspecialchars($item['DESCRIPCION'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['PROVEEDOR'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['ESTADO'] ?? '') ?></td>
+                                <td><?= !empty($item['FECHA_ENVIO']) ? date('d/m/Y H:i', strtotime($item['FECHA_ENVIO'])) : 'Sin registro' ?></td>
+                                <td><?= htmlspecialchars($item['USUARIO_ENVIO'] ?? '-') ?></td>
+                                <td class="nowrap"><?= date('d/m/Y', strtotime($item['FECHA_ENTREGA'] ?? '')) ?> <?= htmlspecialchars($item['HORA_ENTREGA'] ?? '') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 15px;">
+                                No se encontraron trabajos enviados ni muestras enviadas
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+                
         <?php elseif ($tipo == 'pendientes' || $tipo == 'listos'): ?>
             <!-- Vista para pendientes y listos (misma estructura) -->
             <table>

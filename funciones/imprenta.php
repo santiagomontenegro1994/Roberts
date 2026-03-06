@@ -2129,9 +2129,8 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     }
 
     // Definir variables para evitar errores de índice indefinido
-    // IMPORTANTE: Respetamos los nombres de columnas de TU base de datos
     $idDetalle = $datos['idDetalle'] ?? 0;
-    $idPedido = $datos['id_pedido_trabajos'] ?? 0; // FK correcta según tu código
+    $idPedido = $datos['id_pedido_trabajos'] ?? 0;
     
     // Variables para el bind_param
     $idTrabajo = $datos['idTrabajo'] ?? 0;
@@ -2147,10 +2146,46 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     $idTipoFactura = !empty($datos['idTipoFactura']) ? $datos['idTipoFactura'] : null;
     $numeroFactura = !empty($datos['numeroFactura']) ? $datos['numeroFactura'] : null;
 
+    // --- NUEVA LÓGICA: FECHA Y USUARIO DE ENVÍO ---
+    // Intentamos capturar el ID del usuario de diferentes variables comunes de sesión
+    $idUsuarioActual = $_SESSION['idUsuario'] ?? $_SESSION['Usuario_ID'] ?? $_SESSION['ID_USUARIO'] ?? 0;
+    
+    $fechaEnvio = null;
+    $idUsuarioEnvio = null;
+
+    if ($accion == 'editar') {
+        // Buscamos cómo estaba el trabajo ANTES de este cambio para no pisar la fecha original
+        $rsAnterior = $conexion->query("SELECT idEstadoTrabajo, fecha_envio, idUsuario_envio FROM detalle_trabajos WHERE idDetalleTrabajo = " . intval($idDetalle));
+        if ($rowAnterior = $rsAnterior->fetch_assoc()) {
+            if ($idEstadoTrabajo == 3 || $idEstadoTrabajo == 5) {
+                // Si el estado NUEVO es Enviado (3 o 5)
+                if ($rowAnterior['idEstadoTrabajo'] == 3 || $rowAnterior['idEstadoTrabajo'] == 5) {
+                    // Ya estaba enviado antes, mantenemos la fecha y usuario que ya tenía la base de datos
+                    $fechaEnvio = $rowAnterior['fecha_envio'];
+                    $idUsuarioEnvio = $rowAnterior['idUsuario_envio'];
+                } else {
+                    // Recién ahora se está enviando, guardamos fecha/hora actual y el usuario
+                    $fechaEnvio = date('Y-m-d H:i:s');
+                    $idUsuarioEnvio = $idUsuarioActual;
+                }
+            } else {
+                // Si lo cambian a cualquier otro estado (ej: Pendiente), limpiamos el envío
+                $fechaEnvio = null;
+                $idUsuarioEnvio = null;
+            }
+        }
+    } elseif ($accion == 'agregar') {
+        // Si el trabajo se crea directamente en estado 3 o 5
+        if ($idEstadoTrabajo == 3 || $idEstadoTrabajo == 5) {
+            $fechaEnvio = date('Y-m-d H:i:s');
+            $idUsuarioEnvio = $idUsuarioActual;
+        }
+    }
+    // ----------------------------------------------
+
     try {
         switch ($accion) {
             case 'editar':
-                // RESPETANDO TU CODIGO ORIGINAL
                 $query = "UPDATE detalle_trabajos SET 
                           idTrabajo = ?, 
                           precio = ?, 
@@ -2161,13 +2196,16 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                           idEstadoTrabajo = ?,
                           facturado = ?, 
                           idTipoFactura = ?, 
-                          numeroFactura = ?
-                          WHERE idDetalleTrabajo = ?"; // Tu PK original
+                          numeroFactura = ?,
+                          fecha_envio = ?,
+                          idUsuario_envio = ?
+                          WHERE idDetalleTrabajo = ?"; 
                 
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $stmt->bind_param('idsssiiissi', 
+                // Se agregaron dos strings (s, i) antes del ID final (i)
+                $stmt->bind_param('idsssiiissisi', 
                     $idTrabajo, 
                     $precio, 
                     $fechaEntrega,
@@ -2178,12 +2216,13 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $facturado, 
                     $idTipoFactura, 
                     $numeroFactura, 
-                    $idDetalle // idDetalleTrabajo
+                    $fechaEnvio,
+                    $idUsuarioEnvio,
+                    $idDetalle 
                 );
                 break;
                 
             case 'agregar':
-                // RESPETANDO TU CODIGO ORIGINAL
                 $query = "INSERT INTO detalle_trabajos (
                     id_pedido_trabajos, 
                     idTrabajo, 
@@ -2195,14 +2234,17 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     idEstadoTrabajo,
                     facturado, 
                     idTipoFactura, 
-                    numeroFactura
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    numeroFactura,
+                    fecha_envio,
+                    idUsuario_envio
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
                 
-                $stmt->bind_param('iidsssiiiss',
-                    $idPedido, // id_pedido_trabajos
+                // Se agregaron (s, i) al final
+                $stmt->bind_param('iidsssiiisssi',
+                    $idPedido, 
                     $idTrabajo,
                     $precio,
                     $fechaEntrega,
@@ -2212,12 +2254,13 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $idEstadoTrabajo,
                     $facturado,
                     $idTipoFactura,
-                    $numeroFactura
+                    $numeroFactura,
+                    $fechaEnvio,
+                    $idUsuarioEnvio
                 );
                 break;
                 
             case 'eliminar':
-                // LOGICA DE ELIMINACION CORREGIDA CON TUS NOMBRES
                 $query = "DELETE FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
                 $stmt = $conexion->prepare($query);
                 if (!$stmt) throw new Exception($conexion->error);
@@ -2246,17 +2289,13 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                 ActualizarEstadoPedido($conexion, $idPedido);
             }
 
-            // 2. Recalcular Precio Total (IMPORTANTE PARA QUE ELIMINAR/AGREGAR REFLEJE EL COSTO)
-            // Asumo que la tabla padre se llama 'pedidos_trabajos' porque la hija es 'detalle_trabajos'
-            // y la FK es 'id_pedido_trabajos'.
-            // Si esto falla, el 'try-catch' evitará que se rompa el resto.
+            // 2. Recalcular Precio Total
             try {
-                // NOTA: Intento usar 'ID' para la tabla padre. Si se llama 'idPedidoTrabajo', cámbialo aquí.
-                $sqlTotal = "UPDATE pedidos_trabajos SET PRECIO_TOTAL = (
+                $sqlTotal = "UPDATE pedido_trabajos SET PRECIO_TOTAL = (
                                 SELECT COALESCE(SUM(precio), 0) 
                                 FROM detalle_trabajos 
                                 WHERE id_pedido_trabajos = ?
-                             ) WHERE ID = ?"; 
+                             ) WHERE idPedidoTrabajos = ?"; 
                 
                 $stmtTotal = $conexion->prepare($sqlTotal);
                 if ($stmtTotal) {
@@ -2265,12 +2304,11 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $stmtTotal->close();
                 }
             } catch (Exception $e2) {
-                // Si falla el recalculo del precio, no detenemos el proceso, solo lo logueamos
                 error_log("No se pudo actualizar el precio total: " . $e2->getMessage());
             }
         }
         
-        return true; // Devolvemos true porque la acción principal (Agregar/Editar/Eliminar) funcionó
+        return true; 
         
     } catch (Exception $e) {
         error_log("Excepción al procesar detalle: " . $e->getMessage());
@@ -4311,6 +4349,32 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
     }
 
     return $pedidos;
+}
+
+function Listar_Trabajos_En_Proceso($MiConexion) {
+    // Busca los estados 3 (Muestra Enviada) y 5 (Enviado)
+    $SQL = "SELECT p.idPedidoTrabajos AS ID, p.fecha AS FECHA_PEDIDO, 
+                   CONCAT(c.nombre, ' ', c.apellido) AS CLIENTE, c.telefono AS TELEFONO,
+                   t.denominacion AS TRABAJO, dt.descripcion AS DESCRIPCION, 
+                   pr.NOMBRE AS PROVEEDOR, e.denominacion AS ESTADO, 
+                   dt.fechaEntrega AS FECHA_ENTREGA, dt.horaEntrega AS HORA_ENTREGA,
+                   dt.fecha_envio AS FECHA_ENVIO, u.nombre AS USUARIO_ENVIO
+            FROM detalle_trabajos dt
+            JOIN pedido_trabajos p ON dt.id_pedido_trabajos = p.idPedidoTrabajos
+            JOIN clientes c ON p.idCliente = c.idCliente
+            JOIN tipos_trabajos t ON dt.idTrabajo = t.idTipoTrabajo
+            JOIN proveedores pr ON dt.idProveedor = pr.idProveedor
+            JOIN estado_trabajo e ON dt.idEstadoTrabajo = e.idEstado
+            LEFT JOIN usuarios u ON dt.idUsuario_envio = u.idUsuario
+            WHERE dt.idEstadoTrabajo IN (3, 5) AND dt.idActivo = 1
+            ORDER BY dt.fechaEntrega ASC, dt.horaEntrega ASC";
+    
+    $rs = mysqli_query($MiConexion, $SQL);
+    $datos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $datos[] = $data;
+    }
+    return $datos;
 }
 
 function Listar_Pedidos_Listos_Entregar($conexion, $idEstado) {

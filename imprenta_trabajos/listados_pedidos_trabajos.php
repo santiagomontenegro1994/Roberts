@@ -247,6 +247,8 @@ $CantidadPedidos = count($ListadoPedidos);
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
                                     <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="en_proceso">Trabajos en Proceso</a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Para Taller</a></li>
                                 </ul>
                             </div>
