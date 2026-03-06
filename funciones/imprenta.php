@@ -4352,16 +4352,17 @@ function Listar_Pedidos_Trabajo_Pendientes($conexion) {
 }
 
 function Listar_Trabajos_En_Proceso($MiConexion) {
+    // Consulta con los nombres exactos de las tablas y columnas extraídos de los archivos SQL
     $SQL = "SELECT p.idPedidoTrabajos AS ID, p.fecha AS FECHA_PEDIDO, 
                    CONCAT(c.nombre, ' ', c.apellido) AS CLIENTE, c.telefono AS TELEFONO,
                    t.denominacion AS TRABAJO, dt.descripcion AS DESCRIPCION, 
-                   pr.NOMBRE AS PROVEEDOR, e.denominacion AS ESTADO, 
+                   pr.nombre AS PROVEEDOR, e.denominacion AS ESTADO, 
                    dt.fechaEntrega AS FECHA_ENTREGA, dt.horaEntrega AS HORA_ENTREGA,
                    dt.fecha_envio AS FECHA_ENVIO, u.nombre AS USUARIO_ENVIO
             FROM detalle_trabajos dt
             JOIN pedido_trabajos p ON dt.id_pedido_trabajos = p.idPedidoTrabajos
             JOIN clientes c ON p.idCliente = c.idCliente
-            JOIN tipos_trabajos t ON dt.idTrabajo = t.idTipoTrabajo
+            JOIN tipo_trabajo t ON dt.idTrabajo = t.idTipoTrabajo
             JOIN proveedores pr ON dt.idProveedor = pr.idProveedor
             JOIN estado_trabajo e ON dt.idEstadoTrabajo = e.idEstado
             LEFT JOIN usuarios u ON dt.idUsuario_envio = u.idUsuario
