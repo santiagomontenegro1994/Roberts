@@ -3612,154 +3612,158 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
 }
 
 function Generar_Where_Pedidos_Avanzado($filtros) {
-    // Siempre mostrar activos por defecto
-    $where = ["pt.idActivo = 1"];
+    // Por defecto siempre trabajos activos
+    $where = array("PT.idActivo = 1");
     
-    // Filtro por Estado General del Pedido
+    // Filtro Estado
     if (!empty($filtros['estadoBuscado'])) {
-        $where[] = "pt.idEstado = " . intval($filtros['estadoBuscado']);
+        $where[] = "PT.idEstado = " . intval($filtros['estadoBuscado']);
     }
 
-    // Filtro Básico (Cliente, Fecha, Teléfono, ID)
+    // Filtro Búsqueda por texto (Cliente, Fecha, Teléfono, ID)
     if (!empty($filtros['parametro'])) {
-        $param = addslashes($filtros['parametro']);
+        $param = addslashes(trim($filtros['parametro']));
         switch ($filtros['criterio']) {
             case 'Cliente':
-                $where[] = "(c.nombre LIKE '%$param%' OR c.apellido LIKE '%$param%')";
+                $where[] = "(C.nombre LIKE '%$param%' OR C.apellido LIKE '%$param%')";
                 break;
             case 'Fecha':
-                $where[] = "pt.fecha LIKE '%$param%'";
+                $where[] = "PT.fecha LIKE '%$param%'";
                 break;
             case 'Telefono':
-                $where[] = "c.telefono LIKE '%$param%'";
+                $where[] = "C.telefono LIKE '%$param%'";
                 break;
             case 'Id':
-                $where[] = "pt.idPedidoTrabajos = " . intval($param);
+                $where[] = "PT.idPedidoTrabajos = " . intval($param);
                 break;
         }
     }
 
-    // Filtro por Proveedor (Debe existir en al menos un detalle de trabajo de ese pedido)
+    // Filtro Proveedor
     if (!empty($filtros['proveedorBuscado'])) {
         $idProv = intval($filtros['proveedorBuscado']);
-        $where[] = "pt.idPedidoTrabajos IN (SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idProveedor = $idProv)";
+        $where[] = "PT.idPedidoTrabajos IN (SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idProveedor = $idProv AND idActivo = 1)";
     }
 
-    // Filtro por Tipo de Trabajo o Descripción (Busca en detalle_trabajos y tipo_trabajo)
+    // Filtro Trabajo (Busca en detalle y en el nombre del tipo de trabajo)
     if (!empty($filtros['trabajoBuscado'])) {
-        $trab = addslashes($filtros['trabajoBuscado']);
-        $where[] = "pt.idPedidoTrabajos IN (
+        $trab = addslashes(trim($filtros['trabajoBuscado']));
+        $where[] = "PT.idPedidoTrabajos IN (
             SELECT dt.id_pedido_trabajos 
             FROM detalle_trabajos dt
             LEFT JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
-            WHERE dt.descripcion LIKE '%$trab%' OR tt.denominacion LIKE '%$trab%'
+            WHERE (dt.descripcion LIKE '%$trab%' OR tt.denominacion LIKE '%$trab%') AND dt.idActivo = 1
         )";
     }
 
     return "WHERE " . implode(" AND ", $where);
 }
 
-function Contar_Pedidos_Filtrados($conexion, $filtros) {
+function Contar_Pedidos_Filtrados($vConexion, $filtros) {
     $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
-    
-    $sql = "SELECT COUNT(DISTINCT pt.idPedidoTrabajos) as total
-            FROM pedido_trabajos pt
-            INNER JOIN clientes c ON pt.idCliente = c.idCliente
+    $SQL = "SELECT COUNT(DISTINCT PT.idPedidoTrabajos) as total
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
             $whereSQL";
             
-    $rs = mysqli_query($conexion, $sql);
+    $rs = mysqli_query($vConexion, $SQL);
     if ($rs && $row = mysqli_fetch_assoc($rs)) {
         return $row['total'];
     }
     return 0;
 }
 
-function Listar_Pedidos_Filtrados_Paginados($conexion, $filtros, $offset, $limite) {
+function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limite) {
+    $Listado = array();
     $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
     
-    // Paso 1: Obtener solo los IDs de los pedidos de esta página.
-    // Ordenamos por los más recientes.
-    $sql_ids = "SELECT DISTINCT pt.idPedidoTrabajos 
-                FROM pedido_trabajos pt
-                INNER JOIN clientes c ON pt.idCliente = c.idCliente
-                $whereSQL 
-                ORDER BY pt.idPedidoTrabajos DESC 
+    // 1. Obtener IDs limitados para la página actual
+    $SQL_IDs = "SELECT DISTINCT PT.idPedidoTrabajos 
+                FROM pedido_trabajos PT
+                INNER JOIN clientes C ON PT.idCliente = C.idCliente
+                $whereSQL
+                ORDER BY PT.idPedidoTrabajos DESC
                 LIMIT $offset, $limite";
                 
-    $rs_ids = mysqli_query($conexion, $sql_ids);
-    $ids_array = [];
+    $rs_ids = mysqli_query($vConexion, $SQL_IDs);
+    $ids = array();
     while ($row = mysqli_fetch_assoc($rs_ids)) {
-        $ids_array[] = $row['idPedidoTrabajos'];
+        $ids[] = $row['idPedidoTrabajos'];
     }
     
-    if (empty($ids_array)) return [];
-    
-    $ids_string = implode(',', $ids_array);
+    if (empty($ids)) return $Listado;
+    $ids_string = implode(',', $ids);
 
-    // Paso 2: Traer toda la información detallada SOLO de esos IDs.
-    // Así es extremadamente rápido porque no cruza toda la base de datos.
-    $sql = "SELECT 
-                pt.idPedidoTrabajos, pt.fecha, pt.senia,
-                c.nombre AS CLIENTE_N, c.apellido AS CLIENTE_A, c.telefono AS TELEFONO,
-                u.usuario, ept.denominacion AS estado_pedido,
-                dt.idDetalleTrabajo, dt.descripcion, dt.precio, 
-                dt.fechaEntrega, dt.horaEntrega, dt.facturado,
-                tt.denominacion AS trabajo_denom,
-                p.nombre AS nombre_proveedor,
-                et.denominacion AS nombre_estado
-            FROM pedido_trabajos pt
-            INNER JOIN clientes c ON pt.idCliente = c.idCliente
-            INNER JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
-            INNER JOIN usuarios u ON pt.idUsuario = u.idUsuario
-            LEFT JOIN detalle_trabajos dt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos AND dt.idActivo = 1
-            LEFT JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
-            LEFT JOIN proveedores p ON dt.idProveedor = p.idProveedor
-            LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
-            WHERE pt.idPedidoTrabajos IN ($ids_string)
-            ORDER BY pt.idPedidoTrabajos DESC";
+    // 2. Obtener toda la info cabecera de esos IDs (ESTRUCTURA ORIGINAL INTACTA)
+    $SQL = "SELECT 
+                PT.idPedidoTrabajos,
+                PT.fecha,
+                PT.senia,
+                C.nombre AS nombre_cliente,
+                C.apellido AS apellido_cliente,
+                C.telefono,
+                ET.idEstado,
+                US.nombre AS usuario,
+                ET.denominacion AS estado_nombre,
+                COALESCE(SUM(DT.precio), 0) AS precio_total,
+                COUNT(DT.idDetalleTrabajo) as total_detalles,
+                SUM(CASE WHEN DT.facturado = 1 THEN 1 ELSE 0 END) as detalles_facturados
+            FROM pedido_trabajos PT
+            INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
+            INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
+            LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
+            WHERE PT.idPedidoTrabajos IN ($ids_string)
+            GROUP BY PT.idPedidoTrabajos
+            ORDER BY PT.idPedidoTrabajos DESC";
 
-    $rs = mysqli_query($conexion, $sql);
-    
-    $pedidos = [];
-    while ($fila = mysqli_fetch_assoc($rs)) {
-        $id = $fila['idPedidoTrabajos'];
-        
-        if (!isset($pedidos[$id])) {
-            $pedidos[$id] = [
-                'ID' => $id,
-                'FECHA' => date('d/m/Y', strtotime($fila['fecha'])),
-                'SEÑA' => floatval($fila['senia']),
-                'CLIENTE_N' => $fila['CLIENTE_N'],
-                'CLIENTE_A' => $fila['CLIENTE_A'],
-                'TELEFONO' => $fila['TELEFONO'],
-                'ESTADO' => $fila['estado_pedido'],
-                'USUARIO' => $fila['usuario'],
-                'PRECIO' => 0,
-                'DETALLES_FACTURADOS' => 0,
-                'TOTAL_DETALLES' => 0,
-                'TRABAJOS' => []
-            ];
-        }
-        
-        if (!empty($fila['idDetalleTrabajo'])) {
-            $pedidos[$id]['TRABAJOS'][] = [
-                'DENOMINACION' => $fila['trabajo_denom'],
-                'DESCRIPCION' => $fila['descripcion'],
-                'PROVEEDOR' => $fila['nombre_proveedor'],
-                'ESTADO' => $fila['nombre_estado'],
-                'FECHA_ENTREGA' => date('d/m/Y', strtotime($fila['fechaEntrega'])),
-                'HORA_ENTREGA' => $fila['horaEntrega'],
-                'PRECIO' => floatval($fila['precio'])
-            ];
-            $pedidos[$id]['PRECIO'] += floatval($fila['precio']);
-            $pedidos[$id]['TOTAL_DETALLES'] += 1;
-            if ($fila['facturado'] == 1) {
-                $pedidos[$id]['DETALLES_FACTURADOS'] += 1;
+    $rs = mysqli_query($vConexion, $SQL);
+    $pedidos = array();
+    while ($data = mysqli_fetch_assoc($rs)) {
+        $pedidos[$data['idPedidoTrabajos']] = array(
+            'ID' => $data['idPedidoTrabajos'],
+            'FECHA' => $data['fecha'],
+            'SEÑA' => $data['senia'],
+            'TELEFONO' => $data['telefono'],
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'ESTADO' => $data['idEstado'], // Aquí está la clave para que funcionen los colores
+            'USUARIO' => $data['usuario'],
+            'ESTADO_NOMBRE' => $data['estado_nombre'],
+            'PRECIO' => $data['precio_total'],
+            'TOTAL_DETALLES' => $data['total_detalles'],
+            'DETALLES_FACTURADOS' => $data['detalles_facturados'],
+            'TRABAJOS' => array()
+        );
+    }
+
+    // 3. Obtener los detalles de esos trabajos (ESTRUCTURA ORIGINAL INTACTA)
+    $SQL_DT = "SELECT 
+                    DT.id_pedido_trabajos,
+                    DT.idDetalleTrabajo,
+                    DT.idTrabajo,
+                    DT.descripcion,
+                    TT.denominacion AS nombre_trabajo
+                FROM detalle_trabajos DT
+                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+                WHERE DT.id_pedido_trabajos IN ($ids_string)
+                AND DT.idActivo = 1
+                ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
+
+    $rs_dt = mysqli_query($vConexion, $SQL_DT);
+    if ($rs_dt) {
+        while ($data = mysqli_fetch_assoc($rs_dt)) {
+            $idPedido = $data['id_pedido_trabajos'];
+            if (isset($pedidos[$idPedido])) {
+                $pedidos[$idPedido]['TRABAJOS'][] = array(
+                    'ID_TRABAJO' => $data['idTrabajo'],
+                    'DENOMINACION' => $data['nombre_trabajo'],
+                    'DESCRIPCION' => $data['descripcion']
+                );
             }
         }
     }
-    
-    // Reindexar el array para usar un for normal de 0 a X
+
     return array_values($pedidos);
 }
 
