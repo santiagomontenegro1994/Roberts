@@ -13,11 +13,13 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Inicializar variables de filtro desde la sesión
+// Inicializar variables de filtro desde la sesión (Ahora con campos independientes)
 if (!isset($_SESSION['filtros_pedidos'])) {
     $_SESSION['filtros_pedidos'] = [
-        'parametro' => '',
-        'criterio' => 'Cliente',
+        'idBuscado' => '',
+        'fechaBuscada' => '',
+        'clienteBuscado' => '',
+        'telefonoBuscado' => '',
         'estadoBuscado' => '',
         'proveedorBuscado' => '',
         'trabajoBuscado' => ''
@@ -29,8 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['BotonLimpiar'])) {
         // Limpiar todos los filtros
         $_SESSION['filtros_pedidos'] = [
-            'parametro' => '',
-            'criterio' => 'Cliente',
+            'idBuscado' => '',
+            'fechaBuscada' => '',
+            'clienteBuscado' => '',
+            'telefonoBuscado' => '',
             'estadoBuscado' => '',
             'proveedorBuscado' => '',
             'trabajoBuscado' => ''
@@ -38,8 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Acumular todos los filtros
         $_SESSION['filtros_pedidos'] = [
-            'parametro' => trim($_POST['parametro'] ?? ''),
-            'criterio' => $_POST['gridRadios'] ?? 'Cliente',
+            'idBuscado' => trim($_POST['idBuscado'] ?? ''),
+            'fechaBuscada' => trim($_POST['fechaBuscada'] ?? ''),
+            'clienteBuscado' => trim($_POST['clienteBuscado'] ?? ''),
+            'telefonoBuscado' => trim($_POST['telefonoBuscado'] ?? ''),
             'estadoBuscado' => $_POST['estadoBuscado'] ?? '',
             'proveedorBuscado' => $_POST['proveedorBuscado'] ?? '',
             'trabajoBuscado' => trim($_POST['trabajoBuscado'] ?? '')
@@ -55,8 +61,10 @@ $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
 // Obtener valores actuales de los filtros
 $filtros = $_SESSION['filtros_pedidos'];
-$parametro = $filtros['parametro'];
-$criterio = $filtros['criterio'];
+$idBuscado = $filtros['idBuscado'];
+$fechaBuscada = $filtros['fechaBuscada'];
+$clienteBuscado = $filtros['clienteBuscado'];
+$telefonoBuscado = $filtros['telefonoBuscado'];
 $estadoBuscado = $filtros['estadoBuscado'];
 $proveedorBuscado = $filtros['proveedorBuscado'];
 $trabajoBuscado = $filtros['trabajoBuscado'];
@@ -190,66 +198,36 @@ if ($rs_prov) {
                 <?php unset($_SESSION['Mensaje']); unset($_SESSION['Estilo']); ?>
             <?php } ?>
 
-            <form method="POST" class="mb-3" id="formBusqueda">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control form-control-sm" name="parametro" id="parametro" 
-                               value="<?= htmlspecialchars($parametro) ?>" 
-                               placeholder="Buscar cliente, fecha, etc...">
+            <form method="POST" class="mb-3 bg-light p-3 rounded border" id="formBusqueda">
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-md-2">
+                        <label class="form-label text-tiny mb-0 fw-bold">ID Pedido</label>
+                        <input type="number" class="form-control form-control-sm" name="idBuscado" 
+                               value="<?= htmlspecialchars($idBuscado) ?>" placeholder="Ej: 1500">
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Fecha</label>
+                        <input type="date" class="form-control form-control-sm" name="fechaBuscada" id="fechaBuscada"
+                               value="<?= htmlspecialchars($fechaBuscada) ?>">
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="btn-group" role="group">
-                            <button type="submit" class="btn btn-primary btn-sm" name="BotonBuscar" value="1">
-                                <i class="bi bi-search"></i> Buscar
-                            </button>
-                            <button type="submit" class="btn btn-secondary btn-sm" name="BotonLimpiar" value="1">
-                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                            </button>
-                            
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-download"></i> Descargar
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="pendientes">Trabajos Pendientes</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="en_proceso">Trabajos en Proceso</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Para Taller</a></li>
-                                </ul>
-                            </div>
-                        </div>
+                        <label class="form-label text-tiny mb-0 fw-bold">Cliente (Nombre y/o Apellido)</label>
+                        <input type="text" class="form-control form-control-sm" name="clienteBuscado" 
+                               value="<?= htmlspecialchars($clienteBuscado) ?>" placeholder="Ej: Juan Perez">
                     </div>
                     
-                    <div class="col-md-4">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Cliente" 
-                                   <?= ($criterio == 'Cliente') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios1">Cliente</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Fecha"
-                                   <?= ($criterio == 'Fecha') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios2">Fecha</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Telefono"
-                                   <?= ($criterio == 'Telefono') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios3">Teléfono</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Id"
-                                   <?= ($criterio == 'Id') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios4">ID</label>
-                        </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Teléfono</label>
+                        <input type="text" class="form-control form-control-sm" name="telefonoBuscado" 
+                               value="<?= htmlspecialchars($telefonoBuscado) ?>" placeholder="Ej: 351...">
                     </div>
                 </div>
-                
-                <div class="row mt-2 g-2">
+
+                <div class="row mt-2 g-2 align-items-end">
                     <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Estado:</label>
                         <select class="form-select form-select-sm" name="estadoBuscado" id="estadoBuscado">
                             <option value="">Todos los estados</option>
                             <?php foreach ($estados as $estado): ?>
@@ -262,6 +240,7 @@ if ($rs_prov) {
                     </div>
 
                     <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Proveedor:</label>
                         <select class="form-select form-select-sm" name="proveedorBuscado" id="proveedorBuscado">
                             <option value="">Todos los proveedores</option>
                             <?php foreach ($proveedores as $prov): ?>
@@ -273,10 +252,37 @@ if ($rs_prov) {
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Trabajo / Descripción:</label>
                         <input type="text" class="form-control form-control-sm" name="trabajoBuscado" id="trabajoBuscado" 
                                value="<?= htmlspecialchars($trabajoBuscado) ?>" 
-                               placeholder="Trabajo (Ej: Carnet, Lona, Taza...) - Presionar ENTER para buscar">
+                               placeholder="Ej: Carnet, Lona, Taza...">
+                    </div>
+
+                    <div class="col-md-3 text-end">
+                        <div class="btn-group" role="group">
+                            <button type="submit" class="btn btn-primary btn-sm" name="BotonBuscar" value="1">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                            <button type="submit" class="btn btn-secondary btn-sm" name="BotonLimpiar" value="1" title="Limpiar Filtros">
+                                <i class="bi bi-eraser-fill"></i>
+                            </button>
+                            
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Descargar Informes">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="pendientes">Trabajos Pendientes</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="listos">Trabajos Listos</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="en_proceso">Trabajos en Proceso</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item descargar-informe" href="#" data-tipo="impresos">Trabajos Para Taller</a></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -305,7 +311,7 @@ if ($rs_prov) {
                             <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
                                 $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
                                 
-                                // ACÁ SE LLAMA A TU FUNCIÓN DE COLORES CON EL ID EXACTO (Ej: 1, 2, 3...)
+                                // ACÁ SE LLAMA A TU FUNCIÓN DE COLORES
                                 list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
                                 
                                 $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
@@ -558,8 +564,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const formBusqueda = document.getElementById('formBusqueda');
     const estadoSelect = document.getElementById('estadoBuscado');
     const proveedorSelect = document.getElementById('proveedorBuscado');
+    const fechaInput = document.getElementById('fechaBuscada');
 
-    // FILTRO AUTOMÁTICO AL CAMBIAR SELECTS (Como en tu sistema original)
+    // FILTROS AUTOMÁTICOS AL CAMBIAR
     estadoSelect.addEventListener('change', function() {
         formBusqueda.submit();
     });
@@ -567,6 +574,13 @@ document.addEventListener('DOMContentLoaded', function() {
     proveedorSelect.addEventListener('change', function() {
         formBusqueda.submit();
     });
+    
+    // Auto-filtrar al seleccionar una fecha en el calendario
+    if (fechaInput) {
+        fechaInput.addEventListener('change', function() {
+            formBusqueda.submit();
+        });
+    }
 
     new bootstrap.Tooltip(document.body, {
         selector: '[data-bs-toggle="tooltip"]'

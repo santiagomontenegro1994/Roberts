@@ -3615,37 +3615,54 @@ function Generar_Where_Pedidos_Avanzado($filtros) {
     // Por defecto siempre trabajos activos
     $where = array("PT.idActivo = 1");
     
-    // Filtro Estado
+    // 1. Filtro ID
+    if (!empty($filtros['idBuscado'])) {
+        $where[] = "PT.idPedidoTrabajos = " . intval($filtros['idBuscado']);
+    }
+
+    // 2. Filtro Fecha (Formato del calendario YYYY-MM-DD)
+    if (!empty($filtros['fechaBuscada'])) {
+        $fecha = addslashes(trim($filtros['fechaBuscada']));
+        $where[] = "PT.fecha LIKE '%$fecha%'";
+    }
+
+    // 3. Filtro Cliente (Con tu lógica original para separar Nombre y Apellido)
+    if (!empty($filtros['clienteBuscado'])) {
+        $parametro = strtolower(trim($filtros['clienteBuscado']));
+        $nombreApellido = explode(' ', $parametro);
+        
+        if (count($nombreApellido) >= 2) {
+            $n1 = addslashes($nombreApellido[0]);
+            $n2 = addslashes($nombreApellido[1]);
+            $where[] = "(
+                (LOWER(C.nombre) LIKE '%$n1%' AND LOWER(C.apellido) LIKE '%$n2%') 
+                OR 
+                (LOWER(C.nombre) LIKE '%$n2%' AND LOWER(C.apellido) LIKE '%$n1%')
+            )";
+        } else {
+            $n1 = addslashes($parametro);
+            $where[] = "(LOWER(C.nombre) LIKE '%$n1%' OR LOWER(C.apellido) LIKE '%$n1%')";
+        }
+    }
+
+    // 4. Filtro Teléfono
+    if (!empty($filtros['telefonoBuscado'])) {
+        $tel = addslashes(trim($filtros['telefonoBuscado']));
+        $where[] = "C.telefono LIKE '%$tel%'";
+    }
+
+    // 5. Filtro Estado
     if (!empty($filtros['estadoBuscado'])) {
         $where[] = "PT.idEstado = " . intval($filtros['estadoBuscado']);
     }
 
-    // Filtro Búsqueda por texto (Cliente, Fecha, Teléfono, ID)
-    if (!empty($filtros['parametro'])) {
-        $param = addslashes(trim($filtros['parametro']));
-        switch ($filtros['criterio']) {
-            case 'Cliente':
-                $where[] = "(C.nombre LIKE '%$param%' OR C.apellido LIKE '%$param%')";
-                break;
-            case 'Fecha':
-                $where[] = "PT.fecha LIKE '%$param%'";
-                break;
-            case 'Telefono':
-                $where[] = "C.telefono LIKE '%$param%'";
-                break;
-            case 'Id':
-                $where[] = "PT.idPedidoTrabajos = " . intval($param);
-                break;
-        }
-    }
-
-    // Filtro Proveedor
+    // 6. Filtro Proveedor
     if (!empty($filtros['proveedorBuscado'])) {
         $idProv = intval($filtros['proveedorBuscado']);
         $where[] = "PT.idPedidoTrabajos IN (SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idProveedor = $idProv AND idActivo = 1)";
     }
 
-    // Filtro Trabajo (Busca en detalle y en el nombre del tipo de trabajo)
+    // 7. Filtro Trabajo / Descripción
     if (!empty($filtros['trabajoBuscado'])) {
         $trab = addslashes(trim($filtros['trabajoBuscado']));
         $where[] = "PT.idPedidoTrabajos IN (
