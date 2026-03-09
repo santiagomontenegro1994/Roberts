@@ -3611,6 +3611,158 @@ function Datos_Estados_Pedido_Trabajo($conexion) {
     return $estados;
 }
 
+function Generar_Where_Pedidos_Avanzado($filtros) {
+    // Siempre mostrar activos por defecto
+    $where = ["pt.idActivo = 1"];
+    
+    // Filtro por Estado General del Pedido
+    if (!empty($filtros['estadoBuscado'])) {
+        $where[] = "pt.idEstado = " . intval($filtros['estadoBuscado']);
+    }
+
+    // Filtro Básico (Cliente, Fecha, Teléfono, ID)
+    if (!empty($filtros['parametro'])) {
+        $param = addslashes($filtros['parametro']);
+        switch ($filtros['criterio']) {
+            case 'Cliente':
+                $where[] = "(c.nombre LIKE '%$param%' OR c.apellido LIKE '%$param%')";
+                break;
+            case 'Fecha':
+                $where[] = "pt.fecha LIKE '%$param%'";
+                break;
+            case 'Telefono':
+                $where[] = "c.telefono LIKE '%$param%'";
+                break;
+            case 'Id':
+                $where[] = "pt.idPedidoTrabajos = " . intval($param);
+                break;
+        }
+    }
+
+    // Filtro por Proveedor (Debe existir en al menos un detalle de trabajo de ese pedido)
+    if (!empty($filtros['proveedorBuscado'])) {
+        $idProv = intval($filtros['proveedorBuscado']);
+        $where[] = "pt.idPedidoTrabajos IN (SELECT id_pedido_trabajos FROM detalle_trabajos WHERE idProveedor = $idProv)";
+    }
+
+    // Filtro por Tipo de Trabajo o Descripción (Busca en detalle_trabajos y tipo_trabajo)
+    if (!empty($filtros['trabajoBuscado'])) {
+        $trab = addslashes($filtros['trabajoBuscado']);
+        $where[] = "pt.idPedidoTrabajos IN (
+            SELECT dt.id_pedido_trabajos 
+            FROM detalle_trabajos dt
+            LEFT JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
+            WHERE dt.descripcion LIKE '%$trab%' OR tt.denominacion LIKE '%$trab%'
+        )";
+    }
+
+    return "WHERE " . implode(" AND ", $where);
+}
+
+function Contar_Pedidos_Filtrados($conexion, $filtros) {
+    $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
+    
+    $sql = "SELECT COUNT(DISTINCT pt.idPedidoTrabajos) as total
+            FROM pedido_trabajos pt
+            INNER JOIN clientes c ON pt.idCliente = c.idCliente
+            $whereSQL";
+            
+    $rs = mysqli_query($conexion, $sql);
+    if ($rs && $row = mysqli_fetch_assoc($rs)) {
+        return $row['total'];
+    }
+    return 0;
+}
+
+function Listar_Pedidos_Filtrados_Paginados($conexion, $filtros, $offset, $limite) {
+    $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
+    
+    // Paso 1: Obtener solo los IDs de los pedidos de esta página.
+    // Ordenamos por los más recientes.
+    $sql_ids = "SELECT DISTINCT pt.idPedidoTrabajos 
+                FROM pedido_trabajos pt
+                INNER JOIN clientes c ON pt.idCliente = c.idCliente
+                $whereSQL 
+                ORDER BY pt.idPedidoTrabajos DESC 
+                LIMIT $offset, $limite";
+                
+    $rs_ids = mysqli_query($conexion, $sql_ids);
+    $ids_array = [];
+    while ($row = mysqli_fetch_assoc($rs_ids)) {
+        $ids_array[] = $row['idPedidoTrabajos'];
+    }
+    
+    if (empty($ids_array)) return [];
+    
+    $ids_string = implode(',', $ids_array);
+
+    // Paso 2: Traer toda la información detallada SOLO de esos IDs.
+    // Así es extremadamente rápido porque no cruza toda la base de datos.
+    $sql = "SELECT 
+                pt.idPedidoTrabajos, pt.fecha, pt.senia,
+                c.nombre AS CLIENTE_N, c.apellido AS CLIENTE_A, c.telefono AS TELEFONO,
+                u.usuario, ept.denominacion AS estado_pedido,
+                dt.idDetalleTrabajo, dt.descripcion, dt.precio, 
+                dt.fechaEntrega, dt.horaEntrega, dt.facturado,
+                tt.denominacion AS trabajo_denom,
+                p.nombre AS nombre_proveedor,
+                et.denominacion AS nombre_estado
+            FROM pedido_trabajos pt
+            INNER JOIN clientes c ON pt.idCliente = c.idCliente
+            INNER JOIN estado_pedido_trabajo ept ON pt.idEstado = ept.idEstadoPedidoTrabajo
+            INNER JOIN usuarios u ON pt.idUsuario = u.idUsuario
+            LEFT JOIN detalle_trabajos dt ON pt.idPedidoTrabajos = dt.id_pedido_trabajos AND dt.idActivo = 1
+            LEFT JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
+            LEFT JOIN proveedores p ON dt.idProveedor = p.idProveedor
+            LEFT JOIN estado_trabajo et ON dt.idEstadoTrabajo = et.idEstado
+            WHERE pt.idPedidoTrabajos IN ($ids_string)
+            ORDER BY pt.idPedidoTrabajos DESC";
+
+    $rs = mysqli_query($conexion, $sql);
+    
+    $pedidos = [];
+    while ($fila = mysqli_fetch_assoc($rs)) {
+        $id = $fila['idPedidoTrabajos'];
+        
+        if (!isset($pedidos[$id])) {
+            $pedidos[$id] = [
+                'ID' => $id,
+                'FECHA' => date('d/m/Y', strtotime($fila['fecha'])),
+                'SEÑA' => floatval($fila['senia']),
+                'CLIENTE_N' => $fila['CLIENTE_N'],
+                'CLIENTE_A' => $fila['CLIENTE_A'],
+                'TELEFONO' => $fila['TELEFONO'],
+                'ESTADO' => $fila['estado_pedido'],
+                'USUARIO' => $fila['usuario'],
+                'PRECIO' => 0,
+                'DETALLES_FACTURADOS' => 0,
+                'TOTAL_DETALLES' => 0,
+                'TRABAJOS' => []
+            ];
+        }
+        
+        if (!empty($fila['idDetalleTrabajo'])) {
+            $pedidos[$id]['TRABAJOS'][] = [
+                'DENOMINACION' => $fila['trabajo_denom'],
+                'DESCRIPCION' => $fila['descripcion'],
+                'PROVEEDOR' => $fila['nombre_proveedor'],
+                'ESTADO' => $fila['nombre_estado'],
+                'FECHA_ENTREGA' => date('d/m/Y', strtotime($fila['fechaEntrega'])),
+                'HORA_ENTREGA' => $fila['horaEntrega'],
+                'PRECIO' => floatval($fila['precio'])
+            ];
+            $pedidos[$id]['PRECIO'] += floatval($fila['precio']);
+            $pedidos[$id]['TOTAL_DETALLES'] += 1;
+            if ($fila['facturado'] == 1) {
+                $pedidos[$id]['DETALLES_FACTURADOS'] += 1;
+            }
+        }
+    }
+    
+    // Reindexar el array para usar un for normal de 0 a X
+    return array_values($pedidos);
+}
+
 // ===========================================================
 //  CUENTA CORRIENTE
 // ===========================================================

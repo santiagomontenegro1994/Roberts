@@ -13,14 +13,22 @@ require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Inicializar variables de filtro desde la sesión
+// Inicializar variables de filtro desde la sesión con los nuevos campos
 if (!isset($_SESSION['filtros_pedidos'])) {
     $_SESSION['filtros_pedidos'] = [
         'parametro' => '',
         'criterio' => 'Cliente',
-        'estadoBuscado' => ''
+        'estadoBuscado' => '',
+        'proveedorBuscado' => '',
+        'trabajoBuscado' => ''
     ];
 }
+
+// Configuración de Paginación
+$registros_por_pagina = 50; // Cantidad de pedidos por página
+$pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+if ($pagina_actual < 1) $pagina_actual = 1;
+$offset = ($pagina_actual - 1) * $registros_por_pagina;
 
 // Procesar búsquedas
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,53 +37,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['filtros_pedidos'] = [
             'parametro' => '',
             'criterio' => 'Cliente',
-            'estadoBuscado' => ''
+            'estadoBuscado' => '',
+            'proveedorBuscado' => '',
+            'trabajoBuscado' => ''
         ];
     } else {
-        // Determinar qué tipo de búsqueda se está realizando
-        $esBusquedaPorEstado = isset($_POST['estadoBuscado']) && $_POST['estadoBuscado'] != '';
-        $esBusquedaPorParametro = isset($_POST['parametro']) && trim($_POST['parametro']) != '';
-        
-        if ($esBusquedaPorEstado) {
-            // Búsqueda por estado - resetear parámetro de búsqueda
-            $_SESSION['filtros_pedidos'] = [
-                'parametro' => '',
-                'criterio' => 'Cliente',
-                'estadoBuscado' => $_POST['estadoBuscado']
-            ];
-        } elseif ($esBusquedaPorParametro) {
-            // Búsqueda por parámetro - resetear estado
-            $_SESSION['filtros_pedidos'] = [
-                'parametro' => trim($_POST['parametro']),
-                'criterio' => $_POST['gridRadios'] ?? 'Cliente',
-                'estadoBuscado' => ''
-            ];
-        } else {
-            // Ninguna búsqueda activa - mantener valores actuales
-            $_SESSION['filtros_pedidos'] = [
-                'parametro' => trim($_POST['parametro'] ?? ''),
-                'criterio' => $_POST['gridRadios'] ?? 'Cliente',
-                'estadoBuscado' => $_POST['estadoBuscado'] ?? ''
-            ];
-        }
+        // Acumular todos los filtros
+        $_SESSION['filtros_pedidos'] = [
+            'parametro' => trim($_POST['parametro'] ?? ''),
+            'criterio' => $_POST['gridRadios'] ?? 'Cliente',
+            'estadoBuscado' => $_POST['estadoBuscado'] ?? '',
+            'proveedorBuscado' => $_POST['proveedorBuscado'] ?? '',
+            'trabajoBuscado' => trim($_POST['trabajoBuscado'] ?? '')
+        ];
     }
+    // Redirigir a la primera página después de buscar o limpiar para no quedarse en una página vacía
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
 }
 
 // Obtener valores actuales de los filtros
-$parametro = $_SESSION['filtros_pedidos']['parametro'];
-$criterio = $_SESSION['filtros_pedidos']['criterio'];
-$estadoBuscado = $_SESSION['filtros_pedidos']['estadoBuscado'];
+$filtros = $_SESSION['filtros_pedidos'];
+$parametro = $filtros['parametro'];
+$criterio = $filtros['criterio'];
+$estadoBuscado = $filtros['estadoBuscado'];
+$proveedorBuscado = $filtros['proveedorBuscado'];
+$trabajoBuscado = $filtros['trabajoBuscado'];
 
-// Obtener datos según los filtros
-if (!empty($estadoBuscado)) {
-    $ListadoPedidos = Listar_Pedidos_Trabajo_Por_Estado($MiConexion, $estadoBuscado);
-} elseif (!empty($parametro)) {
-    $ListadoPedidos = Listar_Pedidos_Trabajo_Parametro_Detallado($MiConexion, $criterio, $parametro);
-} else {
-    $ListadoPedidos = Listar_Pedidos_Trabajos_Detallado($MiConexion);
-}
+// Obtener los datos usando las nuevas funciones de paginación
+$TotalRegistros = Contar_Pedidos_Filtrados($MiConexion, $filtros);
+$TotalPaginas = ceil($TotalRegistros / $registros_por_pagina);
+$ListadoPedidos = Listar_Pedidos_Filtrados_Paginados($MiConexion, $filtros, $offset, $registros_por_pagina);
 
 $CantidadPedidos = count($ListadoPedidos);
+
+// Obtener datos para los selects de los filtros
+$estados = Datos_Estados_Pedido_Trabajo($MiConexion);
+// Si no tienes una función Listar_Proveedores(), la creamos consultando directamente
+$rs_prov = mysqli_query($MiConexion, "SELECT idProveedor, nombre FROM proveedores WHERE idActivo = 1 ORDER BY nombre ASC");
+$proveedores = [];
+while ($row = mysqli_fetch_assoc($rs_prov)) {
+    $proveedores[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -151,46 +154,16 @@ $CantidadPedidos = count($ListadoPedidos);
         }
         
         /* Columnas específicas */
-        .col-id {
-            width: 50px;
-        }
-        
-        .col-fecha {
-            width: 90px;
-        }
-        
-        .col-cliente {
-            width: 120px;
-            min-width: 120px;
-        }
-        
-        .col-facturacion {
-            width: 90px;
-        }
-        
-        .col-detalle {
-            width: 100px;
-        }
-        
-        .col-precio {
-            width: 80px;
-        }
-        
-        .col-senia {
-            width: 80px;
-        }
-        
-        .col-saldo {
-            width: 80px;
-        }
-        
-        .col-tomado {
-            width: 100px;
-        }
-        
-        .col-acciones {
-            width: 180px;
-        }
+        .col-id { width: 50px; }
+        .col-fecha { width: 90px; }
+        .col-cliente { width: 120px; min-width: 120px; }
+        .col-facturacion { width: 90px; }
+        .col-detalle { width: 100px; }
+        .col-precio { width: 80px; }
+        .col-senia { width: 80px; }
+        .col-saldo { width: 80px; }
+        .col-tomado { width: 100px; }
+        .col-acciones { width: 180px; }
     </style>
 </head>
 <body>
@@ -220,24 +193,49 @@ $CantidadPedidos = count($ListadoPedidos);
                 <?php unset($_SESSION['Mensaje']); unset($_SESSION['Estilo']); ?>
             <?php } ?>
 
-            <form method="POST" class="mb-3" id="formBusqueda">
+            <form method="POST" class="mb-3 bg-light p-3 rounded border" id="formBusqueda">
                 <div class="row g-2 align-items-center">
                     <div class="col-md-4">
+                        <label class="form-label text-tiny mb-0 fw-bold">Buscar cliente, fecha, teléfono o ID:</label>
                         <input type="text" class="form-control form-control-sm" name="parametro" id="parametro" 
                                value="<?= htmlspecialchars($parametro) ?>" 
-                               placeholder="Buscar...">
+                               placeholder="Término de búsqueda...">
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="btn-group" role="group">
+                        <div class="mt-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Cliente" 
+                                       <?= ($criterio == 'Cliente') ? 'checked' : '' ?>>
+                                <label class="form-check-label text-tiny" for="gridRadios1">Cliente</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Fecha"
+                                       <?= ($criterio == 'Fecha') ? 'checked' : '' ?>>
+                                <label class="form-check-label text-tiny" for="gridRadios2">Fecha</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Telefono"
+                                       <?= ($criterio == 'Telefono') ? 'checked' : '' ?>>
+                                <label class="form-check-label text-tiny" for="gridRadios3">Teléfono</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Id"
+                                       <?= ($criterio == 'Id') ? 'checked' : '' ?>>
+                                <label class="form-check-label text-tiny" for="gridRadios4">ID</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group mt-3" role="group">
                             <button type="submit" class="btn btn-primary btn-sm" name="BotonBuscar" value="1">
-                                <i class="bi bi-search"></i> Buscar
+                                <i class="bi bi-search"></i> Filtrar
                             </button>
                             <button type="submit" class="btn btn-secondary btn-sm" name="BotonLimpiar" value="1">
                                 <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </button>
                             
-                            <!-- Botón de descarga con dropdown -->
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-download"></i> Descargar
@@ -254,44 +252,42 @@ $CantidadPedidos = count($ListadoPedidos);
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-4">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Cliente" 
-                                   <?= ($criterio == 'Cliente') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios1">Cliente</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios2" value="Fecha"
-                                   <?= ($criterio == 'Fecha') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios2">Fecha</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Telefono"
-                                   <?= ($criterio == 'Telefono') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios3">Teléfono</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Id"
-                                   <?= ($criterio == 'Id') ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="gridRadios4">ID</label>
-                        </div>
-                    </div>
                 </div>
                 
-                <div class="row mt-2">
-                    <div class="col-md-4">
+                <hr class="my-2 text-muted">
+
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Estado del Pedido:</label>
                         <select class="form-select form-select-sm" name="estadoBuscado" id="estadoBuscado">
                             <option value="">Todos los estados</option>
-                            <?php 
-                            $estados = Datos_Estados_Pedido_Trabajo($MiConexion);
-                            foreach ($estados as $estado): ?>
+                            <?php foreach ($estados as $estado): ?>
                                 <option value="<?= $estado['idEstado'] ?>"
                                     <?= ($estadoBuscado == $estado['idEstado']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($estado['denominacion']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label text-tiny mb-0 fw-bold">Proveedor asignado:</label>
+                        <select class="form-select form-select-sm" name="proveedorBuscado" id="proveedorBuscado">
+                            <option value="">Todos los proveedores</option>
+                            <?php foreach ($proveedores as $prov): ?>
+                                <option value="<?= $prov['idProveedor'] ?>"
+                                    <?= ($proveedorBuscado == $prov['idProveedor']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($prov['nombre']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-tiny mb-0 fw-bold">Tipo de Trabajo / Descripción:</label>
+                        <input type="text" class="form-control form-control-sm" name="trabajoBuscado" id="trabajoBuscado" 
+                               value="<?= htmlspecialchars($trabajoBuscado) ?>" 
+                               placeholder="Ej: Carnet, Taza, Remera...">
                     </div>
                 </div>
             </form>
@@ -313,122 +309,159 @@ $CantidadPedidos = count($ListadoPedidos);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
-                            $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
-                            list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
-                            $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
-                            $nombreMostrar = (strlen($nombreCliente) > 15) ? substr($nombreCliente, 0, 15) . '...' : $nombreCliente;
-                            
-                            // Determinar estado de facturación
-                            $detallesFacturados = isset($ListadoPedidos[$i]['DETALLES_FACTURADOS']) ? $ListadoPedidos[$i]['DETALLES_FACTURADOS'] : 0;
-                            $totalDetalles = isset($ListadoPedidos[$i]['TOTAL_DETALLES']) ? $ListadoPedidos[$i]['TOTAL_DETALLES'] : 0;
-                            $estadoFacturacion = determinarEstadoFacturacion($detallesFacturados, $totalDetalles);
-                        ?>
-                        <tr class="<?= $Color ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?= $Title ?>">
-                            <td class="col-id"><?= $ListadoPedidos[$i]['ID'] ?></td>
-                            <td class="col-fecha text-compact"><?= $ListadoPedidos[$i]['FECHA'] ?></td>
-                            <td class="col-cliente">
-                                <strong class="text-compact" title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
-                                <?php if (!empty($ListadoPedidos[$i]['TELEFONO'])): ?>
-                                    <br><small class="text-muted text-tiny"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <!-- Nueva columna para estado de facturación -->
-                            <td class="col-facturacion text-center">
-                                <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
-                                    <span class="badge bg-success d-inline-flex align-items-center" 
-                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                        <i class="bi bi-check-circle-fill me-1"></i>
-                                        <span>Facturado</span>
-                                    </span>
-                                <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
-                                    <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
-                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                        <i class="bi bi-exclamation-circle-fill me-1"></i>
-                                        <span>Parcial</span>
-                                    </span>
-                                <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
-                                    <span class="badge bg-info d-inline-flex align-items-center" 
-                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                        <i class="bi bi-info-circle-fill me-1"></i>
-                                        <span>Sin detalles</span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-secondary d-inline-flex align-items-center" 
-                                          data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                        <i class="bi bi-x-circle-fill me-1"></i>
-                                        <span>No facturado</span>
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td class="col-detalle">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Ver (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownTrabajos<?= $i ?>">
-                                        <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
-                                            <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
-                                                <li>
-                                                    <span class="dropdown-item-text text-compact">
-                                                        <strong><?= htmlspecialchars($trabajo['DENOMINACION']) ?></strong>
-                                                        <br>
-                                                        <small><?= htmlspecialchars($trabajo['DESCRIPCION']) ?></small>
-                                                    </span>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <li><span class="dropdown-item-text text-compact">Sin trabajos</span></li>
-                                        <?php endif; ?>
-                                    </ul>
-                                </div>
-                            </td>
-                            <td class="col-precio text-compact">$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
-                            <td class="col-senia text-compact">$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
-                            <td class="col-saldo text-compact">$<?= number_format($saldo, 2) ?></td>
-                            <td class="col-tomado text-compact"><?= $ListadoPedidos[$i]['USUARIO'] ?></td>
-                            <td class="col-acciones">
-                                <div class="btn-group" role="group">
-                                    <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" 
-                                        class="btn btn-sm btn-danger me-1"
-                                        title="Anular" 
-                                        onclick="return confirm('Confirma anular este Pedido?');">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
+                        <?php if ($CantidadPedidos == 0): ?>
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">No se encontraron pedidos con los filtros aplicados.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
+                                $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
+                                list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
+                                $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
+                                $nombreMostrar = (strlen($nombreCliente) > 15) ? substr($nombreCliente, 0, 15) . '...' : $nombreCliente;
+                                
+                                // Determinar estado de facturación
+                                $detallesFacturados = isset($ListadoPedidos[$i]['DETALLES_FACTURADOS']) ? $ListadoPedidos[$i]['DETALLES_FACTURADOS'] : 0;
+                                $totalDetalles = isset($ListadoPedidos[$i]['TOTAL_DETALLES']) ? $ListadoPedidos[$i]['TOTAL_DETALLES'] : 0;
+                                $estadoFacturacion = determinarEstadoFacturacion($detallesFacturados, $totalDetalles);
+                            ?>
+                            <tr class="<?= $Color ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?= $Title ?>">
+                                <td class="col-id"><?= $ListadoPedidos[$i]['ID'] ?></td>
+                                <td class="col-fecha text-compact"><?= $ListadoPedidos[$i]['FECHA'] ?></td>
+                                <td class="col-cliente">
+                                    <strong class="text-compact" title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
+                                    <?php if (!empty($ListadoPedidos[$i]['TELEFONO'])): ?>
+                                        <br><small class="text-muted text-tiny"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                
+                                <td class="col-facturacion text-center">
+                                    <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
+                                        <span class="badge bg-success d-inline-flex align-items-center" 
+                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            <span>Facturado</span>
+                                        </span>
+                                    <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
+                                        <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
+                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                            <span>Parcial</span>
+                                        </span>
+                                    <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
+                                        <span class="badge bg-info d-inline-flex align-items-center" 
+                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                            <i class="bi bi-info-circle-fill me-1"></i>
+                                            <span>Sin detalles</span>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary d-inline-flex align-items-center" 
+                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
+                                            <i class="bi bi-x-circle-fill me-1"></i>
+                                            <span>No facturado</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                
+                                <td class="col-detalle">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Ver (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="dropdownTrabajos<?= $i ?>">
+                                            <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
+                                                <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
+                                                    <li>
+                                                        <span class="dropdown-item-text text-compact">
+                                                            <strong><?= htmlspecialchars($trabajo['DENOMINACION']) ?></strong>
+                                                            <br>
+                                                            <small><?= htmlspecialchars($trabajo['DESCRIPCION']) ?></small>
+                                                        </span>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <li><span class="dropdown-item-text text-compact">Sin trabajos</span></li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </div>
+                                </td>
+                                <td class="col-precio text-compact">$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
+                                <td class="col-senia text-compact">$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
+                                <td class="col-saldo text-compact">$<?= number_format($saldo, 2) ?></td>
+                                <td class="col-tomado text-compact"><?= $ListadoPedidos[$i]['USUARIO'] ?></td>
+                                <td class="col-acciones">
+                                    <div class="btn-group" role="group">
+                                        <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" 
+                                            class="btn btn-sm btn-danger me-1"
+                                            title="Anular" 
+                                            onclick="return confirm('Confirma anular este Pedido?');">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </a>
 
-                                    <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
-                                        class="btn btn-sm btn-warning me-1" 
-                                        title="Modificar">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
+                                        <a href="modificar_pedidos_trabajos.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
+                                            class="btn btn-sm btn-warning me-1" 
+                                            title="Modificar">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </a>
 
-                                    <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
-                                        class="btn btn-sm btn-primary me-1" 
-                                        title="Imprimir">
-                                        <i class="bi bi-printer-fill"></i>
-                                    </a>
+                                        <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
+                                            class="btn btn-sm btn-primary me-1" 
+                                            title="Imprimir">
+                                            <i class="bi bi-printer-fill"></i>
+                                        </a>
 
-                                    <button type="button" class="btn btn-sm btn-success" 
-                                            data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
-                                            data-pedido-id="<?= $ListadoPedidos[$i]['ID'] ?>"
-                                            data-pedido-saldo="<?= $saldo ?>"
-                                            title="Retirar Pedido">
-                                        <i class="bi bi-box-seam"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php } ?>
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
+                                                data-pedido-id="<?= $ListadoPedidos[$i]['ID'] ?>"
+                                                data-pedido-saldo="<?= $saldo ?>"
+                                                title="Retirar Pedido">
+                                            <i class="bi bi-box-seam"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php } ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
+            
+            <?php if ($TotalPaginas > 1): ?>
+            <nav aria-label="Navegación de páginas" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <?= ($pagina_actual <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?pagina=<?= $pagina_actual - 1 ?>">Anterior</a>
+                    </li>
+                    
+                    <?php 
+                    $inicio = max(1, $pagina_actual - 2);
+                    $fin = min($TotalPaginas, $pagina_actual + 2);
+                    
+                    if ($inicio > 1) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                    
+                    for ($p = $inicio; $p <= $fin; $p++): ?>
+                        <li class="page-item <?= ($p == $pagina_actual) ? 'active' : '' ?>">
+                            <a class="page-link" href="?pagina=<?= $p ?>"><?= $p ?></a>
+                        </li>
+                    <?php endfor; 
+                    
+                    if ($fin < $TotalPaginas) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                    ?>
+                    
+                    <li class="page-item <?= ($pagina_actual >= $TotalPaginas) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="?pagina=<?= $pagina_actual + 1 ?>">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="text-center text-muted text-tiny mt-2">
+                Mostrando <?= $CantidadPedidos ?> resultados de un total de <?= $TotalRegistros ?> coincidentes.
+            </div>
+            <?php endif; ?>
+
         </div>
     </div>
 </section>
 
-<!-- Modal Retirar Pedido -->
 <div class="modal fade" id="retirarPedidoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -528,22 +561,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('formRetirarPedido').addEventListener('submit', function(e) {
         if (!confirm('¿Confirmar retiro del pedido?')) {
             e.preventDefault();
-        }
-    });
-
-    // Eventos para los filtros de búsqueda
-    const formBusqueda = document.getElementById('formBusqueda');
-    const parametroInput = document.getElementById('parametro');
-    const estadoSelect = document.getElementById('estadoBuscado');
-
-    estadoSelect.addEventListener('change', function() {
-        parametroInput.value = '';
-        formBusqueda.submit();
-    });
-
-    formBusqueda.addEventListener('submit', function(e) {
-        if (parametroInput.value.trim() !== '' && !(e.submitter && e.submitter.name === 'BotonLimpiar')) {
-            estadoSelect.value = '';
         }
     });
 
