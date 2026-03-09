@@ -198,7 +198,7 @@ if ($rs_prov) {
                 <?php unset($_SESSION['Mensaje']); unset($_SESSION['Estilo']); ?>
             <?php } ?>
 
-            <form method="POST" class="mb-3 bg-light p-3 rounded border" id="formBusqueda">
+            <form method="POST" class="mb-3" id="formBusqueda">
                 <div class="row g-2 align-items-end mb-2">
                     <div class="col-md-2">
                         <label class="form-label text-tiny mb-0 fw-bold">ID Pedido</label>
