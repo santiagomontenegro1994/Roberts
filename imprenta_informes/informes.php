@@ -229,6 +229,17 @@ async function cargarDatos() {
         const d = data.datos;
         const p = data.previo;
 
+        // --- INICIO DEBUG ---
+        console.log("=================================");
+        console.log("DATOS MES ACTUAL (d):", d);
+        console.log("DATOS MES ANTERIOR (p):", p);
+        console.log("---------------------------------");
+        console.log("CÁLCULO DE VENTAS TOTALES:");
+        console.log(`Actual: $${d.totalIngresos} | Anterior: $${p.totalIngresos}`);
+        console.log(`Cuenta matemática: ((${d.totalIngresos} - ${p.totalIngresos}) / ${p.totalIngresos}) * 100`);
+        console.log("=================================");
+        // --- FIN DEBUG ---
+
         // CAMBIO: Definir si el mes está en curso para cambiar el texto descriptivo
         const txtContexto = data.es_parcial ? `vs primeros ${data.dias_parciales} días del mes ant.` : 'vs mes anterior';
 
