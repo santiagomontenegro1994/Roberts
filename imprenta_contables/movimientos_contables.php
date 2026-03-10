@@ -175,8 +175,16 @@ $totalMovimientosListados = $totalMovimientos;
                                     <option value="">Todos</option>
                                     <option value="Entrada" <?= ($filtros['tipo_movimiento'] == 'Entrada') ? 'selected' : '' ?>>Entrada</option>
                                     <option value="Salida" <?= ($filtros['tipo_movimiento'] == 'Salida') ? 'selected' : '' ?>>Salida</option>
-                                    <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables') ? 'selected' : '' ?>>Retiros Contables</option>
-                                    <option value="Transferencia" <?= ($filtros['tipo_movimiento'] == 'Transferencia') ? 'selected' : '' ?>>Mov. Interno</option>
+                                    <option value="Transferencia" <?= ($filtros['tipo_movimiento'] == 'Transferencia') ? 'selected' : '' ?>>Mov. Interno / Transferencia</option>
+                                    
+                                    <optgroup label="Retiros Contables">
+                                        <option value="Retiros Contables" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables') ? 'selected' : '' ?>>● Todos los Retiros</option>
+                                        <option value="Retiros Contables - Insumos" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables - Insumos') ? 'selected' : '' ?>>Insumos</option>
+                                        <option value="Retiros Contables - Proveedores" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables - Proveedores') ? 'selected' : '' ?>>Proveedores</option>
+                                        <option value="Retiros Contables - Servicios" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables - Servicios') ? 'selected' : '' ?>>Servicios</option>
+                                        <option value="Retiros Contables - Sueldos" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables - Sueldos') ? 'selected' : '' ?>>Sueldos</option>
+                                        <option value="Retiros Contables - Varios" <?= ($filtros['tipo_movimiento'] == 'Retiros Contables - Varios') ? 'selected' : '' ?>>Varios</option>
+                                    </optgroup>
                                 </select>
                             </div>
                              <div class="col-md-3">

@@ -2828,9 +2828,7 @@ function Eliminar_Movimiento_Contable($vConexion, $vIdRetiro) {
 function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $limite = 50) {
     $movimientos = [];
 
-    // ---------------------------------------------------------
-    // 1. DETALLE CAJA (Ventas/Ingresos)
-    // ---------------------------------------------------------
+    // 1. DETALLE CAJA
     $detalleCajaQuery = "
         SELECT 
             dc.idDetalleCaja AS idMovimiento,
@@ -2851,31 +2849,20 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
           AND tp.denominacion NOT LIKE '%Efectivo%' 
     ";
 
-    // Filtros detalle_caja
-    if (!empty($filtros['fecha_desde'])) {
-        $fd = $conexion->real_escape_string($filtros['fecha_desde']);
-        $detalleCajaQuery .= " AND c.Fecha >= '$fd'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fh = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $detalleCajaQuery .= " AND c.Fecha <= '$fh'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $mp = $conexion->real_escape_string($filtros['metodo_pago']);
-        $detalleCajaQuery .= " AND tp.denominacion = '$mp'";
-    }
-    // LÓGICA DE EXCLUSIÓN: Si busco Salida, Retiro o TRANSFERENCIA, no mostrar Caja
+    if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $detalleCajaQuery .= " AND c.Fecha >= '$fd'"; }
+    if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $detalleCajaQuery .= " AND c.Fecha <= '$fh'"; }
+    if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $detalleCajaQuery .= " AND tp.denominacion = '$mp'"; }
+    
+    // Si busco algo que NO es Caja (como Salida, Retiros, o un subtipo de Retiro), anulo esta consulta
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Salida' || 
-            $filtros['tipo_movimiento'] === 'Retiros Contables' || 
-            $filtros['tipo_movimiento'] === 'Transferencia') {
+        $tipo = $filtros['tipo_movimiento'];
+        if ($tipo === 'Salida' || strpos($tipo, 'Retiros Contables') === 0 || $tipo === 'Transferencia') {
             $detalleCajaQuery .= " AND 0";
         }
     }
 
-    // ---------------------------------------------------------
     // 2. RETIROS (Gastos/Salidas)
-    // ---------------------------------------------------------
+    // Usamos COALESCE para evitar que CONCAT devuelva NULL si falta un proveedor o categoría
     $retirosQuery = "
         SELECT 
             r.idRetiro AS idMovimiento,
@@ -2890,11 +2877,11 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
                 ELSE 1 
             END AS es_salida,
             CAST(CASE
-                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Compra de insumos a ', pi.nombre, ' - ', i.denominacion)
-                WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Pago a proveedor ', p.nombre)
-                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Pago de servicio: ', s.denominacion)
-                WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Pago de sueldo a ', CONCAT(uSueldo.nombre,' ',uSueldo.apellido))
-                WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, ': ', rv.detalle_vario)
+                WHEN ri.idRetiro IS NOT NULL THEN CONCAT('Insumos: ', COALESCE(pi.nombre, 'S/P'), ' - ', COALESCE(i.denominacion, 'S/C'), IF(ri.detalle_insumo != '', CONCAT(' (', ri.detalle_insumo, ')'), ''))
+                WHEN rp.idRetiro IS NOT NULL THEN CONCAT('Proveedor: ', COALESCE(p.nombre, 'S/P'), IF(rp.detalle_proveedor != '', CONCAT(' (', rp.detalle_proveedor, ')'), ''))
+                WHEN rs.idRetiro IS NOT NULL THEN CONCAT('Servicio: ', COALESCE(s.denominacion, 'S/S'), IF(rs.detalle_servicio != '', CONCAT(' (', rs.detalle_servicio, ')'), ''))
+                WHEN rsu.idRetiro IS NOT NULL THEN CONCAT('Sueldo a: ', COALESCE(uSueldo.nombre,''), ' ', COALESCE(uSueldo.apellido,''), IF(rsu.detalle_sueldo != '', CONCAT(' (', rsu.detalle_sueldo, ')'), ''))
+                WHEN rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte' THEN CONCAT(rv.categoria, IF(rv.detalle_vario != '', CONCAT(': ', rv.detalle_vario), ''))
                 WHEN rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte' THEN 'Depósito en Caja Fuerte'
                 ELSE 'Retiro Contable'
             END AS CHAR CHARACTER SET utf8mb4) AS detalle,
@@ -2917,37 +2904,33 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         WHERE 1=1
     ";
 
-    // Filtros Retiros
-    if (!empty($filtros['fecha_desde'])) {
-        $fd = $conexion->real_escape_string($filtros['fecha_desde']);
-        $retirosQuery .= " AND r.fecha >= '$fd'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fh = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $retirosQuery .= " AND r.fecha <= '$fh'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $mp = $conexion->real_escape_string($filtros['metodo_pago']);
-        $retirosQuery .= " AND tp.denominacion = '$mp'";
-    }
+    if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $retirosQuery .= " AND r.fecha >= '$fd'"; }
+    if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $retirosQuery .= " AND r.fecha <= '$fh'"; }
+    if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $retirosQuery .= " AND tp.denominacion = '$mp'"; }
     
-    // LÓGICA DE EXCLUSIÓN RETIROS
+    // NUEVA LÓGICA DE EXCLUSIÓN RETIROS (Soporta Subtipos)
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Entrada') {
+        $tipo = $filtros['tipo_movimiento'];
+        if ($tipo === 'Entrada') {
             $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte')";
-        } elseif ($filtros['tipo_movimiento'] === 'Salida') {
+        } elseif ($tipo === 'Salida') {
             $retirosQuery .= " AND ((rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0))";
-        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
-            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
-        } elseif ($filtros['tipo_movimiento'] === 'Transferencia') {
-            // Si busco Transferencia, oculto Retiros
+        } elseif ($tipo === 'Transferencia') {
             $retirosQuery .= " AND 0";
+        } elseif (strpos($tipo, 'Retiros Contables') === 0) {
+            // Regla general: Si empieza con Retiros Contables, debe ser un retiro contable
+            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
+            
+            // Subfiltros
+            if ($tipo === 'Retiros Contables - Insumos') $retirosQuery .= " AND ri.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Proveedores') $retirosQuery .= " AND rp.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Servicios') $retirosQuery .= " AND rs.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Sueldos') $retirosQuery .= " AND rsu.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Varios') $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte')";
         }
     }
 
-    // ---------------------------------------------------------
     // 3. MOVIMIENTOS INTERNOS 
-    // ---------------------------------------------------------
     $internosQuery = "
         SELECT 
             mi.idMovimientoInterno AS idMovimiento,
@@ -2966,28 +2949,14 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
         WHERE 1=1
     ";
 
-    // Filtros Internos
-    if (!empty($filtros['fecha_desde'])) {
-        $fd = $conexion->real_escape_string($filtros['fecha_desde']);
-        $internosQuery .= " AND mi.fecha >= '$fd'";
-    }
-    if (!empty($filtros['fecha_hasta'])) {
-        $fh = $conexion->real_escape_string($filtros['fecha_hasta']);
-        $internosQuery .= " AND mi.fecha <= '$fh'";
-    }
-    if (!empty($filtros['metodo_pago'])) {
-        $mp = $conexion->real_escape_string($filtros['metodo_pago']);
-        $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')";
-    }
-    // LÓGICA DE EXCLUSIÓN INTERNOS
-    // Si busco algo que NO sea Transferencia (y no es 'Todos'), oculto los internos.
-    if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] !== 'Transferencia') {
-            $internosQuery .= " AND 0";
-        }
+    if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $internosQuery .= " AND mi.fecha >= '$fd'"; }
+    if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $internosQuery .= " AND mi.fecha <= '$fh'"; }
+    if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')"; }
+    
+    if (!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] !== 'Transferencia') {
+        $internosQuery .= " AND 0";
     }
 
-    // --- UNION FINAL ---
     $finalQuery = "($detalleCajaQuery) UNION ALL ($retirosQuery) UNION ALL ($internosQuery) 
                    ORDER BY fecha DESC, idMovimiento DESC 
                    LIMIT $offset, $limite";
@@ -2997,79 +2966,76 @@ function Listar_Movimientos_Contables($conexion, $filtros = [], $offset = 0, $li
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $esRetiroContable = ($row['es_entrada'] == 0 && $row['es_salida'] == 0);
-            
             if ($row['origen'] === 'transferencia') {
                 $row['tipo'] = 'Transferencia';
             } else {
                 $row['tipo'] = $esRetiroContable ? 'Retiros Contables' : ($row['es_entrada'] ? 'Entrada' : 'Salida');
             }
-            
             $movimientos[] = $row;
         }
     }
-
     return $movimientos;
 }
 
 function Contar_Movimientos_Contables($conexion, $filtros = []) {
     $total = 0;
 
-    // 1. CAJA (Excluir si es Transferencia)
+    // 1. CAJA
     $detalleCajaQuery = "SELECT COUNT(*) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento WHERE tm.es_entrada = 1 AND tp.denominacion NOT LIKE '%Efectivo%'";
-
     if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $detalleCajaQuery .= " AND c.Fecha >= '$fd'"; }
     if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $detalleCajaQuery .= " AND c.Fecha <= '$fh'"; }
     if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $detalleCajaQuery .= " AND tp.denominacion = '$mp'"; }
-    
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Salida' || 
-            $filtros['tipo_movimiento'] === 'Retiros Contables' || 
-            $filtros['tipo_movimiento'] === 'Transferencia') {
+        $tipo = $filtros['tipo_movimiento'];
+        if ($tipo === 'Salida' || strpos($tipo, 'Retiros Contables') === 0 || $tipo === 'Transferencia') {
             $detalleCajaQuery .= " AND 0";
         }
     }
-    
     $res = $conexion->query($detalleCajaQuery);
     if ($res && $row = $res->fetch_assoc()) $total += intval($row['total']);
 
-
-    // 2. RETIROS (Excluir si es Transferencia)
-    $retirosQuery = "SELECT COUNT(*) as total FROM retiros r LEFT JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago WHERE 1=1";
-
+    // 2. RETIROS (Agregamos los JOIN necesarios para los subfiltros)
+    $retirosQuery = "SELECT COUNT(*) as total FROM retiros r 
+                     LEFT JOIN retiros_varios rv ON r.idRetiro = rv.idRetiro 
+                     LEFT JOIN retiros_insumos ri ON r.idRetiro = ri.idRetiro
+                     LEFT JOIN retiros_proveedores rp ON r.idRetiro = rp.idRetiro
+                     LEFT JOIN retiros_servicios rs ON r.idRetiro = rs.idRetiro
+                     LEFT JOIN retiros_sueldos rsu ON r.idRetiro = rsu.idRetiro
+                     LEFT JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento 
+                     LEFT JOIN tipo_pago tp ON r.idTipoPago = tp.idTipoPago 
+                     WHERE 1=1";
     if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $retirosQuery .= " AND r.fecha >= '$fd'"; }
     if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $retirosQuery .= " AND r.fecha <= '$fh'"; }
     if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $retirosQuery .= " AND tp.denominacion = '$mp'"; }
-
+    
     if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] === 'Entrada') {
+        $tipo = $filtros['tipo_movimiento'];
+        if ($tipo === 'Entrada') {
             $retirosQuery .= " AND rv.idRetiro IS NOT NULL AND rv.categoria = 'Caja Fuerte'";
-        } elseif ($filtros['tipo_movimiento'] === 'Salida') {
+        } elseif ($tipo === 'Salida') {
             $retirosQuery .= " AND ( (rv.idRetiro IS NULL OR rv.categoria != 'Caja Fuerte') AND NOT (tm.es_entrada = 0 AND tm.es_salida = 0) )";
-        } elseif ($filtros['tipo_movimiento'] === 'Retiros Contables') {
-            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
-        } elseif ($filtros['tipo_movimiento'] === 'Transferencia') {
+        } elseif ($tipo === 'Transferencia') {
             $retirosQuery .= " AND 0";
+        } elseif (strpos($tipo, 'Retiros Contables') === 0) {
+            $retirosQuery .= " AND (tm.es_entrada = 0 AND tm.es_salida = 0)";
+            if ($tipo === 'Retiros Contables - Insumos') $retirosQuery .= " AND ri.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Proveedores') $retirosQuery .= " AND rp.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Servicios') $retirosQuery .= " AND rs.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Sueldos') $retirosQuery .= " AND rsu.idRetiro IS NOT NULL";
+            if ($tipo === 'Retiros Contables - Varios') $retirosQuery .= " AND (rv.idRetiro IS NOT NULL AND rv.categoria != 'Caja Fuerte')";
         }
     }
-
     $res = $conexion->query($retirosQuery);
     if ($res && $row = $res->fetch_assoc()) $total += intval($row['total']);
 
-
-    // 3. MOVIMIENTOS INTERNOS (Nuevo bloque para contarlos)
+    // 3. MOVIMIENTOS INTERNOS
     $internosQuery = "SELECT COUNT(*) as total FROM movimientos_internos mi JOIN tipo_pago tpo ON mi.idOrigen = tpo.idTipoPago JOIN tipo_pago tpd ON mi.idDestino = tpd.idTipoPago WHERE 1=1";
-    
     if (!empty($filtros['fecha_desde'])) { $fd = $conexion->real_escape_string($filtros['fecha_desde']); $internosQuery .= " AND mi.fecha >= '$fd'"; }
     if (!empty($filtros['fecha_hasta'])) { $fh = $conexion->real_escape_string($filtros['fecha_hasta']); $internosQuery .= " AND mi.fecha <= '$fh'"; }
     if (!empty($filtros['metodo_pago'])) { $mp = $conexion->real_escape_string($filtros['metodo_pago']); $internosQuery .= " AND (tpo.denominacion = '$mp' OR tpd.denominacion = '$mp')"; }
-    
-    // Si NO es transferencia (y no es 'todos'), no los cuento
-    if (!empty($filtros['tipo_movimiento'])) {
-        if ($filtros['tipo_movimiento'] !== 'Transferencia') {
-            $internosQuery .= " AND 0";
-        }
+    if (!empty($filtros['tipo_movimiento']) && $filtros['tipo_movimiento'] !== 'Transferencia') {
+        $internosQuery .= " AND 0";
     }
-
     $res = $conexion->query($internosQuery);
     if ($res && $row = $res->fetch_assoc()) $total += intval($row['total']);
 
