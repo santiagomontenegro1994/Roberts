@@ -167,7 +167,8 @@ const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', cu
 
 // --- FUNCIONES AUXILIARES ---
 
-function htmlVariacion(actual, anterior, invertido = false) {
+// CAMBIO: Se agregó el parámetro "txtContexto" para cambiar el texto "vs mes anterior" dinámicamente
+function htmlVariacion(actual, anterior, invertido = false, txtContexto = 'vs mes anterior') {
     if (anterior === 0) return '<span class="badge bg-secondary">Sin datos previos</span>';
     let dif = ((actual - anterior) / anterior) * 100;
     
@@ -182,7 +183,8 @@ function htmlVariacion(actual, anterior, invertido = false) {
     }
 
     const signo = dif >= 0 ? '+' : '';
-    return `<span class="${colorClass} fw-bold"><i class="bi ${iconClass}"></i> ${signo}${dif.toFixed(1)}%</span> <span class="text-muted small">vs mes anterior</span>`;
+    // CAMBIO: Imprimimos la variable de contexto al final
+    return `<span class="${colorClass} fw-bold"><i class="bi ${iconClass}"></i> ${signo}${dif.toFixed(1)}%</span> <span class="text-muted small">${txtContexto}</span>`;
 }
 
 function renderizarLista(idLista, datos, claseBadge = 'bg-primary') {
@@ -227,26 +229,29 @@ async function cargarDatos() {
         const d = data.datos;
         const p = data.previo;
 
-        // 1. Tarjetas Superiores
+        // CAMBIO: Definir si el mes está en curso para cambiar el texto descriptivo
+        const txtContexto = data.es_parcial ? `vs primeros ${data.dias_parciales} días del mes ant.` : 'vs mes anterior';
+
+        // 1. Tarjetas Superiores (Ahora pasamos el texto dinámico)
         document.getElementById('valBanco').innerText = dinero(d.banco);
-        document.getElementById('porcBanco').innerHTML = htmlVariacion(d.banco, p.banco);
-        renderizarLista('listaDetBanco', d.detallesBanco, 'bg-primary'); // Detalle Banco
+        document.getElementById('porcBanco').innerHTML = htmlVariacion(d.banco, p.banco, false, txtContexto);
+        renderizarLista('listaDetBanco', d.detallesBanco, 'bg-primary');
 
         document.getElementById('valMP').innerText = dinero(d.mp);
-        document.getElementById('porcMP').innerHTML = htmlVariacion(d.mp, p.mp);
-        renderizarLista('listaDetMP', d.detallesMP, 'bg-info'); // Detalle MP
+        document.getElementById('porcMP').innerHTML = htmlVariacion(d.mp, p.mp, false, txtContexto);
+        renderizarLista('listaDetMP', d.detallesMP, 'bg-info');
 
         document.getElementById('valEfectivo').innerText = dinero(d.efectivo);
-        document.getElementById('porcEfectivo').innerHTML = htmlVariacion(d.efectivo, p.efectivo);
-        renderizarLista('listaDetEfectivo', d.detallesEfectivo, 'bg-success'); // Detalle Efectivo
+        document.getElementById('porcEfectivo').innerHTML = htmlVariacion(d.efectivo, p.efectivo, false, txtContexto);
+        renderizarLista('listaDetEfectivo', d.detallesEfectivo, 'bg-success');
 
         // 2. Panel Central (Totales)
         document.getElementById('valTotalVentas').innerText = dinero(d.totalIngresos);
-        document.getElementById('porcTotalVentas').innerHTML = htmlVariacion(d.totalIngresos, p.totalIngresos);
+        document.getElementById('porcTotalVentas').innerHTML = htmlVariacion(d.totalIngresos, p.totalIngresos, false, txtContexto);
         renderizarLista('listaDetalleVentas', d.desgloseIngresos, 'bg-primary');
 
         document.getElementById('valTotalGastos').innerText = dinero(d.totalGastos);
-        document.getElementById('porcTotalGastos').innerHTML = htmlVariacion(d.totalGastos, p.totalGastos, true); 
+        document.getElementById('porcTotalGastos').innerHTML = htmlVariacion(d.totalGastos, p.totalGastos, true, txtContexto); 
         renderizarLista('listaDetalleGastos', d.desgloseGastos, 'bg-danger');
 
         // Ganancia Neta
@@ -257,7 +262,7 @@ async function cargarDatos() {
         divGanancia.innerText = dinero(gananciaActual);
         divGanancia.className = gananciaActual >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
         
-        document.getElementById('porcGanancia').innerHTML = htmlVariacion(gananciaActual, gananciaPrevio);
+        document.getElementById('porcGanancia').innerHTML = htmlVariacion(gananciaActual, gananciaPrevio, false, txtContexto);
 
         window.datosReporte = { mes: mesInput, d, gananciaActual };
 
