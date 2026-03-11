@@ -53,6 +53,9 @@ $totales = [
 ];
 $totalDifCaja = 0; // Acumulador para Diferencia de Caja (ID 14)
 $metodosUsados = [];
+// NUEVAS VARIABLES PARA EL RESUMEN GENERAL
+$totalVentasGlobal = 0;
+$totalRetirosGlobal = 0;
 
 while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
     $detalles[] = $fila;
@@ -64,7 +67,9 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
 
     if ($fila['es_entrada']) {
         $totales[$metodo]['entrada'] += $fila['monto'];
+        $totalVentasGlobal += $fila['monto'];
     } else {
+        $totalRetirosGlobal += $fila['monto'];
         // Lógica corregida para separar Caja Fuerte y Diferencia de Caja
         if ($fila['idTipoMovimiento'] == 9) { // Caja Fuerte
             $totales['totalRetirosCajaFuerte'] += $fila['monto'];
@@ -81,6 +86,8 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
         $metodosUsados[] = $metodo;
     }
 }
+// Calculamos el Balance General
+$balanceGlobal = $totalVentasGlobal - $totalRetirosGlobal;
 
 // Ordenar alfabéticamente los métodos de pago usados
 sort($metodosUsados);
@@ -215,6 +222,31 @@ ob_start();
             border-top: 0.5pt solid #ddd;
             padding-top: 2mm;
         }
+        /* ESTILOS NUEVOS PARA EL RESUMEN GENERAL */
+        table.resumen-general {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4mm 0;
+        }
+        table.resumen-general td {
+            padding: 3mm;
+            border: 0.5pt solid #ccc;
+            text-align: center;
+            background: #eef2f5;
+        }
+        .resumen-general .lbl {
+            font-size: 8pt;
+            display: block;
+            color: #555;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        .resumen-general .val {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        .val-positivo { color: #28a745; }
+        .val-negativo { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -280,6 +312,25 @@ ob_start();
                 <td>
                     <div class="total-label">Caja Fuerte</div>
                     <div class="total-amount">$<?php echo number_format($totalRetirosCajaFuerte, 2); ?></div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="resumen-general">
+            <tr>
+                <td>
+                    <span class="lbl">Total Ingresos (Todas las formas)</span>
+                    <span class="val val-positivo">$<?php echo number_format($totalVentasGlobal, 2); ?></span>
+                </td>
+                <td>
+                    <span class="lbl">Total Egresos (Todos los retiros)</span>
+                    <span class="val val-negativo">$<?php echo number_format($totalRetirosGlobal, 2); ?></span>
+                </td>
+                <td>
+                    <span class="lbl">Balance General Neto</span>
+                    <span class="val <?php echo $balanceGlobal >= 0 ? 'val-positivo' : 'val-negativo'; ?>">
+                        $<?php echo number_format($balanceGlobal, 2); ?>
+                    </span>
                 </td>
             </tr>
         </table>
