@@ -75,6 +75,21 @@ if ($esEntrada) {
     $sqlProv = "SELECT idProveedor, nombre FROM proveedores WHERE idActivo = 1 ORDER BY nombre";
     $rsProv = mysqli_query($MiConexion, $sqlProv);
     while ($p = mysqli_fetch_assoc($rsProv)) $Proveedores[] = $p;
+
+    $Servicios = [];
+    $sqlServicios = "SELECT idServicio, denominacion FROM servicios ORDER BY denominacion";
+    $resServicios = mysqli_query($MiConexion, $sqlServicios);
+    if ($resServicios) { while ($s = mysqli_fetch_assoc($resServicios)) $Servicios[] = $s; }
+
+    $ProveedoresInsumos = [];
+    $sqlProveedoresInsumos = "SELECT idProveedorInsumo, nombre FROM proveedores_insumos WHERE idActivo = 1 ORDER BY nombre";
+    $resProveedoresInsumos = mysqli_query($MiConexion, $sqlProveedoresInsumos);
+    if ($resProveedoresInsumos) { while ($pi = mysqli_fetch_assoc($resProveedoresInsumos)) $ProveedoresInsumos[] = $pi; }
+
+    $Insumos = [];
+    $sqlInsumos = "SELECT idInsumo, denominacion FROM insumos ORDER BY denominacion";
+    $resInsumos = mysqli_query($MiConexion, $sqlInsumos);
+    if ($resInsumos) { while ($i = mysqli_fetch_assoc($resInsumos)) $Insumos[] = $i; }
 } else {
     $TiposPagos = [];
     $TiposMovimiento = [];
@@ -206,33 +221,42 @@ ob_end_flush();
                             <div class="col-sm-10">
                                 <select name="servicio" class="form-control">
                                     <option value="">Seleccione un servicio</option>
+                                    <?php foreach ($Servicios as $s) { 
+                                        $selected = (!empty($DatosVentaActual['idServicio']) && $DatosVentaActual['idServicio'] == $s['idServicio']) ? 'selected' : '';
+                                    ?>
+                                        <option value="<?php echo $s['idServicio']; ?>" <?php echo $selected; ?>><?php echo $s['denominacion']; ?></option>
+                                    <?php } ?>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Insumos -->
                         <div class="row mb-3 align-items-center retiro-section" id="retiroInsumos" style="display: <?php echo (strpos($denominacionMovimiento,'insumo')!==false)?'flex':'none'; ?>;">
                             <div class="col-sm-2">
-                                <label class="col-form-label">Insumo</label>
+                                <label class="col-form-label mb-2">Prov. de Insumo</label>
+                                <label class="col-form-label mt-2">Insumo</label>
                             </div>
                             <div class="col-sm-10">
+                                <select name="proveedorInsumo" class="form-control mb-3">
+                                    <option value="">Seleccione un proveedor de insumo</option>
+                                    <?php foreach ($ProveedoresInsumos as $pi) { 
+                                        $selected = (!empty($DatosVentaActual['idProveedorInsumo']) && $DatosVentaActual['idProveedorInsumo'] == $pi['idProveedorInsumo']) ? 'selected' : '';
+                                    ?>
+                                        <option value="<?php echo $pi['idProveedorInsumo']; ?>" <?php echo $selected; ?>><?php echo $pi['nombre']; ?></option>
+                                    <?php } ?>
+                                </select>
+
                                 <select name="insumo" class="form-control">
                                     <option value="">Seleccione un insumo</option>
+                                    <?php foreach ($Insumos as $i) { 
+                                        $selected = (!empty($DatosVentaActual['idInsumo']) && $DatosVentaActual['idInsumo'] == $i['idInsumo']) ? 'selected' : '';
+                                    ?>
+                                        <option value="<?php echo $i['idInsumo']; ?>" <?php echo $selected; ?>><?php echo $i['denominacion']; ?></option>
+                                    <?php } ?>
                                 </select>
                             </div>
                         </div>
-
-                        <!-- Varios -->
-                        <div class="row mb-3 align-items-center retiro-section" id="retiroVarios" style="display: <?php echo (strpos($denominacionMovimiento,'varios')!==false)?'flex':'none'; ?>;">
-                            <div class="col-sm-2">
-                                <label class="col-form-label">Categoría Varios</label>
-                            </div>
-                            <div class="col-sm-10">
-                                <input type="text" name="categoriaVarios" class="form-control" 
-                                    value="<?php echo $DatosVentaActual['categoria'] ?? ''; ?>" placeholder="Descripción">
-                            </div>
-                        </div>
-                    <?php } ?>
+                        
+                        <?php } ?>
 
                     <!-- Observaciones -->
                     <div class="row mb-3">
@@ -365,7 +389,7 @@ ob_end_flush();
             else if (denominacion.includes('proveedor')) document.getElementById('retiroProveedores').style.display = 'flex';
             else if (denominacion.includes('servicio')) document.getElementById('retiroServicios').style.display = 'flex';
             else if (denominacion.includes('insumo') || denominacion.includes('material')) document.getElementById('retiroInsumos').style.display = 'flex';
-            else document.getElementById('retiroVarios').style.display = 'flex';
+            // Nota: Si es Caja Fuerte, Diferencia o Varios, no entra en ningún if y se queda todo oculto (solo se verá Observaciones).
         }
     }
 
