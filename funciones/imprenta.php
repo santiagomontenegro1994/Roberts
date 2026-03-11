@@ -1117,35 +1117,44 @@ function Modificar_Venta($vConexion) {
                 }
 
             } elseif ($destino === 'retiros_servicios') {
-                $tipoServicio = !empty($_POST['servicio']) ? mysqli_real_escape_string($vConexion, $_POST['servicio']) : 'Servicio';
+                // CORRECCIÓN PARA SERVICIOS (Usa idServicio)
+                $idServicio = !empty($_POST['servicio']) ? (int)$_POST['servicio'] : 0;
 
                 if ($subActual === 'retiros_servicios') {
                     $SQL = "UPDATE retiros_servicios
-                               SET tipo_servicio = '$tipoServicio',
+                               SET idServicio = '$idServicio',
                                    detalle_servicio = $obsSQL
                              WHERE idRetiro = '$idRetiro'";
                 } else {
-                    $SQL = "INSERT INTO retiros_servicios (idRetiro, tipo_servicio, detalle_servicio)
-                            VALUES ('$idRetiro', '$tipoServicio', $obsSQL)";
+                    $SQL = "INSERT INTO retiros_servicios (idRetiro, idServicio, detalle_servicio)
+                            VALUES ('$idRetiro', '$idServicio', $obsSQL)";
                 }
 
             } elseif ($destino === 'retiros_insumos') {
-                $tipoInsumo = !empty($_POST['insumo']) ? mysqli_real_escape_string($vConexion, $_POST['insumo']) : 'Insumo';
+                // CORRECCIÓN PARA INSUMOS (Usa idProveedorInsumo e idInsumo)
+                $idProveedorInsumo = !empty($_POST['proveedorInsumo']) ? (int)$_POST['proveedorInsumo'] : 0;
+                $idInsumo = !empty($_POST['insumo']) ? (int)$_POST['insumo'] : 0;
 
                 if ($subActual === 'retiros_insumos') {
                     $SQL = "UPDATE retiros_insumos
-                               SET categoria = '$tipoInsumo',
+                               SET idProveedorInsumo = '$idProveedorInsumo',
+                                   idInsumo = '$idInsumo',
                                    detalle_insumo = $obsSQL
                              WHERE idRetiro = '$idRetiro'";
                 } else {
-                    $SQL = "INSERT INTO retiros_insumos (idRetiro, categoria, detalle_insumo)
-                            VALUES ('$idRetiro', '$tipoInsumo', $obsSQL)";
+                    $SQL = "INSERT INTO retiros_insumos (idRetiro, idProveedorInsumo, idInsumo, detalle_insumo)
+                            VALUES ('$idRetiro', '$idProveedorInsumo', '$idInsumo', $obsSQL)";
                 }
 
             } else { // retiros_varios
-                $categoriaVarios = !empty($_POST['categoriaVarios'])
-                    ? mysqli_real_escape_string($vConexion, $_POST['categoriaVarios'])
-                    : $denominacionNueva;
+                // CORRECCIÓN PARA VARIOS: Se asigna la categoría automáticamente según el nombre del movimiento (como en la carga nueva)
+                if (strpos($denominacionNueva, 'caja fuerte') !== false) {
+                    $categoriaVarios = 'Caja Fuerte';
+                } elseif (strpos($denominacionNueva, 'diferencia') !== false) {
+                    $categoriaVarios = 'Diferencia de Caja';
+                } else {
+                    $categoriaVarios = 'Varios';
+                }
 
                 if ($subActual === 'retiros_varios') {
                     $SQL = "UPDATE retiros_varios
