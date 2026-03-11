@@ -69,7 +69,6 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
         $totales[$metodo]['entrada'] += $fila['monto'];
         $totalVentasGlobal += $fila['monto'];
     } else {
-        $totalRetirosGlobal += $fila['monto'];
         // Lógica corregida para separar Caja Fuerte y Diferencia de Caja
         if ($fila['idTipoMovimiento'] == 9) { // Caja Fuerte
             $totales['totalRetirosCajaFuerte'] += $fila['monto'];
@@ -79,6 +78,7 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
         } else {
             // Resto de retiros normales
             $totales['totalRetiros'] += $fila['monto'];
+            $totalRetirosGlobal += $fila['monto']; // AHORA SOLO SUMA RETIROS NORMALES
         }
     }
 
@@ -86,7 +86,10 @@ while ($fila = $resultadoDetalleCaja->fetch_assoc()) {
         $metodosUsados[] = $metodo;
     }
 }
-// Calculamos el Balance General
+// Restamos la diferencia de caja (faltantes) a los ingresos globales
+$totalVentasGlobal -= $totalDifCaja;
+
+// Calculamos el Balance General Neto
 $balanceGlobal = $totalVentasGlobal - $totalRetirosGlobal;
 
 // Ordenar alfabéticamente los métodos de pago usados
