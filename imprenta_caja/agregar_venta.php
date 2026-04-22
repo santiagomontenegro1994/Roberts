@@ -44,7 +44,14 @@ if (!empty($_POST['BotonRegistrar'])) {
         if (InsertarMovimiento($MiConexion)) {
             $_SESSION['Mensaje'] = 'Detalle de venta registrado correctamente.';
             $_SESSION['Estilo'] = 'success';
-            header("Location: " . $_SERVER['PHP_SELF']);
+            
+            // Buscamos el ID de la venta que acabamos de insertar
+            $rsUltimo = mysqli_query($MiConexion, "SELECT MAX(idDetalleCaja) as id FROM detalle_caja WHERE idCaja = '{$_SESSION['Id_Caja']}'");
+            $rowUltimo = mysqli_fetch_assoc($rsUltimo);
+            $idNuevo = $rowUltimo['id'];
+
+            // Recargamos la página pasándole el ID para que el JS sepa que debe imprimir
+            header("Location: " . $_SERVER['PHP_SELF'] . "?ticket=" . $idNuevo);
             exit;
         } else {
             $_SESSION['Mensaje'] = 'Error al registrar el detalle de venta.';
@@ -80,6 +87,15 @@ ob_end_flush();
                     <?php } ?>
 
                     <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
+
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="form-check form-switch fs-5">
+                            <input class="form-check-input" type="checkbox" id="toggleTicket" name="imprimirTicket">
+                            <label class="form-check-label text-muted" for="toggleTicket" id="labelTicket">
+                                <i class="bi bi-printer"></i> Imprimir Ticket: Desactivado
+                            </label>
+                        </div>
+                    </div>
 
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
@@ -301,8 +317,48 @@ ob_end_flush();
         document.getElementById('numeroFactura').required = this.checked;
     });
 
+    // --- LÓGICA DEL BOTÓN DE TICKET ---
+    const toggleTicket = document.getElementById('toggleTicket');
+    const labelTicket = document.getElementById('labelTicket');
+
+    // Revisar si ya estaba activado antes en esta compu
+    if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+        toggleTicket.checked = true;
+        labelTicket.innerHTML = '<i class="bi bi-printer-fill text-primary"></i> Imprimir Ticket: <strong class="text-primary">Activado</strong>';
+    }
+
+    // Cambiar estado y guardarlo
+    toggleTicket.addEventListener('change', function() {
+        if (this.checked) {
+            localStorage.setItem('imprimirTicketVenta', 'true');
+            labelTicket.innerHTML = '<i class="bi bi-printer-fill text-primary"></i> Imprimir Ticket: <strong class="text-primary">Activado</strong>';
+        } else {
+            localStorage.setItem('imprimirTicketVenta', 'false');
+            labelTicket.innerHTML = '<i class="bi bi-printer"></i> Imprimir Ticket: Desactivado';
+        }
+    });
+
     // Inicialización al cargar la página
     document.addEventListener('DOMContentLoaded', function() {
         formatMoney(moneyInput);
+    });
+
+    // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketId = urlParams.get('ticket');
+
+        // Si hay un ticket en la URL y el botón está activado
+        if (ticketId && localStorage.getItem('imprimirTicketVenta') === 'true') {
+            // Creamos un iframe invisible
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            // Llamamos al diseño del ticket pasándole el ID
+            iframe.src = `ticket_venta.php?id=${ticketId}`;
+            document.body.appendChild(iframe);
+
+            // Limpiamos la URL para que no vuelva a imprimir si el usuario presiona F5
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     });
 </script>
