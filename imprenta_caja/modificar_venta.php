@@ -116,7 +116,7 @@ ob_end_flush();
             <div class="card-body">
                 <h5 class="card-title"><?php echo $esSalida ? "Modificar Retiro" : "Modificar Venta"; ?></h5>
 
-                <form method='post'>
+                <form method='post' id='formVenta'>
                     <?php if (!empty($_SESSION['Mensaje'])) { ?>
                         <div class="alert alert-<?php echo $_SESSION['Estilo']; ?> alert-dismissable">
                             <?php echo $_SESSION['Mensaje']; ?>
@@ -425,42 +425,61 @@ ob_end_flush();
 
     // Facturación
     const facturarCheckbox = document.getElementById('facturarCheckbox');
-    facturarCheckbox.addEventListener('change', function() {
-        const facturaFields = document.getElementById('facturaFields');
-        facturaFields.style.display = this.checked ? 'block' : 'none';
-        document.getElementById('numeroFactura').required = this.checked;
-    });
+    if (facturarCheckbox) {
+        facturarCheckbox.addEventListener('change', function() {
+            const facturaFields = document.getElementById('facturaFields');
+            if (facturaFields) {
+                facturaFields.style.display = this.checked ? 'block' : 'none';
+            }
+            const numFactura = document.getElementById('numeroFactura');
+            if (numFactura) {
+                numFactura.required = this.checked;
+            }
+        });
+    }
 
     // Reset
-    document.getElementById('resetButton').addEventListener('click', function() {
-        document.getElementById('MontoReal').value = '0';
-        moneyInput.value = '$0,00';
-        document.querySelectorAll('.metodo-pago, .tipo-movimiento').forEach(btn => {
-            btn.classList.remove('btn-primary');
-            btn.classList.add('btn-secondary');
+    // Reset
+    const resetButton = document.getElementById('resetButton');
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            document.getElementById('MontoReal').value = '0';
+            if (moneyInput) moneyInput.value = '$0,00';
+            document.querySelectorAll('.metodo-pago, .tipo-movimiento').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            document.getElementById('idTipoPago').value = '';
+            const tipoMovInput = document.getElementById('idTipoMovimiento');
+            if(tipoMovInput) tipoMovInput.value = '';
+            
+            if (facturarCheckbox) facturarCheckbox.checked = false;
+            const facturaFields = document.getElementById('facturaFields');
+            if (facturaFields) facturaFields.style.display = 'none';
+            const numFactura = document.getElementById('numeroFactura');
+            if (numFactura) numFactura.required = false;
+            
+            document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
         });
-        document.getElementById('idTipoPago').value = '';
-        tipoMovimientoInput.value = '';
-        facturarCheckbox.checked = false;
-        document.getElementById('facturaFields').style.display = 'none';
-        document.getElementById('numeroFactura').required = false;
-        document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
-    });
+    }
 
     // Validación formulario
-    document.getElementById('formVenta').addEventListener('submit', function(e) {
-        if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
-            e.preventDefault();
-            alert('Por favor ingrese un monto válido mayor a cero');
-            moneyInput.focus();
-        }
+    const formVenta = document.getElementById('formVenta');
+    if (formVenta) {
+        formVenta.addEventListener('submit', function(e) {
+            if (parseFloat(document.getElementById('MontoReal').value) <= 0) {
+                e.preventDefault();
+                alert('Por favor ingrese un monto válido mayor a cero');
+                moneyInput.focus();
+            }
 
-        if (facturarCheckbox.checked && document.getElementById('numeroFactura').value.trim() === '') {
-            e.preventDefault();
-            alert('Por favor ingrese un número de factura');
-            document.getElementById('numeroFactura').focus();
-        }
-    });
+            if (facturarCheckbox && facturarCheckbox.checked && document.getElementById('numeroFactura').value.trim() === '') {
+                e.preventDefault();
+                alert('Por favor ingrese un número de factura');
+                document.getElementById('numeroFactura').focus();
+            }
+        });
+    }
 
     // Inicialización
     document.addEventListener('DOMContentLoaded', function() { formatMoney(moneyInput); });
