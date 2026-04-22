@@ -25,8 +25,8 @@ if (!empty($_POST['BotonModificarVenta'])) {
         if (Modificar_Venta($MiConexion) != false) {
             $_SESSION['Mensaje'] = "El movimiento se ha modificado correctamente!";
             $_SESSION['Estilo'] = 'success';
-            // Pasamos el ID del movimiento a la URL para que el JS lo agarre
-            header("Location: " . $_SERVER['PHP_SELF'] . "?ticket_mod=" . $_POST['idDetalleCaja']);
+            // Mantenemos el ID original para que cargue bien, y sumamos la orden de ticket
+            header("Location: " . $_SERVER['PHP_SELF'] . "?idDetalleCaja=" . $_POST['idDetalleCaja'] . "&ticket_mod=" . $_POST['idDetalleCaja']);
             exit;
         }
     } else {
@@ -471,20 +471,20 @@ ob_end_flush();
         const ticketId = urlParams.get('ticket_mod');
 
         if (ticketId) {
-            // Revisamos si el ticket está activado en el sistema (configurado en Agregar Venta)
             if (localStorage.getItem('imprimirTicketVenta') === 'true') {
-                // 1. Creamos el iframe invisible para imprimir
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.src = `ticket_venta.php?id=${ticketId}`;
-                document.body.appendChild(iframe);
                 
-                // 2. Le damos 1.5 segundos para que envíe la orden a Chrome y luego redirigimos a la planilla
-                setTimeout(() => {
-                    window.location.href = 'planilla_caja.php';
-                }, 1500);
+                // Esperamos a que el ticket esté 100% cargado antes de redirigir
+                iframe.onload = function() {
+                    setTimeout(() => {
+                        window.location.href = 'planilla_caja.php';
+                    }, 1000);
+                };
+                
+                document.body.appendChild(iframe);
             } else {
-                // Si la impresión está desactivada, simplemente lo mandamos a la planilla al instante
                 window.location.href = 'planilla_caja.php';
             }
         }

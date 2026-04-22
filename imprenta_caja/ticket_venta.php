@@ -1,5 +1,9 @@
 <?php
 session_start();
+
+// Configurar zona horaria local
+date_default_timezone_set('America/Argentina/Cordoba');
+
 if (empty($_SESSION['Usuario_Nombre']) || empty($_GET['id'])) {
     die("Acceso denegado.");
 }
