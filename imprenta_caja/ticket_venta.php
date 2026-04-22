@@ -49,7 +49,7 @@ if (!$venta) die("No se encontró la venta.");
 
     <div class="ticket-header text-center">
         <h2>GRÁFICA ROBERTS</h2>
-        <p>Laprida 25, Villa Allende</p>
+        <p>Rivadavia 31, Villa Allende</p>
         <p>Tel: 351 3525107</p>
         <div class="separador"></div>
         <p>TICKET DE VENTA N° <?php echo str_pad($venta['idDetalleCaja'], 6, '0', STR_PAD_LEFT); ?></p>
