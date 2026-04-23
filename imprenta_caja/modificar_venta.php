@@ -493,7 +493,13 @@ ob_end_flush();
             if (localStorage.getItem('imprimirTicketVenta') === 'true') {
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
-                iframe.src = `ticket_venta.php?id=${ticketId}`;
+                
+                // DECIDIR EL TICKET: PHP le avisa a JS si es un retiro (salida) o una venta (entrada)
+                const esRetiro = <?php echo $esSalida ? 'true' : 'false'; ?>;
+                const archivoTicket = esRetiro ? 'ticket_retiro.php' : 'ticket_venta.php';
+                
+                // Cargamos el archivo correcto
+                iframe.src = `${archivoTicket}?id=${ticketId}`;
                 
                 // Esperamos a que el ticket esté 100% cargado antes de redirigir
                 iframe.onload = function() {
