@@ -33,5 +33,5 @@
    
   <script src="../assets/js/main.js"></script>
   <script src="../assets/js/pedidos.js"></script> <!-- Incluye pedidos.js -->
-  <script src="../assets/js/pedidos_imprenta.js"></script> <!-- Incluye pedidos.js -->
+  <script src="../assets/js/pedidos_imprenta.js?v=2"></script> <!-- Incluye pedidos.js -->
 
