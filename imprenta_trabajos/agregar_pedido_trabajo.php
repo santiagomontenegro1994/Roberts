@@ -319,6 +319,61 @@ $(document).on('click', '.metodo-pago', function() {
     $(this).addClass('active');
     $('#metodoPagoSeleccionado').val($(this).data('id'));
 });
+
+    // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA (DOBLE TICKET) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketPedido = urlParams.get('ticket_pedido');
+        const ticketVenta = urlParams.get('ticket_venta');
+
+        if (ticketPedido) {
+            // Revisamos si en la compu está activado el botón de imprimir
+            if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+                
+                // Armamos una "fila de espera" para la impresora
+                const ticketsAImprimir = [];
+                
+                // 1ro: La orden de trabajo (Este archivo estará en la misma carpeta)
+                ticketsAImprimir.push(`ticket_pedido.php?id=${ticketPedido}`); 
+                
+                if (ticketVenta) {
+                    // 2do: El comprobante de pago (Subimos una carpeta y entramos a caja)
+                    ticketsAImprimir.push(`../imprenta_caja/ticket_venta.php?id=${ticketVenta}`); 
+                }
+
+                let ticketActual = 0;
+
+                function imprimirSiguienteTicket() {
+                    if (ticketActual < ticketsAImprimir.length) {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = ticketsAImprimir[ticketActual];
+                        
+                        iframe.onload = function() {
+                            ticketActual++;
+                            // Le damos 1.5 segundos a la impresora térmica para imprimir y cortar
+                            setTimeout(imprimirSiguienteTicket, 1500); 
+                        };
+                        
+                        document.body.appendChild(iframe);
+                    } else {
+                        // Terminó de imprimir todo: Limpiamos la URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        // Opcional: Recargar la tabla por si quedaron remanentes
+                        searchforDetalleTrabajo();
+                    }
+                }
+
+                // Disparamos la cola de impresión
+                imprimirSiguienteTicket();
+
+            } else {
+                // Si la impresión está apagada, solo limpiamos la URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                searchforDetalleTrabajo();
+            }
+        }
+    });
 </script>
 
 </body>

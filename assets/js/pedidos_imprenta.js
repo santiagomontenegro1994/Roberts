@@ -326,8 +326,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             dataType: 'json',
             success: function(response) {
                 if(response && response.status === 'success') {
-                    alert('Pedido generado correctamente');
-                    location.reload();
+                    // Armamos la URL con los IDs que nos devuelve el PHP
+                    let url = '?ticket_pedido=' + response.idPedido;
+                    if (response.idMovimiento) {
+                        url += '&ticket_venta=' + response.idMovimiento;
+                    }
+                    window.location.href = url;
                 } else {
                     alert('Error al procesar el pedido: ' + (response?.message || 'Error desconocido'));
                 }
@@ -363,8 +367,12 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
                         type: "POST",
                         data: {action: 'limpiarClienteSession'},
                         success: function() {
-                            alert('Pedido generado correctamente');
-                            location.reload();
+                            // Armamos la URL con los IDs que nos devuelve el PHP
+                            let url = '?ticket_pedido=' + response.idPedido;
+                            if (response.idMovimiento) {
+                                url += '&ticket_venta=' + response.idMovimiento;
+                            }
+                            window.location.href = url;
                         }
                     });
                 } else {
