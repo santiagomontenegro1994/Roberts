@@ -103,7 +103,14 @@ if (!empty($_POST['BotonRegistrar'])) {
         if (InsertarMovimientoRetiro($MiConexion)) {
             $_SESSION['Mensaje'] = 'Detalle de retiro registrado correctamente.';
             $_SESSION['Estilo'] = 'success';
-            header("Location: planilla_caja.php");
+            
+            // Buscamos el ID del movimiento que acabamos de insertar
+            $rsUltimo = mysqli_query($MiConexion, "SELECT MAX(idDetalleCaja) as id FROM detalle_caja WHERE idCaja = '{$_SESSION['Id_Caja']}'");
+            $rowUltimo = mysqli_fetch_assoc($rsUltimo);
+            $idNuevo = $rowUltimo['id'];
+
+            // Recargamos la página pasándole el ID para que el JS imprima, y luego salte a la planilla
+            header("Location: " . $_SERVER['PHP_SELF'] . "?ticket_retiro=" . $idNuevo);
             exit;
         } else {
             $_SESSION['Mensaje'] = 'Error al registrar el detalle de retiro.';
@@ -357,6 +364,33 @@ document.getElementById('formRetiro').addEventListener('submit', function(e) {
 
 document.addEventListener('DOMContentLoaded', function() {
     formatMoney(moneyInput);
+});
+
+// --- LÓGICA DE IMPRESIÓN AUTOMÁTICA DE RETIROS ---
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('ticket_retiro');
+
+    if (ticketId) {
+        // Lee la configuración global de si los tickets están activados
+        if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = `ticket_retiro.php?id=${ticketId}`;
+            
+            // Esperamos a que el ticket cargue, imprimimos, y vamos a la planilla
+            iframe.onload = function() {
+                setTimeout(() => {
+                    window.location.href = 'planilla_caja.php';
+                }, 1000);
+            };
+            
+            document.body.appendChild(iframe);
+        } else {
+            // Si está desactivado, vamos directo a la planilla
+            window.location.href = 'planilla_caja.php';
+        }
+    }
 });
 </script>
 
