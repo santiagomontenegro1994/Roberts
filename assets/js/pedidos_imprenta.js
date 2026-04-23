@@ -319,25 +319,31 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             detallesFacturar: detallesFacturar.join(',')
         };
         
+        console.log("Enviando datos de facturación...", data);
+        
         $.ajax({
             url: '../shared/ajax_imprenta.php',
             type: "POST",
             data: data,
             dataType: 'json',
             success: function(response) {
+                console.log("🟢 Respuesta del Servidor (Con Factura):", response);
                 if(response && response.status === 'success') {
-                    // Armamos la URL con los IDs que nos devuelve el PHP
-                    let url = '?ticket_pedido=' + response.idPedido;
+                    // Forzamos el nombre del archivo en la URL para evitar errores del navegador
+                    let url = 'agregar_pedido_trabajo.php?ticket_pedido=' + response.idPedido;
                     if (response.idMovimiento) {
                         url += '&ticket_venta=' + response.idMovimiento;
                     }
+                    console.log("🚀 Redirigiendo a:", url);
                     window.location.href = url;
                 } else {
+                    console.log("🔴 El servidor no devolvió success.");
                     alert('Error al procesar el pedido: ' + (response?.message || 'Error desconocido'));
                 }
             },
             error: function(xhr, status, error) {
-                alert('Error de conexión.');
+                console.log("❌ ERROR CRÍTICO AJAX:", xhr.responseText);
+                alert('Error de conexión. Revisa la consola (F12).');
             }
         });
         
@@ -347,6 +353,8 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
     // Manejar opción sin factura
     $('#btnSinFactura').click(function() {
         var action = window.pedidoParams.idTipoPago ? 'procesarPedidoTrabajoConPago' : 'procesarPedidoTrabajo';
+        
+        console.log("Enviando pedido sin factura. Acción:", action);
         
         $.ajax({
             url: '../shared/ajax_imprenta.php',
@@ -361,26 +369,39 @@ $(document).ready(function() { //Se asegura que el DOM este cargado
             },
             dataType: 'json',
             success: function(response) {
+                console.log("🟢 Respuesta del Servidor (Sin Factura):", response);
+                
                 if(response && response.status === 'success') {
+                    console.log("✅ Pedido guardado. Limpiando sesión de cliente...");
                     $.ajax({
                         url: '../shared/ajax_imprenta.php',
                         type: "POST",
                         data: {action: 'limpiarClienteSession'},
                         success: function() {
-                            // Armamos la URL con los IDs que nos devuelve el PHP
-                            let url = '?ticket_pedido=' + response.idPedido;
+                            console.log("🧹 Sesión limpia. Generando URL de impresión...");
+                            
+                            // Forzamos el nombre del archivo en la URL
+                            let url = 'agregar_pedido_trabajo.php?ticket_pedido=' + response.idPedido;
                             if (response.idMovimiento) {
                                 url += '&ticket_venta=' + response.idMovimiento;
                             }
+                            console.log("🚀 Redirigiendo a:", url);
+                            window.location.href = url;
+                        },
+                        error: function(xhr) {
+                            console.log("⚠️ Error al limpiar sesión, redirigiendo de todos modos. Error:", xhr.responseText);
+                            let url = 'agregar_pedido_trabajo.php?ticket_pedido=' + response.idPedido;
                             window.location.href = url;
                         }
                     });
                 } else {
+                    console.log("🔴 El servidor no devolvió success.");
                     alert('Error al procesar el pedido: ' + (response?.message || 'Error desconocido'));
                 }
             },
             error: function(xhr, status, error) {
-                alert('Error de conexión.');
+                console.log("❌ ERROR CRÍTICO AJAX:", xhr.responseText);
+                alert('Error de conexión. Revisa la consola (F12).');
             }
         });
         
