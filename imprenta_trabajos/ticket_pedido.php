@@ -114,6 +114,10 @@ $saldo = $total - $senia;
                 <td class="bold">TOTAL PEDIDO:</td>
                 <td class="right bold">$<?php echo number_format($total, 2, ',', '.'); ?></td>
             </tr>
+            <tr>
+                <td>SEÑA ABONADA:</td>
+                <td class="right">-$<?php echo number_format($senia, 2, ',', '.'); ?></td>
+            </tr>
         </table>
         
         <div class="text-center saldo-pendiente bold">

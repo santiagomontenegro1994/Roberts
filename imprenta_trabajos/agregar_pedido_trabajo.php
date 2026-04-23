@@ -321,23 +321,27 @@ $(document).on('click', '.metodo-pago', function() {
 });
 
     // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA (DOBLE TICKET) ---
-    document.addEventListener('DOMContentLoaded', function() {
+    $(document).ready(function() {
         const urlParams = new URLSearchParams(window.location.search);
         const ticketPedido = urlParams.get('ticket_pedido');
         const ticketVenta = urlParams.get('ticket_venta');
 
         if (ticketPedido) {
+            console.log("✅ Ticket detectado en URL:", ticketPedido);
+            
             // Revisamos si en la compu está activado el botón de imprimir
             if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+                console.log("🖨️ Sistema de impresión ACTIVADO. Preparando cola...");
                 
                 // Armamos una "fila de espera" para la impresora
                 const ticketsAImprimir = [];
                 
-                // 1ro: La orden de trabajo (Este archivo estará en la misma carpeta)
+                // 1ro: La orden de trabajo
                 ticketsAImprimir.push(`ticket_pedido.php?id=${ticketPedido}`); 
                 
                 if (ticketVenta) {
-                    // 2do: El comprobante de pago (Subimos una carpeta y entramos a caja)
+                    console.log("✅ Pago detectado:", ticketVenta);
+                    // 2do: El comprobante de pago
                     ticketsAImprimir.push(`../imprenta_caja/ticket_venta.php?id=${ticketVenta}`); 
                 }
 
@@ -345,11 +349,18 @@ $(document).on('click', '.metodo-pago', function() {
 
                 function imprimirSiguienteTicket() {
                     if (ticketActual < ticketsAImprimir.length) {
+                        console.log("⏳ Imprimiendo documento:", ticketsAImprimir[ticketActual]);
+                        
                         const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
+                        // Forma súper segura de ocultar el iframe para que Chrome no bloquee la impresión
+                        iframe.style.position = 'absolute';
+                        iframe.style.width = '0px';
+                        iframe.style.height = '0px';
+                        iframe.style.border = 'none';
                         iframe.src = ticketsAImprimir[ticketActual];
                         
                         iframe.onload = function() {
+                            console.log("📄 Documento cargado. Enviando a impresora...");
                             ticketActual++;
                             // Le damos 1.5 segundos a la impresora térmica para imprimir y cortar
                             setTimeout(imprimirSiguienteTicket, 1500); 
@@ -357,10 +368,9 @@ $(document).on('click', '.metodo-pago', function() {
                         
                         document.body.appendChild(iframe);
                     } else {
-                        // Terminó de imprimir todo: Limpiamos la URL
+                        console.log("🧹 Impresión terminada. Limpiando URL.");
                         window.history.replaceState({}, document.title, window.location.pathname);
-                        // Opcional: Recargar la tabla por si quedaron remanentes
-                        searchforDetalleTrabajo();
+                        if (typeof searchforDetalleTrabajo === 'function') searchforDetalleTrabajo();
                     }
                 }
 
@@ -368,9 +378,9 @@ $(document).on('click', '.metodo-pago', function() {
                 imprimirSiguienteTicket();
 
             } else {
-                // Si la impresión está apagada, solo limpiamos la URL
+                console.log("❌ Sistema de impresión DESACTIVADO en esta PC.");
                 window.history.replaceState({}, document.title, window.location.pathname);
-                searchforDetalleTrabajo();
+                if (typeof searchforDetalleTrabajo === 'function') searchforDetalleTrabajo();
             }
         }
     });
