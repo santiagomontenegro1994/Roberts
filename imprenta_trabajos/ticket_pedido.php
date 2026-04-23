@@ -23,16 +23,26 @@ $pedido = mysqli_fetch_assoc($rsPedido);
 
 if (!$pedido) die("No se encontró el pedido.");
 
-// 2. Obtener el detalle de los trabajos (para listarlos en el ticket)
+// 2. Obtener el detalle de los trabajos y SUMAR EL TOTAL automáticamente
 $queryDetalles = "SELECT dt.*, tt.denominacion as tipo_trabajo 
                   FROM detalle_trabajos dt
                   JOIN tipo_trabajo tt ON dt.idTrabajo = tt.idTipoTrabajo
                   WHERE dt.id_pedido_trabajos = $idPedido";
 $rsDetalles = mysqli_query($MiConexion, $queryDetalles);
 
-// Cálculos matemáticos de la base de datos
-$total = floatval($pedido['precio_total'] ?? 0);
-$senia = floatval($pedido['senia'] ?? 0);
+// Guardamos los detalles en un arreglo y sumamos el total
+$listaTrabajos = [];
+$totalCalculado = 0;
+
+while($item = mysqli_fetch_assoc($rsDetalles)){
+    $listaTrabajos[] = $item;
+    $totalCalculado += floatval($item['precio']); // Suma infalible
+}
+
+// Cálculos finales
+$total = $totalCalculado;
+// Intentamos traer la seña de la base de datos (asegúrate de que la columna se llame 'senia' o ajusta el nombre)
+$senia = floatval($pedido['senia'] ?? 0); 
 $saldo = $total - $senia;
 
 ?>
@@ -70,7 +80,7 @@ $saldo = $total - $senia;
 
     <div class="ticket-header text-center">
         <h2>GRÁFICA ROBERTS</h2>
-        <p>Laprida 25, Villa Allende</p>
+        <p>Rivadavia 31, Villa Allende</p>
         <div class="separador"></div>
         <p>ORDEN DE TRABAJO N° <?php echo str_pad($idPedido, 6, '0', STR_PAD_LEFT); ?></p>
         <p>Fecha: <?php echo date('d/m/Y H:i'); ?></p>
@@ -92,7 +102,7 @@ $saldo = $total - $senia;
             </tr>
         </thead>
         <tbody>
-            <?php while($item = mysqli_fetch_assoc($rsDetalles)): ?>
+            <?php foreach($listaTrabajos as $item): ?>
             <tr>
                 <td>
                     <span class="bold"><?php echo htmlspecialchars($item['tipo_trabajo']); ?></span><br>
@@ -102,7 +112,7 @@ $saldo = $total - $senia;
                     $<?php echo number_format($item['precio'], 2, ',', '.'); ?>
                 </td>
             </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </tbody>
     </table>
 

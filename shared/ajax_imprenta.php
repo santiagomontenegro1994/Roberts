@@ -455,6 +455,9 @@ $MiConexion=ConexionBD();
                 exit;
             }
 
+            // ATRAPAMOS EL ID ANTES DE QUE OTRAS CONSULTAS LO BORREN
+            $idMovimientoCaja = mysqli_insert_id($MiConexion);
+
             // --- NUEVO: REGISTRAR ENVÍO SI SE CREÓ DIRECTAMENTE EN ESTADO 3 O 5 ---
             date_default_timezone_set('America/Argentina/Buenos_Aires');
             $fechaActual = date('Y-m-d H:i:s');
@@ -465,7 +468,7 @@ $MiConexion=ConexionBD();
             echo json_encode([
                 'status' => 'success', 
                 'idPedido' => $idPedido,
-                'idMovimiento' => mysqli_insert_id($MiConexion)
+                'idMovimiento' => $idMovimientoCaja // USAMOS LA VARIABLE ATRAPADA
             ]);
             exit;
         }
