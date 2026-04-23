@@ -67,6 +67,17 @@ $saldo = $total - $senia;
         .separador { border-top: 1px dashed #000; margin: 5px 0; }
         .ticket-header h2 { margin: 0; font-size: 16px; }
         .ticket-header p { margin: 2px 0; }
+
+        /* ESTILO NUEVO PARA EL NÚMERO DE PEDIDO GIGANTE */
+        .numero-pedido { 
+            font-size: 26px; 
+            font-weight: bold; 
+            margin: 8px 0; 
+            padding: 5px 0;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            letter-spacing: 2px;
+        }
         
         table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; }
         th, td { text-align: left; padding: 2px 0; }
@@ -81,8 +92,15 @@ $saldo = $total - $senia;
     <div class="ticket-header text-center">
         <h2>GRÁFICA ROBERTS</h2>
         <p>Rivadavia 31, Villa Allende</p>
+        <p>Whatsapp: 351 3525107</p>
+        <p>instagram: @RobertsGrafica</p>
+        <p>G-mail: imprentaroberts@gmail.com</p>
+        <p>www.robertsgrafica.com</p>
         <div class="separador"></div>
-        <p>ORDEN DE TRABAJO N° <?php echo str_pad($idPedido, 6, '0', STR_PAD_LEFT); ?></p>
+        <p>ORDEN DE TRABAJO</p>
+        <div class="numero-pedido">
+            N° <?php echo str_pad($idPedido, 6, '0', STR_PAD_LEFT); ?>
+        </div>
         <p>Fecha: <?php echo date('d/m/Y H:i'); ?></p>
     </div>
 

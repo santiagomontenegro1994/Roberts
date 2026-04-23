@@ -57,6 +57,7 @@ if (!$venta) die("No se encontró la venta.");
         <p>Whatsapp: 351 3525107</p>
         <p>Instagram: @RobertsGrafica</p>
         <p>G-mail: imprentaroberts@gmail.com</p>
+        <p>www.robertsgrafica.com</p>
         <div class="separador"></div>
         <p>TICKET DE VENTA N° <?php echo str_pad($venta['idDetalleCaja'], 6, '0', STR_PAD_LEFT); ?></p>
         <p>Fecha: <?php echo date('d/m/Y H:i'); ?></p>
