@@ -406,11 +406,35 @@ if ($rs_prov) {
                                             <i class="bi bi-pencil-fill"></i>
                                         </a>
 
-                                        <a href="imprimir_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>"
-                                            class="btn btn-sm btn-primary me-1" 
-                                            title="Imprimir">
-                                            <i class="bi bi-printer-fill"></i>
-                                        </a>
+                                        <div class="btn-group">
+                                        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-printer me-1"></i> Imprimir Listado
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="generar_pdf_trabajos.php" target="_blank">
+                                                    <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Descargar PDF (A4)
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="imprimirTicketListado(); return false;">
+                                                    <i class="bi bi-receipt me-2 text-primary"></i> Imprimir Ticket (Térmica)
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        </div>
+
+                                        <script>
+                                        function imprimirTicketListado() {
+                                            // Creamos un iframe invisible para mandar a la térmica sin abrir pestañas nuevas
+                                            const iframe = document.createElement('iframe');
+                                            iframe.style.display = 'none';
+                                            iframe.src = 'ticket_listado_trabajos.php'; // El archivo nuevo que crearemos
+                                            document.body.appendChild(iframe);
+                                            
+                                            // El iframe se encarga de imprimir y cerrarse solo mediante su código interno
+                                        }
+                                        </script>
 
                                         <button type="button" class="btn btn-sm btn-success" 
                                                 data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"

@@ -39,6 +39,19 @@ if (!empty($_POST['BotonModificarSenia'])) {
         } else {
             $_SESSION['Mensaje'] = "Seña actualizada correctamente.";
             $_SESSION['Estilo'] = 'success';
+            
+            // --- NUEVO: Atrapamos el ID del movimiento en caja y redirigimos ---
+            $rsUltimo = mysqli_query($MiConexion, "SELECT MAX(idDetalleCaja) as id FROM detalle_caja WHERE idCaja = '{$_SESSION['Id_Caja']}'");
+            $rowUltimo = mysqli_fetch_assoc($rsUltimo);
+            $idMovimiento = $rowUltimo['id'];
+
+            // Si es reducción (quitar seña) es un Retiro, sino es una Venta
+            $tipoTicket = $esReduccion ? 'ticket_retiro' : 'ticket_venta';
+            
+            // Redirigimos para limpiar el POST y disparar la impresión en el JS
+            header("Location: " . $_SERVER['PHP_SELF'] . "?ID_PEDIDO=" . $idPedido . "&" . $tipoTicket . "=" . $idMovimiento);
+            exit;
+            // --------------------------------------------------------------------
         }
     }
     $DatosPedidoActual = Datos_Pedido_Trabajo($MiConexion, $idPedido);
@@ -574,6 +587,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// --- LÓGICA DE IMPRESIÓN AUTOMÁTICA DE SEÑAS ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketVenta = urlParams.get('ticket_venta');
+    const ticketRetiro = urlParams.get('ticket_retiro');
+
+    if (ticketVenta || ticketRetiro) {
+        // Leemos el interruptor global de ventas que está en el encabezado
+        if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'absolute';
+            iframe.style.width = '0px';
+            iframe.style.height = '0px';
+            iframe.style.border = 'none';
+            
+            // Subimos una carpeta y entramos a caja para buscar los diseños
+            if (ticketVenta) {
+                iframe.src = `../imprenta_caja/ticket_venta.php?id=${ticketVenta}`;
+            } else if (ticketRetiro) {
+                iframe.src = `../imprenta_caja/ticket_retiro.php?id=${ticketRetiro}`;
+            }
+            
+            document.body.appendChild(iframe);
+        }
+        
+        // Limpiamos la URL (dejando solo el ID_PEDIDO) para que no imprima de nuevo al presionar F5
+        window.history.replaceState({}, document.title, window.location.pathname + "?ID_PEDIDO=" + urlParams.get('ID_PEDIDO'));
+    }
 </script>
 
 <?php require('../shared/footer.inc.php'); ?>
