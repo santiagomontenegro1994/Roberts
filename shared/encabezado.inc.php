@@ -98,6 +98,17 @@ $MiConexion->close();
     <!-- Usuario -->
     <nav class="header-nav ms-auto">
         <ul class="d-flex align-items-center">
+            
+            <li class="nav-item pe-3 d-none d-md-flex align-items-center" style="gap: 15px; border-right: 1px solid #e1e1e1; margin-right: 15px;">
+                <div class="form-check form-switch m-0 p-0 d-flex align-items-center" data-bs-toggle="tooltip" title="Ticket de Ventas/Caja">
+                    <i class="bi bi-receipt me-1 fs-5 text-secondary" id="iconGlobalVenta" style="transition: 0.3s;"></i>
+                    <input class="form-check-input m-0 ms-1" type="checkbox" id="toggleGlobalVenta" style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                </div>
+                <div class="form-check form-switch m-0 p-0 d-flex align-items-center" data-bs-toggle="tooltip" title="Ticket de Pedidos/Taller">
+                    <i class="bi bi-file-earmark-text me-1 fs-5 text-secondary" id="iconGlobalPedido" style="transition: 0.3s;"></i>
+                    <input class="form-check-input m-0 ms-1" type="checkbox" id="toggleGlobalPedido" style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                </div>
+            </li>
             <li class="nav-item dropdown pe-3">
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
                     <img src="../assets/img/user.jpg" alt="Profile" class="rounded-circle img-fluid me-2">

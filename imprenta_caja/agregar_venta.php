@@ -88,15 +88,6 @@ ob_end_flush();
 
                     <input type="hidden" name="idCaja" value="<?php echo isset($_SESSION['Id_Caja']) ? $_SESSION['Id_Caja'] : ''; ?>">
 
-                    <div class="d-flex justify-content-end mb-3">
-                        <div class="form-check form-switch fs-5">
-                            <input class="form-check-input" type="checkbox" id="toggleTicket" name="imprimirTicket">
-                            <label class="form-check-label text-muted" for="toggleTicket" id="labelTicket">
-                                <i class="bi bi-printer"></i> Imprimir Ticket: Desactivado
-                            </label>
-                        </div>
-                    </div>
-
                     <div class="text-center mb-4 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 card-title">Seleccione el Método de Pago</h6>
                         <a href="../imprenta_metodos_pago/listados_metodos_pago.php" class="btn btn-outline-primary btn-sm">Gestionar Métodos de Pago</a>
@@ -315,27 +306,6 @@ ob_end_flush();
         const facturaFields = document.getElementById('facturaFields');
         facturaFields.style.display = this.checked ? 'block' : 'none';
         document.getElementById('numeroFactura').required = this.checked;
-    });
-
-    // --- LÓGICA DEL BOTÓN DE TICKET ---
-    const toggleTicket = document.getElementById('toggleTicket');
-    const labelTicket = document.getElementById('labelTicket');
-
-    // Revisar si ya estaba activado antes en esta compu
-    if (localStorage.getItem('imprimirTicketVenta') === 'true') {
-        toggleTicket.checked = true;
-        labelTicket.innerHTML = '<i class="bi bi-printer-fill text-primary"></i> Imprimir Ticket: <strong class="text-primary">Activado</strong>';
-    }
-
-    // Cambiar estado y guardarlo
-    toggleTicket.addEventListener('change', function() {
-        if (this.checked) {
-            localStorage.setItem('imprimirTicketVenta', 'true');
-            labelTicket.innerHTML = '<i class="bi bi-printer-fill text-primary"></i> Imprimir Ticket: <strong class="text-primary">Activado</strong>';
-        } else {
-            localStorage.setItem('imprimirTicketVenta', 'false');
-            labelTicket.innerHTML = '<i class="bi bi-printer"></i> Imprimir Ticket: Desactivado';
-        }
     });
 
     // Inicialización al cargar la página

@@ -35,3 +35,42 @@
   <script src="../assets/js/pedidos.js"></script> <!-- Incluye pedidos.js -->
   <script src="../assets/js/pedidos_imprenta.js?v=2"></script> <!-- Incluye pedidos.js -->
 
+  <script src="../assets/js/pedidos_imprenta.js?v=2"></script> ```
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tVenta = document.getElementById('toggleGlobalVenta');
+        const tPedido = document.getElementById('toggleGlobalPedido');
+        const iVenta = document.getElementById('iconGlobalVenta');
+        const iPedido = document.getElementById('iconGlobalPedido');
+
+        // Leer memoria y pintar botones al cargar la página
+        if (localStorage.getItem('imprimirTicketVenta') === 'true') {
+            if(tVenta) { tVenta.checked = true; iVenta.classList.replace('text-secondary', 'text-primary'); }
+        }
+        if (localStorage.getItem('imprimirTicketPedido') === 'true') {
+            if(tPedido) { tPedido.checked = true; iPedido.classList.replace('text-secondary', 'text-primary'); }
+        }
+
+        // Guardar cambios al hacer clic
+        if(tVenta) {
+            tVenta.addEventListener('change', function() {
+                localStorage.setItem('imprimirTicketVenta', this.checked ? 'true' : 'false');
+                this.checked ? iVenta.classList.replace('text-secondary', 'text-primary') : iVenta.classList.replace('text-primary', 'text-secondary');
+            });
+        }
+        if(tPedido) {
+            tPedido.addEventListener('change', function() {
+                localStorage.setItem('imprimirTicketPedido', this.checked ? 'true' : 'false');
+                this.checked ? iPedido.classList.replace('text-secondary', 'text-primary') : iPedido.classList.replace('text-primary', 'text-secondary');
+            });
+        }
+        
+        // Activar tooltips de Bootstrap para que al pasar el mouse diga qué es cada botón
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+  </script>
+
