@@ -406,13 +406,13 @@ if ($rs_prov) {
                                             <i class="bi bi-pencil-fill"></i>
                                         </a>
 
-                                        <<div class="btn-group">
+                                        <div class="btn-group">
                                             <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones de Impresión">
                                                 <i class="bi bi-printer"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li>
-                                                    <a class="dropdown-item" href="generar_pdf_trabajos.php" target="_blank">
+                                                    <a class="dropdown-item" href="generar_pdf_trabajos.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" target="_blank">
                                                         <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Descargar PDF (A4)
                                                     </a>
                                                 </li>
