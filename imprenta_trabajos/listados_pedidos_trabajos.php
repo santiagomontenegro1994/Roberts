@@ -406,35 +406,23 @@ if ($rs_prov) {
                                             <i class="bi bi-pencil-fill"></i>
                                         </a>
 
-                                        <div class="btn-group">
-                                        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-printer me-1"></i> Imprimir Listado
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <a class="dropdown-item" href="generar_pdf_trabajos.php" target="_blank">
-                                                    <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Descargar PDF (A4)
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="imprimirTicketListado(); return false;">
-                                                    <i class="bi bi-receipt me-2 text-primary"></i> Imprimir Ticket (Térmica)
-                                                </a>
-                                            </li>
-                                        </ul>
+                                        <<div class="btn-group">
+                                            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones de Impresión">
+                                                <i class="bi bi-printer"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a class="dropdown-item" href="generar_pdf_trabajos.php" target="_blank">
+                                                        <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Descargar PDF (A4)
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" onclick="reimprimirTicket(<?= $ListadoPedidos[$i]['ID'] ?>); return false;">
+                                                        <i class="bi bi-receipt me-2 text-primary"></i> Imprimir Ticket (Térmica)
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </div>
-
-                                        <script>
-                                        function imprimirTicketListado() {
-                                            // Creamos un iframe invisible para mandar a la térmica sin abrir pestañas nuevas
-                                            const iframe = document.createElement('iframe');
-                                            iframe.style.display = 'none';
-                                            iframe.src = 'ticket_listado_trabajos.php'; // El archivo nuevo que crearemos
-                                            document.body.appendChild(iframe);
-                                            
-                                            // El iframe se encarga de imprimir y cerrarse solo mediante su código interno
-                                        }
-                                        </script>
 
                                         <button type="button" class="btn btn-sm btn-success" 
                                                 data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
@@ -618,6 +606,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Función global para imprimir un ticket específico desde la tabla
+window.reimprimirTicket = function(idPedido) {
+    console.log("Generando ticket para el pedido ID: " + idPedido);
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    
+    // Llamamos al archivo ticket_pedido.php que armamos antes, pasándole el ID
+    iframe.src = `ticket_pedido.php?id=${idPedido}`; 
+    
+    document.body.appendChild(iframe);
+};
 </script>
 
 </body>
