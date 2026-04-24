@@ -32,11 +32,7 @@
   <!-- Template Main JS File 2023-->
    
   <script src="../assets/js/main.js"></script>
-  <script src="../assets/js/pedidos.js"></script> <!-- Incluye pedidos.js -->
-  <script src="../assets/js/pedidos_imprenta.js?v=2"></script> <!-- Incluye pedidos.js -->
-
-  <script src="../assets/js/pedidos_imprenta.js?v=2"></script> ```
-
+  <script src="../assets/js/pedidos_imprenta.js?v=3"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tVenta = document.getElementById('toggleGlobalVenta');
