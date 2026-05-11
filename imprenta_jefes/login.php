@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user = mysqli_real_escape_string($MiConexion, $_POST['usuario']);
     $pass = mysqli_real_escape_string($MiConexion, $_POST['clave']); 
 
-    $query = mysqli_query($MiConexion, "SELECT * FROM usuarios WHERE email = '$user' AND clave = '$pass' AND idActivo = 1");
+    $query = mysqli_query($MiConexion, "SELECT * FROM usuarios WHERE usuario = '$user' AND clave = '$pass' AND idActivo = 1");
 
     if ($query && mysqli_num_rows($query) > 0) {
         $datos = mysqli_fetch_assoc($query);
