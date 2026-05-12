@@ -1,48 +1,18 @@
 <?php
 require_once 'auth_jefes.php';
 verificarSesionApp();
+
+include 'header_mobile.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard | App Jefes</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .top-navbar { background: #fff; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
-        
-        .main-menu { padding: 30px 20px; }
-        .menu-btn { 
-            background: #fff; border: none; border-radius: 16px; padding: 25px 20px; 
-            margin-bottom: 20px; display: flex; align-items: center; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.04); transition: transform 0.2s;
-            text-decoration: none; color: #333;
-        }
-        .menu-btn:active { transform: scale(0.98); }
-        
-        .btn-icon { 
-            width: 60px; height: 60px; border-radius: 15px; 
-            display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-right: 15px; 
-        }
-        .icon-blue { background: #e7f1ff; color: #0d6efd; }
-        .icon-green { background: #e8f8f5; color: #198754; }
-        .icon-purple { background: #f3e8ff; color: #6f42c1; }
-        
-        .btn-text h5 { margin: 0; font-weight: bold; font-size: 1.1rem; }
-        .btn-text p { margin: 0; font-size: 0.85rem; color: #6c757d; }
-    </style>
-</head>
-<body>
 
 <div class="top-navbar d-flex justify-content-between align-items-center">
     <div>
         <h5 class="m-0 fw-bold">Hola, <?= htmlspecialchars($_SESSION['Usuario_Nombre']) ?></h5>
         <small class="text-muted">Gráfica Roberts</small>
     </div>
-    <a href="logout.php" class="text-danger text-decoration-none" style="font-size: 1.5rem;"><i class="bi bi-box-arrow-right"></i></a>
+    <a href="#" class="text-danger text-decoration-none" style="font-size: 1.5rem;" data-bs-toggle="modal" data-bs-target="#modalSalir">
+        <i class="bi bi-box-arrow-right"></i>
+    </a>
 </div>
 
 <div class="main-menu">
@@ -76,14 +46,30 @@ verificarSesionApp();
 
 </div>
 
-<?php
-// Si llegas a crear el archivo logout.php, solo tiene que llevar esto:
-/*
-session_start();
-session_destroy();
-setcookie('token_jefes_roberts', '', time() - 3600, '/');
-header('Location: login.php');
-*/
-?>
+<div class="modal fade" id="modalSalir" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 15px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">¿Cerrar Sesión?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center pb-4">
+        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+        <p class="mt-3 mb-0">Si cierras sesión, tendrás que volver a ingresar tu usuario y contraseña la próxima vez.</p>
+      </div>
+      <div class="modal-footer border-0 d-flex justify-content-between">
+        <button type="button" class="btn btn-light w-45" data-bs-dismiss="modal" style="border-radius: 10px;">Cancelar</button>
+        <a href="logout.php" class="btn btn-danger w-45" style="border-radius: 10px;">Sí, salir</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 </body>
 </html>
