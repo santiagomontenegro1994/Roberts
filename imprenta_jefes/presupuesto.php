@@ -13,6 +13,23 @@ $json_escalas = file_exists($path_escalas) ? file_get_contents($path_escalas) : 
 $path_productos = __DIR__ . '/../datos/productos_simples.json';
 $json_productos = file_exists($path_productos) ? file_get_contents($path_productos) : '[]';
 
+// --- LÓGICA DE REUTILIZACIÓN DE PRESUPUESTOS ---
+$clienteCargado = '';
+$carritoCargadoJSON = '[]';
+
+if (!empty($_GET['cargar_id'])) {
+    $idCarga = (int)$_GET['cargar_id'];
+    require_once '../funciones/conexion.php';
+    $MiConexionCarga = ConexionBD();
+    
+    $qCarga = mysqli_query($MiConexionCarga, "SELECT * FROM presupuestos_historial WHERE idPresupuesto = $idCarga");
+    if ($qCarga && $rowCarga = mysqli_fetch_assoc($qCarga)) {
+        $clienteCargado = htmlspecialchars($rowCarga['cliente_nombre']);
+        $carritoCargadoJSON = $rowCarga['items_json'];
+    }
+}
+// -----------------------------------------------
+
 include 'header_mobile.php';
 ?>
 <style>
@@ -41,7 +58,7 @@ include 'header_mobile.php';
         <div class="row g-2">
             <div class="col-8">
                 <label class="form-label small fw-bold text-muted mb-1">Cliente (Para el PDF)</label>
-                <input type="text" id="nombreCliente" class="form-control form-control-lg border-0 bg-light" placeholder="Ej: Juan Perez" style="font-size: 1.1rem;">
+                <input type="text" id="nombreCliente" class="form-control form-control-lg border-0 bg-light" placeholder="Ej: Juan Perez" style="font-size: 1.1rem;" value="<?= $clienteCargado ?>">
             </div>
             <div class="col-4">
                 <label class="form-label small fw-bold text-muted mb-1">Fecha</label>
