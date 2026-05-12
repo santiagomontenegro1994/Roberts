@@ -240,3 +240,33 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalEditarItem" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary">Editar Ítem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editItemId">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Descripción del trabajo</label>
+                    <textarea id="editItemDesc" class="form-control form-control-lg bg-light" rows="3"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-4">
+                        <label class="form-label small fw-bold text-muted">Cant.</label>
+                        <input type="number" id="editItemCant" class="form-control form-control-lg bg-light" min="1">
+                    </div>
+                    <div class="col-8">
+                        <label class="form-label small fw-bold text-muted">Precio Unitario ($)</label>
+                        <input type="number" id="editItemPrecio" class="form-control form-control-lg bg-light">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-primary w-100 btn-lg rounded-pill" onclick="guardarEdicionItem()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>

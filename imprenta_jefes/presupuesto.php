@@ -38,6 +38,7 @@ include 'header_mobile.php';
     .cart-item-title { font-weight: bold; font-size: 0.95rem; color: #333; margin-bottom: 5px; padding-right: 25px;}
     .cart-item-price { font-size: 1.1rem; font-weight: bold; color: #0d6efd; }
     .btn-remove-item { position: absolute; top: 10px; right: 10px; color: #dc3545; background: none; border: none; font-size: 1.2rem; }
+    .btn-edit-item { position: absolute; top: 10px; right: 40px; color: #0d6efd; background: none; border: none; font-size: 1.1rem; }
     .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 15px 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-top-left-radius: 20px; border-top-right-radius: 20px; }
     .fab-button { position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; border-radius: 30px; background: #0d6efd; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4); z-index: 999; border: none; transition: transform 0.2s; }
     .fab-button:active { transform: scale(0.9); }

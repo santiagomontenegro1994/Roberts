@@ -46,6 +46,7 @@
                 sumaTotal += item.precio_total;
                 divLista.innerHTML += `
                     <div class="cart-item">
+                        <button class="btn-edit-item" onclick="abrirModalEditarItem(${item.id})"><i class="bi bi-pencil-square"></i></button>
                         <button class="btn-remove-item" onclick="eliminarItem(${item.id})"><i class="bi bi-x-circle-fill"></i></button>
                         <div class="cart-item-title">${item.descripcion}</div>
                         <div class="cart-item-price">$${item.precio_total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
@@ -58,6 +59,38 @@
     }
 
     function eliminarItem(id) { carrito = carrito.filter(i => i.id !== id); actualizarInterfaz(); }
+
+    function abrirModalEditarItem(id) {
+        let item = carrito.find(i => i.id === id);
+        if (!item) return;
+        
+        document.getElementById('editItemId').value = item.id;
+        document.getElementById('editItemDesc').value = item.descripcion;
+        document.getElementById('editItemCant').value = item.cantidad;
+        document.getElementById('editItemPrecio').value = item.precio_unitario;
+        
+        new bootstrap.Modal(document.getElementById('modalEditarItem')).show();
+    }
+
+    function guardarEdicionItem() {
+        let id = parseInt(document.getElementById('editItemId').value);
+        let desc = document.getElementById('editItemDesc').value.trim();
+        let cant = parseInt(document.getElementById('editItemCant').value) || 1;
+        let precio = parseFloat(document.getElementById('editItemPrecio').value) || 0;
+
+        if (desc === '' || precio < 0) return alert("Verificá la descripción y el precio.");
+
+        let index = carrito.findIndex(i => i.id === id);
+        if (index !== -1) {
+            carrito[index].descripcion = desc;
+            carrito[index].cantidad = cant;
+            carrito[index].precio_unitario = precio;
+            carrito[index].precio_total = cant * precio;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarItem')).hide();
+        actualizarInterfaz();
+    }
 
     function guardarYGenerarPDF() {
         let cliente = document.getElementById('nombreCliente').value.trim();
