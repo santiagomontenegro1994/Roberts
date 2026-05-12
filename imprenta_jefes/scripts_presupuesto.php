@@ -99,7 +99,8 @@
         let cont = document.getElementById('listaCatalogo'); cont.innerHTML = '';
         if(lista.length === 0) { cont.innerHTML = '<div class="p-4 text-center text-muted">Sin productos.</div>'; return; }
         lista.forEach(prod => {
-            let nombre = prod['Nombre Visible'] || prod['Producto'] || prod['nombre'] || 'S/N';
+            // Agregamos 'Titulo' a la lista de búsqueda
+            let nombre = prod['Titulo'] || prod['Nombre Visible'] || prod['Producto'] || prod['nombre'] || 'S/N';
             let precio = parseFloat(prod['Precio_Unidad'] || prod['Precio'] || prod['precio'] || 0);
             if(prod['Estado'] && prod['Estado'].toUpperCase() !== 'ACTIVO') return;
             cont.innerHTML += `<div class="list-group-item catalogo-item p-3 border-0 border-bottom" onclick="agregarDesdeCatalogo('${nombre}', ${precio})"><div class="d-flex justify-content-between align-items-center"><div><h6 class="mb-1 fw-bold text-dark">${nombre}</h6><span class="badge bg-primary rounded-pill">$${precio.toLocaleString('es-AR')}</span></div><i class="bi bi-plus-circle text-primary fs-3"></i></div></div>`;
@@ -108,7 +109,7 @@
 
     function filtrarCatalogo() {
         let q = document.getElementById('buscadorCatalogo').value.toLowerCase();
-        renderizarCatalogo(db_productos.filter(p => (p['Nombre Visible'] || p['Producto'] || p['nombre'] || '').toLowerCase().includes(q)));
+        renderizarCatalogo(db_productos.filter(p => (p['Nombre Visible'] || p['Producto'] || p['Titulo'] || p['nombre'] || '').toLowerCase().includes(q)));
     }
 
     function agregarDesdeCatalogo(nombre, precio) {

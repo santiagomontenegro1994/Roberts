@@ -1,14 +1,19 @@
 <?php
+date_default_timezone_set('America/Argentina/Cordoba');
 require_once 'auth_jefes.php';
 verificarSesionApp();
 
 include 'header_mobile.php';
+
+// Leemos la fecha de última modificación del JSON
+$ruta_json = __DIR__ . '/../datos/productos_simples.json';
+$ultima_sync = file_exists($ruta_json) ? date('d/m/Y - H:i', filemtime($ruta_json)) : 'Nunca';
 ?>
 
 <style>
     .top-navbar { background: #fff; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
     
-    .main-menu { padding: 30px 20px; }
+    .main-menu { padding: 20px 20px 30px 20px; }
     .menu-btn { 
         background: #fff; border: none; border-radius: 16px; padding: 25px 20px; 
         margin-bottom: 20px; display: flex; align-items: center; 
@@ -32,13 +37,23 @@ include 'header_mobile.php';
     #installAppContainer { display: none; }
 </style>
 
-<div class="top-navbar d-flex justify-content-between align-items-center">
+<div class="top-navbar d-flex justify-content-between align-items-center mb-3">
     <div>
         <h5 class="m-0 fw-bold">Hola, <?= htmlspecialchars($_SESSION['Usuario_Nombre']) ?></h5>
         <small class="text-muted">Gráfica Roberts</small>
     </div>
     <a href="#" class="text-danger text-decoration-none" style="font-size: 1.5rem;" data-bs-toggle="modal" data-bs-target="#modalSalir">
         <i class="bi bi-box-arrow-right"></i>
+    </a>
+</div>
+
+<div class="px-4 mt-2">
+    <a href="sincronizar.php" class="btn btn-dark w-100 p-3 rounded-4 d-flex align-items-center justify-content-between" style="box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <div class="text-start">
+            <h6 class="m-0 fw-bold text-white"><i class="bi bi-arrow-repeat me-2"></i>Sincronizar Precios</h6>
+            <small style="color: #adb5bd; font-size: 0.75rem;">Última vez: <?= $ultima_sync ?> hs</small>
+        </div>
+        <i class="bi bi-cloud-download text-white fs-4"></i>
     </a>
 </div>
 
