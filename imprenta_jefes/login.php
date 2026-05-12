@@ -1,32 +1,43 @@
-<?php
+<?php 
 session_start();
 require_once '../funciones/conexion.php';
+require_once '../funciones/login.php';
+
+$MiConexion = ConexionBD();
+$MiConexion->set_charset("utf8mb4"); 
+
+date_default_timezone_set('America/Argentina/Cordoba');
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $MiConexion = ConexionBD();
-    // Ajusta 'email' y 'clave' según cómo se llamen tus columnas en la tabla usuarios
-    $user = mysqli_real_escape_string($MiConexion, $_POST['usuario']);
-    $pass = mysqli_real_escape_string($MiConexion, $_POST['clave']); 
+// Si el usuario presiona el botón de Iniciar Sesión
+if (!empty($_POST['BotonLogin'])) {
+    
+    // Llamamos a tu función exacta del sistema principal
+    $UsuarioLogueado = DatosLogin($_POST['user'], $_POST['password'], $MiConexion);
 
-    $query = mysqli_query($MiConexion, "SELECT * FROM usuarios WHERE usuario = '$user' AND clave = '$pass' AND idActivo = 1");
+    if (!empty($UsuarioLogueado)) {
+        // Guardamos las sesiones EXACTAMENTE igual que en tu app grande
+        $_SESSION['Usuario_Nombre'] = $UsuarioLogueado['NOMBRE'];
+        $_SESSION['Usuario_Apellido'] = $UsuarioLogueado['APELLIDO'];
+        $_SESSION['Usuario_Nivel'] = $UsuarioLogueado['NIVEL'];
+        $_SESSION['Usuario_Id'] = $UsuarioLogueado['ID'];
+        $_SESSION['Usuario_Tipo'] = $UsuarioLogueado['TIPO_USUARIO'];
+        $_SESSION['Id_Caja'] = $UsuarioLogueado['ID_CAJA'];
+        $_SESSION['Mensaje'] = '';
+        $_SESSION['Estilo'] = '';
 
-    if ($query && mysqli_num_rows($query) > 0) {
-        $datos = mysqli_fetch_assoc($query);
-        
-        $_SESSION['Usuario_Id'] = $datos['idUsuario'];
-        $_SESSION['Usuario_Nombre'] = $datos['nombre'];
-        $_SESSION['Usuario_Apellido'] = $datos['apellido'];
-        $_SESSION['Usuario_Nivel'] = $datos['idNivel'];
-
-        // Si tildó "Recordarme", generamos el Token Inmortal (dura 90 días)
+        // --- SISTEMA DE SESIÓN PERMANENTE (APP JEFES) ---
         if (isset($_POST['recordarme'])) {
-            $token = bin2hex(random_bytes(32)); // Clave de 64 caracteres
-            mysqli_query($MiConexion, "UPDATE usuarios SET token_sesion = '$token' WHERE idUsuario = " . $datos['idUsuario']);
-            setcookie('token_jefes_roberts', $token, time() + (86400 * 90), '/'); // 86400 = 1 día
+            $token = bin2hex(random_bytes(32)); // Creamos una llave única
+            $idUsuario = $UsuarioLogueado['ID'];
+            // Guardamos la llave en la base de datos
+            mysqli_query($MiConexion, "UPDATE usuarios SET token_sesion = '$token' WHERE idUsuario = $idUsuario");
+            // Le guardamos la llave al celular por 90 días
+            setcookie('token_jefes_roberts', $token, time() + (86400 * 90), '/'); 
         }
 
+        // Lo mandamos al menú principal del celular
         header('Location: index.php');
         exit;
     } else {
@@ -40,13 +51,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Acceso Jefes | Roberts</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .card-login { width: 100%; max-width: 400px; border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .logo-box { width: 80px; height: 80px; background: #0d6efd; color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: -40px auto 20px; box-shadow: 0 5px 15px rgba(13,110,253,0.3); }
+        .logo-box { width: 80px; height: 80px; background: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: -40px auto 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        .logo-box img { max-width: 90%; max-height: 90%; }
         .form-control { border-radius: 10px; padding: 12px 15px; }
         .btn-login { border-radius: 10px; padding: 12px; font-weight: bold; font-size: 1.1rem; }
     </style>
@@ -56,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <div class="login-container">
     <div class="card card-login pt-4">
         <div class="logo-box">
-            <i class="bi bi-briefcase-fill"></i>
+            <img src="../assets/img/Logo1.png" alt="Logo">
         </div>
         <div class="card-body px-4 pb-4">
             <h4 class="text-center fw-bold mb-1">App Jefes</h4>
@@ -68,12 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <form method="POST" action="">
                 <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted ms-1">Usuario / Email</label>
-                    <input type="text" name="usuario" class="form-control" required placeholder="Tu correo">
+                    <label class="form-label small fw-bold text-muted ms-1">Usuario</label>
+                    <input type="text" name="user" class="form-control" required placeholder="Ingrese su Usuario">
                 </div>
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-muted ms-1">Contraseña</label>
-                    <input type="password" name="clave" class="form-control" required placeholder="••••••••">
+                    <input type="password" name="password" class="form-control" required placeholder="••••••••">
                 </div>
                 
                 <div class="form-check form-switch mb-4">
@@ -81,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <label class="form-check-label ms-2" for="recordarme">Mantener sesión iniciada</label>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 btn-login">INGRESAR</button>
+                <button type="submit" class="btn btn-primary w-100 btn-login" name="BotonLogin" value="Login">INGRESAR</button>
             </form>
         </div>
     </div>
