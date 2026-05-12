@@ -1,20 +1,35 @@
 <script>
-    // ==========================================
-    // 1. CARGA DE BASES DE DATOS (JSON inyectado desde PHP)
-    // ==========================================
     const db_variables = <?= $json_variables ?>;
     const db_escalas = <?= $json_escalas ?>;
     const db_productos = <?= $json_productos ?>;
 
     let carrito = [];
 
+    // --- BASE DE DATOS DE BÚSQUEDA GLOBAL ---
+    const cotizadorSecciones = [
+        { id: 'apunte', titulo: 'Armar Libro / Apunte', keywords: 'libro apunte cuadernillo fotocopia anillado' },
+        { id: 'sueltas', titulo: 'Impresiones Sueltas', keywords: 'sueltas hojas a4 oficio simple doble faz color blanco negro fotocopia impresion' },
+        { id: 'lonas', titulo: 'Lonas y Vinilos', keywords: 'lona vinilo cartel banner gigantografia front back portabanner' },
+        { id: 'talonarios', titulo: 'Talonarios', keywords: 'talonario recibo factura receta anotador entrada rifa' },
+        { id: 'rollos', titulo: 'Plotter y DTF (Rollos)', keywords: 'plotter dtf rollo textil uv metro lineal plano fotografia' },
+        { id: 'paquetes', titulo: 'Tarjetas y Volantes', keywords: 'tarjeta personal volante flyer folleto paquete millar' },
+        { id: 'planchas', titulo: 'Rígidos y Stickers', keywords: 'rigido altoimpacto microcorrugado iman sticker calcomania plancha troquelado' },
+        { id: 'resmas', titulo: 'Impresión por Resmas', keywords: 'resma offset chapa afiche millar' }
+    ];
+
     document.addEventListener('DOMContentLoaded', () => {
         cargarSueltasYVarios();
         actualizarListasDinamicas();
+        
+        // Limpiamos el buscador universal cuando se abre el modal principal
+        document.getElementById('modalOpcionesAgregar').addEventListener('show.bs.modal', function () {
+            document.getElementById('buscadorGlobal').value = '';
+            ejecutarBusquedaGlobal('');
+        });
     });
 
     // ==========================================
-    // 2. LÓGICA DEL CARRITO Y PDF
+    // LÓGICA DEL CARRITO Y PDF
     // ==========================================
     function actualizarInterfaz() {
         let divLista = document.getElementById('listaCarrito');
@@ -74,8 +89,82 @@
     }
 
     // ==========================================
-    // 3. MÓDULOS DE INGRESO (MANUAL Y CATÁLOGO)
+    // BUSCADOR GLOBAL Y MODALES
     // ==========================================
+    function ejecutarBusquedaGlobal(query) {
+        query = query.toLowerCase().trim();
+        const btnContainer = document.getElementById('botonesOpcionesPrincipales');
+        const resContainer = document.getElementById('resultadosBusquedaGlobal');
+
+        if (query === '') {
+            btnContainer.classList.remove('d-none');
+            resContainer.classList.add('d-none');
+            return;
+        }
+
+        btnContainer.classList.add('d-none');
+        resContainer.classList.remove('d-none');
+        resContainer.innerHTML = '';
+        let hayResultados = false;
+
+        // Buscar en Cotizador
+        let cotResultados = cotizadorSecciones.filter(c => c.titulo.toLowerCase().includes(query) || c.keywords.includes(query));
+        cotResultados.forEach(cot => {
+            hayResultados = true;
+            resContainer.innerHTML += `
+                <button class="list-group-item list-group-item-action p-3 text-start border-0 border-bottom" onclick="abrirCotizadorDesdeBuscador('${cot.id}')" data-bs-dismiss="modal">
+                    <i class="bi bi-calculator text-success me-2 fs-5 align-middle"></i>
+                    <span class="fw-bold align-middle">Cotizar: ${cot.titulo}</span>
+                </button>
+            `;
+        });
+
+        // Buscar en Catálogo (Productos fijos)
+        let prodResultados = db_productos.filter(p => {
+            let nom = (p['Titulo'] || p['Nombre Visible'] || p['Producto'] || p['nombre'] || '').toLowerCase();
+            let estado = (p['Estado'] || '').toUpperCase();
+            let precio = parseFloat(p['Precio_Unidad'] || p['Precio'] || p['precio'] || 0);
+            return nom.includes(query) && estado === 'ACTIVO' && precio > 0;
+        }).slice(0, 8); // Límite de 8 para no llenar la pantalla
+
+        prodResultados.forEach(prod => {
+            hayResultados = true;
+            let nombre = prod['Titulo'] || prod['Nombre Visible'] || prod['Producto'] || prod['nombre'];
+            let precio = parseFloat(prod['Precio_Unidad'] || prod['Precio'] || prod['precio'] || 0);
+            resContainer.innerHTML += `
+                <button class="list-group-item list-group-item-action p-3 text-start border-0 border-bottom d-flex justify-content-between align-items-center" onclick="agregarDesdeGlobal('${nombre}', ${precio})">
+                    <div>
+                        <i class="bi bi-tag text-purple me-2 fs-5 align-middle" style="color:#6f42c1;"></i>
+                        <span class="fw-bold align-middle">${nombre}</span>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">$${precio.toLocaleString('es-AR')}</span>
+                </button>
+            `;
+        });
+
+        if (!hayResultados) {
+            resContainer.innerHTML = '<div class="p-4 text-center text-muted small">No encontramos nada con esa palabra.</div>';
+        }
+    }
+
+    function abrirCotizadorDesdeBuscador(idCategoria) {
+        document.getElementById('selectorCategoriaCotizador').value = idCategoria;
+        cambiarSeccionCotizador();
+        new bootstrap.Modal(document.getElementById('modalCotizador')).show();
+    }
+
+    function agregarDesdeGlobal(nombre, precio) {
+        let cant = prompt(`¿Cuántas unidades de "${nombre}" querés agregar?`, "1");
+        if (cant === null) return;
+        cant = parseInt(cant);
+        if (isNaN(cant) || cant <= 0) return alert("Cantidad inválida.");
+
+        carrito.push({ id: Date.now(), descripcion: (cant > 1) ? `${cant}x ${nombre}` : nombre, precio_unitario: precio, cantidad: cant, precio_total: cant * precio, tipo: 'catalogo' });
+        bootstrap.Modal.getInstance(document.getElementById('modalOpcionesAgregar')).hide();
+        actualizarInterfaz();
+    }
+
+    // Modal Manual
     function abrirModalManual() {
         document.getElementById('manualDesc').value = ''; document.getElementById('manualPrecio').value = ''; document.getElementById('manualCant').value = '1';
         new bootstrap.Modal(document.getElementById('modalItemManual')).show();
@@ -90,6 +179,9 @@
         bootstrap.Modal.getInstance(document.getElementById('modalItemManual')).hide(); actualizarInterfaz();
     }
 
+    // ==========================================
+    // RENDERIZADO DEL CATÁLOGO (CORREGIDO ANTI-S/N)
+    // ==========================================
     function abrirModalCatalogo() {
         renderizarCatalogo(db_productos); document.getElementById('buscadorCatalogo').value = '';
         new bootstrap.Modal(document.getElementById('modalCatalogo')).show();
@@ -99,17 +191,21 @@
         let cont = document.getElementById('listaCatalogo'); cont.innerHTML = '';
         if(lista.length === 0) { cont.innerHTML = '<div class="p-4 text-center text-muted">Sin productos.</div>'; return; }
         lista.forEach(prod => {
-            // Agregamos 'Titulo' a la lista de búsqueda
-            let nombre = prod['Titulo'] || prod['Nombre Visible'] || prod['Producto'] || prod['nombre'] || 'S/N';
+            // Buscamos el nombre también en la columna "Titulo"
+            let nombre = prod['Titulo'] || prod['Nombre Visible'] || prod['Producto'] || prod['nombre'] || '';
             let precio = parseFloat(prod['Precio_Unidad'] || prod['Precio'] || prod['precio'] || 0);
+            
+            // FILTRO DE BASURA: Ocultar los headers vacíos o productos S/N y los de precio 0
+            if(nombre.trim() === '' || nombre === 'S/N' || precio <= 0) return;
             if(prod['Estado'] && prod['Estado'].toUpperCase() !== 'ACTIVO') return;
+
             cont.innerHTML += `<div class="list-group-item catalogo-item p-3 border-0 border-bottom" onclick="agregarDesdeCatalogo('${nombre}', ${precio})"><div class="d-flex justify-content-between align-items-center"><div><h6 class="mb-1 fw-bold text-dark">${nombre}</h6><span class="badge bg-primary rounded-pill">$${precio.toLocaleString('es-AR')}</span></div><i class="bi bi-plus-circle text-primary fs-3"></i></div></div>`;
         });
     }
 
     function filtrarCatalogo() {
         let q = document.getElementById('buscadorCatalogo').value.toLowerCase();
-        renderizarCatalogo(db_productos.filter(p => (p['Nombre Visible'] || p['Producto'] || p['Titulo'] || p['nombre'] || '').toLowerCase().includes(q)));
+        renderizarCatalogo(db_productos.filter(p => (p['Titulo'] || p['Nombre Visible'] || p['Producto'] || p['nombre'] || '').toLowerCase().includes(q)));
     }
 
     function agregarDesdeCatalogo(nombre, precio) {
@@ -149,7 +245,7 @@
         }
     }
 
-    // Funciones del Motor Cotizador
+    // Funciones Matemáticas del Motor
     function darFormatoLegible(c) { return c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
     function obtenerPrecioEscala(g, c) { let ops = db_escalas.filter(i => i.Codigo_Grupo === g && i.Estado.toUpperCase() === 'ACTIVO'); ops.sort((a,b) => b.Cantidad - a.Cantidad); for(let o of ops) { if(c >= parseInt(o.Cantidad)) return parseFloat(o.Precio_Total); } return 0; }
     function obtenerPrecioVariable(cod) { let v = db_variables.find(i => i.Codigo_Variable === cod && i.Estado.toUpperCase() === 'ACTIVO'); return v ? parseFloat(v.Precio_Unidad) : 0; }
@@ -178,7 +274,7 @@
     function toggleRedondeado() { let s=document.getElementById('pq_tarjeta_sel'); let t=s.options[s.selectedIndex]?.text||''; let is1000=t.includes('1000'); let cb=document.getElementById('pq_tarj_redondeado'); cb.checked=is1000?cb.checked:false; cb.disabled=!is1000; document.getElementById('lbl_redondeado').className=`form-check-label fw-bold small ${is1000?'text-dark':'text-muted'}`; }
     function togglePlanchas() { let c=document.getElementById('pl_categoria').value; document.getElementById('pl_sel_rigidos').classList.toggle('d-none', c!=='rigidos'); document.getElementById('pl_sel_imanes').classList.toggle('d-none', c!=='imanes'); document.getElementById('pl_sel_stickers').classList.toggle('d-none', c!=='stickers'); }
 
-    // Procesadores matemáticos
+    // Procesadores Matemáticos Reales
     function procesarApunte() { let tam=document.getElementById('ap_tamano').value, cBN=parseInt(document.getElementById('ap_bn_cant').value)||0, cCol=parseInt(document.getElementById('ap_color_cant').value)||0, cTap=parseInt(document.getElementById('ap_tapas_cant').value)||0; if(cBN+cCol+cTap===0) return null; let cBNm=document.getElementById('ap_bn_modo').value, codBN=`bn_obra${cBNm}_${tam}`, pBN=document.getElementById('ap_bn_papel').value; let cosBN = cBN*(obtenerPrecioEscala(codBN, cBN) + (pBN==='comun'?0:obtenerPrecioVariable(pBN))); let cosCol = cCol*obtenerPrecioVariable(document.getElementById('ap_color_papel').value); let cosTap = cTap*obtenerPrecioVariable(document.getElementById('ap_tapas_papel').value); let cosAn = 0, anil=0; if(document.getElementById('ap_anillado').checked) { let hr = (cBN/2)+(cCol/2)+cTap, pa = (tam==='oficio')?'anillado_a4':'anillado_'+tam; while(hr>0) { cosAn+=obtenerPrecioEscala(pa, Math.min(hr,450)); hr-=450; anil++; } } return { id:Date.now(), descripcion:`Apunte ${tam.toUpperCase()} (${cBN}BN, ${cCol}Col) ${anil>0?'+'+anil+' Anill.':''}`, precio: cosBN+cosCol+cosTap+cosAn }; }
     function procesarLona() { let a=parseFloat(document.getElementById('lv_ancho').value)||0, h=parseFloat(document.getElementById('lv_alto').value)||0; if(a*h===0) return null; let s=document.getElementById('lv_material'), mat=s.value, nMat=s.options[s.selectedIndex].text, m2F=Math.max(0.5, (a/100)*(h/100)); let cos = Math.round(m2F*obtenerPrecioVariable(mat)), ext=0, det=[], b=document.getElementById('lv_bordes').value; if(b==='ras') det.push("Al ras"); if(b==='blanco') det.push("Exc. blanco"); if(b==='costura') { let ml=0; if(document.getElementById('cost_arriba').checked) ml+=a/100; if(document.getElementById('cost_abajo').checked) ml+=a/100; if(document.getElementById('cost_izq').checked) ml+=h/100; if(document.getElementById('cost_der').checked) ml+=h/100; ext+=Math.round(ml*obtenerPrecioVariable('costura_ml')); det.push("Costura"); let arg=parseInt(document.getElementById('lv_argollas_cant').value)||0; if(arg>0){ ext+=Math.round(arg*obtenerPrecioVariable('argolla_u')); det.push(`${arg} Argollas`); } } if(a>150&&h>150) det.push("Soldadura"); return { id:Date.now(), descripcion:`${nMat} ${a}x${h}cm [${det.join('|')}]`, precio:cos+ext }; }
     function procesarSueltas() { let c=parseInt(document.getElementById('hs_cant').value)||0, t=document.getElementById('hs_tipo').value, m=document.getElementById('hs_modo').value==='df'?"Doble":"Simple"; if(c<=0)return null; return { id:Date.now(), descripcion:`${c}x Sueltas: ${darFormatoLegible(t)} (${m})`, precio:c*obtenerPrecioVariable(t) }; }

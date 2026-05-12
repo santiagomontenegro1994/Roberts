@@ -5,21 +5,31 @@
                 <h5 class="modal-title fw-bold">Agregar al Presupuesto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="d-grid gap-3">
+            <div class="modal-body pb-4">
+                
+                <div class="input-group mb-4 shadow-sm rounded-pill overflow-hidden" style="border: 2px solid #0d6efd;">
+                    <span class="input-group-text bg-white border-0"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" id="buscadorGlobal" class="form-control border-0 py-3 shadow-none fw-bold text-primary" placeholder="Buscá Lonas, Tazas, Talonarios..." onkeyup="ejecutarBusquedaGlobal(this.value)">
+                </div>
+
+                <div class="d-grid gap-3" id="botonesOpcionesPrincipales">
                     <button class="btn btn-light text-start p-3 rounded-4 border shadow-sm" onclick="abrirModalManual()" data-bs-dismiss="modal">
                         <i class="bi bi-pencil-square text-primary fs-4 me-2 align-middle"></i> 
                         <span class="fw-bold fs-5 align-middle">Ítem Manual libre</span>
                     </button>
                     <button class="btn btn-light text-start p-3 rounded-4 border shadow-sm" onclick="abrirModalCatalogo()" data-bs-dismiss="modal">
                         <i class="bi bi-tags text-purple fs-4 me-2 align-middle" style="color:#6f42c1;"></i> 
-                        <span class="fw-bold fs-5 align-middle">Catálogo Rápido</span>
+                        <span class="fw-bold fs-5 align-middle">Catálogo Rápido Completo</span>
                     </button>
                     <button class="btn btn-light text-start p-3 rounded-4 border shadow-sm" onclick="abrirModalCotizador()" data-bs-dismiss="modal">
                         <i class="bi bi-calculator text-success fs-4 me-2 align-middle"></i> 
                         <span class="fw-bold fs-5 align-middle">Cotizador Inteligente</span>
                     </button>
                 </div>
+
+                <div id="resultadosBusquedaGlobal" class="list-group shadow-sm d-none" style="border-radius: 15px;">
+                    </div>
+
             </div>
         </div>
     </div>
@@ -29,8 +39,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 20px;">
             <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn btn-light rounded-circle me-2" data-bs-toggle="modal" data-bs-target="#modalOpcionesAgregar"><i class="bi bi-arrow-left"></i></button>
                 <h5 class="modal-title fw-bold">Ítem Manual</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
@@ -59,16 +70,14 @@
     <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content" style="border-radius: 20px;">
             <div class="modal-header border-0 pb-0 d-flex align-items-center">
-                <button type="button" class="btn btn-light rounded-circle me-2" data-bs-toggle="modal" data-bs-target="#modalOpcionesAgregar">
-                    <i class="bi bi-arrow-left"></i>
-                </button>
-                <h5 class="modal-title fw-bold m-0">Catálogo</h5>
+                <button type="button" class="btn btn-light rounded-circle me-2" data-bs-toggle="modal" data-bs-target="#modalOpcionesAgregar"><i class="bi bi-arrow-left"></i></button>
+                <h5 class="modal-title fw-bold m-0">Catálogo Completo</h5>
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body bg-light">
                 <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden bg-white">
                     <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="buscadorCatalogo" class="form-control border-0 py-2 shadow-none" placeholder="Buscar producto..." onkeyup="filtrarCatalogo()">
+                    <input type="text" id="buscadorCatalogo" class="form-control border-0 py-2 shadow-none" placeholder="Filtrar catálogo..." onkeyup="filtrarCatalogo()">
                 </div>
                 <div id="listaCatalogo" class="list-group shadow-sm" style="border-radius: 15px;"></div>
             </div>
