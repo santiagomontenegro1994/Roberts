@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('America/Argentina/Cordoba'); 
 require_once '../funciones/conexion.php';
 
 header('Content-Type: application/json');

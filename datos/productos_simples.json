@@ -1,0 +1,331 @@
+[
+    {
+        "ID_Producto": "IA",
+        "Titulo": "TAZAS",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": "para estamparlo demora unos 2 o3 dias habiles aprox."
+    },
+    {
+        "ID_Producto": "19",
+        "Titulo": "Taza Ceramica Para Sublimar",
+        "Precio": "4400",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "47",
+        "Titulo": "Taza Ceramica Sublimada",
+        "Precio": "10800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "21",
+        "Titulo": "Taza Plastica Para Sublimar",
+        "Precio": "2000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "46",
+        "Titulo": "Taza Plastica Sublimada",
+        "Precio": "7500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "18",
+        "Titulo": "Taza M\u00e1gica Para Sublimar",
+        "Precio": "6800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "48",
+        "Titulo": "Taza M\u00e1gica Sublimada",
+        "Precio": "13500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "20",
+        "Titulo": "Taza Esmerilada Para Sublimar",
+        "Precio": "3850",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "45",
+        "Titulo": "Taza Esmerilada Sublimada",
+        "Precio": "9900",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "22",
+        "Titulo": "Jarrito Esmerilado Para Sublimar",
+        "Precio": "9300",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "44",
+        "Titulo": "Jarrito Esmerilado Sublimado",
+        "Precio": "20000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "REMERAS Y GORRAS",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": "para estamparlo demora unos 3 o 4 dias habiles aprox."
+    },
+    {
+        "ID_Producto": "24",
+        "Titulo": "Remera de Algodon Lisa",
+        "Precio": "10000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "32",
+        "Titulo": "Remera Estampada 20 x 20 cm",
+        "Precio": "17800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "33",
+        "Titulo": "Remera Estampada 9 x 6 cm",
+        "Precio": "15400",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "34",
+        "Titulo": "Remera Estampada 29 x 34 cm",
+        "Precio": "18900",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "35",
+        "Titulo": "Remera Estampada Frente y Dorso",
+        "Precio": "18700",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "25",
+        "Titulo": "Gorra Para Estampar",
+        "Precio": "6000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "40",
+        "Titulo": "Gorra Estampada",
+        "Precio": "8500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "VINILOS",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "11",
+        "Titulo": "Vinilo Liso",
+        "Precio": "8100",
+        "Estado": "ACTIVO",
+        "Comentarios": "Viene de 61 cm de ancho y tenemos varios colores en stock"
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "PORTABANNER",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "Banner de 1,90 x 0,90 con portabanner",
+        "Precio": "80000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "Banner de 1,90 x 0,90 con Portabanner Rollup",
+        "Precio": "80000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "Portabanner solo",
+        "Precio": "36000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "IA",
+        "Titulo": "Portabanner Rollup solo",
+        "Precio": "32000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "VARIOS",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "31",
+        "Titulo": "Portaretrato Acrilico 15x21",
+        "Precio": "3000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "30",
+        "Titulo": "Llavero de Plastico para Sublimar x 10",
+        "Precio": "5500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "42",
+        "Titulo": "Llavero de Plastico para Sublimado x 10",
+        "Precio": "15000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "29",
+        "Titulo": "Llavero Transparente con Foto",
+        "Precio": "2600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "28",
+        "Titulo": "Plato para Sublimar",
+        "Precio": "2600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "43",
+        "Titulo": "Plato Sublimado",
+        "Precio": "7200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "26",
+        "Titulo": "Cinta Portacredencial",
+        "Precio": "800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "41",
+        "Titulo": "Cinta Portacredencial Sublimado",
+        "Precio": "1500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "TERMOS",
+        "Titulo": "",
+        "Precio": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "23",
+        "Titulo": "Termo Bala 1L",
+        "Precio": "20000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "",
+        "Titulo": "Termo Bala 1L Estampado",
+        "Precio": "0",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "37",
+        "Titulo": "Termo ByN",
+        "Precio": "30000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "38",
+        "Titulo": "Termo ByN Estampado",
+        "Precio": "35000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "36",
+        "Titulo": "Termo con Manija",
+        "Precio": "25000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "ID_Producto": "39",
+        "Titulo": "Termo con Manija Estampado",
+        "Precio": "30000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    }
+]

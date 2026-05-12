@@ -1,0 +1,442 @@
+[
+    {
+        "Codigo_Grupo": "BN SIMPLE FAZ",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": "la impresion se hace en el momento, siempre que todo este listo y no tengamos que acomodar"
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_a4",
+        "Nombre_Producto": "A4 B&N Simple Faz",
+        "Cantidad": "1",
+        "Precio_Total": "200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_a4",
+        "Nombre_Producto": "A4 B&N Simple Faz",
+        "Cantidad": "6",
+        "Precio_Total": "100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_a4",
+        "Nombre_Producto": "A4 B&N Simple Faz",
+        "Cantidad": "51",
+        "Precio_Total": "90",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_a4",
+        "Nombre_Producto": "A4 B&N Simple Faz",
+        "Cantidad": "101",
+        "Precio_Total": "80",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_a4",
+        "Nombre_Producto": "A4 B&N Doble Faz",
+        "Cantidad": "1",
+        "Precio_Total": "200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_a4",
+        "Nombre_Producto": "A4 B&N Doble Faz",
+        "Cantidad": "6",
+        "Precio_Total": "100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_a4",
+        "Nombre_Producto": "A4 B&N Doble Faz",
+        "Cantidad": "51",
+        "Precio_Total": "90",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_a4",
+        "Nombre_Producto": "A4 B&N Doble Faz",
+        "Cantidad": "101",
+        "Precio_Total": "70",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "BN DOBLE FAZ",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": "la impresion se hace en el momento, siempre que todo este listo y no tengamos que acomodar"
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_oficio",
+        "Nombre_Producto": "Oficio B&N Simple Faz",
+        "Cantidad": "1",
+        "Precio_Total": "200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_oficio",
+        "Nombre_Producto": "Oficio B&N Simple Faz",
+        "Cantidad": "6",
+        "Precio_Total": "100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_oficio",
+        "Nombre_Producto": "Oficio B&N Simple Faz",
+        "Cantidad": "51",
+        "Precio_Total": "90",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obrasf_oficio",
+        "Nombre_Producto": "Oficio B&N Simple Faz",
+        "Cantidad": "101",
+        "Precio_Total": "80",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_oficio",
+        "Nombre_Producto": "Oficio B&N Doble Faz",
+        "Cantidad": "1",
+        "Precio_Total": "200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_oficio",
+        "Nombre_Producto": "OficioB&N Doble Faz",
+        "Cantidad": "6",
+        "Precio_Total": "100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_oficio",
+        "Nombre_Producto": "OficioB&N Doble Faz",
+        "Cantidad": "51",
+        "Precio_Total": "90",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "bn_obradf_oficio",
+        "Nombre_Producto": "Oficio B&N Doble Faz",
+        "Cantidad": "101",
+        "Precio_Total": "70",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "ANILLADOS",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": "Anillados solo hacemos en A4"
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "1",
+        "Precio_Total": "3000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "51",
+        "Precio_Total": "3500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "120",
+        "Precio_Total": "4000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "160",
+        "Precio_Total": "4500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "200",
+        "Precio_Total": "5500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a4",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "351",
+        "Precio_Total": "6000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "1",
+        "Precio_Total": "5000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "51",
+        "Precio_Total": "6000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "120",
+        "Precio_Total": "7500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "160",
+        "Precio_Total": "8000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "200",
+        "Precio_Total": "10000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "anillado_a3",
+        "Nombre_Producto": "Anillado",
+        "Cantidad": "351",
+        "Precio_Total": "12000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "TALONARIOS",
+        "Nombre_Producto": "",
+        "Cantidad": "",
+        "Precio_Total": "",
+        "Estado": "",
+        "Comentarios": "Talonarios impresos en blanco y negro, el papel puede ser color, pero si necesitan que la impresion sea a color se manda a presupuestar, los estandar son los de 1\/2 oficio"
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "1",
+        "Precio_Total": "9000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "2",
+        "Precio_Total": "17000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "3",
+        "Precio_Total": "25000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "4",
+        "Precio_Total": "32000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "5",
+        "Precio_Total": "37000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "6",
+        "Precio_Total": "40800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "8",
+        "Precio_Total": "49600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "10",
+        "Precio_Total": "55000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "15",
+        "Precio_Total": "75000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_dupl",
+        "Nombre_Producto": "Talonarios Orig\/Dupl (1\/2 Oficio)",
+        "Cantidad": "20",
+        "Precio_Total": "84000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "2",
+        "Precio_Total": "16200",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "6",
+        "Precio_Total": "26000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "6",
+        "Precio_Total": "38000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "8",
+        "Precio_Total": "48000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "10",
+        "Precio_Total": "55500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "12",
+        "Precio_Total": "61500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "14",
+        "Precio_Total": "74500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "16",
+        "Precio_Total": "82500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "20",
+        "Precio_Total": "112500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Grupo": "tal_trip",
+        "Nombre_Producto": "Talonarios Triplicado (1\/2 Oficio)",
+        "Cantidad": "30",
+        "Precio_Total": "126000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    }
+]

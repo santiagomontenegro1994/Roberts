@@ -1,0 +1,858 @@
+[
+    {
+        "Codigo_Variable": "IMPRESIONES A COLOR A4",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Son impresiones laser"
+    },
+    {
+        "Codigo_Variable": "color_obra_a4",
+        "Nombre_Visible": "Color en Papel Com\u00fan A4",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_150g_a4",
+        "Nombre_Visible": "Color en Ilustraci\u00f3n 150g \/ Cartulina A4",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "900",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_275g_a4",
+        "Nombre_Visible": "Color en Ilustraci\u00f3n 275g A4",
+        "Equivalencia_Hojas": "10",
+        "Precio_Unidad": "1000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_adhesivo_a4",
+        "Nombre_Visible": "Color en Adhesivo A4",
+        "Equivalencia_Hojas": "4",
+        "Precio_Unidad": "1100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_vegetal_a4",
+        "Nombre_Visible": "Color en Vegetal A4",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "1000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_fotografico_a4",
+        "Nombre_Visible": "Color en Fotografico A4",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "2500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IMPRESIONES A COLOR A3",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Son impresiones Laser"
+    },
+    {
+        "Codigo_Variable": "color_comun_a3",
+        "Nombre_Visible": "Color en Papel Com\u00fan A3",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "1100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_150g_a3",
+        "Nombre_Visible": "Color en Ilustraci\u00f3n 150g \/ Cartulina A3",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "1600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_275g_a3",
+        "Nombre_Visible": "Color en Ilustraci\u00f3n 275g A3",
+        "Equivalencia_Hojas": "10",
+        "Precio_Unidad": "1800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_adhesivo_a3",
+        "Nombre_Visible": "Color en Adhesivo A3",
+        "Equivalencia_Hojas": "4",
+        "Precio_Unidad": "2000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_vegetal_a3",
+        "Nombre_Visible": "Color en Vegetal A3",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "1800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "color_fotografico_a3",
+        "Nombre_Visible": "Color en Fotografico A3",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "4500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IMPRESIONES COLOR OFICIO",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Son impresiones Laser"
+    },
+    {
+        "Codigo_Variable": "color_obra_oficio",
+        "Nombre_Visible": "Color en Papel Com\u00fan Oficio",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "600",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IMPRESIONES BN A4",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Son impresiones Laser"
+    },
+    {
+        "Codigo_Variable": "bn_150g_a4",
+        "Nombre_Visible": "Blanco y Negro en Ilustraci\u00f3n 150g \/ Cartulina A4",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "300",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "bn_275g_a4",
+        "Nombre_Visible": "Blanco y Negro en Ilustraci\u00f3n 275g A4",
+        "Equivalencia_Hojas": "10",
+        "Precio_Unidad": "500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IMPRESIONES BN A3",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Son impresiones Laser"
+    },
+    {
+        "Codigo_Variable": "bn_150g_a3",
+        "Nombre_Visible": "Blanco y Negro en Ilustraci\u00f3n 150g \/ Cartulina A3",
+        "Equivalencia_Hojas": "5",
+        "Precio_Unidad": "500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "bn_275g_a3",
+        "Nombre_Visible": "Blanco y Negro en Ilustraci\u00f3n 275g A3",
+        "Equivalencia_Hojas": "10",
+        "Precio_Unidad": "1000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IA",
+        "Nombre_Visible": "LONAS Y VINILOS",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "Demoran aprox. 72 hs habiles de impresion, el minimo que se cobra es medio metro cuadrado, por mas que sea una impresion chica se cobra ese minimo"
+    },
+    {
+        "Codigo_Variable": "lona_FrontLight_Comun_mt2",
+        "Nombre_Visible": "Lona Front comun M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "24000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "lona_FrontLight_Premium_mt2",
+        "Nombre_Visible": "Lona Front premium M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "28100",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "lona_BackLight_mt2",
+        "Nombre_Visible": "Lona Back M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "27000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_BlancoC_mt2",
+        "Nombre_Visible": "Vinilo Blanco Comun M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "23000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_Premium_mt2",
+        "Nombre_Visible": "Vinilo Blanco Premium M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "26000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_Transparente_mt2",
+        "Nombre_Visible": "Vinilo Transparente M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "26000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_BaseNegra_mt2",
+        "Nombre_Visible": "Vinilo Base Negra M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "25500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_Microperforado_mt2",
+        "Nombre_Visible": "Vinilo Microperforado M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "28500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_Premium+Corte_mt2",
+        "Nombre_Visible": "Vinilo Premium + Corte M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "32000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vinilo_Premium+Corte+Laminado_mt2",
+        "Nombre_Visible": "Vinilo Premium + Corte + Laminado M2",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "42000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "ACABADOS LONAS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "costura_ml",
+        "Nombre_Visible": "Metro Lineal de Costura",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "2000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "argolla_u",
+        "Nombre_Visible": "Precio de cada argolla",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "DTF",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "el de 58 cm, se cobra por ML, demoran cerca de 72 hs habiles, lo minimo que se cobra son 30 cm"
+    },
+    {
+        "Codigo_Variable": "rollo_dtf_textil",
+        "Nombre_Visible": "DTF Textil (Ancho 58cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "18000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rollo_dtf_uv",
+        "Nombre_Visible": "DTF UV (Ancho 58cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "40800",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "PLOTEOS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "El ploter que tenemos tiene 60 cm de ancho"
+    },
+    {
+        "Codigo_Variable": "rollo_ploteo_plano",
+        "Nombre_Visible": "Planos en Plotter (Ancho 60cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "5000",
+        "Estado": "ACTIVO",
+        "Comentarios": "El precio es por metro lineal, solo lineas de planos, pero sin nada de fondos ni dibujos a color, las lineas de planos si pueden ser a color"
+    },
+    {
+        "Codigo_Variable": "rollo_ploteo_fotografico",
+        "Nombre_Visible": "Fotograf\u00eda en Plotter (Ancho 60cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "30000",
+        "Estado": "ACTIVO",
+        "Comentarios": "El precio es por metro lineal, las fotos en papel fotografico"
+    },
+    {
+        "Codigo_Variable": "rollo_ploteo_pasteles_obra",
+        "Nombre_Visible": "Pasteles en Obra (Ancho 60cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "16000",
+        "Estado": "ACTIVO",
+        "Comentarios": "El precio es por metro lineal, en papel comun y con colores muy tenues"
+    },
+    {
+        "Codigo_Variable": "rollo_ploteo_pleno_obra",
+        "Nombre_Visible": "Plenos en Obra (Ancho 60cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "25000",
+        "Estado": "ACTIVO",
+        "Comentarios": "El precio es por metro lineal, papel comun con colores fuertes (no es la mejor opcion, lo ideal es el fotografico para colores fuertes)"
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "TARJETAS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "las tarjetas personales vienen de 8,5 x 5 cm, todo lo que es texto tiene que tener un margen de 5 mm de cada lado para que no corra riesgo de corte"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_100_fte",
+        "Nombre_Visible": "100 Tarjetas (Solo Frente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "8500",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 1 o 2 dias de impresion"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_100_fte_-_dso",
+        "Nombre_Visible": "100 Tarjetas (Frente y Dorso)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "15000",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 1 o 2 dias de impresion"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_500_fte_color_-_dso_grises",
+        "Nombre_Visible": "500 Tarjetas (Fte Color \/ Dso Grises)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "24000",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 4 o 5 dias de impresion aprox"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_1000_fte_color_-_dso_grises",
+        "Nombre_Visible": "1000 Tarjetas (Fte Color \/ Dso Grises)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "35600",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 4 o 5 dias de impresion aprox"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_1000_fte_color_-_dso_color",
+        "Nombre_Visible": "1000 Tarjetas (Frente y Dorso Color)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "38600",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 4 o 5 dias de impresion aprox"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_1000_opp_fte_color_-_dso_color",
+        "Nombre_Visible": "1000 Tarjetas (OPP Mate Fte y Dso)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "45500",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 4 o 5 dias de impresion aprox"
+    },
+    {
+        "Codigo_Variable": "tarj_paq_1000_opp_fte_color_-_dso_color_sect_1_cara",
+        "Nombre_Visible": "1000 Tarjetas (OPP Mate + Sectorizado 1 cara)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "47500",
+        "Estado": "ACTIVO",
+        "Comentarios": "demoran 4 o 5 dias de impresion aprox"
+    },
+    {
+        "Codigo_Variable": "ACABADOS TARJETAS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "tarj_extra_redondeado",
+        "Nombre_Visible": "Extra: Redondeado de Puntas (Lote 1000)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "10000",
+        "Estado": "ACTIVO",
+        "Comentarios": "sale lo mismo para redondear una o las 4 puntas, solo se redondean las que son tiradas de 1000 unidades"
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "VOLANTES",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "los volantes demoran 4 o 5 dias habiles aprox. si necesita menos cantidad hay que calcular cuantos entran en la hoja y se le suma aprox $2,000 de corte, tambien el texto tiene que tener un margen de unos 7 mm con respecto a los bordes para que no corra riesgo de corte"
+    },
+    {
+        "Codigo_Variable": "vol_paq_1000_obra_fte",
+        "Nombre_Visible": "1000 Volantes Obra Color (Frente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "25500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_1000_ilustracion_fte",
+        "Nombre_Visible": "1000 Volantes Ilustraci\u00f3n Color (Frente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "38500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_1000_ilustracion_fte_-_dso",
+        "Nombre_Visible": "1000 Volantes Ilustraci\u00f3n Color (Fte y Dso)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "45500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_2000_ilustracion_fte ",
+        "Nombre_Visible": "2000 Volantes Ilustraci\u00f3n Color (Frente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "67000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_2000_ilustracion_fte_-_dso",
+        "Nombre_Visible": "2000 Volantes Ilustraci\u00f3n Color (Frente y Dso)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "69000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_5000_ilustracion_fte ",
+        "Nombre_Visible": "5000 Volantes Ilustraci\u00f3n Color (Frente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "135300",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "vol_paq_5000_ilustracion_fte_-_dso",
+        "Nombre_Visible": "5000 Volantes Ilustraci\u00f3n Color (Frente y Dso)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "143500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "ALTO IMPACTO \/ MICROCORRUGADO",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "se puede comprar una plancha completa o media plancha, pero no menos, lo que se puede hacer es por ejemplo si necesitan cartelitos mas chicos que media plancha hacer la cantidad que entre en esta media plancha y ofrecerla asi, por ejemplo si piden e carteles tama\u00f1o A4 en microcorrugado, se le cobra media plancha y se los hace entrar, el corte solo se cobra cuando son muy chicos por ejemplo mas chico que una A4, si no es el mismo precio"
+    },
+    {
+        "Codigo_Variable": "rigido_alto_impacto_entero",
+        "Nombre_Visible": "Altoimpacto Plancha Entera (60x90 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "19000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rigido_alto_impacto_media",
+        "Nombre_Visible": "Altoimpacto Media Plancha (60x45 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "11000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rigido_alto_impacto_sin_impresion",
+        "Nombre_Visible": "Altoimpacto Plancha sin Impresion (60x90 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "8000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rigido_microcorrugado_entera",
+        "Nombre_Visible": "Microcorrugado Plancha Entera (60x90 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "17000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rigido_microcorrugado_media",
+        "Nombre_Visible": "Microcorrugado Media Plancha (60x45 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "10000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "rigido_microcorrugado_sin_impresion",
+        "Nombre_Visible": "Microcorrugado Plancha sin Impresion (60x90 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "8000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "IMANES",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "iman_plancha",
+        "Nombre_Visible": "Plancha de Imanes a Medida (30x45 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "8500",
+        "Estado": "ACTIVO",
+        "Comentarios": "estos los hacemos nosotros y demoran 1 o 2 dias habiles aprox."
+    },
+    {
+        "Codigo_Variable": "iman_promo1000_1",
+        "Nombre_Visible": "Promo 1000 Imanes (8,5x5 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "260000",
+        "Estado": "ACTIVO",
+        "Comentarios": "estos demoran una semana habil aprox. se hacen en offset"
+    },
+    {
+        "Codigo_Variable": "iman_promo1000_2",
+        "Nombre_Visible": "Promo 1000 Imanes (4x5 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "165000",
+        "Estado": "ACTIVO",
+        "Comentarios": "estos demoran una semana habil aprox. se hacen en offset"
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "STICKERS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "sticker_plancha",
+        "Nombre_Visible": "Plancha de Stickers Troquelados (30x45 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "3500",
+        "Estado": "ACTIVO",
+        "Comentarios": "esta plancha la hacemos nosotros y suelen demorar 2 dias aprox. todo depende de la cantidad que tengamos para hacer antes"
+    },
+    {
+        "Codigo_Variable": "sticker_promo1000",
+        "Nombre_Visible": "Promo 1000 stickers (6x3.5 cm)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "18000",
+        "Estado": "ACTIVO",
+        "Comentarios": "estos demoran un poco mas de una semana, se hace en offset"
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "RESMAS",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "las resmas demoran unos 3 o 4 dias habiles aprox."
+    },
+    {
+        "Codigo_Variable": "resma_exist_blanca_1",
+        "Nombre_Visible": "1 Resma Blanca (Chapa Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "29500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_exist_blanca_2",
+        "Nombre_Visible": "2 Resmas Blancas (Chapa Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "42000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_blanca_1",
+        "Nombre_Visible": "1 Resma Blanca (Chapa Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "39500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_blanca_2",
+        "Nombre_Visible": "2 Resmas Blancas (Chapa Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "53500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_exist_pintado_1",
+        "Nombre_Visible": "1 Resma Fondo Pintado (Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "41000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_exist_pintado_2",
+        "Nombre_Visible": "2 Resmas Fondo Pintado (Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "55000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_pintado_1",
+        "Nombre_Visible": "1 Resma Fondo Pintado (Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "52500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_pintado_2",
+        "Nombre_Visible": "2 Resmas Fondo Pintado (Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "66500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_exist_color_1",
+        "Nombre_Visible": "1 Resma Color (Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "9999999",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_exist_color_2",
+        "Nombre_Visible": "2 Resmas Color (Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "9999999",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_color_1",
+        "Nombre_Visible": "1 Resma Color (Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "9999999",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_nueva_color_2",
+        "Nombre_Visible": "2 Resmas Color (Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "9999999",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_color_extra_exist",
+        "Nombre_Visible": "Adicional Color x Millar (Existente)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "17000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_color_extra_nueva",
+        "Nombre_Visible": "Adicional Color x Millar (Nueva)",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "23000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_extra_embloc_1",
+        "Nombre_Visible": "Adicional Emblocado\/Troquel x 1 Resma",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "1500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_extra_embloc_2",
+        "Nombre_Visible": "Adicional Emblocado\/Troquel x 2 Resmas",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "2500",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_extra_num_1",
+        "Nombre_Visible": "Adicional Numerado x 1 Resma",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "15000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "resma_extra_num_2",
+        "Nombre_Visible": "Adicional Numerado x 2 Resmas",
+        "Equivalencia_Hojas": "1",
+        "Precio_Unidad": "28000",
+        "Estado": "ACTIVO",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": ""
+    },
+    {
+        "Codigo_Variable": "VINILOS DE CORTE",
+        "Nombre_Visible": "",
+        "Equivalencia_Hojas": "",
+        "Precio_Unidad": "",
+        "Estado": "",
+        "Comentarios": "No tienen un precio de lista, si no que se presupuesta en base a la cantidad de cortes y tama\u00f1o del archivo, para poder presupuestarlo necesitamos que nos pase el archivo, la cantidad de colores y el tama\u00f1o real"
+    }
+]
