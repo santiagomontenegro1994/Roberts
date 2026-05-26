@@ -103,6 +103,25 @@
       </li> Pedido de Libros Nav -->
 
       <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#productos-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-bag"></i><span>Productos</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="productos-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="../imprenta_productos/abm_producto.php">
+              <i class="bi bi-circle"></i><span>Agregar</span>
+            </a>
+          </li>
+          <li>
+            
+            <a href="../imprenta_productos/inventario.php">
+              <i class="bi bi-circle"></i><span>Listados</span>
+            </a>
+          </li>
+        </ul>
+      </li> <!-- End Productos Nav -->
+
+      <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#pedidos-trabajos-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-bag"></i><span>Pedidos de Trabajos</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
