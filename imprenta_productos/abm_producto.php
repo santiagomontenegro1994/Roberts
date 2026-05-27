@@ -1,76 +1,496 @@
 <?php
 session_start();
+
+// 1. Seguridad básica
+if (empty($_SESSION['Usuario_Nombre'])) {
+    header('Location: ../core/cerrarsesion.php');
+    exit;
+}
+
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// Verificar si estamos editando (recibimos ID) o creando uno nuevo
-$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-$producto = null;
+// Inicializar variables por defecto
+$producto = [
+    'id' => '', 'titulo' => '', 'descripcion' => '', 'precio' => 0, 
+    'stock' => 0, 'stock_infinito' => 0, 
+    'imagen' => '', 
+    'color_principal' => 'Original',
+    'color_principal_hex' => '#000000',
+    'destacado' => 0, 'nuevo' => 0
+];
+$categorias_seleccionadas = [];
 
-if ($id) {
-    $res = mysqli_query($MiConexion, "SELECT * FROM productos WHERE id = $id");
-    $producto = mysqli_fetch_assoc($res);
+// --- 0. ELIMINAR VARIANTE ---
+if (isset($_GET['borrar_color']) && isset($_GET['id_prod'])) {
+    $id_color = (int)$_GET['borrar_color'];
+    $id_prod_redirect = (int)$_GET['id_prod'];
+
+    $res_img = mysqli_query($MiConexion, "SELECT nombre_imagen FROM productos_imagenes WHERE id = $id_color");
+    $img_var = mysqli_fetch_assoc($res_img);
+
+    if ($img_var) {
+        if (file_exists("../img/" . $img_var['nombre_imagen'])) {
+            unlink("../img/" . $img_var['nombre_imagen']);
+        }
+        mysqli_query($MiConexion, "DELETE FROM productos_imagenes WHERE id = $id_color");
+    }
+    
+    header("Location: abm_producto.php?id=" . $id_prod_redirect . "#areaColores");
+    exit;
 }
 
-// Lógica de GUARDAR (POST)
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $titulo = mysqli_real_escape_string($MiConexion, $_POST['titulo']);
-    $stock = (int)$_POST['stock'];
-    $precio = (float)$_POST['precio'];
-    $activo = isset($_POST['activo']) ? 1 : 0;
+// 1. CARGAR DATOS (Si es edición)
+if (isset($_GET['id'])) {
+    $id_get = (int)$_GET['id'];
+    $res_prod = mysqli_query($MiConexion, "SELECT * FROM productos WHERE id = $id_get");
+    $producto_bd = mysqli_fetch_assoc($res_prod);
+    
+    if(!$producto_bd) die("Producto no encontrado");
+    $producto = array_merge($producto, $producto_bd); // Mezclamos para no perder las claves por defecto
 
-    if ($id) {
-        // UPDATE
-        $sql = "UPDATE productos SET titulo='$titulo', stock=$stock, precio=$precio, idActivo=$activo WHERE id=$id";
-    } else {
-        // INSERT
-        $sql = "INSERT INTO productos (titulo, stock, precio, idActivo) VALUES ('$titulo', $stock, $precio, $activo)";
+    if(empty($producto['color_principal'])) $producto['color_principal'] = 'Original';
+    if(empty($producto['color_principal_hex'])) $producto['color_principal_hex'] = '#000000';
+
+    // Cargar categorías de la tabla puente
+    $res_cats = mysqli_query($MiConexion, "SELECT id_categoria FROM producto_categoria WHERE id_producto = $id_get");
+    while ($row_cat = mysqli_fetch_assoc($res_cats)) {
+        $categorias_seleccionadas[] = $row_cat['id_categoria'];
+    }
+}
+
+// OBTENER TODOS LOS PRODUCTOS PARA EL GENERADOR DE BOTONES
+$res_all = mysqli_query($MiConexion, "SELECT id, titulo FROM productos ORDER BY titulo ASC");
+$todos_productos = [];
+while ($row_all = mysqli_fetch_assoc($res_all)) {
+    $todos_productos[] = $row_all;
+}
+
+// 2. PROCESAR POST
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    
+    // --- A. GUARDAR PRODUCTO PRINCIPAL ---
+    if (isset($_POST['accion']) && $_POST['accion'] == 'guardar_producto') {
+        $titulo = mysqli_real_escape_string($MiConexion, $_POST['titulo']);
+        $desc = mysqli_real_escape_string($MiConexion, $_POST['descripcion']);
+        $categorias_post = isset($_POST['categorias']) ? $_POST['categorias'] : [];
+        $destacado = isset($_POST['destacado']) ? 1 : 0;
+        $nuevo = isset($_POST['nuevo']) ? 1 : 0;
+        $id_post = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+        
+        $stock = !empty($_POST['stock']) ? (int)$_POST['stock'] : 0;
+        $stock_infinito = isset($_POST['stock_infinito']) ? 1 : 0;
+        
+        $color_principal = !empty($_POST['color_principal']) ? mysqli_real_escape_string($MiConexion, $_POST['color_principal']) : 'Original';
+        $color_principal_hex = !empty($_POST['color_principal_hex']) ? mysqli_real_escape_string($MiConexion, $_POST['color_principal_hex']) : '#000000';
+
+        // Imagen
+        $nombre_imagen = $producto['imagen']; 
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+            $dir_destino = "../img/productos/"; 
+            if (!is_dir($dir_destino)) mkdir($dir_destino, 0777, true);
+            $info = pathinfo($_FILES['imagen']['name']);
+            $ext = strtolower($info['extension']);
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $nom = time() . "_" . uniqid() . "." . $ext;
+                if (move_uploaded_file($_FILES['imagen']['tmp_name'], $dir_destino . $nom)) {
+                    if ($producto['imagen'] && file_exists("../img/" . $producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg') {
+                        unlink("../img/" . $producto['imagen']);
+                    }
+                    $nombre_imagen = "productos/" . $nom; 
+                }
+            }
+        }
+        if (empty($nombre_imagen)) $nombre_imagen = "productos/sin-imagen.jpg";
+
+        $cat_legacy = 0;
+
+        if ($id_post > 0) {
+            $sql = "UPDATE productos SET titulo='$titulo', descripcion='$desc', stock=$stock, stock_infinito=$stock_infinito, categoria=$cat_legacy, imagen='$nombre_imagen', color_principal='$color_principal', color_principal_hex='$color_principal_hex', destacado=$destacado, nuevo=$nuevo WHERE id=$id_post";
+            mysqli_query($MiConexion, $sql);
+            $id_retorno = $id_post;
+
+            // Limpiar categorías viejas
+            mysqli_query($MiConexion, "DELETE FROM producto_categoria WHERE id_producto = $id_retorno");
+        } else {
+            $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0)";
+            mysqli_query($MiConexion, $sql);
+            $id_retorno = mysqli_insert_id($MiConexion);
+        }
+
+        // Insertar categorías nuevas en la tabla puente
+        if (!empty($categorias_post)) {
+            foreach ($categorias_post as $id_cat) {
+                $id_cat = (int)$id_cat;
+                mysqli_query($MiConexion, "INSERT INTO producto_categoria (id_producto, id_categoria) VALUES ($id_retorno, $id_cat)");
+            }
+        }
+
+        header("Location: abm_producto.php?id=" . $id_retorno . "&msg=ok");
+        exit;
     }
 
-    if (mysqli_query($MiConexion, $sql)) {
-        $_SESSION['Mensaje'] = "Producto guardado con éxito.";
-        header("Location: inventario.php");
+    // --- B. AGREGAR VARIANTE ---
+    if (isset($_POST['accion']) && $_POST['accion'] == 'agregar_color') {
+        $id_prod = (int)$_POST['id_producto'];
+        $color_nombre = mysqli_real_escape_string($MiConexion, $_POST['color_nombre']);
+        $color_hex = mysqli_real_escape_string($MiConexion, $_POST['color_hex']);
+        $stock_var = !empty($_POST['stock_var']) ? (int)$_POST['stock_var'] : 0;
+        
+        if (isset($_FILES['foto_color']) && $_FILES['foto_color']['error'] === UPLOAD_ERR_OK) {
+            $dir = "../img/productos/variantes/";
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            $info = pathinfo($_FILES['foto_color']['name']);
+            $ext = strtolower($info['extension']);
+            $nom = "var_" . time() . "_" . uniqid() . "." . $ext;
+            
+            if (move_uploaded_file($_FILES['foto_color']['tmp_name'], $dir . $nom)) {
+                $ruta_db = "productos/variantes/" . $nom;
+                $sql = "INSERT INTO productos_imagenes (id_producto, nombre_imagen, color_hex, color_nombre, stock) VALUES ($id_prod, '$ruta_db', '$color_hex', '$color_nombre', $stock_var)";
+                mysqli_query($MiConexion, $sql);
+            }
+        }
+        header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
+        exit;
+    }
+
+    // --- C. ACTUALIZAR VARIANTE EXISTENTE ---
+    if (isset($_POST['accion']) && $_POST['accion'] == 'actualizar_variante') {
+        $id_var = (int)$_POST['id_variante'];
+        $id_prod = (int)$_POST['id_producto'];
+        $nombre = mysqli_real_escape_string($MiConexion, $_POST['color_nombre']);
+        $hex = mysqli_real_escape_string($MiConexion, $_POST['color_hex']);
+        $stock_var = (int)$_POST['stock_var'];
+
+        $sql = "UPDATE productos_imagenes SET color_nombre = '$nombre', color_hex = '$hex', stock = $stock_var WHERE id = $id_var";
+        mysqli_query($MiConexion, $sql);
+        
+        header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
         exit;
     }
 }
 ?>
 
-<?php require ('../shared/encabezado.inc.php'); ?>
+<?php 
+require ('../shared/encabezado.inc.php'); 
+require ('../shared/barraLateral.inc.php'); 
+?>
+
+<style>
+    .form-check-input { cursor: pointer; }
+    .color-preview { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ddd; display: inline-block; }
+    
+    .categorias-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        max-height: 250px;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+    .cat-checkbox-item {
+        background: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+        transition: 0.2s;
+    }
+    .cat-checkbox-item:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 5px rgba(13,110,253,0.1);
+    }
+</style>
+
 <main id="main" class="main">
-    <section class="section">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title"><?= $id ? 'Editar Producto' : 'Nuevo Producto' ?></h5>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8"> 
+            
+            <?php if(isset($_GET['msg'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-check"></i> Cambios guardados correctamente.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php endif; ?>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white">
+                        <?php echo $producto['id'] ? '<i class="bi bi-pencil-square me-2"></i>Editar Producto' : '<i class="bi bi-box me-2"></i>Nuevo Producto'; ?>
+                    </h5>
+                    <a href="inventario.php" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i> Volver</a>
+                </div>
                 
-                <form method="POST">
-                    <div class="mb-3">
-                        <label>Nombre del Producto</label>
-                        <input type="text" name="titulo" class="form-control" value="<?= $producto['titulo'] ?? '' ?>" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Stock</label>
-                            <input type="number" name="stock" class="form-control" value="<?= $producto['stock'] ?? 0 ?>">
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="accion" value="guardar_producto">
+                        <input type="hidden" name="id" value="<?php echo $producto['id']; ?>">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Título del Producto <span class="text-danger">*</span></label>
+                            <input type="text" name="titulo" class="form-control form-control-lg" value="<?php echo htmlspecialchars($producto['titulo']); ?>" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Precio</label>
-                            <input type="number" step="0.01" name="precio" class="form-control" value="<?= $producto['precio'] ?? 0 ?>">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
+                            <textarea name="descripcion" id="campo_descripcion" class="form-control" rows="5" required><?php echo htmlspecialchars($producto['descripcion']); ?></textarea>
+                            
+                            <div class="mt-2 p-3 bg-white rounded border border-primary shadow-sm">
+                                <label class="form-label fw-bold text-primary mb-1"><i class="bi bi-magic"></i> Agregar botón a otro producto</label>
+                                <p class="small text-muted mb-2">Elegí un producto y tocá "Insertar". El sistema escribirá el código por vos.</p>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="small fw-bold text-dark">¿A qué producto lleva?</label>
+                                        <select id="gen_prod" class="form-select form-select-sm border-primary">
+                                            <option value="">Buscar producto...</option>
+                                            <?php foreach($todos_productos as $tp): ?>
+                                                <option value="<?php echo $tp['id']; ?>"><?php echo htmlspecialchars($tp['titulo']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="small fw-bold text-dark">Texto del botón:</label>
+                                        <input type="text" id="gen_texto" class="form-control form-control-sm border-primary" placeholder="Ej: Ver Taza Estampada">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" onclick="agregarBotonDesc()"><i class="bi bi-plus-lg"></i> Insertar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text text-muted mt-2">Aclaración: El precio se administra automáticamente desde el Excel.</div>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Estado</label>
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" name="activo" <?= (!isset($producto) || $producto['idActivo'] == 1) ? 'checked' : '' ?>>
-                                <label class="form-check-label">Producto Activo</label>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label fw-bold text-success"><i class="bi bi-file-earmark-excel"></i> Precio (BD)</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-light text-success">$</span>
+                                    <input type="text" class="form-control bg-light text-success fw-bold" 
+                                           value="<?php echo number_format((float)$producto['precio'], 0, ',', '.'); ?>" 
+                                           readonly title="El precio no se actualiza desde aquí.">
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Stock (Color Principal)</label>
+                                <div class="d-flex gap-3 align-items-start flex-wrap">
+                                    <input type="number" name="stock" id="inputStock" class="form-control shadow-sm" value="<?php echo $producto['stock']; ?>" style="max-width: 120px;">
+                                    <div class="form-check bg-light p-2 rounded border mt-1 shadow-sm">
+                                        <input class="form-check-input ms-1" type="checkbox" name="stock_infinito" id="checkInfinito" value="1" <?php if($producto['stock_infinito']) echo 'checked'; ?>>
+                                        <label class="form-check-label small ms-2" for="checkInfinito">Stock Infinito / A medida</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Categorías <span class="text-danger">*</span></label>
+                            <div class="categorias-grid">
+                                <?php 
+                                $res_cat = mysqli_query($MiConexion, "SELECT * FROM categorias_prod WHERE idActivo = 1 ORDER BY nombre ASC");
+                                $categorias_bd = [];
+                                while ($c_row = mysqli_fetch_assoc($res_cat)) { $categorias_bd[] = $c_row; }
+                                
+                                if (count($categorias_bd) > 0) {
+                                    foreach($categorias_bd as $c): 
+                                        $checked = in_array($c['id'], $categorias_seleccionadas) ? 'checked' : '';
+                                ?>
+                                    <div class="cat-checkbox-item form-check m-0">
+                                        <input class="form-check-input" type="checkbox" name="categorias[]" value="<?php echo $c['id']; ?>" id="cat_<?php echo $c['id']; ?>" <?php echo $checked; ?>>
+                                        <label class="form-check-label w-100" style="cursor:pointer;" for="cat_<?php echo $c['id']; ?>">
+                                            <?php echo htmlspecialchars($c['nombre']); ?>
+                                        </label>
+                                    </div>
+                                <?php 
+                                    endforeach; 
+                                } else {
+                                    echo "<p class='text-muted small m-0'>No hay categorías creadas.</p>";
+                                }
+                                ?>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 p-3 bg-light rounded border">
+                            <label class="form-label fw-bold">Imagen Principal</label>
+                            <input type="file" name="imagen" class="form-control mb-2" accept="image/*">
+                            
+                            <div class="row g-2 mt-2 align-items-center">
+                                <div class="col-md-8">
+                                    <label class="small fw-bold">Nombre del Color Principal:</label>
+                                    <input type="text" name="color_principal" class="form-control form-control-sm" 
+                                           value="<?php echo htmlspecialchars($producto['color_principal']); ?>" placeholder="Ej: Blanco">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Hexadecimal:</label>
+                                    <input type="color" name="color_principal_hex" class="form-control form-control-color w-100" 
+                                           value="<?php echo htmlspecialchars($producto['color_principal_hex']); ?>">
+                                </div>
+                            </div>
+
+                            <?php if(!empty($producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg'): ?>
+                                <img src="../img/<?php echo $producto['imagen']; ?>" height="60" class="mt-2 rounded border bg-white shadow-sm">
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div class="p-3 border rounded border-warning h-100 d-flex align-items-center bg-white shadow-sm">
+                                    <div class="form-check form-switch w-100 text-center">
+                                        <input class="form-check-input scale-125 float-none ms-0" type="checkbox" name="destacado" id="dest" <?php if($producto['destacado']) echo 'checked'; ?>>
+                                        <label class="form-check-label fw-bold ms-2 d-inline-block" for="dest">Destacado (Inicio)</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 border rounded border-info h-100 d-flex align-items-center bg-white shadow-sm">
+                                    <div class="form-check form-switch w-100 text-center">
+                                        <input class="form-check-input scale-125 float-none ms-0" type="checkbox" name="nuevo" id="nuev" <?php if($producto['nuevo']) echo 'checked'; ?>>
+                                        <label class="form-check-label fw-bold ms-2 d-inline-block" for="nuev">Etiqueta "Nuevo"</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold"><i class="bi bi-save"></i> GUARDAR PRODUCTO</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <?php if($producto['id']): ?>
+            <div class="card shadow" id="areaColores">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0 text-white"><i class="bi bi-palette me-2"></i> Variantes de Color</h5>
+                </div>
+                <div class="card-body">
+                    <?php 
+                        $res_var = mysqli_query($MiConexion, "SELECT * FROM productos_imagenes WHERE id_producto = ".$producto['id']);
+                        $variantes = [];
+                        while ($v_row = mysqli_fetch_assoc($res_var)) { $variantes[] = $v_row; }
+                    ?>
+                    
+                    <?php if(count($variantes) > 0): ?>
+                        <div class="mb-4">
+                            <label class="fw-bold mb-2">Variantes Existentes (Editar):</label>
+                            <div class="d-flex flex-column gap-2">
+                                <?php foreach($variantes as $v): ?>
+                                <form method="POST" class="d-flex align-items-center gap-2 p-2 border rounded bg-white">
+                                    <input type="hidden" name="accion" value="actualizar_variante">
+                                    <input type="hidden" name="id_variante" value="<?php echo $v['id']; ?>">
+                                    <input type="hidden" name="id_producto" value="<?php echo $producto['id']; ?>">
+                                    
+                                    <img src="../img/<?php echo $v['nombre_imagen']; ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;">
+                                    
+                                    <div class="flex-grow-1">
+                                        <input type="text" name="color_nombre" class="form-control form-control-sm mb-1" value="<?php echo htmlspecialchars($v['color_nombre']); ?>" placeholder="Nombre">
+                                        <div class="d-flex gap-1">
+                                            <input type="number" name="stock_var" class="form-control form-control-sm" value="<?php echo $v['stock']; ?>" placeholder="Stock" style="width: 70px;">
+                                            <input type="color" name="color_hex" class="form-control form-control-color form-control-sm" value="<?php echo htmlspecialchars($v['color_hex']); ?>" title="Cambiar Color">
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-column gap-1">
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Actualizar Datos"><i class="bi bi-arrow-clockwise"></i></button>
+                                        <a href="abm_producto.php?borrar_color=<?php echo $v['id']; ?>&id_prod=<?php echo $producto['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Borrar esta variante?')" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </form>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="p-3 bg-light border rounded">
+                        <h6 class="fw-bold mb-3">Agregar Nueva Variante</h6>
+                        <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end">
+                            <input type="hidden" name="accion" value="agregar_color">
+                            <input type="hidden" name="id_producto" value="<?php echo $producto['id']; ?>">
+                            
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Nombre</label>
+                                <input type="text" name="color_nombre" class="form-control" placeholder="Ej: Rojo" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small fw-bold">Stock</label>
+                                <input type="number" name="stock_var" class="form-control" value="0" min="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small fw-bold">Color</label>
+                                <input type="color" name="color_hex" class="form-control form-control-color w-100" value="#ff0000">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold">Foto</label>
+                                <input type="file" name="foto_color" class="form-control" accept="image/*" required>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </form>
                     </div>
 
-                    <button type="submit" class="btn btn-success">Guardar Producto</button>
-                    <a href="inventario.php" class="btn btn-secondary">Cancelar</a>
-                </form>
+                </div>
             </div>
+            <?php endif; ?>
+
         </div>
-    </section>
+    </div>
 </main>
+
 <?php require ('../shared/footer.inc.php'); ?>
+
+<script>
+    // FUNCIÓN DEL GENERADOR DE BOTONES
+    function agregarBotonDesc() {
+        const select = document.getElementById('gen_prod');
+        const prodId = select.value;
+        const texto = document.getElementById('gen_texto').value;
+        const textarea = document.getElementById('campo_descripcion');
+
+        if(!prodId || !texto) {
+            alert("⚠️ Por favor, seleccioná un producto de la lista y escribí el texto que va a decir el botón.");
+            return;
+        }
+
+        // Armamos el código HTML perfecto con márgenes incluidos
+        const botonHTML = `\n<a href="productos.php?ver_producto=${prodId}" class="btn btn-outline-primary btn-sm mt-2 mb-1" style="width:100%; text-align:center;">\n    <i class="fa-solid fa-wand-magic-sparkles"></i> ${texto}\n</a>\n`;
+
+        textarea.value += botonHTML;
+
+        // Limpiamos los casilleros
+        select.value = '';
+        document.getElementById('gen_texto').value = '';
+        
+        // Enfocamos
+        textarea.focus();
+        textarea.selectionStart = textarea.value.length;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const check = document.getElementById('checkInfinito');
+        const input = document.getElementById('inputStock');
+        function toggleStockInput() {
+            if(check.checked) {
+                input.readOnly = true; input.classList.add('bg-light');
+                if(input.value == 0) input.value = 999; 
+            } else {
+                input.readOnly = false; input.classList.remove('bg-light');
+                if(input.value == 999) input.value = 0;
+            }
+        }
+        check.addEventListener('change', toggleStockInput);
+        if(check) { toggleStockInput(); }
+
+        const formProducto = document.querySelector('form[action=""]'); 
+        if(formProducto && formProducto.querySelector('input[name="accion"][value="guardar_producto"]')) {
+            formProducto.addEventListener('submit', function(e) {
+                const checkboxes = document.querySelectorAll('input[name="categorias[]"]:checked');
+                if (checkboxes.length === 0) {
+                    e.preventDefault();
+                    alert("Por favor, seleccioná al menos una categoría para el producto.");
+                }
+            });
+        }
+    });
+</script>
