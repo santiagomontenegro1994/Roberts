@@ -136,11 +136,9 @@ require('../shared/barraLateral.inc.php');
 const API_URL = 'procesar_dashboard.php';
 const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
 
-// Variables para destruir los gráficos antes de actualizarlos
 let chartV = null;
 let chartG = null;
 
-// Formatear fechas (De 2026-03-21 a 21 Mar) para que el gráfico quede lindo
 function formatearFecha(fechaStr) {
     const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const partes = fechaStr.split('-');
@@ -188,7 +186,6 @@ async function cargarDatos(e) {
             return;
         }
 
-        // 1. Tarjetas Superiores
         document.getElementById('totVentas').innerText = dinero(data.totales.ingresos);
         document.getElementById('totGastos').innerText = dinero(data.totales.gastos);
         
@@ -197,12 +194,24 @@ async function cargarDatos(e) {
         elGanancia.innerText = dinero(gNeta);
         elGanancia.className = gNeta >= 0 ? 'h3 mb-0 font-weight-bold text-success' : 'h3 mb-0 font-weight-bold text-danger';
 
-        // 2. Listas de Rubros
         renderizarLista('listaRubrosVentas', data.rubros.ingresos, 'bg-primary');
         renderizarLista('listaRubrosGastos', data.rubros.gastos, 'bg-danger');
 
-        // 3. Gráficos
         const labelsGrafico = data.graficos.labels.map(formatearFecha);
+        const numPuntos = labelsGrafico.length;
+        
+        // --- MAGIA VISUAL PARA PERIODOS LARGOS ---
+        const mostrarPuntos = numPuntos > 30 ? 0 : 4; // Oculta puntos si son más de 30 días
+        const grosorLinea = numPuntos > 30 ? 2 : 3;   // Afina la línea
+        
+        const opcionesEjeX = {
+            ticks: {
+                autoSkip: true,
+                maxTicksLimit: 10, // Máximo 10 fechas abajo
+                maxRotation: 0     // Mantiene las fechas horizontales
+            },
+            grid: { display: false }
+        };
 
         if(chartV) chartV.destroy();
         const ctxV = document.getElementById('chartVentas').getContext('2d');
@@ -215,20 +224,26 @@ async function cargarDatos(e) {
                     data: data.graficos.ventas,
                     borderColor: '#0d6efd',
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: 3,
+                    borderWidth: grosorLinea,
                     fill: true,
-                    tension: 0.3,
-                    pointRadius: 3,
+                    tension: 0.4,
+                    spanGaps: true,
+                    pointRadius: mostrarPuntos,
                     pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: { callbacks: { label: ctx => dinero(ctx.parsed.y) } }
                 },
                 scales: {
+                    x: opcionesEjeX,
                     y: { beginAtZero: true, ticks: { callback: v => dinero(v) } }
                 }
             }
@@ -245,20 +260,26 @@ async function cargarDatos(e) {
                     data: data.graficos.gastos,
                     borderColor: '#dc3545',
                     backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 3,
+                    borderWidth: grosorLinea,
                     fill: true,
-                    tension: 0.3,
-                    pointRadius: 3,
+                    tension: 0.4,
+                    spanGaps: true,
+                    pointRadius: mostrarPuntos,
                     pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: { callbacks: { label: ctx => dinero(ctx.parsed.y) } }
                 },
                 scales: {
+                    x: opcionesEjeX,
                     y: { beginAtZero: true, ticks: { callback: v => dinero(v) } }
                 }
             }
