@@ -24,7 +24,7 @@ $sql = "SELECT p.*,
                (SELECT GROUP_CONCAT(c.nombre SEPARATOR ', ') 
                 FROM categorias_prod pc 
                 JOIN categorias_prod c ON pc.id_categoria = c.id 
-                WHERE pc.id_producto = p.id) as nombre_categoria
+                WHERE pc.id = p.id) as nombre_categoria
         FROM productos p 
         WHERE p.idActivo = 1 
         ORDER BY p.titulo ASC";
