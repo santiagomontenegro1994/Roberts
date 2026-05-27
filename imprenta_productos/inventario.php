@@ -14,7 +14,7 @@ require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
 // Configuración de URL de tus fotos
-$dominio_base = "https://tudominio.com/img/"; // <--- CAMBIÁ ESTO POR TU URL REAL
+$dominio_base = "https://robertsgrafica.com/img/"; 
 
 // 3. Consulta SQL: Trae producto + categoría concatenada
 $sql = "SELECT p.*, 
