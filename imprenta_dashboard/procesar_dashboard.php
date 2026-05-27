@@ -129,6 +129,26 @@ while($row = mysqli_fetch_assoc($qGastosDia)) {
     }
 }
 
+// ==========================================
+// 4. LIMPIEZA DE DÍAS SIN ACTIVIDAD
+// ==========================================
+$finalLabels = [];
+$finalVentas = [];
+$finalGastos = [];
+
+foreach ($fechasArray as $f) {
+    $v = $ventasPorDia[$f];
+    $g = $gastosPorDia[$f];
+    
+    // Si el día tuvo ingresos o gastos, lo agregamos al gráfico.
+    // Si ambos son 0 (ej: domingo cerrado), se ignora y el gráfico no cae a pique.
+    if ($v != 0 || $g != 0) {
+        $finalLabels[] = $f;
+        $finalVentas[] = $v;
+        $finalGastos[] = $g;
+    }
+}
+
 echo json_encode([
     'ok' => true,
     'totales' => [
@@ -141,9 +161,9 @@ echo json_encode([
         'gastos' => $listaGastos
     ],
     'graficos' => [
-        'labels' => $fechasArray,
-        'ventas' => array_values($ventasPorDia),
-        'gastos' => array_values($gastosPorDia)
+        'labels' => $finalLabels,
+        'ventas' => $finalVentas,
+        'gastos' => $finalGastos
     ]
 ]);
 ?>
