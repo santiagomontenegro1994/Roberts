@@ -84,7 +84,7 @@ while($row = mysqli_fetch_assoc($qGR)){
 }
 
 // ==========================================
-// 3. DATOS PARA LOS GRÁFICOS (Evolución diaria)
+// 3. OBTENER EVOLUCIÓN DIARIA BASE
 // ==========================================
 $fechasArray = [];
 $ventasPorDia = [];
@@ -129,26 +129,59 @@ while($row = mysqli_fetch_assoc($qGastosDia)) {
 }
 
 // ==========================================
-// 4. FILTRAR DÍAS SIN ACTIVIDAD (ELIMINA LOS CERO)
+// 4. PROCESAMIENTO INTELIGENTE DEL RANGO (EVITA EL SERRUCHO)
 // ==========================================
+$dias_dif = (strtotime($fechaFin) - strtotime($fechaInicio)) / 86400;
+$agrupar_semanas = ($dias_dif > 31); // Si el rango pasa los 31 días, agrupa por semana de forma automática
+
 $finalLabels = [];
 $finalVentas = [];
 $finalGastos = [];
 
-foreach ($fechasArray as $f) {
-    $v = $ventasPorDia[$f];
-    $g = $gastosPorDia[$f];
+if ($agrupar_semanas) {
+    // Agrupación Semanal
+    $tempSemanas = [];
+    foreach ($fechasArray as $f) {
+        $v = $ventasPorDia[$f];
+        $g = $gastosPorDia[$f];
+        
+        $dateObj = new DateTime($f);
+        $lunes = clone $dateObj;
+        if ($lunes->format('w') != 1) {
+            $lunes->modify('last monday');
+        }
+        $label = $lunes->format('Y-m-d'); // Usamos el lunes de cada semana como punto clave
+        
+        if (!isset($tempSemanas[$label])) {
+            $tempSemanas[$label] = ['v' => 0, 'g' => 0];
+        }
+        $tempSemanas[$label]['v'] += $v;
+        $tempSemanas[$label]['g'] += $g;
+    }
     
-    // Si el día tuvo ventas o gastos, lo incluimos
-    if ($v != 0 || $g != 0) {
-        $finalLabels[] = $f;
-        $finalVentas[] = $v;
-        $finalGastos[] = $g;
+    foreach ($tempSemanas as $lbl => $totales) {
+        if ($totales['v'] != 0 || $totales['g'] != 0) {
+            $finalLabels[] = $lbl;
+            $finalVentas[] = $totales['v'];
+            $finalGastos[] = $totales['g'];
+        }
+    }
+} else {
+    // Agrupación Diaria Limpia (Quita domingos/días cerrados a cero)
+    foreach ($fechasArray as $f) {
+        $v = $ventasPorDia[$f];
+        $g = $gastosPorDia[$f];
+        if ($v != 0 || $g != 0) {
+            $finalLabels[] = $f;
+            $finalVentas[] = $v;
+            $finalGastos[] = $g;
+        }
     }
 }
 
 echo json_encode([
     'ok' => true,
+    'agrupado_semanal' => $agrupar_semanas,
     'totales' => [
         'ingresos' => $totalIngresos,
         'gastos' => $totalEgresos,
