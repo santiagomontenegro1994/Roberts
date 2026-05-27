@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// 1. Seguridad y Conexión
+// 1. Seguridad básica
 if (empty($_SESSION['Usuario_Nombre'])) {
     header('Location: ../core/cerrarsesion.php');
     exit;
@@ -37,8 +37,20 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
     <section class="section">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title">Listado de Productos</h5>
+                
+                <?php if (isset($_SESSION['Mensaje'])): ?>
+                    <div class="alert alert-<?= $_SESSION['Estilo'] ?? 'success' ?> alert-dismissible fade show mt-3" role="alert">
+                        <?= $_SESSION['Mensaje'] ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php 
+                        unset($_SESSION['Mensaje']); 
+                        unset($_SESSION['Estilo']);
+                    ?>
+                <?php endif; ?>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+                    <h5 class="card-title m-0">Listado de Productos</h5>
                     <a href="abm_producto.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Nuevo</a>
                 </div>
 
@@ -55,14 +67,9 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                         </thead>
                         <tbody>
                             <?php while ($row = mysqli_fetch_assoc($query)) { 
-                                // LOGICA DE RUTA MEJORADA:
-                                // 1. Si hay imagen principal, usamos esa.
-                                // 2. Si no hay principal pero hay variante, usamos la variante con su ruta completa.
-                                // 3. Si no hay nada, sin-imagen.
-                                
+                                // LÓGICA DE RUTA MEJORADA
                                 if (!empty($row['imagen'])) {
                                     $ruta_archivo = $row['imagen'];
-                                    // Si no trae el prefijo 'productos/', se lo ponemos
                                     if (strpos($ruta_archivo, 'productos/') === false) { $ruta_archivo = 'productos/' . $ruta_archivo; }
                                 } elseif (!empty($row['imagen_variante'])) {
                                     $ruta_archivo = 'productos/variantes/' . $row['imagen_variante'];
@@ -89,10 +96,15 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                                 </td>
                                 <td>$<?= number_format((float)($row['precio'] ?? 0), 0, ',', '.') ?></td>
                                 <td>
+                                    <a href="abm_producto.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-xs me-1" title="Modificar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+                                    
                                     <button type="button" class="btn btn-danger btn-xs" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#modalEliminar" 
-                                            data-id="<?= $row['id'] ?>">
+                                            data-id="<?= $row['id'] ?>"
+                                            title="Eliminar">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </td>
@@ -129,7 +141,7 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
 </div>
 
 <script>
-// Esto pasa el ID al modal cuando apretás el botón de borrar
+// Pasar el ID al modal cuando se presiona el botón de borrar
 const modalEliminar = document.getElementById('modalEliminar');
 modalEliminar.addEventListener('show.bs.modal', function (event) {
   const button = event.relatedTarget;
@@ -137,4 +149,5 @@ modalEliminar.addEventListener('show.bs.modal', function (event) {
   document.getElementById('id_producto_a_eliminar').value = id;
 });
 </script>
+
 <?php require ('../shared/footer.inc.php'); ?>

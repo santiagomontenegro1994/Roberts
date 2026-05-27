@@ -10,6 +10,10 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
+// DEFINIMOS LA RUTA FÍSICA ABSOLUTA PARA GUARDAR Y BORRAR IMÁGENES
+// Esto asegura que, aunque estés en mm-sistemas, los archivos vayan a la carpeta correcta de robertsgrafica
+$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/img/";
+
 // Inicializar variables por defecto
 $producto = [
     'id' => '', 'titulo' => '', 'descripcion' => '', 'precio' => 0, 
@@ -30,8 +34,9 @@ if (isset($_GET['borrar_color']) && isset($_GET['id_prod'])) {
     $img_var = mysqli_fetch_assoc($res_img);
 
     if ($img_var) {
-        if (file_exists("../img/" . $img_var['nombre_imagen'])) {
-            unlink("../img/" . $img_var['nombre_imagen']);
+        // Usamos la ruta física absoluta para borrar
+        if (file_exists($ruta_servidor_img . $img_var['nombre_imagen'])) {
+            unlink($ruta_servidor_img . $img_var['nombre_imagen']);
         }
         mysqli_query($MiConexion, "DELETE FROM productos_imagenes WHERE id = $id_color");
     }
@@ -47,7 +52,7 @@ if (isset($_GET['id'])) {
     $producto_bd = mysqli_fetch_assoc($res_prod);
     
     if(!$producto_bd) die("Producto no encontrado");
-    $producto = array_merge($producto, $producto_bd); // Mezclamos para no perder las claves por defecto
+    $producto = array_merge($producto, $producto_bd);
 
     if(empty($producto['color_principal'])) $producto['color_principal'] = 'Original';
     if(empty($producto['color_principal_hex'])) $producto['color_principal_hex'] = '#000000';
@@ -84,18 +89,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $color_principal = !empty($_POST['color_principal']) ? mysqli_real_escape_string($MiConexion, $_POST['color_principal']) : 'Original';
         $color_principal_hex = !empty($_POST['color_principal_hex']) ? mysqli_real_escape_string($MiConexion, $_POST['color_principal_hex']) : '#000000';
 
-        // Imagen
+        // Procesamiento de Imagen Principal usando ruta física absoluta
         $nombre_imagen = $producto['imagen']; 
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
-            $dir_destino = "../img/productos/"; 
+            $dir_destino = $ruta_servidor_img . "productos/"; 
             if (!is_dir($dir_destino)) mkdir($dir_destino, 0777, true);
             $info = pathinfo($_FILES['imagen']['name']);
             $ext = strtolower($info['extension']);
             if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
                 $nom = time() . "_" . uniqid() . "." . $ext;
                 if (move_uploaded_file($_FILES['imagen']['tmp_name'], $dir_destino . $nom)) {
-                    if ($producto['imagen'] && file_exists("../img/" . $producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg') {
-                        unlink("../img/" . $producto['imagen']);
+                    // Borramos la imagen anterior si existía y no era el placeholder
+                    if ($producto['imagen'] && file_exists($ruta_servidor_img . $producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg') {
+                        unlink($ruta_servidor_img . $producto['imagen']);
                     }
                     $nombre_imagen = "productos/" . $nom; 
                 }
@@ -110,7 +116,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             mysqli_query($MiConexion, $sql);
             $id_retorno = $id_post;
 
-            // Limpiar categorías viejas
             mysqli_query($MiConexion, "DELETE FROM producto_categoria WHERE id_producto = $id_retorno");
         } else {
             $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0)";
@@ -118,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id_retorno = mysqli_insert_id($MiConexion);
         }
 
-        // Insertar categorías nuevas en la tabla puente
         if (!empty($categorias_post)) {
             foreach ($categorias_post as $id_cat) {
                 $id_cat = (int)$id_cat;
@@ -137,8 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $color_hex = mysqli_real_escape_string($MiConexion, $_POST['color_hex']);
         $stock_var = !empty($_POST['stock_var']) ? (int)$_POST['stock_var'] : 0;
         
+        // Subida de imagen variante con ruta absoluta
         if (isset($_FILES['foto_color']) && $_FILES['foto_color']['error'] === UPLOAD_ERR_OK) {
-            $dir = "../img/productos/variantes/";
+            $dir = $ruta_servidor_img . "productos/variantes/";
             if (!is_dir($dir)) mkdir($dir, 0777, true);
             $info = pathinfo($_FILES['foto_color']['name']);
             $ext = strtolower($info['extension']);
@@ -210,7 +215,7 @@ require ('../shared/barraLateral.inc.php');
             
             <?php if(isset($_GET['msg'])): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-check"></i> Cambios guardados correctamente.
+                <i class="bi bi-check-circle me-1"></i> Cambios guardados correctamente.
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
             <?php endif; ?>
@@ -330,7 +335,7 @@ require ('../shared/barraLateral.inc.php');
                             </div>
 
                             <?php if(!empty($producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg'): ?>
-                                <img src="../img/<?php echo $producto['imagen']; ?>" height="60" class="mt-2 rounded border bg-white shadow-sm">
+                                <img src="https://robertsgrafica.com/img/<?php echo $producto['imagen']; ?>" height="60" class="mt-2 rounded border bg-white shadow-sm">
                             <?php endif; ?>
                         </div>
 
@@ -382,13 +387,19 @@ require ('../shared/barraLateral.inc.php');
                                     <input type="hidden" name="id_variante" value="<?php echo $v['id']; ?>">
                                     <input type="hidden" name="id_producto" value="<?php echo $producto['id']; ?>">
                                     
-                                    <img src="../img/<?php echo $v['nombre_imagen']; ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;">
+                                    <img src="https://robertsgrafica.com/img/<?php echo $v['nombre_imagen']; ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;">
                                     
                                     <div class="flex-grow-1">
-                                        <input type="text" name="color_nombre" class="form-control form-control-sm mb-1" value="<?php echo htmlspecialchars($v['color_nombre']); ?>" placeholder="Nombre">
-                                        <div class="d-flex gap-1">
-                                            <input type="number" name="stock_var" class="form-control form-control-sm" value="<?php echo $v['stock']; ?>" placeholder="Stock" style="width: 70px;">
-                                            <input type="color" name="color_hex" class="form-control form-control-color form-control-sm" value="<?php echo htmlspecialchars($v['color_hex']); ?>" title="Cambiar Color">
+                                        <div class="row g-1 align-items-center">
+                                            <div class="col-md-5">
+                                                <input type="text" name="color_nombre" class="form-control form-control-sm" value="<?php echo htmlspecialchars($v['color_nombre']); ?>" placeholder="Nombre">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" name="stock_var" class="form-control form-control-sm" value="<?php echo $v['stock']; ?>" placeholder="Stock">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <input type="color" name="color_hex" class="form-control form-control-color form-control-sm w-100" value="<?php echo htmlspecialchars($v['color_hex']); ?>" title="Cambiar Color">
+                                            </div>
                                         </div>
                                     </div>
 
@@ -425,7 +436,7 @@ require ('../shared/barraLateral.inc.php');
                                 <input type="file" name="foto_color" class="form-control" accept="image/*" required>
                             </div>
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i> Agregar</button>
                             </div>
                         </form>
                     </div>
