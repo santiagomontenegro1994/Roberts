@@ -60,17 +60,18 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                         </thead>
                         <tbody>
                             <?php while ($row = mysqli_fetch_assoc($query)) { 
-                                // LOGICA DE RUTA: 
-                                // Si 'imagen' está vacía, usamos 'imagen_variante' que ya viene con la ruta completa del SQL
+                                // 1. Armamos la ruta del archivo (base de datos)
                                 $archivo_final = !empty($row['imagen']) ? $row['imagen'] : ($row['imagen_variante'] ?? 'productos/sin-imagen.jpg');
+                                
+                                // 2. Construimos la URL completa para que el navegador NO la confunda con una ruta local
                                 $img_url = $dominio_base . $archivo_final;
                             ?>
                             <tr>
                                 <td>
                                     <img src="<?= htmlspecialchars($img_url) ?>" 
-                                         style="width: 50px; height: 50px; object-fit: cover;" 
-                                         class="rounded shadow-sm" 
-                                         onerror="this.src='../img/productos/sin-imagen.jpg'">
+                                        style="width: 50px; height: 50px; object-fit: cover;" 
+                                        class="rounded shadow-sm" 
+                                        onerror="this.src='../img/productos/sin-imagen.jpg'">
                                 </td>
                                 <td><strong><?= htmlspecialchars($row['titulo'] ?? 'Sin nombre') ?></strong></td>
                                 <td><span class="badge bg-secondary"><?= htmlspecialchars($row['nombre_categoria'] ?? 'Sin cat.') ?></span></td>
