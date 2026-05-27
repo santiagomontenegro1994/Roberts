@@ -22,7 +22,7 @@ $dominio_base = "https://robertsgrafica.com/img/";
 // 3. Consulta SQL: Trae producto + categoría concatenada
 $sql = "SELECT p.*, 
                (SELECT GROUP_CONCAT(c.nombre SEPARATOR ', ') 
-                FROM producto_categoria pc 
+                FROM categorias_prod pc 
                 JOIN categorias_prod c ON pc.id_categoria = c.id 
                 WHERE pc.id_producto = p.id) as nombre_categoria
         FROM productos p 
