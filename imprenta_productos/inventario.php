@@ -12,13 +12,12 @@ require ('../shared/barraLateral.inc.php');
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// URL BASE (Esta es la URL que tu web usa para cargar fotos)
+// URL BASE
 $dominio_base = "https://robertsgrafica.com/img/"; 
 
 /**
- * CONSULTA SQL CORREGIDA:
- * Agregamos la subconsulta 'imagen_variante' para que, si no hay foto principal, 
- * tengamos el nombre del archivo de la variante.
+ * 2. Consulta SQL:
+ * Traemos el producto y la primera imagen de variante encontrada.
  */
 $sql = "SELECT p.*, 
         (SELECT nombre_imagen FROM productos_imagenes WHERE id_producto = p.id LIMIT 1) as imagen_variante
@@ -56,17 +55,22 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                         </thead>
                         <tbody>
                             <?php while ($row = mysqli_fetch_assoc($query)) { 
-                                // LÓGICA DE RUTA: 
-                                // 1. Prioridad: imagen principal. 2. Si no, imagen_variante. 3. Si no, sin-imagen.
-                                $archivo_img = !empty($row['imagen']) ? $row['imagen'] : ($row['imagen_variante'] ?? 'productos/sin-imagen.jpg');
+                                // LOGICA DE RUTA MEJORADA:
+                                // 1. Si hay imagen principal, usamos esa.
+                                // 2. Si no hay principal pero hay variante, usamos la variante con su ruta completa.
+                                // 3. Si no hay nada, sin-imagen.
                                 
-                                // Si el archivo no empieza con 'productos/', se lo agregamos para que la ruta sea completa
-                                if (strpos($archivo_img, 'productos/') === false) {
-                                    $archivo_img = 'productos/' . $archivo_img;
+                                if (!empty($row['imagen'])) {
+                                    $ruta_archivo = $row['imagen'];
+                                    // Si no trae el prefijo 'productos/', se lo ponemos
+                                    if (strpos($ruta_archivo, 'productos/') === false) { $ruta_archivo = 'productos/' . $ruta_archivo; }
+                                } elseif (!empty($row['imagen_variante'])) {
+                                    $ruta_archivo = 'productos/variantes/' . $row['imagen_variante'];
+                                } else {
+                                    $ruta_archivo = 'productos/sin-imagen.jpg';
                                 }
                                 
-                                // Construimos la URL completa para forzar al navegador a ir al servidor correcto
-                                $img_url = $dominio_base . $archivo_img;
+                                $img_url = $dominio_base . $ruta_archivo;
                             ?>
                             <tr>
                                 <td>
