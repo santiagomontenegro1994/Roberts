@@ -230,7 +230,7 @@
         </a>
         <ul id="dashboard-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
         <li>
-          <a href="../imprenta_dashboard/panel_control.php">
+          <a href="../imprenta_dashboard/dashboard.php">
             <i class="bi bi-circle"></i><span>Panel de control</span>
           </a>
         </li>
