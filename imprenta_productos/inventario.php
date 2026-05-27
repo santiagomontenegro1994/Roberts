@@ -89,8 +89,12 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                                 </td>
                                 <td>$<?= number_format((float)($row['precio'] ?? 0), 0, ',', '.') ?></td>
                                 <td>
-                                    <a href="abm_producto.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-xs me-1"><i class="bi bi-pencil-fill"></i></a>
-                                    <a href="inventario.php?accion=borrar&id=<?php echo $row['id']; ?>" class="btn btn-danger btn-xs" onclick="return confirm('¿Confirma eliminar?');"><i class="bi bi-trash-fill"></i></a>
+                                    <button type="button" class="btn btn-danger btn-xs" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalEliminar" 
+                                            data-id="<?= $row['id'] ?>">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -102,4 +106,35 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
     </section>
 </main>
 
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="procesar_eliminacion.php">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar Eliminación</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id_producto" id="id_producto_a_eliminar">
+          <p>Para eliminar este producto, ingresá tu contraseña de usuario:</p>
+          <input type="password" name="password" class="form-control" required placeholder="Tu contraseña">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Eliminar Definitivamente</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Esto pasa el ID al modal cuando apretás el botón de borrar
+const modalEliminar = document.getElementById('modalEliminar');
+modalEliminar.addEventListener('show.bs.modal', function (event) {
+  const button = event.relatedTarget;
+  const id = button.getAttribute('data-id');
+  document.getElementById('id_producto_a_eliminar').value = id;
+});
+</script>
 <?php require ('../shared/footer.inc.php'); ?>
