@@ -12,17 +12,17 @@ require ('../shared/barraLateral.inc.php');
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// URL BASE (Ajustala a tu dominio real donde están las imágenes)
+// URL BASE donde están las imágenes en tu web
 $dominio_base = "https://robertsgrafica.com/img/"; 
 
 /**
- * 2. Consulta SQL Inteligente:
- * Trae el producto y, como subconsulta, busca la primera imagen de la tabla 'productos_imagenes'.
- * Así, si la imagen principal es NULL, usamos la de la variante.
+ * 2. Consulta SQL: 
+ * Trae producto, su categoría asociada y la primera imagen de variante disponible.
  */
-$sql = "SELECT p.*, 
+$sql = "SELECT p.*, c.nombre as nombre_categoria,
         (SELECT nombre_imagen FROM productos_imagenes WHERE id_producto = p.id LIMIT 1) as imagen_variante
         FROM productos p 
+        LEFT JOIN categorias_prod c ON p.categoria = c.id
         WHERE p.idActivo = 1 
         ORDER BY p.titulo ASC";
 
@@ -49,6 +49,7 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                             <tr>
                                 <th>Imagen</th>
                                 <th>Producto</th>
+                                <th>Categoría</th>
                                 <th>Stock</th>
                                 <th>Precio</th>
                                 <th>Acciones</th>
@@ -65,6 +66,7 @@ if (!$query) { die("Error SQL: " . mysqli_error($MiConexion)); }
                                     <img src="<?= htmlspecialchars($img_url) ?>" style="width: 50px; height: 50px; object-fit: cover;" class="rounded shadow-sm" onerror="this.src='../img/productos/sin-imagen.jpg'">
                                 </td>
                                 <td><strong><?= htmlspecialchars($row['titulo'] ?? 'Sin nombre') ?></strong></td>
+                                <td><span class="badge bg-secondary"><?= htmlspecialchars($row['nombre_categoria'] ?? 'Sin cat.') ?></span></td>
                                 <td>
                                     <?php if(isset($row['stock_infinito']) && $row['stock_infinito'] == 1): ?>
                                         <span class="badge bg-info text-dark">Infinito</span>
