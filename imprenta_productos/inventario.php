@@ -1,30 +1,35 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 session_start();
-if (empty($_SESSION['Usuario_Nombre'])) { header('Location: ../core/cerrarsesion.php'); exit; }
 
+// 1. Seguridad
+if (empty($_SESSION['Usuario_Nombre'])) {
+    header('Location: ../core/cerrarsesion.php');
+    exit;
+}
+
+// 2. Includes (Asegurate que las rutas coincidan con tu estructura)
 require ('../shared/encabezado.inc.php');
 require ('../shared/barraLateral.inc.php');
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// URL BASE (Ajustala a tu dominio real)
+// URL BASE para tus imágenes en el otro dominio
 $dominio_base = "https://robertsgrafica.com/img/"; 
 
-// SQL Mejorado: Trae el producto y, si no tiene imagen, intenta buscar la primera variante
-$sql = "SELECT p.*, 
-        (SELECT GROUP_CONCAT(c.nombre SEPARATOR ', ') 
-         FROM categorias_prod c 
-         JOIN producto_categoria pc ON c.id = pc.id_categoria 
-         WHERE pc.id_producto = p.id) as nombre_categoria,
-        (SELECT nombre_imagen FROM productos_imagenes WHERE id_producto = p.id LIMIT 1) as imagen_variante
+// 3. Consulta SQL corregida
+// Hacemos LEFT JOIN con 'categorias_prod'. 
+// Si tu producto guarda el ID de categoría en la columna 'categoria', esto funcionará.
+$sql = "SELECT p.*, c.nombre as nombre_categoria 
         FROM productos p 
+        LEFT JOIN categorias_prod c ON p.categoria = c.id 
         WHERE p.idActivo = 1 
         ORDER BY p.titulo ASC";
 
 $query = mysqli_query($MiConexion, $sql);
+
+if (!$query) { 
+    die("Error en la consulta SQL: " . mysqli_error($MiConexion)); 
+}
 ?>
 
 <main id="main" class="main">
@@ -35,8 +40,11 @@ $query = mysqli_query($MiConexion, $sql);
     <section class="section">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Productos en Stock</h5>
-                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title">Listado de Productos</h5>
+                    <a href="abm_producto.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Nuevo</a>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-striped datatable">
                         <thead>
@@ -51,24 +59,24 @@ $query = mysqli_query($MiConexion, $sql);
                         </thead>
                         <tbody>
                             <?php while ($row = mysqli_fetch_assoc($query)) { 
-                                // LÓGICA DE IMAGEN: Prioridad 1: Imagen Principal | Prioridad 2: Imagen de Variante | Prioridad 3: Placeholder
-                                $img_archivo = !empty($row['imagen']) ? $row['imagen'] : $row['imagen_variante'];
-                                $img_url = !empty($img_archivo) ? $dominio_base . $img_archivo : $dominio_base . "productos/sin-imagen.jpg";
+                                // Construcción segura de la URL
+                                $nombre_img = !empty($row['imagen']) ? $row['imagen'] : 'productos/sin-imagen.jpg';
+                                $img_url = $dominio_base . $nombre_img;
                             ?>
                             <tr>
                                 <td>
                                     <img src="<?= htmlspecialchars($img_url) ?>" style="width: 50px; height: 50px; object-fit: cover;" class="rounded shadow-sm" onerror="this.src='../img/productos/sin-imagen.jpg'">
                                 </td>
-                                <td><strong><?= htmlspecialchars($row['titulo'] ?? '') ?></strong></td>
+                                <td><strong><?= htmlspecialchars($row['titulo'] ?? 'Sin nombre') ?></strong></td>
                                 <td><span class="badge bg-secondary"><?= htmlspecialchars($row['nombre_categoria'] ?? 'Sin cat.') ?></span></td>
                                 <td>
-                                    <?php if($row['stock_infinito'] == 1): ?>
+                                    <?php if(isset($row['stock_infinito']) && $row['stock_infinito'] == 1): ?>
                                         <span class="badge bg-info text-dark">Infinito</span>
                                     <?php else: ?>
-                                        <?= (int)$row['stock'] ?> u.
+                                        <?= (int)($row['stock'] ?? 0) ?> u.
                                     <?php endif; ?>
                                 </td>
-                                <td>$<?= number_format((float)$row['precio'], 0, ',', '.') ?></td>
+                                <td>$<?= number_format((float)($row['precio'] ?? 0), 0, ',', '.') ?></td>
                                 <td>
                                     <a href="abm_producto.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-xs me-1"><i class="bi bi-pencil-fill"></i></a>
                                     <a href="inventario.php?accion=borrar&id=<?= $row['id'] ?>" class="btn btn-danger btn-xs" onclick="return confirm('¿Confirma eliminar?');"><i class="bi bi-trash-fill"></i></a>
