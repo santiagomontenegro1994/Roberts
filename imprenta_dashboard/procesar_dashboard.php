@@ -45,7 +45,7 @@ $totalEgresos = $montoRetiros;
 $gananciaNeta = $totalIngresos - $totalEgresos;
 
 // ==========================================
-// 2. DESGLOSE POR RUBRO (Como en el informe)
+// 2. DESGLOSE POR RUBRO
 // ==========================================
 
 // Rubros Ingresos
@@ -79,7 +79,7 @@ $sqlListaRetiros = "SELECT tm.denominacion as concepto, SUM(r.monto) as monto FR
 $qGR = mysqli_query($MiConexion, $sqlListaRetiros);
 while($row = mysqli_fetch_assoc($qGR)){
     $monto = floatval($row['monto']);
-    $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0; // % sobre ingresos, como en tu lógica
+    $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
     $listaGastos[] = ['concepto' => $row['concepto'], 'monto' => $monto, 'porcentaje' => number_format($porc, 1) . '%'];
 }
 
@@ -90,7 +90,6 @@ $fechasArray = [];
 $ventasPorDia = [];
 $gastosPorDia = [];
 
-// Obtenemos todos los días entre las fechas para que no queden huecos en el gráfico
 $periodo = new DatePeriod(new DateTime($fechaInicio), new DateInterval('P1D'), (new DateTime($fechaFin))->modify('+1 day'));
 foreach ($periodo as $fecha) {
     $f = $fecha->format('Y-m-d');
@@ -99,7 +98,7 @@ foreach ($periodo as $fecha) {
     $gastosPorDia[$f] = 0;
 }
 
-// Ventas por día (Ingresos netos por día)
+// Ventas por día
 $sqlVentasDia = "SELECT DATE(c.Fecha) as dia, 
                  SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 AND tp.idActivo = 1 THEN dc.monto ELSE 0 END) as ingresos,
                  SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_pos,
@@ -130,7 +129,7 @@ while($row = mysqli_fetch_assoc($qGastosDia)) {
 }
 
 // ==========================================
-// 4. LIMPIEZA DE DÍAS SIN ACTIVIDAD
+// 4. FILTRAR DÍAS SIN ACTIVIDAD (ELIMINA LOS CERO)
 // ==========================================
 $finalLabels = [];
 $finalVentas = [];
@@ -140,8 +139,7 @@ foreach ($fechasArray as $f) {
     $v = $ventasPorDia[$f];
     $g = $gastosPorDia[$f];
     
-    // Si el día tuvo ingresos o gastos, lo agregamos al gráfico.
-    // Si ambos son 0 (ej: domingo cerrado), se ignora y el gráfico no cae a pique.
+    // Si el día tuvo ventas o gastos, lo incluimos
     if ($v != 0 || $g != 0) {
         $finalLabels[] = $f;
         $finalVentas[] = $v;
