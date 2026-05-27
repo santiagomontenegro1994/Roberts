@@ -23,7 +23,7 @@ $dominio_base = "https://robertsgrafica.com/img/";
 $sql = "SELECT p.*, 
                (SELECT GROUP_CONCAT(c.nombre SEPARATOR ', ') 
                 FROM categorias_prod pc 
-                JOIN categorias_prod c ON pc.id_categoria = c.id 
+                JOIN categorias_prod c ON pc.id = c.id 
                 WHERE pc.id = p.id) as nombre_categoria
         FROM productos p 
         WHERE p.idActivo = 1 
