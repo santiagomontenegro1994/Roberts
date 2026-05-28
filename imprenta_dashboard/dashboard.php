@@ -94,7 +94,9 @@ require('../shared/barraLateral.inc.php');
                         <i class="bi bi-activity me-1"></i> <span id="tituloChartVentas">Evolución de Ventas</span>
                     </div>
                     <div class="card-body">
-                        <canvas id="chartVentas" height="200"></canvas>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chartVentas"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -104,7 +106,9 @@ require('../shared/barraLateral.inc.php');
                         <i class="bi bi-activity me-1"></i> <span id="tituloChartGastos">Evolución de Salidas</span>
                     </div>
                     <div class="card-body">
-                        <canvas id="chartGastos" height="200"></canvas>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chartGastos"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,7 +125,9 @@ require('../shared/barraLateral.inc.php');
                         </div>
                     </div>
                     <div class="card-body">
-                        <canvas id="chartCombinado" height="350"></canvas>
+                        <div style="position: relative; height: 350px; width: 100%;">
+                            <canvas id="chartCombinado"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -287,7 +293,7 @@ async function cargarDatos(e) {
             type: 'line',
             options: {
                 responsive: true,
-                // ELIMINADO EL maintainAspectRatio: false QUE ROMPÍA LA PÁGINA
+                maintainAspectRatio: false, // ESTA LÍNEA DEBE ESTAR SÍ O SÍ AHORA QUE HAY CONTENEDORES CON HEIGHT
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { display: false },
