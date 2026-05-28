@@ -17,7 +17,7 @@ $fIni = $fechaInicio . " 00:00:00";
 $fFin = $fechaFin . " 23:59:59";
 
 // ==========================================
-// 1. CÁLCULO DE TOTALES
+// 1. CÁLCULO DE TOTALES GENERALES DEL PERÍODO
 // ==========================================
 $qDifPos = mysqli_query($MiConexion, "SELECT SUM(dc.monto) as total FROM detalle_caja dc JOIN caja c ON dc.idCaja = c.idCaja WHERE c.Fecha BETWEEN '$fIni' AND '$fFin' AND dc.idTipoMovimiento = 15");
 $difPositiva = floatval(mysqli_fetch_assoc($qDifPos)['total']);
@@ -27,10 +27,10 @@ $difNegativa = floatval(mysqli_fetch_assoc($qDifNeg)['total']);
 
 $sqlEntradas = "SELECT SUM(dc.monto) as total FROM detalle_caja dc
                 JOIN caja c ON dc.idCaja = c.idCaja
+                JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago 
                 WHERE c.Fecha BETWEEN '$fIni' AND '$fFin'
-                AND dc.idTipoMovimiento != 15
-                AND dc.idTipoPago IN (SELECT idTipoPago FROM tipo_pago WHERE idActivo = 1)
-                AND dc.idTipoMovimiento IN (SELECT idTipoMovimiento FROM tipo_movimiento WHERE es_entrada = 1)";
+                AND tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 AND tp.idActivo = 1";
 $ingresosCaja = floatval(mysqli_fetch_assoc(mysqli_query($MiConexion, $sqlEntradas))['total']);
 
 $sqlRetiros = "SELECT SUM(monto) as total FROM retiros WHERE fecha BETWEEN '$fIni' AND '$fFin' AND idTipoMovimiento NOT IN (9, 14, 15)";
@@ -47,38 +47,82 @@ $listaIngresos = [];
 $sqlListaIng = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto FROM detalle_caja dc 
                 JOIN caja c ON dc.idCaja = c.idCaja 
                 JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento
+                JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
                 WHERE c.Fecha BETWEEN '$fIni' AND '$fFin' 
-                AND tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 
-                AND dc.idTipoPago IN (SELECT idTipoPago FROM tipo_pago WHERE idActivo = 1)
+                AND tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 AND tp.idActivo = 1 
                 GROUP BY tm.denominacion ORDER BY monto DESC";
 $qListaIng = mysqli_query($MiConexion, $sqlListaIng);
 while($row = mysqli_fetch_assoc($qListaIng)) {
     $monto = floatval($row['monto']);
     $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
-    $listaIngresos[] = ['concepto' => $row['concepto'], 'monto' => $monto, 'porcentaje' => number_format($porc, 1) . '%'];
+    // Se envía 'subitems' vacío para mantener estructura compatible
+    $listaIngresos[] = ['concepto' => $row['concepto'], 'monto' => $monto, 'porcentaje' => number_format($porc, 1) . '%', 'subitems' => []];
 }
-
 if ($difPositiva > 0) {
-    $listaIngresos[] = ['concepto' => 'Diferencia a Favor', 'monto' => $difPositiva, 'porcentaje' => number_format(($totalIngresos > 0 ? ($difPositiva / $totalIngresos) * 100 : 0), 1) . '%'];
+    $listaIngresos[] = ['concepto' => 'Diferencia a Favor', 'monto' => $difPositiva, 'porcentaje' => number_format(($totalIngresos > 0 ? ($difPositiva / $totalIngresos) * 100 : 0), 1) . '%', 'subitems' => []];
 }
 if ($difNegativa > 0) {
-    $listaIngresos[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1, 'porcentaje' => number_format(($totalIngresos > 0 ? (($difNegativa * -1) / $totalIngresos) * 100 : 0), 1) . '%'];
+    $listaIngresos[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1, 'porcentaje' => number_format(($totalIngresos > 0 ? (($difNegativa * -1) / $totalIngresos) * 100 : 0), 1) . '%', 'subitems' => []];
+}
+
+// ---------------- DESGLOSE DE GASTOS CON SUBITEMS ----------------
+$gastosAgrupados = [];
+// NOTA: Si tu columna no se llama "detalle", cambiá "r.detalle" por "r.descripcion"
+$sqlListaRetiros = "SELECT tm.denominacion as concepto, r.detalle, SUM(r.monto) as monto 
+                    FROM retiros r
+                    JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
+                    WHERE r.fecha BETWEEN '$fIni' AND '$fFin' AND r.idTipoMovimiento NOT IN (9, 14, 15) 
+                    GROUP BY tm.denominacion, r.detalle";
+$qGR = mysqli_query($MiConexion, $sqlListaRetiros);
+
+while($row = mysqli_fetch_assoc($qGR)){
+    $concepto = $row['concepto'];
+    $detalle = empty(trim($row['detalle'] ?? '')) ? 'Varios / Sin detalle' : trim($row['detalle']);
+    $monto = floatval($row['monto']);
+    
+    if(!isset($gastosAgrupados[$concepto])) {
+        $gastosAgrupados[$concepto] = ['monto_total' => 0, 'detalles' => []];
+    }
+    
+    $gastosAgrupados[$concepto]['monto_total'] += $monto;
+    $gastosAgrupados[$concepto]['detalles'][] = [
+        'nombre' => $detalle,
+        'monto' => $monto
+    ];
 }
 
 $listaGastos = [];
-$sqlListaRetiros = "SELECT tm.denominacion as concepto, SUM(r.monto) as monto FROM retiros r
-                    JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
-                    WHERE r.fecha BETWEEN '$fIni' AND '$fFin' AND r.idTipoMovimiento NOT IN (9, 14, 15) 
-                    GROUP BY tm.denominacion ORDER BY monto DESC";
-$qGR = mysqli_query($MiConexion, $sqlListaRetiros);
-while($row = mysqli_fetch_assoc($qGR)){
-    $monto = floatval($row['monto']);
-    $porc = ($totalIngresos > 0) ? ($monto / $totalIngresos) * 100 : 0;
-    $listaGastos[] = ['concepto' => $row['concepto'], 'monto' => $monto, 'porcentaje' => number_format($porc, 1) . '%'];
+foreach($gastosAgrupados as $concepto => $datos) {
+    $montoCat = $datos['monto_total'];
+    $porcCat = ($totalIngresos > 0) ? ($montoCat / $totalIngresos) * 100 : 0;
+    
+    $subItems = [];
+    foreach($datos['detalles'] as $det) {
+        $porcSub = ($montoCat > 0) ? ($det['monto'] / $montoCat) * 100 : 0;
+        $subItems[] = [
+            'nombre' => $det['nombre'],
+            'monto' => $det['monto'],
+            'porcentaje' => number_format($porcSub, 1) . '%'
+        ];
+    }
+    
+    // Ordenar subitems de mayor a menor gasto
+    usort($subItems, function($a, $b) { return $b['monto'] <=> $a['monto']; });
+
+    $listaGastos[] = [
+        'concepto' => $concepto, 
+        'monto' => $montoCat, 
+        'porcentaje' => number_format($porcCat, 1) . '%',
+        'subitems' => $subItems
+    ];
 }
 
+// Ordenar rubros principales de mayor a menor
+usort($listaGastos, function($a, $b) { return $b['monto'] <=> $a['monto']; });
+
+
 // ==========================================
-// 3. EVOLUCIÓN EN EL TIEMPO (DÍA A DÍA BASE)
+// 3. DATOS PARA LOS GRÁFICOS (Evolución diaria)
 // ==========================================
 $fechasArray = [];
 $ventasPorDia = [];
@@ -121,12 +165,11 @@ while($row = mysqli_fetch_assoc($qGastosDia)) {
 }
 
 // ==========================================
-// 4. AGRUPACIÓN INTELIGENTE (Día, Semana o Mes)
+// 4. AGRUPACIÓN INTELIGENTE Y FILTRADO
 // ==========================================
 $dias_dif = (strtotime($fechaFin) - strtotime($fechaInicio)) / 86400;
-
-$agrupar_semanal = ($dias_dif > 31 && $dias_dif <= 92);
 $agrupar_mensual = ($dias_dif > 92);
+$agrupar_semanal = ($dias_dif > 31 && !$agrupar_mensual);
 
 $finalLabels = [];
 $finalVentas = [];
@@ -135,7 +178,7 @@ $finalGastos = [];
 if ($agrupar_mensual) {
     $tempDatos = [];
     foreach ($fechasArray as $f) {
-        $mesAnio = substr($f, 0, 7) . '-01'; // Ej: 2026-03-01
+        $mesAnio = substr($f, 0, 7) . '-01'; 
         if (!isset($tempDatos[$mesAnio])) $tempDatos[$mesAnio] = ['v' => 0, 'g' => 0];
         $tempDatos[$mesAnio]['v'] += $ventasPorDia[$f];
         $tempDatos[$mesAnio]['g'] += $gastosPorDia[$f];
@@ -147,31 +190,33 @@ if ($agrupar_mensual) {
             $finalGastos[] = $t['g'];
         }
     }
-} elseif ($agrupar_semanal) {
-    $tempDatos = [];
+} else if ($agrupar_semanal) {
+    $tempSemanas = [];
     foreach ($fechasArray as $f) {
         $dateObj = new DateTime($f);
-        if ($dateObj->format('w') != 1) $dateObj->modify('last monday');
-        $lunes = $dateObj->format('Y-m-d');
+        $lunes = clone $dateObj;
+        if ($lunes->format('w') != 1) $lunes->modify('last monday');
         
-        if (!isset($tempDatos[$lunes])) $tempDatos[$lunes] = ['v' => 0, 'g' => 0];
-        $tempDatos[$lunes]['v'] += $ventasPorDia[$f];
-        $tempDatos[$lunes]['g'] += $gastosPorDia[$f];
+        $label = $lunes->format('Y-m-d');
+        if (!isset($tempSemanas[$label])) $tempSemanas[$label] = ['v' => 0, 'g' => 0];
+        $tempSemanas[$label]['v'] += $ventasPorDia[$f];
+        $tempSemanas[$label]['g'] += $gastosPorDia[$f];
     }
-    foreach ($tempDatos as $lbl => $t) {
-        if ($t['v'] != 0 || $t['g'] != 0) {
+    foreach ($tempSemanas as $lbl => $totales) {
+        if ($totales['v'] != 0 || $totales['g'] != 0) {
             $finalLabels[] = $lbl;
-            $finalVentas[] = $t['v'];
-            $finalGastos[] = $t['g'];
+            $finalVentas[] = $totales['v'];
+            $finalGastos[] = $totales['g'];
         }
     }
 } else {
-    // Diario
     foreach ($fechasArray as $f) {
-        if ($ventasPorDia[$f] != 0 || $gastosPorDia[$f] != 0) {
+        $v = $ventasPorDia[$f];
+        $g = $gastosPorDia[$f];
+        if ($v != 0 || $g != 0) {
             $finalLabels[] = $f;
-            $finalVentas[] = $ventasPorDia[$f];
-            $finalGastos[] = $gastosPorDia[$f];
+            $finalVentas[] = $v;
+            $finalGastos[] = $g;
         }
     }
 }

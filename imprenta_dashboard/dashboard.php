@@ -148,7 +148,7 @@ require('../shared/barraLateral.inc.php');
             <div class="col-lg-6 mb-4">
                 <div class="card shadow h-100">
                     <div class="card-header bg-dark text-white fw-bold">
-                        <i class="bi bi-list-check me-1"></i> Desglose de Salidas <span class="small fw-normal">(% sobre ventas)</span>
+                        <i class="bi bi-list-check me-1"></i> Desglose de Salidas <span class="small fw-normal">(% sobre salidas totales)</span>
                     </div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush" id="listaRubrosGastos">
@@ -184,18 +184,48 @@ function formatearFechaMes(fechaStr) {
     return `${meses[parseInt(partes[1])-1]} ${partes[0]}`;
 }
 
+// Función súper mejorada para renderizar listas con Desplegables
 function renderizarLista(idLista, datos, claseBadge) {
     const lista = document.getElementById(idLista);
     lista.innerHTML = '';
+    
     if (datos && datos.length > 0) {
-        datos.forEach(item => {
+        datos.forEach((item, index) => {
+            const tieneSubitems = item.subitems && item.subitems.length > 0;
+            const idColapso = `collapse-${idLista}-${index}`;
+            
+            let htmlSubitems = '';
+            if (tieneSubitems) {
+                htmlSubitems = `<div class="collapse" id="${idColapso}">
+                                  <ul class="list-group list-group-flush border-top">`;
+                item.subitems.forEach(sub => {
+                    htmlSubitems += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-light border-0 py-2 ps-4" style="font-size: 0.85rem;">
+                            <span class="text-secondary fw-semibold"><i class="bi bi-arrow-return-right me-1"></i> ${sub.nombre}</span>
+                            <div>
+                                <span class="text-muted small me-2">${sub.porcentaje}</span>
+                                <span class="fw-bold text-dark">${dinero(sub.monto)}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+                htmlSubitems += `</ul></div>`;
+            }
+
             lista.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold text-dark">${item.concepto}</span>
-                    <div>
-                        <span class="text-muted small me-2 fw-bold">${item.porcentaje}</span>
-                        <span class="badge ${claseBadge} rounded-pill fs-6 shadow-sm">${dinero(item.monto)}</span>
+                <li class="list-group-item p-0 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center p-3" 
+                         ${tieneSubitems ? `data-bs-toggle="collapse" href="#${idColapso}" style="cursor: pointer;" title="Ver detalles"` : ''}>
+                        <span class="fw-bold text-dark">
+                            ${tieneSubitems ? '<i class="bi bi-chevron-down text-secondary me-2" style="font-size: 0.8rem;"></i>' : '<i class="bi bi-dash text-secondary me-2"></i>'}
+                            ${item.concepto}
+                        </span>
+                        <div>
+                            <span class="text-muted small me-2 fw-bold">${item.porcentaje}</span>
+                            <span class="badge ${claseBadge} rounded-pill fs-6 shadow-sm">${dinero(item.monto)}</span>
+                        </div>
                     </div>
+                    ${htmlSubitems}
                 </li>
             `;
         });
@@ -293,7 +323,7 @@ async function cargarDatos(e) {
             type: 'line',
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // ESTA LÍNEA DEBE ESTAR SÍ O SÍ AHORA QUE HAY CONTENEDORES CON HEIGHT
+                maintainAspectRatio: false, 
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { display: false },
