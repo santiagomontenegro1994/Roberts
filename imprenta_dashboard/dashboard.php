@@ -162,9 +162,8 @@ const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', cu
 
 let chartV = null;
 let chartG = null;
-let chartC = null; // Variable para el gráfico combinado
+let chartC = null; 
 
-// Formateador para Vista Diaria y Semanal
 function formatearFecha(fechaStr) {
     const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const partes = fechaStr.split('-');
@@ -172,7 +171,6 @@ function formatearFecha(fechaStr) {
     return `${partes[2]} ${meses[parseInt(partes[1])-1]}`;
 }
 
-// Formateador especial para Vista Mensual (Muestra "Mes Año")
 function formatearFechaMes(fechaStr) {
     const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const partes = fechaStr.split('-');
@@ -200,7 +198,6 @@ function renderizarLista(idLista, datos, claseBadge) {
     }
 }
 
-// Control del Toggle para Superponer
 document.getElementById('toggleCombinado').addEventListener('change', function() {
     if(this.checked) {
         document.getElementById('contenedorSeparados').style.display = 'none';
@@ -242,7 +239,6 @@ async function cargarDatos(e) {
         renderizarLista('listaRubrosVentas', data.rubros.ingresos, 'bg-primary');
         renderizarLista('listaRubrosGastos', data.rubros.gastos, 'bg-danger');
 
-        // --- TITULOS INTELIGENTES ---
         let labelVentas = 'Ventas del día';
         let labelGastos = 'Salidas del día';
         
@@ -264,7 +260,6 @@ async function cargarDatos(e) {
             document.getElementById('tituloChartCombinado').innerText = "Comparativa Diaria: Ventas vs Salidas";
         }
 
-        // --- ETIQUETAS INTELIGENTES ---
         const labelsGrafico = data.graficos.labels.map(f => {
             if (data.agrupado_mensual) return formatearFechaMes(f);
             else if (data.agrupado_semanal) return `Sem. ${formatearFecha(f)}`;
@@ -292,7 +287,7 @@ async function cargarDatos(e) {
             type: 'line',
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                // ELIMINADO EL maintainAspectRatio: false QUE ROMPÍA LA PÁGINA
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { display: false },
@@ -305,7 +300,6 @@ async function cargarDatos(e) {
             }
         };
 
-        // 1. Gráfico Individual Ventas
         if(chartV) chartV.destroy();
         chartV = new Chart(document.getElementById('chartVentas').getContext('2d'), {
             ...configBase,
@@ -320,7 +314,6 @@ async function cargarDatos(e) {
             }
         });
 
-        // 2. Gráfico Individual Gastos
         if(chartG) chartG.destroy();
         chartG = new Chart(document.getElementById('chartGastos').getContext('2d'), {
             ...configBase,
@@ -335,7 +328,6 @@ async function cargarDatos(e) {
             }
         });
 
-        // 3. Gráfico Combinado
         if(chartC) chartC.destroy();
         chartC = new Chart(document.getElementById('chartCombinado').getContext('2d'), {
             ...configBase,
