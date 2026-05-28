@@ -376,6 +376,16 @@ document.querySelectorAll('.img-preview-trigger').forEach(img => {
         mTit.innerText = data.titulo;
         mDesc.innerHTML = data.descripcion;
         
+        // --- NUEVO: Deshabilitar botones generados dentro de la descripción ---
+        const linksDesc = mDesc.querySelectorAll('a');
+        linksDesc.forEach(link => {
+            link.style.pointerEvents = 'none'; // Deshabilita el clic del mouse
+            link.style.opacity = '0.6';        // Lo hace ver apagado/deshabilitado
+            link.title = 'Botón desactivado en la vista previa';
+            link.addEventListener('click', (e) => e.preventDefault()); // Por las dudas, bloquea la redirección
+        });
+        // ----------------------------------------------------------------------
+        
         const precioNum = parseFloat(data.precio);
         if(precioNum > 0) {
             mPrecio.innerText = "$ " + new Intl.NumberFormat('es-AR').format(precioNum);
