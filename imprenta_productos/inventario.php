@@ -395,10 +395,16 @@ document.querySelectorAll('.img-preview-trigger').forEach(img => {
 
         if(data.variantes && data.variantes.length > 0) {
             data.variantes.forEach(v => {
+                // Verificamos si la ruta ya trae la carpeta o si viene solo el nombre del archivo
+                let rutaVariante = v.nombre_imagen;
+                if (rutaVariante.indexOf('productos/variantes/') === -1) {
+                    rutaVariante = 'productos/variantes/' + rutaVariante;
+                }
+                
                 todosLosColores.push({
                     nombre: v.color_nombre,
                     hex: v.color_hex,
-                    imagen: dominioBase + "productos/variantes/" + v.nombre_imagen,
+                    imagen: dominioBase + rutaVariante,
                     stock: parseInt(v.stock),
                     infinito: 0 
                 });
