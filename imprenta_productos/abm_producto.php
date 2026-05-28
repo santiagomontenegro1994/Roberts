@@ -13,8 +13,8 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// RUTA ABSOLUTA DEL SERVIDOR
-$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/img/";
+// RUTA ABSOLUTA DEL SERVIDOR CORREGIDA (apuntando a la subcarpeta roberts)
+$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/roberts/img/";
 
 // Inicializar variables por defecto
 $producto = [
@@ -208,7 +208,7 @@ if (!empty($producto['id'])) {
 }
 
 // -------------------------------------------------------------------------
-// RECIÉN AHORA DIBUJAMOS EL HTML (Ya tenemos todo guardado en memoria)
+// RECIÉN AHORA DIBUJAMOS EL HTML
 // -------------------------------------------------------------------------
 
 require ('../shared/encabezado.inc.php'); 
@@ -217,30 +217,6 @@ require ('../shared/barraLateral.inc.php');
 
 <style>
     .form-check-input { cursor: pointer; }
-    .color-preview { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ddd; display: inline-block; }
-    
-    .categorias-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
-        max-height: 250px;
-        overflow-y: auto;
-        padding: 15px;
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-    }
-    .cat-checkbox-item {
-        background: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid #e9ecef;
-        transition: 0.2s;
-    }
-    .cat-checkbox-item:hover {
-        border-color: #0d6efd;
-        box-shadow: 0 2px 5px rgba(13,110,253,0.1);
-    }
 </style>
 
 <main id="main" class="main">
@@ -274,7 +250,7 @@ require ('../shared/barraLateral.inc.php');
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
-                            <textarea name="descripcion" id="campo_descripcion" class="form-control" rows="5" required><?php echo htmlspecialchars($producto['descripcion'] ?? ''); ?></textarea>
+                            <textarea name="descripcion" id="campo_descripcion" class="form-control" rows="12" required><?php echo htmlspecialchars($producto['descripcion'] ?? ''); ?></textarea>
                             
                             <div class="mt-2 p-3 bg-white rounded border border-primary shadow-sm">
                                 <label class="form-label fw-bold text-primary mb-1"><i class="fa-solid fa-wand-magic-sparkles"></i> Agregar botón a otro producto</label>
@@ -325,27 +301,20 @@ require ('../shared/barraLateral.inc.php');
                         </div>
                         
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Categorías <span class="text-danger">*</span></label>
-                            <div class="categorias-grid">
+                            <label class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg" name="categorias[]" id="categorias" required>
+                                <option value="">Seleccione una categoría...</option>
                                 <?php 
-                                // Usamos la variable en memoria, ya no hay consultas aquí abajo
                                 if (count($categorias_bd) > 0) {
                                     foreach($categorias_bd as $c): 
-                                        $checked = in_array($c['id'], $categorias_seleccionadas) ? 'checked' : '';
-                                ?>
-                                    <div class="cat-checkbox-item form-check m-0">
-                                        <input class="form-check-input" type="checkbox" name="categorias[]" value="<?php echo $c['id']; ?>" id="cat_<?php echo $c['id']; ?>" <?php echo $checked; ?>>
-                                        <label class="form-check-label w-100" style="cursor:pointer;" for="cat_<?php echo $c['id']; ?>">
-                                            <?php echo htmlspecialchars($c['nombre']); ?>
-                                        </label>
-                                    </div>
-                                <?php 
+                                        $selected = in_array($c['id'], $categorias_seleccionadas) ? 'selected' : '';
+                                        echo '<option value="'.$c['id'].'" '.$selected.'>'.htmlspecialchars($c['nombre']).'</option>';
                                     endforeach; 
                                 } else {
-                                    echo "<p class='text-muted small m-0'>No hay categorías creadas o detectadas.</p>";
+                                    echo '<option value="">No hay categorías creadas o detectadas.</option>';
                                 }
                                 ?>
-                            </div>
+                            </select>
                         </div>
 
                         <div class="mb-4 p-3 bg-light rounded border">
@@ -520,10 +489,10 @@ require ('../shared/barraLateral.inc.php');
         const formProducto = document.querySelector('form[action=""]'); 
         if(formProducto && formProducto.querySelector('input[name="accion"][value="guardar_producto"]')) {
             formProducto.addEventListener('submit', function(e) {
-                const checkboxes = document.querySelectorAll('input[name="categorias[]"]:checked');
-                if (document.querySelectorAll('input[name="categorias[]"]').length > 0 && checkboxes.length === 0) {
+                const selectCat = document.getElementById('categorias');
+                if (selectCat && selectCat.value === '') {
                     e.preventDefault();
-                    alert("Por favor, seleccioná al menos una categoría para el producto.");
+                    alert("Por favor, seleccioná una categoría para el producto.");
                 }
             });
         }
