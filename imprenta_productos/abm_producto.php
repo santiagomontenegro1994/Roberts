@@ -16,14 +16,14 @@ $MiConexion = ConexionBD();
 // RUTA ABSOLUTA DEL SERVIDOR CORREGIDA (apuntando a la subcarpeta roberts)
 $ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/roberts/img/";
 
-// Inicializar variables por defecto
+// Inicializar variables por defecto (Agregamos idActivo = 1 por defecto)
 $producto = [
     'id' => '', 'titulo' => '', 'descripcion' => '', 'precio' => 0, 
     'stock' => 0, 'stock_infinito' => 0, 
     'imagen' => '', 
     'color_principal' => 'Original',
     'color_principal_hex' => '#000000',
-    'destacado' => 0, 'nuevo' => 0, 'categoria' => 0
+    'destacado' => 0, 'nuevo' => 0, 'categoria' => 0, 'idActivo' => 1
 ];
 $categorias_seleccionadas = [];
 
@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $categorias_post = isset($_POST['categorias']) ? $_POST['categorias'] : [];
         $destacado = isset($_POST['destacado']) ? 1 : 0;
         $nuevo = isset($_POST['nuevo']) ? 1 : 0;
+        $idActivo = isset($_POST['idActivo']) ? (int)$_POST['idActivo'] : 1; // Manejamos el estado
         $id_post = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
         
         $stock = !empty($_POST['stock']) ? (int)$_POST['stock'] : 0;
@@ -112,13 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $cat_legacy = !empty($categorias_post) ? (int)$categorias_post[0] : 0;
 
         if ($id_post > 0) {
-            $sql = "UPDATE productos SET titulo='$titulo', descripcion='$desc', stock=$stock, stock_infinito=$stock_infinito, categoria=$cat_legacy, imagen='$nombre_imagen', color_principal='$color_principal', color_principal_hex='$color_principal_hex', destacado=$destacado, nuevo=$nuevo WHERE id=$id_post";
+            // Modificamos el update para incluir idActivo
+            $sql = "UPDATE productos SET titulo='$titulo', descripcion='$desc', stock=$stock, stock_infinito=$stock_infinito, categoria=$cat_legacy, imagen='$nombre_imagen', color_principal='$color_principal', color_principal_hex='$color_principal_hex', destacado=$destacado, nuevo=$nuevo, idActivo=$idActivo WHERE id=$id_post";
             mysqli_query($MiConexion, $sql);
             $id_retorno = $id_post;
 
             @mysqli_query($MiConexion, "DELETE FROM producto_categoria WHERE id_producto = $id_retorno");
         } else {
-            $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0)";
+            // Modificamos el insert para incluir idActivo
+            $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio, idActivo) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0, $idActivo)";
             mysqli_query($MiConexion, $sql);
             $id_retorno = mysqli_insert_id($MiConexion);
         }
@@ -178,7 +181,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // 3. RECUPERAR TODOS LOS DATOS PARA EL HTML *ANTES* DE INCLUIR EL ENCABEZADO
 // -------------------------------------------------------------------------
 
-// A. Lista de todos los productos (Para el generador de botones)
 $todos_productos = [];
 $res_all = mysqli_query($MiConexion, "SELECT id, titulo FROM productos ORDER BY titulo ASC");
 if ($res_all) {
@@ -187,7 +189,6 @@ if ($res_all) {
     }
 }
 
-// B. Lista de Categorías
 $categorias_bd = [];
 $res_cat = @mysqli_query($MiConexion, "SELECT * FROM categorias_prod ORDER BY nombre ASC");
 if ($res_cat) {
@@ -196,7 +197,6 @@ if ($res_cat) {
     }
 }
 
-// C. Lista de Variantes del producto actual
 $variantes = [];
 if (!empty($producto['id'])) {
     $res_var = @mysqli_query($MiConexion, "SELECT * FROM productos_imagenes WHERE id_producto = " . (int)$producto['id']);
@@ -250,9 +250,9 @@ require ('../shared/barraLateral.inc.php');
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
-                            <textarea name="descripcion" id="campo_descripcion" class="form-control" rows="12" required><?php echo htmlspecialchars($producto['descripcion'] ?? ''); ?></textarea>
+                            <textarea name="descripcion" id="campo_descripcion" class="form-control" style="min-height: 250px;" required><?php echo htmlspecialchars($producto['descripcion'] ?? ''); ?></textarea>
                             
-                            <div class="mt-2 p-3 bg-white rounded border border-primary shadow-sm">
+                            <div class="mt-2 p-3 bg-white rounded border border-primary shadow-sm" id="cajaBotonera">
                                 <label class="form-label fw-bold text-primary mb-1"><i class="fa-solid fa-wand-magic-sparkles"></i> Agregar botón a otro producto</label>
                                 <p class="small text-muted mb-2">Elegí un producto y tocá "Insertar". El sistema escribirá el código por vos.</p>
                                 <div class="row g-2 align-items-end">
@@ -270,7 +270,7 @@ require ('../shared/barraLateral.inc.php');
                                         <input type="text" id="gen_texto" class="form-control form-control-sm border-primary" placeholder="Ej: Ver Taza Estampada">
                                     </div>
                                     <div class="col-md-2">
-                                        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" onclick="agregarBotonDesc()"><i class="fa-solid fa-plus"></i> Insertar</button>
+                                        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" id="btnInsertarBoton" onclick="agregarBotonDesc()"><i class="fa-solid fa-plus"></i> Insertar</button>
                                     </div>
                                 </div>
                             </div>
@@ -278,7 +278,7 @@ require ('../shared/barraLateral.inc.php');
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="col-md-3 mb-3 mb-md-0">
                                 <label class="form-label fw-bold text-success"><i class="fa-solid fa-file-excel"></i> Precio (BD)</label>
                                 <div class="input-group shadow-sm">
                                     <span class="input-group-text bg-light text-success">$</span>
@@ -288,7 +288,7 @@ require ('../shared/barraLateral.inc.php');
                                 </div>
                             </div>
 
-                            <div class="col-md-8">
+                            <div class="col-md-6 mb-3 mb-md-0">
                                 <label class="form-label fw-bold">Stock (Color Principal)</label>
                                 <div class="d-flex gap-3 align-items-start flex-wrap">
                                     <input type="number" name="stock" id="inputStock" class="form-control shadow-sm" value="<?php echo (int)($producto['stock'] ?? 0); ?>" style="max-width: 120px;">
@@ -297,6 +297,14 @@ require ('../shared/barraLateral.inc.php');
                                         <label class="form-check-label small ms-2" for="checkInfinito">Stock Infinito / A medida</label>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark"><i class="fa-solid fa-globe"></i> Visibilidad</label>
+                                <select name="idActivo" id="estadoVisibilidad" class="form-select shadow-sm fw-bold border-dark">
+                                    <option value="1" class="text-success" <?php echo ($producto['idActivo'] == 1) ? 'selected' : ''; ?>>🟢 Publicado</option>
+                                    <option value="2" class="text-danger" <?php echo ($producto['idActivo'] == 2) ? 'selected' : ''; ?>>🔴 Oculto</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -447,6 +455,7 @@ require ('../shared/barraLateral.inc.php');
 <?php require ('../shared/footer.inc.php'); ?>
 
 <script>
+    // Inserción de texto para botones
     function agregarBotonDesc() {
         const select = document.getElementById('gen_prod');
         const prodId = select.value;
@@ -470,6 +479,7 @@ require ('../shared/barraLateral.inc.php');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // --- Lógica del stock infinito ---
         const check = document.getElementById('checkInfinito');
         const input = document.getElementById('inputStock');
         function toggleStockInput() {
@@ -486,6 +496,37 @@ require ('../shared/barraLateral.inc.php');
             toggleStockInput(); 
         }
 
+        // --- Lógica de bloqueo por Visibilidad ---
+        const selectEstado = document.getElementById('estadoVisibilidad');
+        const chkDestacado = document.getElementById('dest');
+        const chkNuevo = document.getElementById('nuev');
+        const genProd = document.getElementById('gen_prod');
+        const genTexto = document.getElementById('gen_texto');
+        const btnInsertar = document.getElementById('btnInsertarBoton');
+
+        function toggleVisibilidad() {
+            if (!selectEstado) return;
+            const estaOculto = selectEstado.value === '2';
+            
+            // Bloquea los checkboxes de inicio
+            chkDestacado.disabled = estaOculto;
+            chkNuevo.disabled = estaOculto;
+            if(estaOculto) {
+                chkDestacado.checked = false;
+                chkNuevo.checked = false;
+            }
+
+            // Bloquea el panel de botones
+            genProd.disabled = estaOculto;
+            genTexto.disabled = estaOculto;
+            btnInsertar.disabled = estaOculto;
+        }
+        if (selectEstado) {
+            selectEstado.addEventListener('change', toggleVisibilidad);
+            toggleVisibilidad(); // Se ejecuta de entrada
+        }
+
+        // --- Validación del select de Categorías ---
         const formProducto = document.querySelector('form[action=""]'); 
         if(formProducto && formProducto.querySelector('input[name="accion"][value="guardar_producto"]')) {
             formProducto.addEventListener('submit', function(e) {
