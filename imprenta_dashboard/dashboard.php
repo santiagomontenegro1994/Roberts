@@ -80,7 +80,14 @@ require('../shared/barraLateral.inc.php');
             </div>
         </div>
 
-        <div class="row mb-4">
+        <div class="d-flex justify-content-end mb-3">
+            <div class="form-check form-switch shadow-sm bg-white px-4 py-2 rounded border border-2 border-primary" style="display: inline-block;">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="toggleCombinado" style="cursor: pointer; transform: scale(1.3); margin-top: 5px;">
+                <label class="form-check-label fw-bold text-dark ms-2" for="toggleCombinado" style="cursor: pointer;">Superponer Gráficos (Ventas vs Salidas)</label>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="contenedorSeparados">
             <div class="col-lg-6 mb-4">
                 <div class="card shadow h-100">
                     <div class="card-header bg-white fw-bold text-primary">
@@ -98,6 +105,23 @@ require('../shared/barraLateral.inc.php');
                     </div>
                     <div class="card-body">
                         <canvas id="chartGastos" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="contenedorCombinado" style="display: none;">
+            <div class="col-12 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                        <div><i class="bi bi-intersect me-1"></i> <span id="tituloChartCombinado">Comparativa: Ventas vs Salidas</span></div>
+                        <div class="small">
+                            <span style="color:#6ea8fe;"><i class="bi bi-circle-fill"></i> Ventas</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
+                            <span style="color:#ea868f;"><i class="bi bi-circle-fill"></i> Salidas</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartCombinado" height="350"></canvas>
                     </div>
                 </div>
             </div>
@@ -138,6 +162,7 @@ const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', cu
 
 let chartV = null;
 let chartG = null;
+let chartC = null; // Variable para el gráfico combinado
 
 // Formateador para Vista Diaria y Semanal
 function formatearFecha(fechaStr) {
@@ -175,6 +200,17 @@ function renderizarLista(idLista, datos, claseBadge) {
     }
 }
 
+// Control del Toggle para Superponer
+document.getElementById('toggleCombinado').addEventListener('change', function() {
+    if(this.checked) {
+        document.getElementById('contenedorSeparados').style.display = 'none';
+        document.getElementById('contenedorCombinado').style.display = 'flex';
+    } else {
+        document.getElementById('contenedorSeparados').style.display = 'flex';
+        document.getElementById('contenedorCombinado').style.display = 'none';
+    }
+});
+
 async function cargarDatos(e) {
     if(e) e.preventDefault();
     
@@ -207,120 +243,118 @@ async function cargarDatos(e) {
         renderizarLista('listaRubrosGastos', data.rubros.gastos, 'bg-danger');
 
         // --- TITULOS INTELIGENTES ---
+        let labelVentas = 'Ventas del día';
+        let labelGastos = 'Salidas del día';
+        
         if (data.agrupado_mensual) {
             document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Mensuales)";
             document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Mensuales)";
+            document.getElementById('tituloChartCombinado').innerText = "Comparativa Mensual: Ventas vs Salidas";
+            labelVentas = 'Ventas del mes';
+            labelGastos = 'Salidas del mes';
         } else if (data.agrupado_semanal) {
             document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Semanales)";
             document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Semanales)";
+            document.getElementById('tituloChartCombinado').innerText = "Comparativa Semanal: Ventas vs Salidas";
+            labelVentas = 'Ventas de la semana';
+            labelGastos = 'Salidas de la semana';
         } else {
             document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Diarias)";
             document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Diarias)";
+            document.getElementById('tituloChartCombinado').innerText = "Comparativa Diaria: Ventas vs Salidas";
         }
 
         // --- ETIQUETAS INTELIGENTES ---
         const labelsGrafico = data.graficos.labels.map(f => {
-            if (data.agrupado_mensual) {
-                return formatearFechaMes(f);
-            } else if (data.agrupado_semanal) {
-                return `Sem. ${formatearFecha(f)}`;
-            } else {
-                return formatearFecha(f);
-            }
+            if (data.agrupado_mensual) return formatearFechaMes(f);
+            else if (data.agrupado_semanal) return `Sem. ${formatearFecha(f)}`;
+            else return formatearFecha(f);
         });
 
         const numPuntos = labelsGrafico.length;
-        
-        // Configuración de visualización limpia según el volumen de datos
         let mostrarPuntos = 4;
         let grosorLinea = 3;
 
         if (data.agrupado_mensual) {
-            mostrarPuntos = 5; // En mensual mostramos los puntos porque son pocos meses y queda estético
+            mostrarPuntos = 5; 
             grosorLinea = 3;
         } else if (numPuntos > 30) {
-            mostrarPuntos = 0; // Ocultamos si son muchos días para evitar el efecto código de barras
+            mostrarPuntos = 0; 
             grosorLinea = 2;
         }
         
         const opcionesEjeX = {
-            ticks: {
-                autoSkip: true,
-                maxTicksLimit: 12,
-                maxRotation: 0 
-            },
+            ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 },
             grid: { display: false }
         };
 
-        if(chartV) chartV.destroy();
-        const ctxV = document.getElementById('chartVentas').getContext('2d');
-        chartV = new Chart(ctxV, {
+        const configBase = {
             type: 'line',
-            data: {
-                labels: labelsGrafico,
-                datasets: [{
-                    label: data.agrupado_mensual ? 'Ventas del mes' : (data.agrupado_semanal ? 'Ventas de la semana' : 'Ventas del día'),
-                    data: data.graficos.ventas,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: grosorLinea,
-                    fill: true,
-                    tension: 0.4, 
-                    spanGaps: true,
-                    pointRadius: mostrarPuntos,
-                    pointHoverRadius: 6
-                }]
-            },
             options: {
                 responsive: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => dinero(ctx.parsed.y) } }
+                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${dinero(ctx.parsed.y)}` } }
                 },
                 scales: {
                     x: opcionesEjeX,
                     y: { beginAtZero: true, ticks: { callback: v => dinero(v) } }
                 }
             }
-        });
+        };
 
-        if(chartG) chartG.destroy();
-        const ctxG = document.getElementById('chartGastos').getContext('2d');
-        chartG = new Chart(ctxG, {
-            type: 'line',
+        // 1. Gráfico Individual Ventas
+        if(chartV) chartV.destroy();
+        chartV = new Chart(document.getElementById('chartVentas').getContext('2d'), {
+            ...configBase,
             data: {
                 labels: labelsGrafico,
                 datasets: [{
-                    label: data.agrupado_mensual ? 'Salidas del mes' : (data.agrupado_semanal ? 'Salidas de la semana' : 'Salidas del día'),
-                    data: data.graficos.gastos,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: grosorLinea,
-                    fill: true,
-                    tension: 0.4,
-                    spanGaps: true,
-                    pointRadius: mostrarPuntos,
-                    pointHoverRadius: 6
+                    label: labelVentas, data: data.graficos.ventas,
+                    borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
+                    pointRadius: mostrarPuntos, pointHoverRadius: 6
                 }]
-            },
-            options: {
-                responsive: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => dinero(ctx.parsed.y) } }
-                },
-                scales: {
-                    x: opcionesEjeX,
-                    y: { beginAtZero: true, ticks: { callback: v => dinero(v) } }
-                }
+            }
+        });
+
+        // 2. Gráfico Individual Gastos
+        if(chartG) chartG.destroy();
+        chartG = new Chart(document.getElementById('chartGastos').getContext('2d'), {
+            ...configBase,
+            data: {
+                labels: labelsGrafico,
+                datasets: [{
+                    label: labelGastos, data: data.graficos.gastos,
+                    borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
+                    pointRadius: mostrarPuntos, pointHoverRadius: 6
+                }]
+            }
+        });
+
+        // 3. Gráfico Combinado
+        if(chartC) chartC.destroy();
+        chartC = new Chart(document.getElementById('chartCombinado').getContext('2d'), {
+            ...configBase,
+            data: {
+                labels: labelsGrafico,
+                datasets: [
+                    {
+                        label: labelVentas, data: data.graficos.ventas,
+                        borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.15)',
+                        borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
+                        pointRadius: mostrarPuntos, pointHoverRadius: 6
+                    },
+                    {
+                        label: labelGastos, data: data.graficos.gastos,
+                        borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.15)',
+                        borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
+                        pointRadius: mostrarPuntos, pointHoverRadius: 6
+                    }
+                ]
             }
         });
 
