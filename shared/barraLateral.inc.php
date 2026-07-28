@@ -2,8 +2,16 @@
 <aside id="sidebar" class="sidebar">
 
     <?php 
-        // Obtenemos el nivel del usuario logueado (1=Admin, 2=Usuario, 3=Supervisor)
-        $nivelUsuario = $_SESSION['NIVEL'] ?? $_SESSION['Usuario']['NIVEL'] ?? 0; 
+        // 1. Obtenemos el nivel del usuario logueado usando la variable exacta del login
+        $nivelUsuario = $_SESSION['Usuario_Nivel'] ?? $_SESSION['NIVEL'] ?? 0; 
+
+        // ---------------------------------------------------------------------
+        // LÍNEA TEMPORAL DE PRUEBA: Muestra el nivel en un recuadro en el menú
+        // (Borra estas 3 líneas cuando confirmes que funciona)
+        echo "<div style='background: #fff3cd; color: #856404; padding: 8px; font-weight: bold; text-align: center; font-size: 12px; margin-bottom: 10px; border-radius: 4px;'>
+                NIVEL DETECTADO: " . var_export($nivelUsuario, true) . "
+              </div>";
+        // ---------------------------------------------------------------------
     ?>
 
     <ul class="sidebar-nav" id="sidebar-nav">
@@ -82,7 +90,6 @@
             </a>
           </li>
           <li>
-            
             <a href="../imprenta_productos/inventario.php">
               <i class="bi bi-circle"></i><span>Listados</span>
             </a>
