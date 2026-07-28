@@ -48,7 +48,6 @@ $gananciaNeta = $totalIngresos - $totalEgresos;
 // 2. DESGLOSE POR RUBRO
 // ==========================================
 
-// Rubros Ingresos
 $listaIngresos = [];
 $sqlListaIng = "SELECT tm.denominacion as concepto, SUM(dc.monto) as monto FROM detalle_caja dc 
                 JOIN caja c ON dc.idCaja = c.idCaja 
@@ -70,7 +69,6 @@ if ($difNegativa > 0) {
     $listaIngresos[] = ['concepto' => 'Diferencia en Contra', 'monto' => $difNegativa * -1, 'porcentaje' => number_format(($totalIngresos > 0 ? (($difNegativa * -1) / $totalIngresos) * 100 : 0), 1) . '%'];
 }
 
-// Rubros Gastos
 $listaGastos = [];
 $sqlListaRetiros = "SELECT tm.denominacion as concepto, SUM(r.monto) as monto FROM retiros r
                     JOIN tipo_movimiento tm ON r.idTipoMovimiento = tm.idTipoMovimiento
@@ -98,7 +96,6 @@ foreach ($periodo as $fecha) {
     $gastosPorDia[$f] = 0;
 }
 
-// Ventas por día
 $sqlVentasDia = "SELECT DATE(c.Fecha) as dia, 
                  SUM(CASE WHEN tm.es_entrada = 1 AND dc.idTipoMovimiento != 15 AND tp.idActivo = 1 THEN dc.monto ELSE 0 END) as ingresos,
                  SUM(CASE WHEN dc.idTipoMovimiento = 15 THEN dc.monto ELSE 0 END) as dif_pos,
@@ -117,7 +114,6 @@ while($row = mysqli_fetch_assoc($qVentasDia)) {
     }
 }
 
-// Gastos por día
 $sqlGastosDia = "SELECT DATE(fecha) as dia, SUM(monto) as total FROM retiros 
                  WHERE fecha BETWEEN '$fIni' AND '$fFin' AND idTipoMovimiento NOT IN (9, 14, 15) GROUP BY DATE(fecha)";
 $qGastosDia = mysqli_query($MiConexion, $sqlGastosDia);
@@ -129,16 +125,42 @@ while($row = mysqli_fetch_assoc($qGastosDia)) {
 }
 
 // ==========================================
-// 4. PROCESAMIENTO INTELIGENTE DEL RANGO (EVITA EL SERRUCHO)
+// 4. PROCESAMIENTO INTELIGENTE DEL RANGO
 // ==========================================
 $dias_dif = (strtotime($fechaFin) - strtotime($fechaInicio)) / 86400;
-$agrupar_semanas = ($dias_dif > 31); // Si el rango pasa los 31 días, agrupa por semana de forma automática
+
+// Nueva lógica de agrupación
+$agrupar_meses = ($dias_dif > 90); // Más de 3 meses
+$agrupar_semanas = (!$agrupar_meses && $dias_dif > 31); // Entre 1 y 3 meses
 
 $finalLabels = [];
 $finalVentas = [];
 $finalGastos = [];
 
-if ($agrupar_semanas) {
+if ($agrupar_meses) {
+    // Agrupación Mensual
+    $tempMeses = [];
+    foreach ($fechasArray as $f) {
+        $v = $ventasPorDia[$f];
+        $g = $gastosPorDia[$f];
+        
+        $mes = date('Y-m', strtotime($f)); 
+        
+        if (!isset($tempMeses[$mes])) {
+            $tempMeses[$mes] = ['v' => 0, 'g' => 0];
+        }
+        $tempMeses[$mes]['v'] += $v;
+        $tempMeses[$mes]['g'] += $g;
+    }
+    
+    foreach ($tempMeses as $lbl => $totales) {
+        if ($totales['v'] != 0 || $totales['g'] != 0) {
+            $finalLabels[] = $lbl . '-01'; // Le agregamos un día falso para que el formateador de JS lo lea bien
+            $finalVentas[] = $totales['v'];
+            $finalGastos[] = $totales['g'];
+        }
+    }
+} else if ($agrupar_semanas) {
     // Agrupación Semanal
     $tempSemanas = [];
     foreach ($fechasArray as $f) {
@@ -150,7 +172,7 @@ if ($agrupar_semanas) {
         if ($lunes->format('w') != 1) {
             $lunes->modify('last monday');
         }
-        $label = $lunes->format('Y-m-d'); // Usamos el lunes de cada semana como punto clave
+        $label = $lunes->format('Y-m-d'); 
         
         if (!isset($tempSemanas[$label])) {
             $tempSemanas[$label] = ['v' => 0, 'g' => 0];
@@ -167,7 +189,7 @@ if ($agrupar_semanas) {
         }
     }
 } else {
-    // Agrupación Diaria Limpia (Quita domingos/días cerrados a cero)
+    // Agrupación Diaria
     foreach ($fechasArray as $f) {
         $v = $ventasPorDia[$f];
         $g = $gastosPorDia[$f];
@@ -182,6 +204,7 @@ if ($agrupar_semanas) {
 echo json_encode([
     'ok' => true,
     'agrupado_semanal' => $agrupar_semanas,
+    'agrupado_mensual' => $agrupar_meses,
     'totales' => [
         'ingresos' => $totalIngresos,
         'gastos' => $totalEgresos,

@@ -1,6 +1,11 @@
 <!-- ======= Sidebar ======= -->
 <aside id="sidebar" class="sidebar">
 
+    <?php 
+        // Obtenemos el nivel del usuario logueado (1=Admin, 2=Usuario, 3=Supervisor)
+        $nivelUsuario = $_SESSION['Usuario_Nivel'] ?? 0; 
+    ?>
+
     <ul class="sidebar-nav" id="sidebar-nav">
 
       <li class="nav-item">
@@ -28,6 +33,7 @@
         </ul>
       </li><!-- End Clientes Nav -->
 
+      <?php if ($nivelUsuario == 1 || $nivelUsuario == 3): ?>
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#proveedores-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-person-bounding-box"></i><span>Proveedores</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -63,44 +69,7 @@
           </li>
         </ul>
       </li><!-- End Proveedores Insummos Nav -->
-
-      <!--
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#libros-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-journal-text"></i><span>Libros</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="libros-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          <li>
-            <a href="agregar_libros.php">
-              <i class="bi bi-circle"></i><span>Agregar</span>
-            </a>
-          </li>
-          <li>
-            <a href="listados_libros.php">
-              <i class="bi bi-circle"></i><span>Listados</span>
-            </a>
-          </li>
-        </ul>
-      </li> Libros Nav -->
-
-      <!--
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#pedidos-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-bag"></i><span>Pedidos de Libros</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="pedidos-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          <li>
-            <a href="agregar_pedido.php">
-              <i class="bi bi-circle"></i><span>Agregar</span>
-            </a>
-          </li>
-          <li>
-            <a href="listados_pedidos.php">
-              <i class="bi bi-circle"></i><span>Listados</span>
-            </a>
-          </li>
-        </ul>
-      </li> Pedido de Libros Nav -->
+      <?php endif; ?>
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#productos-nav" data-bs-toggle="collapse" href="#">
@@ -180,6 +149,7 @@
         </ul>
       </li><!-- End Cuenta Corriente -->
     
+      <?php if ($nivelUsuario == 1 || $nivelUsuario == 3): ?>
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#informes-nav" data-bs-toggle="collapse" href="#">
             <i class="bi-file-earmark-bar-graph"></i><span>Informes</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -236,6 +206,7 @@
         </li>
         </ul>
       </li><!-- End Dashboard -->
+      <?php endif; ?>
 
     </ul>
 
