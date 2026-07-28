@@ -75,7 +75,8 @@ function DatosLogin($vUsuario, $vClave, $vConexion) {
                         WHERE dc.idCaja = c.idCaja AND tm.es_entrada = 1 AND tp.denominacion = 'Efectivo') AS totalEntradas,
                     (SELECT IFNULL(SUM(dc.monto),0) FROM detalle_caja dc 
                         JOIN tipo_movimiento tm ON dc.idTipoMovimiento = tm.idTipoMovimiento 
-                        WHERE dc.idCaja = c.idCaja AND tm.es_salida = 1) AS totalRetiros
+                        JOIN tipo_pago tp ON dc.idTipoPago = tp.idTipoPago
+                        WHERE dc.idCaja = c.idCaja AND tm.es_salida = 1 AND tp.denominacion = 'Efectivo') AS totalRetiros
                     FROM caja c
                     WHERE Fecha < '$fechaActual'
                     ORDER BY Fecha DESC

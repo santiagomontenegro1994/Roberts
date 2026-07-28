@@ -11,9 +11,35 @@ require('../shared/encabezado.inc.php');
 require('../shared/barraLateral.inc.php');
 ?>
 
+<style>
+    /* CONTROLES DE ALTURA PARA LOS GRÁFICOS (Evita que se aplasten en celular) */
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+    }
+    
+    .chart-separated {
+        height: 250px; /* Altura para PC de los separados */
+    }
+    
+    .chart-combined {
+        height: 380px; /* Altura para PC del combinado (bien amplio) */
+    }
+
+    /* Ajuste para celulares */
+    @media (max-width: 768px) {
+        .chart-separated {
+            height: 220px;
+        }
+        .chart-combined {
+            height: 320px; /* Le damos buena altura en celular para que no se vea aplastado */
+        }
+    }
+</style>
+
 <main id="main" class="main">
     <div class="container-fluid px-4">
-        <h1 class="mt-4">Dashboard Estratégico</h1>
+        <h1 class="mt-4">Dashboard Estratégico A</h1>
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item active">Análisis de Crecimiento y Rentabilidad</li>
         </ol>
@@ -80,11 +106,10 @@ require('../shared/barraLateral.inc.php');
             </div>
         </div>
 
-        <div class="d-flex justify-content-end mb-3">
-            <div class="form-check form-switch shadow-sm bg-white px-4 py-2 rounded border border-2 border-primary" style="display: inline-block;">
-                <input class="form-check-input ms-0 me-2" type="checkbox" id="toggleCombinado" style="cursor: pointer; transform: scale(1.3); margin-top: 5px;">
-                <label class="form-check-label fw-bold text-dark ms-2" for="toggleCombinado" style="cursor: pointer;">Superponer Gráficos (Ventas vs Salidas)</label>
-            </div>
+        <div class="d-flex justify-content-end mb-4">
+            <button class="btn btn-dark shadow px-4 py-2 fw-bold rounded-pill text-uppercase" id="btnToggleChart" onclick="toggleChartMode(event)" style="font-size: 0.95rem; letter-spacing: 0.5px;">
+                <i class="bi bi-layer-forward me-2 fs-5 align-middle"></i> Comparar en un solo gráfico
+            </button>
         </div>
 
         <div class="row mb-4" id="contenedorSeparados">
@@ -94,7 +119,7 @@ require('../shared/barraLateral.inc.php');
                         <i class="bi bi-activity me-1"></i> <span id="tituloChartVentas">Evolución de Ventas</span>
                     </div>
                     <div class="card-body">
-                        <div style="position: relative; height: 250px; width: 100%;">
+                        <div class="chart-wrapper chart-separated">
                             <canvas id="chartVentas"></canvas>
                         </div>
                     </div>
@@ -106,7 +131,7 @@ require('../shared/barraLateral.inc.php');
                         <i class="bi bi-activity me-1"></i> <span id="tituloChartGastos">Evolución de Salidas</span>
                     </div>
                     <div class="card-body">
-                        <div style="position: relative; height: 250px; width: 100%;">
+                        <div class="chart-wrapper chart-separated">
                             <canvas id="chartGastos"></canvas>
                         </div>
                     </div>
@@ -114,18 +139,14 @@ require('../shared/barraLateral.inc.php');
             </div>
         </div>
 
-        <div class="row mb-4" id="contenedorCombinado" style="display: none;">
-            <div class="col-12 mb-4">
+        <div class="row mb-4 d-none" id="contenedorCombinado">
+            <div class="col-12">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
-                        <div><i class="bi bi-intersect me-1"></i> <span id="tituloChartCombinado">Comparativa: Ventas vs Salidas</span></div>
-                        <div class="small">
-                            <span style="color:#6ea8fe;"><i class="bi bi-circle-fill"></i> Ventas</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
-                            <span style="color:#ea868f;"><i class="bi bi-circle-fill"></i> Salidas</span>
-                        </div>
+                    <div class="card-header bg-white fw-bold text-dark">
+                        <i class="bi bi-bar-chart-fill me-1"></i> <span id="tituloChartCombinado">Comparativa de Ventas vs Salidas</span>
                     </div>
                     <div class="card-body">
-                        <div style="position: relative; height: 350px; width: 100%;">
+                        <div class="chart-wrapper chart-combined">
                             <canvas id="chartCombinado"></canvas>
                         </div>
                     </div>
@@ -148,7 +169,7 @@ require('../shared/barraLateral.inc.php');
             <div class="col-lg-6 mb-4">
                 <div class="card shadow h-100">
                     <div class="card-header bg-dark text-white fw-bold">
-                        <i class="bi bi-list-check me-1"></i> Desglose de Salidas <span class="small fw-normal">(% sobre salidas totales)</span>
+                        <i class="bi bi-list-check me-1"></i> Desglose de Salidas <span class="small fw-normal">(% sobre ventas)</span>
                     </div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush" id="listaRubrosGastos">
@@ -169,63 +190,29 @@ const dinero = (valor) => new Intl.NumberFormat('es-AR', { style: 'currency', cu
 let chartV = null;
 let chartG = null;
 let chartC = null; 
+let modoCombinado = false; 
 
-function formatearFecha(fechaStr) {
+function formatearFecha(fechaStr, isMensual) {
     const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const partes = fechaStr.split('-');
     if(partes.length !== 3) return fechaStr;
+    
+    if (isMensual) return `${meses[parseInt(partes[1])-1]} ${partes[0]}`;
     return `${partes[2]} ${meses[parseInt(partes[1])-1]}`;
 }
 
-function formatearFechaMes(fechaStr) {
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    const partes = fechaStr.split('-');
-    if(partes.length !== 3) return fechaStr;
-    return `${meses[parseInt(partes[1])-1]} ${partes[0]}`;
-}
-
-// Función súper mejorada para renderizar listas con Desplegables
 function renderizarLista(idLista, datos, claseBadge) {
     const lista = document.getElementById(idLista);
     lista.innerHTML = '';
-    
     if (datos && datos.length > 0) {
-        datos.forEach((item, index) => {
-            const tieneSubitems = item.subitems && item.subitems.length > 0;
-            const idColapso = `collapse-${idLista}-${index}`;
-            
-            let htmlSubitems = '';
-            if (tieneSubitems) {
-                htmlSubitems = `<div class="collapse" id="${idColapso}">
-                                  <ul class="list-group list-group-flush border-top">`;
-                item.subitems.forEach(sub => {
-                    htmlSubitems += `
-                        <li class="list-group-item d-flex justify-content-between align-items-center bg-light border-0 py-2 ps-4" style="font-size: 0.85rem;">
-                            <span class="text-secondary fw-semibold"><i class="bi bi-arrow-return-right me-1"></i> ${sub.nombre}</span>
-                            <div>
-                                <span class="text-muted small me-2">${sub.porcentaje}</span>
-                                <span class="fw-bold text-dark">${dinero(sub.monto)}</span>
-                            </div>
-                        </li>
-                    `;
-                });
-                htmlSubitems += `</ul></div>`;
-            }
-
+        datos.forEach(item => {
             lista.innerHTML += `
-                <li class="list-group-item p-0 border-bottom">
-                    <div class="d-flex justify-content-between align-items-center p-3" 
-                         ${tieneSubitems ? `data-bs-toggle="collapse" href="#${idColapso}" style="cursor: pointer;" title="Ver detalles"` : ''}>
-                        <span class="fw-bold text-dark">
-                            ${tieneSubitems ? '<i class="bi bi-chevron-down text-secondary me-2" style="font-size: 0.8rem;"></i>' : '<i class="bi bi-dash text-secondary me-2"></i>'}
-                            ${item.concepto}
-                        </span>
-                        <div>
-                            <span class="text-muted small me-2 fw-bold">${item.porcentaje}</span>
-                            <span class="badge ${claseBadge} rounded-pill fs-6 shadow-sm">${dinero(item.monto)}</span>
-                        </div>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark">${item.concepto}</span>
+                    <div>
+                        <span class="text-muted small me-2 fw-bold">${item.porcentaje}</span>
+                        <span class="badge ${claseBadge} rounded-pill fs-6 shadow-sm">${dinero(item.monto)}</span>
                     </div>
-                    ${htmlSubitems}
                 </li>
             `;
         });
@@ -234,15 +221,30 @@ function renderizarLista(idLista, datos, claseBadge) {
     }
 }
 
-document.getElementById('toggleCombinado').addEventListener('change', function() {
-    if(this.checked) {
-        document.getElementById('contenedorSeparados').style.display = 'none';
-        document.getElementById('contenedorCombinado').style.display = 'flex';
+// Función actualizada
+function toggleChartMode(e) {
+    e.preventDefault();
+    modoCombinado = !modoCombinado;
+    const btn = document.getElementById('btnToggleChart');
+    
+    if (modoCombinado) {
+        document.getElementById('contenedorSeparados').classList.add('d-none');
+        document.getElementById('contenedorCombinado').classList.remove('d-none');
+        btn.innerHTML = '<i class="bi bi-grid-1x2 me-2 fs-5 align-middle"></i> Ver gráficos separados';
+        btn.className = 'btn btn-primary shadow px-4 py-2 fw-bold rounded-pill text-uppercase';
+        
+        // Forzamos al gráfico a actualizarse para eliminar cualquier resize residual
+        if(chartC) chartC.update('none'); 
     } else {
-        document.getElementById('contenedorSeparados').style.display = 'flex';
-        document.getElementById('contenedorCombinado').style.display = 'none';
+        document.getElementById('contenedorCombinado').classList.add('d-none');
+        document.getElementById('contenedorSeparados').classList.remove('d-none');
+        btn.innerHTML = '<i class="bi bi-layer-forward me-2 fs-5 align-middle"></i> Comparar en un solo gráfico';
+        btn.className = 'btn btn-dark shadow px-4 py-2 fw-bold rounded-pill text-uppercase';
+        
+        if(chartV) chartV.update('none');
+        if(chartG) chartG.update('none');
     }
-});
+}
 
 async function cargarDatos(e) {
     if(e) e.preventDefault();
@@ -275,115 +277,128 @@ async function cargarDatos(e) {
         renderizarLista('listaRubrosVentas', data.rubros.ingresos, 'bg-primary');
         renderizarLista('listaRubrosGastos', data.rubros.gastos, 'bg-danger');
 
-        let labelVentas = 'Ventas del día';
-        let labelGastos = 'Salidas del día';
-        
-        if (data.agrupado_mensual) {
-            document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Mensuales)";
-            document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Mensuales)";
-            document.getElementById('tituloChartCombinado').innerText = "Comparativa Mensual: Ventas vs Salidas";
-            labelVentas = 'Ventas del mes';
-            labelGastos = 'Salidas del mes';
-        } else if (data.agrupado_semanal) {
-            document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Semanales)";
-            document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Semanales)";
-            document.getElementById('tituloChartCombinado').innerText = "Comparativa Semanal: Ventas vs Salidas";
-            labelVentas = 'Ventas de la semana';
-            labelGastos = 'Salidas de la semana';
-        } else {
-            document.getElementById('tituloChartVentas').innerText = "Evolución de Ventas (Diarias)";
-            document.getElementById('tituloChartGastos').innerText = "Evolución de Salidas (Diarias)";
-            document.getElementById('tituloChartCombinado').innerText = "Comparativa Diaria: Ventas vs Salidas";
-        }
+        let txtPeriodo = "Diarias";
+        if(data.agrupado_mensual) txtPeriodo = "Mensuales";
+        else if(data.agrupado_semanal) txtPeriodo = "Semanales";
+
+        document.getElementById('tituloChartVentas').innerText = `Evolución de Ventas (${txtPeriodo})`;
+        document.getElementById('tituloChartGastos').innerText = `Evolución de Salidas (${txtPeriodo})`;
+        document.getElementById('tituloChartCombinado').innerText = `Comparativa Ventas vs Salidas (${txtPeriodo})`;
 
         const labelsGrafico = data.graficos.labels.map(f => {
-            if (data.agrupado_mensual) return formatearFechaMes(f);
-            else if (data.agrupado_semanal) return `Sem. ${formatearFecha(f)}`;
-            else return formatearFecha(f);
+            if (data.agrupado_mensual) return formatearFecha(f, true);
+            const formateada = formatearFecha(f, false);
+            return data.agrupado_semanal ? `Sem. ${formateada}` : formateada;
         });
 
         const numPuntos = labelsGrafico.length;
-        let mostrarPuntos = 4;
-        let grosorLinea = 3;
-
-        if (data.agrupado_mensual) {
-            mostrarPuntos = 5; 
-            grosorLinea = 3;
-        } else if (numPuntos > 30) {
-            mostrarPuntos = 0; 
-            grosorLinea = 2;
-        }
+        const mostrarPuntos = numPuntos > 30 ? 0 : 4; 
+        const grosorLinea = numPuntos > 30 ? 2 : 3;
         
         const opcionesEjeX = {
             ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 },
             grid: { display: false }
         };
 
-        const configBase = {
-            type: 'line',
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, 
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${dinero(ctx.parsed.y)}` } }
-                },
-                scales: {
-                    x: opcionesEjeX,
-                    y: { beginAtZero: true, ticks: { callback: v => dinero(v) } }
-                }
-            }
+        // OPCIONES COMPARTIDAS (Matamos animaciones y forzamos proporciones controladas por CSS)
+        const chartOptions = {
+            animation: false, // Apaga animaciones de carga
+            maintainAspectRatio: false, // FUNDAMENTAL: Permite que el CSS controle la altura real en celular
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => dinero(ctx.parsed.y) } } },
+            scales: { x: opcionesEjeX, y: { beginAtZero: true, ticks: { callback: v => dinero(v) } } }
         };
 
+        // 1. GRÁFICO VENTAS (SEPARADO)
         if(chartV) chartV.destroy();
-        chartV = new Chart(document.getElementById('chartVentas').getContext('2d'), {
-            ...configBase,
+        const ctxV = document.getElementById('chartVentas').getContext('2d');
+        chartV = new Chart(ctxV, {
+            type: 'line',
             data: {
                 labels: labelsGrafico,
                 datasets: [{
-                    label: labelVentas, data: data.graficos.ventas,
-                    borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
-                    pointRadius: mostrarPuntos, pointHoverRadius: 6
+                    label: 'Ventas',
+                    data: data.graficos.ventas,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: grosorLinea,
+                    fill: true,
+                    tension: 0.4,
+                    spanGaps: true,
+                    pointRadius: mostrarPuntos,
+                    pointHoverRadius: 6
                 }]
-            }
+            },
+            options: chartOptions
         });
 
+        // 2. GRÁFICO GASTOS (SEPARADO)
         if(chartG) chartG.destroy();
-        chartG = new Chart(document.getElementById('chartGastos').getContext('2d'), {
-            ...configBase,
+        const ctxG = document.getElementById('chartGastos').getContext('2d');
+        chartG = new Chart(ctxG, {
+            type: 'line',
             data: {
                 labels: labelsGrafico,
                 datasets: [{
-                    label: labelGastos, data: data.graficos.gastos,
-                    borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
-                    pointRadius: mostrarPuntos, pointHoverRadius: 6
+                    label: 'Salidas',
+                    data: data.graficos.gastos,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: grosorLinea,
+                    fill: true,
+                    tension: 0.4,
+                    spanGaps: true,
+                    pointRadius: mostrarPuntos,
+                    pointHoverRadius: 6
                 }]
-            }
+            },
+            options: chartOptions
         });
 
+        // 3. GRÁFICO COMBINADO
         if(chartC) chartC.destroy();
-        chartC = new Chart(document.getElementById('chartCombinado').getContext('2d'), {
-            ...configBase,
+        const ctxC = document.getElementById('chartCombinado').getContext('2d');
+        
+        // Copiamos las opciones compartidas pero le encendemos la leyenda a este solo
+        const combinedOptions = Object.assign({}, chartOptions);
+        combinedOptions.plugins = { 
+            legend: { display: true, position: 'top' }, 
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + dinero(ctx.parsed.y) } } 
+        };
+
+        chartC = new Chart(ctxC, {
+            type: 'line',
             data: {
                 labels: labelsGrafico,
                 datasets: [
                     {
-                        label: labelVentas, data: data.graficos.ventas,
-                        borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.15)',
-                        borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
-                        pointRadius: mostrarPuntos, pointHoverRadius: 6
+                        label: 'Ventas',
+                        data: data.graficos.ventas,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: grosorLinea,
+                        fill: true,
+                        tension: 0.4,
+                        spanGaps: true,
+                        pointRadius: mostrarPuntos,
+                        pointHoverRadius: 6
                     },
                     {
-                        label: labelGastos, data: data.graficos.gastos,
-                        borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.15)',
-                        borderWidth: grosorLinea, fill: true, tension: 0.4, spanGaps: true,
-                        pointRadius: mostrarPuntos, pointHoverRadius: 6
+                        label: 'Salidas',
+                        data: data.graficos.gastos,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderWidth: grosorLinea,
+                        fill: true,
+                        tension: 0.4,
+                        spanGaps: true,
+                        pointRadius: mostrarPuntos,
+                        pointHoverRadius: 6
                     }
                 ]
-            }
+            },
+            options: combinedOptions
         });
 
     } catch (error) {
