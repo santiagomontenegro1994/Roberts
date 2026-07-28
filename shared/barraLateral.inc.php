@@ -3,7 +3,7 @@
 
     <?php 
         // Obtenemos el nivel del usuario logueado (1=Admin, 2=Usuario, 3=Supervisor)
-        $nivelUsuario = $_SESSION['Usuario_Nivel'] ?? 0; 
+        $nivelUsuario = $_SESSION['NIVEL'] ?? $_SESSION['Usuario']['NIVEL'] ?? 0; 
     ?>
 
     <ul class="sidebar-nav" id="sidebar-nav">
