@@ -39,7 +39,11 @@ require('../shared/barraLateral.inc.php');
 
 <main id="main" class="main">
     <div class="container-fluid px-4">
+<<<<<<< HEAD
         <h1 class="mt-4">Dashboard Estratégico A</h1>
+=======
+        <h1 class="mt-4">Dashboard Estratégico ASD</h1>
+>>>>>>> 2006941cd8b3f1a3279d43288fe4aec9234462db
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item active">Análisis de Crecimiento y Rentabilidad</li>
         </ol>
