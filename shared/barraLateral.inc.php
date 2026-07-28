@@ -4,14 +4,6 @@
     <?php 
         // 1. Obtenemos el nivel del usuario logueado usando la variable exacta del login
         $nivelUsuario = $_SESSION['Usuario_Nivel'] ?? $_SESSION['NIVEL'] ?? 0; 
-
-        // ---------------------------------------------------------------------
-        // LÍNEA TEMPORAL DE PRUEBA: Muestra el nivel en un recuadro en el menú
-        // (Borra estas 3 líneas cuando confirmes que funciona)
-        echo "<div style='background: #fff3cd; color: #856404; padding: 8px; font-weight: bold; text-align: center; font-size: 12px; margin-bottom: 10px; border-radius: 4px;'>
-                NIVEL DETECTADO: " . var_export($nivelUsuario, true) . "
-              </div>";
-        // ---------------------------------------------------------------------
     ?>
 
     <ul class="sidebar-nav" id="sidebar-nav">
