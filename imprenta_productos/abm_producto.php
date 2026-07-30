@@ -112,18 +112,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $cat_legacy = !empty($categorias_post) ? (int)$categorias_post[0] : 0;
 
+        $idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : 0;
+
         if ($id_post > 0) {
-            // Actualizar producto existente (Agregado or die para capturar errores)
+            // A. Obtener stock anterior antes de actualizar para calcular la diferencia
+            $res_old = mysqli_query($MiConexion, "SELECT stock FROM productos WHERE id = $id_post");
+            $stock_anterior = 0;
+            if ($res_old && $row_old = mysqli_fetch_assoc($res_old)) {
+                $stock_anterior = (int)$row_old['stock'];
+            }
+
+            // Actualizar producto existente
             $sql = "UPDATE productos SET titulo='$titulo', descripcion='$desc', stock=$stock, stock_infinito=$stock_infinito, categoria=$cat_legacy, imagen='$nombre_imagen', color_principal='$color_principal', color_principal_hex='$color_principal_hex', destacado=$destacado, nuevo=$nuevo, idActivo=$idActivo WHERE id=$id_post";
             mysqli_query($MiConexion, $sql) or die("Error al actualizar producto: " . mysqli_error($MiConexion));
             $id_retorno = $id_post;
 
             @mysqli_query($MiConexion, "DELETE FROM producto_categoria WHERE id_producto = $id_retorno");
+
+            // B. Registrar ajuste en movimientos_stock si hubo cambio manual de stock
+            $diferencia = $stock - $stock_anterior;
+            if ($diferencia != 0) {
+                $tipoMov = ($diferencia > 0) ? 'INGRESO_MANUAL' : 'AJUSTE_INVENTARIO';
+                $descMov = mysqli_real_escape_string($MiConexion, "Ajuste manual ABM Producto: de $stock_anterior a $stock u.");
+                mysqli_query($MiConexion, "INSERT INTO movimientos_stock (idProducto, cantidad, tipo_movimiento, descripcion, idUsuario) VALUES ($id_retorno, $diferencia, '$tipoMov', '$descMov', $idUsuario)");
+            }
         } else {
-            // Insertar nuevo producto (Agregado or die para capturar errores)
+            // Insertar nuevo producto
             $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio, idActivo) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0, $idActivo)";
             mysqli_query($MiConexion, $sql) or die("Error al crear producto: " . mysqli_error($MiConexion));
             $id_retorno = mysqli_insert_id($MiConexion);
+
+            // Registrar carga inicial en movimientos_stock
+            if ($stock > 0) {
+                $descMov = mysqli_real_escape_string($MiConexion, "Carga inicial de stock al crear producto");
+                mysqli_query($MiConexion, "INSERT INTO movimientos_stock (idProducto, cantidad, tipo_movimiento, descripcion, idUsuario) VALUES ($id_retorno, $stock, 'CARGA_INICIAL', '$descMov', $idUsuario)");
+            }
         }
 
         // Insertar categorías múltiples en tabla puente
@@ -156,6 +179,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $ruta_db = "productos/variantes/" . $nom;
                 $sql = "INSERT INTO productos_imagenes (id_producto, nombre_imagen, color_hex, color_nombre, stock) VALUES ($id_prod, '$ruta_db', '$color_hex', '$color_nombre', $stock_var)";
                 mysqli_query($MiConexion, $sql) or die(mysqli_error($MiConexion));
+                
+                $id_variante_nueva = mysqli_insert_id($MiConexion);
+                $idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : 0;
+
+                if ($stock_var > 0) {
+                    $descMov = mysqli_real_escape_string($MiConexion, "Carga inicial variante '$color_nombre'");
+                    mysqli_query($MiConexion, "INSERT INTO movimientos_stock (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) VALUES ($id_prod, $id_variante_nueva, $stock_var, 'CARGA_INICIAL', '$descMov', $idUsuario)");
+                }
             }
         }
         header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
@@ -170,8 +201,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $hex = mysqli_real_escape_string($MiConexion, $_POST['color_hex'] ?? '#000000');
         $stock_var = (int)$_POST['stock_var'];
 
+        $idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : 0;
+
+        // Obtener stock anterior de la variante
+        $res_v_old = mysqli_query($MiConexion, "SELECT stock FROM productos_imagenes WHERE id = $id_var");
+        $stock_var_anterior = 0;
+        if ($res_v_old && $row_v_old = mysqli_fetch_assoc($res_v_old)) {
+            $stock_var_anterior = (int)$row_v_old['stock'];
+        }
+
         $sql = "UPDATE productos_imagenes SET color_nombre = '$nombre', color_hex = '$hex', stock = $stock_var WHERE id = $id_var";
         mysqli_query($MiConexion, $sql) or die(mysqli_error($MiConexion));
+
+        // Registrar en movimientos_stock si varió el número
+        $dif_var = $stock_var - $stock_var_anterior;
+        if ($dif_var != 0) {
+            $tipoMov = ($dif_var > 0) ? 'INGRESO_MANUAL' : 'AJUSTE_INVENTARIO';
+            $descMov = mysqli_real_escape_string($MiConexion, "Ajuste manual variante '$nombre': de $stock_var_anterior a $stock_var u.");
+            mysqli_query($MiConexion, "INSERT INTO movimientos_stock (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) VALUES ($id_prod, $id_var, $dif_var, '$tipoMov', '$descMov', $idUsuario)");
+        }
         
         header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
         exit;
