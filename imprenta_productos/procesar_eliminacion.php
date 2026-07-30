@@ -7,25 +7,16 @@ if (empty($_SESSION['Usuario_Nombre'])) {
     exit;
 }
 
-// CHIVATO: Si no encontramos la variable exacta del ID, mostramos cuáles existen
-if (empty($_SESSION['Usuario_ID'])) {
-    $variables_existentes = implode(", ", array_keys($_SESSION));
-    $_SESSION['Mensaje'] = "Error de código: No encuentro 'Usuario_ID'. Tus variables reales son: " . $variables_existentes;
-    $_SESSION['Estilo'] = "danger";
-    header('Location: inventario.php');
-    exit;
-}
-
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
 // DEFINIMOS LA RUTA FÍSICA ABSOLUTA PARA BORRAR LAS IMÁGENES
 $ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/img/";
 
-// 2. Recibir datos del formulario
+// 2. Recibir datos del formulario (Usando la variable real 'Usuario_Id')
 $id_producto = isset($_POST['id_producto']) ? (int)$_POST['id_producto'] : 0;
 $password_ingresada = trim($_POST['password'] ?? '');
-$idUsuario = (int)$_SESSION['Usuario_ID']; 
+$idUsuario = (int)$_SESSION['Usuario_Id']; 
 
 if ($id_producto <= 0) {
     $_SESSION['Mensaje'] = "Error: Producto no válido.";
@@ -39,7 +30,7 @@ $sql_user = "SELECT clave FROM usuarios WHERE idUsuario = $idUsuario";
 $res_user = mysqli_query($MiConexion, $sql_user);
 $user = mysqli_fetch_assoc($res_user);
 
-// 4. Comparación exacta a tu sistema de Login (MD5)
+// 4. Comparación exacta de la contraseña (MD5)
 if ($user && $user['clave'] === md5($password_ingresada)) {
     
     // Contraseña correcta: proceder a eliminar
