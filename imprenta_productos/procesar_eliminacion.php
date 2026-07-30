@@ -2,8 +2,15 @@
 session_start();
 
 // 1. Seguridad básica: verificar que haya sesión activa
-if (empty($_SESSION['Usuario_Nombre']) || empty($_SESSION['Usuario_ID'])) {
-    $_SESSION['Mensaje'] = "Error: Sesión no válida.";
+if (empty($_SESSION['Usuario_Nombre'])) {
+    header('Location: ../core/cerrarsesion.php');
+    exit;
+}
+
+// CHIVATO: Si no encontramos la variable exacta del ID, mostramos cuáles existen
+if (empty($_SESSION['Usuario_ID'])) {
+    $variables_existentes = implode(", ", array_keys($_SESSION));
+    $_SESSION['Mensaje'] = "Error de código: No encuentro 'Usuario_ID'. Tus variables reales son: " . $variables_existentes;
     $_SESSION['Estilo'] = "danger";
     header('Location: inventario.php');
     exit;
@@ -40,7 +47,6 @@ if ($user && $user['clave'] === md5($password_ingresada)) {
     
     try {
         // --- PASO A: BORRAR LOS ARCHIVOS FÍSICOS DEL SERVIDOR ---
-        // 1. Buscar y borrar la imagen principal del producto
         $res_prod = mysqli_query($MiConexion, "SELECT imagen FROM productos WHERE id = $id_producto");
         if ($prod = mysqli_fetch_assoc($res_prod)) {
             if (!empty($prod['imagen']) && $prod['imagen'] != 'productos/sin-imagen.jpg') {
@@ -51,7 +57,6 @@ if ($user && $user['clave'] === md5($password_ingresada)) {
             }
         }
 
-        // 2. Buscar y borrar las imágenes de las variantes
         $res_var = mysqli_query($MiConexion, "SELECT nombre_imagen FROM productos_imagenes WHERE id_producto = $id_producto");
         while ($var = mysqli_fetch_assoc($res_var)) {
             if (!empty($var['nombre_imagen'])) {
