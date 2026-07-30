@@ -191,7 +191,7 @@ if ($res_all) {
 }
 
 $categorias_bd = [];
-$res_cat = @mysqli_query($MiConexion, "SELECT * FROM categorias_prod ORDER BY nombre ASC");
+$res_cat = @mysqli_query($MiConexion, "SELECT * FROM categorias_prod WHERE idActivo = 1 ORDER BY nombre ASC");
 if ($res_cat) {
     while ($c_row = mysqli_fetch_assoc($res_cat)) { 
         $categorias_bd[] = $c_row; 
