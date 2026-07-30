@@ -13,8 +13,8 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
-// RUTA ABSOLUTA DEL SERVIDOR CORREGIDA (apuntando a la subcarpeta roberts)
-$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/roberts/img/";
+// RUTA ABSOLUTA DEL SERVIDOR CORREGIDA (apuntando a la carpeta img principal de la web)
+$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/img/";
 
 // Inicializar variables por defecto (Agregamos idActivo = 1 por defecto)
 $producto = [
@@ -32,14 +32,14 @@ if (isset($_GET['borrar_color']) && isset($_GET['id_prod'])) {
     $id_color = (int)$_GET['borrar_color'];
     $id_prod_redirect = (int)$_GET['id_prod'];
 
-    $res_img = mysqli_query($MiConexion, "SELECT nombre_imagen FROM productos_imagenes WHERE id = $id_color");
+    $res_img = mysqli_query($MiConexion, "SELECT nombre_imagen FROM productos_imagenes WHERE id = $id_color") or die(mysqli_error($MiConexion));
     if ($res_img) {
         $img_var = mysqli_fetch_assoc($res_img);
         if ($img_var) {
             if (!empty($img_var['nombre_imagen']) && file_exists($ruta_servidor_img . $img_var['nombre_imagen'])) {
                 unlink($ruta_servidor_img . $img_var['nombre_imagen']);
             }
-            mysqli_query($MiConexion, "DELETE FROM productos_imagenes WHERE id = $id_color");
+            mysqli_query($MiConexion, "DELETE FROM productos_imagenes WHERE id = $id_color") or die(mysqli_error($MiConexion));
         }
     }
     header("Location: abm_producto.php?id=" . $id_prod_redirect . "#areaColores");
@@ -49,7 +49,7 @@ if (isset($_GET['borrar_color']) && isset($_GET['id_prod'])) {
 // 1. CARGAR DATOS DEL PRODUCTO (Si es edición)
 if (isset($_GET['id'])) {
     $id_get = (int)$_GET['id'];
-    $res_prod = mysqli_query($MiConexion, "SELECT * FROM productos WHERE id = $id_get");
+    $res_prod = mysqli_query($MiConexion, "SELECT * FROM productos WHERE id = $id_get") or die(mysqli_error($MiConexion));
     
     if ($res_prod) {
         $producto_bd = mysqli_fetch_assoc($res_prod);
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $categorias_post = isset($_POST['categorias']) ? $_POST['categorias'] : [];
         $destacado = isset($_POST['destacado']) ? 1 : 0;
         $nuevo = isset($_POST['nuevo']) ? 1 : 0;
-        $idActivo = isset($_POST['idActivo']) ? (int)$_POST['idActivo'] : 1; // Manejamos el estado
+        $idActivo = isset($_POST['idActivo']) ? (int)$_POST['idActivo'] : 1; 
         $id_post = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
         
         $stock = !empty($_POST['stock']) ? (int)$_POST['stock'] : 0;
@@ -113,23 +113,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $cat_legacy = !empty($categorias_post) ? (int)$categorias_post[0] : 0;
 
         if ($id_post > 0) {
-            // Modificamos el update para incluir idActivo
+            // Actualizar producto existente (Agregado or die para capturar errores)
             $sql = "UPDATE productos SET titulo='$titulo', descripcion='$desc', stock=$stock, stock_infinito=$stock_infinito, categoria=$cat_legacy, imagen='$nombre_imagen', color_principal='$color_principal', color_principal_hex='$color_principal_hex', destacado=$destacado, nuevo=$nuevo, idActivo=$idActivo WHERE id=$id_post";
-            mysqli_query($MiConexion, $sql);
+            mysqli_query($MiConexion, $sql) or die("Error al actualizar producto: " . mysqli_error($MiConexion));
             $id_retorno = $id_post;
 
             @mysqli_query($MiConexion, "DELETE FROM producto_categoria WHERE id_producto = $id_retorno");
         } else {
-            // Modificamos el insert para incluir idActivo
+            // Insertar nuevo producto (Agregado or die para capturar errores)
             $sql = "INSERT INTO productos (titulo, descripcion, stock, stock_infinito, categoria, imagen, color_principal, color_principal_hex, destacado, nuevo, precio, idActivo) VALUES ('$titulo', '$desc', $stock, $stock_infinito, $cat_legacy, '$nombre_imagen', '$color_principal', '$color_principal_hex', $destacado, $nuevo, 0, $idActivo)";
-            mysqli_query($MiConexion, $sql);
+            mysqli_query($MiConexion, $sql) or die("Error al crear producto: " . mysqli_error($MiConexion));
             $id_retorno = mysqli_insert_id($MiConexion);
         }
 
+        // Insertar categorías múltiples en tabla puente
         if (!empty($categorias_post)) {
             foreach ($categorias_post as $id_cat) {
                 $id_cat = (int)$id_cat;
-                @mysqli_query($MiConexion, "INSERT INTO producto_categoria (id_producto, id_categoria) VALUES ($id_retorno, $id_cat)");
+                mysqli_query($MiConexion, "INSERT INTO producto_categoria (id_producto, id_categoria) VALUES ($id_retorno, $id_cat)") or die("Error categorias: " . mysqli_error($MiConexion));
             }
         }
 
@@ -154,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (move_uploaded_file($_FILES['foto_color']['tmp_name'], $dir . $nom)) {
                 $ruta_db = "productos/variantes/" . $nom;
                 $sql = "INSERT INTO productos_imagenes (id_producto, nombre_imagen, color_hex, color_nombre, stock) VALUES ($id_prod, '$ruta_db', '$color_hex', '$color_nombre', $stock_var)";
-                mysqli_query($MiConexion, $sql);
+                mysqli_query($MiConexion, $sql) or die(mysqli_error($MiConexion));
             }
         }
         header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
@@ -170,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stock_var = (int)$_POST['stock_var'];
 
         $sql = "UPDATE productos_imagenes SET color_nombre = '$nombre', color_hex = '$hex', stock = $stock_var WHERE id = $id_var";
-        mysqli_query($MiConexion, $sql);
+        mysqli_query($MiConexion, $sql) or die(mysqli_error($MiConexion));
         
         header("Location: abm_producto.php?id=" . $id_prod . "#areaColores");
         exit;
@@ -178,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // -------------------------------------------------------------------------
-// 3. RECUPERAR TODOS LOS DATOS PARA EL HTML *ANTES* DE INCLUIR EL ENCABEZADO
+// 3. RECUPERAR TODOS LOS DATOS PARA EL HTML
 // -------------------------------------------------------------------------
 
 $todos_productos = [];
@@ -207,16 +208,35 @@ if (!empty($producto['id'])) {
     }
 }
 
-// -------------------------------------------------------------------------
-// RECIÉN AHORA DIBUJAMOS EL HTML
-// -------------------------------------------------------------------------
-
 require ('../shared/encabezado.inc.php'); 
 require ('../shared/barraLateral.inc.php'); 
 ?>
 
 <style>
     .form-check-input { cursor: pointer; }
+    /* Estilos recuperados de la WEB para la grilla de categorías */
+    .categorias-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        max-height: 250px;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+    .cat-checkbox-item {
+        background: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+        transition: 0.2s;
+    }
+    .cat-checkbox-item:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 5px rgba(13,110,253,0.1);
+    }
 </style>
 
 <main id="main" class="main">
@@ -239,7 +259,7 @@ require ('../shared/barraLateral.inc.php');
                 </div>
                 
                 <div class="card-body p-4">
-                    <form method="POST" enctype="multipart/form-data">
+                    <form method="POST" enctype="multipart/form-data" id="formABM">
                         <input type="hidden" name="accion" value="guardar_producto">
                         <input type="hidden" name="id" value="<?php echo htmlspecialchars($producto['id'] ?? ''); ?>">
 
@@ -309,20 +329,26 @@ require ('../shared/barraLateral.inc.php');
                         </div>
                         
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg" name="categorias[]" id="categorias" required>
-                                <option value="">Seleccione una categoría...</option>
+                            <label class="form-label fw-bold">Categorías <span class="text-danger">*</span></label>
+                            <div class="categorias-grid">
                                 <?php 
                                 if (count($categorias_bd) > 0) {
                                     foreach($categorias_bd as $c): 
-                                        $selected = in_array($c['id'], $categorias_seleccionadas) ? 'selected' : '';
-                                        echo '<option value="'.$c['id'].'" '.$selected.'>'.htmlspecialchars($c['nombre']).'</option>';
+                                        $checked = in_array($c['id'], $categorias_seleccionadas) ? 'checked' : '';
+                                ?>
+                                    <div class="cat-checkbox-item form-check m-0">
+                                        <input class="form-check-input" type="checkbox" name="categorias[]" value="<?php echo $c['id']; ?>" id="cat_<?php echo $c['id']; ?>" <?php echo $checked; ?>>
+                                        <label class="form-check-label w-100" style="cursor:pointer;" for="cat_<?php echo $c['id']; ?>">
+                                            <?php echo htmlspecialchars($c['nombre']); ?>
+                                        </label>
+                                    </div>
+                                <?php 
                                     endforeach; 
                                 } else {
-                                    echo '<option value="">No hay categorías creadas o detectadas.</option>';
+                                    echo "<p class='text-muted small m-0'>No hay categorías creadas.</p>";
                                 }
                                 ?>
-                            </select>
+                            </div>
                         </div>
 
                         <div class="mb-4 p-3 bg-light rounded border">
@@ -508,7 +534,6 @@ require ('../shared/barraLateral.inc.php');
             if (!selectEstado) return;
             const estaOculto = selectEstado.value === '2';
             
-            // Bloquea los checkboxes de inicio
             chkDestacado.disabled = estaOculto;
             chkNuevo.disabled = estaOculto;
             if(estaOculto) {
@@ -516,24 +541,23 @@ require ('../shared/barraLateral.inc.php');
                 chkNuevo.checked = false;
             }
 
-            // Bloquea el panel de botones
             genProd.disabled = estaOculto;
             genTexto.disabled = estaOculto;
             btnInsertar.disabled = estaOculto;
         }
         if (selectEstado) {
             selectEstado.addEventListener('change', toggleVisibilidad);
-            toggleVisibilidad(); // Se ejecuta de entrada
+            toggleVisibilidad();
         }
 
-        // --- Validación del select de Categorías ---
-        const formProducto = document.querySelector('form[action=""]'); 
-        if(formProducto && formProducto.querySelector('input[name="accion"][value="guardar_producto"]')) {
+        // --- Validación de Categorías (Adaptado a la grilla de checkboxes) ---
+        const formProducto = document.getElementById('formABM'); 
+        if(formProducto) {
             formProducto.addEventListener('submit', function(e) {
-                const selectCat = document.getElementById('categorias');
-                if (selectCat && selectCat.value === '') {
+                const checkboxes = document.querySelectorAll('input[name="categorias[]"]:checked');
+                if (checkboxes.length === 0) {
                     e.preventDefault();
-                    alert("Por favor, seleccioná una categoría para el producto.");
+                    alert("Por favor, seleccioná al menos una categoría para el producto.");
                 }
             });
         }
