@@ -1350,7 +1350,7 @@ function InsertarMovimiento($vConexion) {
         die('<h4>Error: No se encontró un usuario en la sesión.</h4>');
     }
 
-    // 1. Insertamos el movimiento de dinero en caja
+    // 1. Insertamos el movimiento básico de dinero en caja
     $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones)
                    VALUES ('$idCaja', '$idTipoPago', '$idTipoMovimiento', '$idUsuario', '$monto', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
@@ -1361,7 +1361,7 @@ function InsertarMovimiento($vConexion) {
 
     $idDetalleCaja = mysqli_insert_id($vConexion);
 
-    // 2. Si se marcó para facturar, actualizamos
+    // 2. Si se marcó para facturar
     if ($facturar && $idTipoFactura && $numeroFactura) {
         $SQL_Update = "UPDATE detalle_caja 
                        SET facturado = 1,
@@ -1374,36 +1374,34 @@ function InsertarMovimiento($vConexion) {
         }
     }
 
-    // 3. PROCESAR INSUMOS / PRODUCTOS (Si se seleccionaron productos)
+    // 3. Descontar Stock e Insertar en movimientos_stock (Si se enviaron insumos)
     if (!empty($_POST['insumos_json'])) {
         $insumos = json_decode($_POST['insumos_json'], true);
 
         if (is_array($insumos)) {
             foreach ($insumos as $item) {
-                $idProducto = (int)$item['idProducto'];
-                $idVariante = !empty($item['idVariante']) ? (int)$item['idVariante'] : 0;
-                $cantidad = (int)$item['cantidad'];
-                $tituloProducto = mysqli_real_escape_string($vConexion, $item['titulo']);
+                $idProducto = (int)($item['idProducto'] ?? 0);
+                $idVariante = (int)($item['idVariante'] ?? 0);
+                $cantidad = (int)($item['cantidad'] ?? 0);
+                $tituloItem = isset($item['titulo']) ? mysqli_real_escape_string($vConexion, $item['titulo']) : 'Insumo';
 
                 if ($idProducto > 0 && $cantidad > 0) {
-                    // A. Descontar stock del producto principal (permite valores <= 0)
-                    $sql_desc_prod = "UPDATE productos SET stock = stock - $cantidad WHERE id = $idProducto";
-                    mysqli_query($vConexion, $sql_desc_prod);
+                    // Descontar stock del producto principal
+                    mysqli_query($vConexion, "UPDATE productos SET stock = stock - $cantidad WHERE id = $idProducto");
 
-                    // B. Descontar stock de la variante si fue seleccionada
+                    // Descontar variante si aplica
                     if ($idVariante > 0) {
-                        $sql_desc_var = "UPDATE productos_imagenes SET stock = stock - $cantidad WHERE id = $idVariante";
-                        mysqli_query($vConexion, $sql_desc_var);
+                        mysqli_query($vConexion, "UPDATE productos_imagenes SET stock = stock - $cantidad WHERE id = $idVariante");
                     }
 
-                    // C. Registrar el movimiento en la tabla movimientos_stock
-                    $idVarianteSQL = ($idVariante > 0) ? "'$idVariante'" : "NULL";
-                    $descMovimiento = mysqli_real_escape_string($vConexion, "Venta en Caja #$idDetalleCaja: $tituloProducto x$cantidad");
+                    // Registrar en la tabla movimientos_stock
+                    $idVarSQL = ($idVariante > 0) ? "'$idVariante'" : "NULL";
+                    $descMov = mysqli_real_escape_string($vConexion, "Venta en Caja #$idDetalleCaja: $tituloItem x$cantidad");
 
                     $sql_mov = "INSERT INTO movimientos_stock 
                                 (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) 
                                 VALUES 
-                                ('$idProducto', $idVarianteSQL, -$cantidad, 'VENTA', '$descMovimiento', '$idUsuario')";
+                                ('$idProducto', $idVarSQL, -$cantidad, 'VENTA', '$descMov', '$idUsuario')";
                     
                     mysqli_query($vConexion, $sql_mov);
                 }
