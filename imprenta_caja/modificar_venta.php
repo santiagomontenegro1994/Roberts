@@ -22,6 +22,12 @@ if (!empty($_POST['BotonModificarVenta'])) {
     Validar_Modificar_Venta(); 
 
     if (empty($_SESSION['Mensaje'])) {
+        $idDetalleCaja = (int)$_POST['idDetalleCaja'];
+        $idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : 0;
+
+        // Revertir el stock original de la venta antes de aplicar la modificación
+        AnularMovimientosStockVenta($MiConexion, $idDetalleCaja, $idUsuario);
+
         if (Modificar_Venta($MiConexion) != false) {
             $_SESSION['Mensaje'] = "El movimiento se ha modificado correctamente!";
             $_SESSION['Estilo'] = 'success';

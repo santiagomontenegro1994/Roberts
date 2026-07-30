@@ -9,7 +9,11 @@ require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 require_once '../funciones/imprenta.php';
 
-$idDetalleCaja = $_GET['idDetalleCaja'];
+$idDetalleCaja = (int)$_GET['idDetalleCaja'];
+$idUsuario = isset($_SESSION['Usuario_Id']) ? (int)$_SESSION['Usuario_Id'] : 0;
+
+// Reponer stock si la venta a eliminar tenía insumos asociados
+AnularMovimientosStockVenta($MiConexion, $idDetalleCaja, $idUsuario);
 
 if (Anular_DetalleCaja($MiConexion, $idDetalleCaja)) {
     $_SESSION['Mensaje'] = 'El detalle seleccionado se ha eliminado correctamente.';

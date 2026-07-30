@@ -1412,6 +1412,51 @@ function InsertarMovimiento($vConexion) {
     return true;
 }
 
+function AnularMovimientosStockVenta($vConexion, $idDetalleCaja, $idUsuario) {
+    $idDetalleCaja = (int)$idDetalleCaja;
+    $idUsuario = (int)$idUsuario;
+
+    // 1. Buscar únicamente ventas que NO hayan sido anuladas previamente
+    $sql_buscar = "SELECT * FROM movimientos_stock 
+                   WHERE descripcion LIKE 'Venta en Caja #$idDetalleCaja:%' 
+                   AND tipo_movimiento = 'VENTA'";
+    
+    $res = mysqli_query($vConexion, $sql_buscar);
+
+    if ($res && mysqli_num_rows($res) > 0) {
+        while ($mov = mysqli_fetch_assoc($res)) {
+            $idMovimiento = (int)$mov['idMovimiento'];
+            $idProducto = (int)$mov['idProducto'];
+            $idVariante = !empty($mov['idVariante']) ? (int)$mov['idVariante'] : 0;
+            $cantidadVendida = abs((int)$mov['cantidad']); // Convertimos el valor negativo a positivo
+            
+            if ($idProducto > 0 && $cantidadVendida > 0) {
+                // A. Reponer stock en productos
+                mysqli_query($vConexion, "UPDATE productos SET stock = stock + $cantidadVendida WHERE id = $idProducto");
+
+                // B. Reponer stock en variantes (si aplica)
+                if ($idVariante > 0) {
+                    mysqli_query($vConexion, "UPDATE productos_imagenes SET stock = stock + $cantidadVendida WHERE id = $idVariante");
+                }
+
+                // C. Marcar la venta original como VENTA_ANULADA para evitar duplicar la devolución si se vuelve a editar/borrar
+                mysqli_query($vConexion, "UPDATE movimientos_stock SET tipo_movimiento = 'VENTA_ANULADA' WHERE idMovimiento = $idMovimiento");
+
+                // D. Registrar el movimiento de anulación en la historia del stock
+                $idVarSQL = ($idVariante > 0) ? "'$idVariante'" : "NULL";
+                $descAnulacion = mysqli_real_escape_string($vConexion, "Anulación/Devolución Venta en Caja #$idDetalleCaja");
+
+                $sql_reversion = "INSERT INTO movimientos_stock 
+                                  (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) 
+                                  VALUES 
+                                  ('$idProducto', $idVarSQL, $cantidadVendida, 'ANULACION_VENTA', '$descAnulacion', '$idUsuario')";
+                
+                mysqli_query($vConexion, $sql_reversion);
+            }
+        }
+    }
+}
+
 function InsertarMovimientoRetiro($vConexion) {
     $idCaja = mysqli_real_escape_string($vConexion, $_POST['idCaja']);
     $idTipoPago = mysqli_real_escape_string($vConexion, $_POST['idTipoPago']);
