@@ -1172,6 +1172,51 @@ function Modificar_Venta($vConexion) {
             }
         }
 
+        // =========================================================================
+        // 🔹 AGREGAR AQUÍ: DESCONTAR NUEVO STOCK DE INSUMOS SI SE ENVIARON
+        // =========================================================================
+        if (!empty($_POST['insumos_json'])) {
+            $insumos = json_decode($_POST['insumos_json'], true);
+            if (is_array($insumos)) {
+                foreach ($insumos as $item) {
+                    $idProducto = (int)($item['idProducto'] ?? 0);
+                    $idVariante = (int)($item['idVariante'] ?? 0);
+                    $cantidad   = (int)($item['cantidad'] ?? 0);
+                    $tituloItem = isset($item['titulo']) ? mysqli_real_escape_string($vConexion, $item['titulo']) : 'Insumo';
+
+                    if ($idProducto > 0 && $cantidad > 0) {
+                        // 1. Descontar stock del producto principal
+                        $sql_desc_prod = "UPDATE productos SET stock = stock - $cantidad WHERE id = $idProducto";
+                        if (!mysqli_query($vConexion, $sql_desc_prod)) {
+                            throw new Exception("Error al descontar stock del producto: " . mysqli_error($vConexion));
+                        }
+
+                        // 2. Descontar stock de la variante si aplica
+                        if ($idVariante > 0) {
+                            $sql_desc_var = "UPDATE productos_imagenes SET stock = stock - $cantidad WHERE id = $idVariante";
+                            if (!mysqli_query($vConexion, $sql_desc_var)) {
+                                throw new Exception("Error al descontar stock de variante: " . mysqli_error($vConexion));
+                            }
+                        }
+
+                        // 3. Registrar el nuevo movimiento de venta en movimientos_stock
+                        $idVarSQL = ($idVariante > 0) ? "'$idVariante'" : "NULL";
+                        $descMov  = mysqli_real_escape_string($vConexion, "Venta en Caja #$idDetalleCaja: $tituloItem x$cantidad");
+
+                        $sql_mov = "INSERT INTO movimientos_stock 
+                                    (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) 
+                                    VALUES 
+                                    ('$idProducto', $idVarSQL, -$cantidad, 'VENTA', '$descMov', '$idUsuario')";
+                        
+                        if (!mysqli_query($vConexion, $sql_mov)) {
+                            throw new Exception("Error al registrar movimiento de stock: " . mysqli_error($vConexion));
+                        }
+                    }
+                }
+            }
+        }
+        // =========================================================================
+
         mysqli_commit($vConexion);
         return true;
 

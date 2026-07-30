@@ -10,11 +10,10 @@ if (empty($_SESSION['Usuario_Nombre'])) {
 require('../shared/encabezado.inc.php');
 require('../shared/barraLateral.inc.php');
 require_once '../funciones/conexion.php';
-require_once '../funciones/imprenta.php'; // Aquí ya está Obtener_Tipo_Movimiento()
+require_once '../funciones/imprenta.php';
 
 $MiConexion = ConexionBD();
 
-// Obtener datos actuales de la venta
 $DatosVentaActual = array();
 $TiposFactura = Listar_Tipos_Factura($MiConexion);
 
@@ -31,7 +30,6 @@ if (!empty($_POST['BotonModificarVenta'])) {
         if (Modificar_Venta($MiConexion) != false) {
             $_SESSION['Mensaje'] = "El movimiento se ha modificado correctamente!";
             $_SESSION['Estilo'] = 'success';
-            // Mantenemos el ID original para que cargue bien, y sumamos la orden de ticket
             header("Location: " . $_SERVER['PHP_SELF'] . "?idDetalleCaja=" . $_POST['idDetalleCaja'] . "&ticket_mod=" . $_POST['idDetalleCaja']);
             exit;
         }
@@ -41,6 +39,54 @@ if (!empty($_POST['BotonModificarVenta'])) {
     }
 } elseif (!empty($_GET['idDetalleCaja'])) {
     $DatosVentaActual = Datos_Venta($MiConexion, $_GET['idDetalleCaja']);
+}
+
+// Cargar catálogo de productos para la memoria JS
+$productos_memoria = [];
+$sql_prod = "SELECT id, titulo, precio, stock, stock_infinito, imagen FROM productos WHERE idActivo = 1 ORDER BY titulo ASC";
+$res_prod = mysqli_query($MiConexion, $sql_prod);
+
+if ($res_prod) {
+    while ($p = mysqli_fetch_assoc($res_prod)) {
+        $idP = (int)$p['id'];
+        $variantes = [];
+        $res_var = mysqli_query($MiConexion, "SELECT id, color_nombre, color_hex, stock, nombre_imagen FROM productos_imagenes WHERE id_producto = $idP");
+        if ($res_var) {
+            while ($v = mysqli_fetch_assoc($res_var)) {
+                $variantes[] = $v;
+            }
+        }
+        $p['variantes'] = $variantes;
+        $productos_memoria[] = $p;
+    }
+}
+
+// Cargar insumos previamente guardados en esta venta específica
+$insumos_actuales = [];
+if (!empty($DatosVentaActual['idDetalleCaja'])) {
+    $idDet = (int)$DatosVentaActual['idDetalleCaja'];
+    $sql_ins_act = "SELECT m.idProducto, m.idVariante, ABS(m.cantidad) as cantidad, p.titulo, p.precio, v.color_nombre
+                    FROM movimientos_stock m
+                    JOIN productos p ON m.idProducto = p.id
+                    LEFT JOIN productos_imagenes v ON m.idVariante = v.id
+                    WHERE m.descripcion LIKE 'Venta en Caja #$idDet:%' 
+                      AND m.tipo_movimiento = 'VENTA'";
+    $res_ins_act = mysqli_query($MiConexion, $sql_ins_act);
+    if ($res_ins_act) {
+        while ($row_i = mysqli_fetch_assoc($res_ins_act)) {
+            $idP = (int)$row_i['idProducto'];
+            $idV = (int)($row_i['idVariante'] ?? 0);
+            $nomVar = !empty($row_i['color_nombre']) ? " ({$row_i['color_nombre']})" : "";
+            $insumos_actuales[] = [
+                'clave' => "{$idP}_{$idV}",
+                'idProducto' => $idP,
+                'idVariante' => $idV,
+                'titulo' => $row_i['titulo'] . $nomVar,
+                'precioUnitario' => (float)$row_i['precio'],
+                'cantidad' => (int)$row_i['cantidad']
+            ];
+        }
+    }
 }
 
 // Obtener tipo de movimiento actual
@@ -72,7 +118,6 @@ if ($esEntrada) {
     $rs = mysqli_query($MiConexion, $sql);
     while ($row = mysqli_fetch_assoc($rs)) $TiposMovimiento[] = $row;
 
-    // Listados auxiliares para retiros
     $Usuarios = [];
     $sqlUsuarios = "SELECT idUsuario, nombre FROM usuarios WHERE idActivo = 1 ORDER BY nombre";
     $rsUsuarios = mysqli_query($MiConexion, $sqlUsuarios);
@@ -105,6 +150,14 @@ if ($esEntrada) {
 ob_end_flush();
 ?>
 
+<style>
+    .modal-insumos-body { max-height: 65vh; overflow-y: auto; }
+    .item-insumo-card { transition: background 0.15s ease-in-out; }
+    .item-insumo-card:hover { background-color: #f8f9fa; }
+    .stock-badge-negativo { background-color: #dc3545; color: white; }
+    .stock-badge-cero { background-color: #ffc107; color: #212529; }
+</style>
+
 <main id="main" class="main">
     <div class="pagetitle">
         <h1><?php echo $esSalida ? "Modificar Retiro" : "Modificar Venta"; ?></h1>
@@ -134,6 +187,7 @@ ob_end_flush();
                     <input type='hidden' name="idCaja" value="<?php echo $DatosVentaActual['idCaja']; ?>"/>
                     <input type='hidden' name="idUsuario" value="<?php echo $_SESSION['Usuario_Id']; ?>"/>
                     <input type='hidden' name="facturado_anterior" value="<?php echo $DatosVentaActual['facturado'] ?? 0; ?>"/>
+                    <input type="hidden" name="insumos_json" id="insumosJsonInput" value="">
 
                     <!-- Monto -->
                     <div class="row mb-3">
@@ -145,6 +199,22 @@ ob_end_flush();
                                     value="<?php echo !empty($DatosVentaActual['Monto']) ? '$'.number_format($DatosVentaActual['Monto'], 2, ',', '.') : '$0,00'; ?>">
                                 <input type="hidden" id="MontoReal" name="MontoReal" 
                                     value="<?php echo !empty($DatosVentaActual['Monto']) ? $DatosVentaActual['Monto'] : '0'; ?>">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Resumen de Insumos -->
+                    <div id="panelResumenInsumos" class="row mb-3" style="display: none;">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10">
+                            <div class="p-3 bg-light border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong class="text-primary"><i class="bi bi-box-seam me-1"></i> Insumos Seleccionados:</strong>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirModalInsumos()">
+                                        <i class="bi bi-pencil"></i> Modificar Insumos
+                                    </button>
+                                </div>
+                                <ul id="listaResumenInsumos" class="list-group list-group-flush small"></ul>
                             </div>
                         </div>
                     </div>
@@ -181,19 +251,15 @@ ob_end_flush();
                         </div>
                     </div>
 
-                    <!-- 🔹 Sección dinámica para retiros -->
+                    <!-- Sección dinámica para retiros -->
                     <?php if ($esSalida) { ?>
-                        <!-- Usuarios -->
                         <div class="row mb-3 align-items-center retiro-section" id="retiroUsuarios" style="display: <?php echo (strpos($denominacionMovimiento,'sueldo')!==false)?'flex':'none'; ?>;">
-                            <div class="col-sm-2">
-                                <label class="col-form-label">Usuario</label>
-                            </div>
+                            <div class="col-sm-2"><label class="col-form-label">Usuario</label></div>
                             <div class="col-sm-10">
                                 <select name="usuarioSueldo" class="form-control">
                                     <option value="">Seleccione un usuario</option>
                                     <?php foreach ($Usuarios as $u) { ?>
-                                        <option value="<?php echo $u['idUsuario']; ?>"
-                                            <?php echo (!empty($DatosVentaActual['idUsuarioSueldo']) && $DatosVentaActual['idUsuarioSueldo']==$u['idUsuario'])?'selected':''; ?>>
+                                        <option value="<?php echo $u['idUsuario']; ?>" <?php echo (!empty($DatosVentaActual['idUsuarioSueldo']) && $DatosVentaActual['idUsuarioSueldo']==$u['idUsuario'])?'selected':''; ?>>
                                             <?php echo $u['nombre']; ?>
                                         </option>
                                     <?php } ?>
@@ -201,18 +267,13 @@ ob_end_flush();
                             </div>
                         </div>
 
-                        <!-- Proveedores -->
                         <div class="row mb-3 align-items-center retiro-section" id="retiroProveedores" style="display: <?php echo (strpos($denominacionMovimiento,'proveedor')!==false)?'flex':'none'; ?>;">
-                            <div class="col-sm-2">
-                                <label class="col-form-label">Proveedor</label>
-                            </div>
+                            <div class="col-sm-2"><label class="col-form-label">Proveedor</label></div>
                             <div class="col-sm-10">
                                 <select name="proveedor" class="form-control">
                                     <option value="">Seleccione un proveedor</option>
-                                    <?php foreach ($Proveedores as $p) { 
-                                        $selected = (isset($DatosVentaActual['idProveedor']) && (int)$DatosVentaActual['idProveedor'] == $p['idProveedor']) ? 'selected' : '';
-                                    ?>
-                                        <option value="<?php echo $p['idProveedor']; ?>" <?php echo $selected; ?>>
+                                    <?php foreach ($Proveedores as $p) { ?>
+                                        <option value="<?php echo $p['idProveedor']; ?>" <?php echo (isset($DatosVentaActual['idProveedor']) && (int)$DatosVentaActual['idProveedor'] == $p['idProveedor']) ? 'selected' : ''; ?>>
                                             <?php echo $p['nombre']; ?>
                                         </option>
                                     <?php } ?>
@@ -220,18 +281,13 @@ ob_end_flush();
                             </div>
                         </div>
 
-                        <!-- Servicios -->
                         <div class="row mb-3 align-items-center retiro-section" id="retiroServicios" style="display: <?php echo (strpos($denominacionMovimiento,'servicio')!==false)?'flex':'none'; ?>;">
-                            <div class="col-sm-2">
-                                <label class="col-form-label">Servicio</label>
-                            </div>
+                            <div class="col-sm-2"><label class="col-form-label">Servicio</label></div>
                             <div class="col-sm-10">
                                 <select name="servicio" class="form-control">
                                     <option value="">Seleccione un servicio</option>
-                                    <?php foreach ($Servicios as $s) { 
-                                        $selected = (!empty($DatosVentaActual['idServicio']) && $DatosVentaActual['idServicio'] == $s['idServicio']) ? 'selected' : '';
-                                    ?>
-                                        <option value="<?php echo $s['idServicio']; ?>" <?php echo $selected; ?>><?php echo $s['denominacion']; ?></option>
+                                    <?php foreach ($Servicios as $s) { ?>
+                                        <option value="<?php echo $s['idServicio']; ?>" <?php echo (!empty($DatosVentaActual['idServicio']) && $DatosVentaActual['idServicio'] == $s['idServicio']) ? 'selected' : ''; ?>><?php echo $s['denominacion']; ?></option>
                                     <?php } ?>
                                 </select>
                             </div>
@@ -245,25 +301,20 @@ ob_end_flush();
                             <div class="col-sm-10">
                                 <select name="proveedorInsumo" class="form-control mb-3">
                                     <option value="">Seleccione un proveedor de insumo</option>
-                                    <?php foreach ($ProveedoresInsumos as $pi) { 
-                                        $selected = (!empty($DatosVentaActual['idProveedorInsumo']) && $DatosVentaActual['idProveedorInsumo'] == $pi['idProveedorInsumo']) ? 'selected' : '';
-                                    ?>
-                                        <option value="<?php echo $pi['idProveedorInsumo']; ?>" <?php echo $selected; ?>><?php echo $pi['nombre']; ?></option>
+                                    <?php foreach ($ProveedoresInsumos as $pi) { ?>
+                                        <option value="<?php echo $pi['idProveedorInsumo']; ?>" <?php echo (!empty($DatosVentaActual['idProveedorInsumo']) && $DatosVentaActual['idProveedorInsumo'] == $pi['idProveedorInsumo']) ? 'selected' : ''; ?>><?php echo $pi['nombre']; ?></option>
                                     <?php } ?>
                                 </select>
 
                                 <select name="insumo" class="form-control">
                                     <option value="">Seleccione un insumo</option>
-                                    <?php foreach ($Insumos as $i) { 
-                                        $selected = (!empty($DatosVentaActual['idInsumo']) && $DatosVentaActual['idInsumo'] == $i['idInsumo']) ? 'selected' : '';
-                                    ?>
-                                        <option value="<?php echo $i['idInsumo']; ?>" <?php echo $selected; ?>><?php echo $i['denominacion']; ?></option>
+                                    <?php foreach ($Insumos as $i) { ?>
+                                        <option value="<?php echo $i['idInsumo']; ?>" <?php echo (!empty($DatosVentaActual['idInsumo']) && $DatosVentaActual['idInsumo'] == $i['idInsumo']) ? 'selected' : ''; ?>><?php echo $i['denominacion']; ?></option>
                                     <?php } ?>
                                 </select>
                             </div>
                         </div>
-                        
-                        <?php } ?>
+                    <?php } ?>
 
                     <!-- Observaciones -->
                     <div class="row mb-3">
@@ -318,13 +369,251 @@ ob_end_flush();
     </section>
 </main>
 
+<!-- MODAL DE BÚSQUEDA Y SELECCIÓN DE INSUMOS -->
+<div class="modal fade" id="modalInsumos" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title text-white"><i class="bi bi-search me-2"></i> Modificar Insumos de Inventario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body p-3">
+        <div class="mb-3">
+            <input type="text" id="inputBuscarInsumo" class="form-control form-control-lg border-primary shadow-sm" placeholder="🔍 Escribí para buscar por nombre...">
+        </div>
+
+        <div class="row">
+            <div class="col-md-7 border-end modal-insumos-body">
+                <small class="text-muted fw-bold d-block mb-2">Catálogo Disponible:</small>
+                <div id="contenedorCatalogoInsumos" class="d-flex flex-column gap-2"></div>
+            </div>
+
+            <div class="col-md-5 modal-insumos-body">
+                <small class="text-muted fw-bold d-block mb-2">Lista a Vender:</small>
+                <div id="contenedorCarritoInsumos">
+                    <p class="text-muted small text-center my-4">No hay insumos agregados aún.</p>
+                </div>
+                <div class="border-top pt-2 mt-2 text-end" id="boxTotalCarrito" style="display:none;">
+                    <span class="fw-bold">Total Insumos: </span>
+                    <span class="fs-5 fw-bold text-success" id="textoTotalModal">$0</span>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success fw-bold" onclick="confirmarInsumosModal()"><i class="bi bi-check-circle me-1"></i> Confirmar e Insertar Monto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php
     $_SESSION['Mensaje'] = '';
     require('../shared/footer.inc.php');
 ?>
 
 <script>
-    // Función principal para formatear el dinero
+    // PRECARGA DE CATÁLOGO E INSUMOS ACTUALES EN JS
+    const CATALOGO_PRODUCTOS = <?php echo json_encode($productos_memoria, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> || [];
+    let CARRITO_INSUMOS = <?php echo json_encode($insumos_actuales, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> || [];
+
+    const DOMINIO_IMG = "https://robertsgrafica.com/img/";
+
+    function abrirModalInsumos() {
+        const modalEl = document.getElementById('modalInsumos');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        setTimeout(() => { document.getElementById('inputBuscarInsumo').focus(); }, 300);
+        renderizarCatalogo('');
+        renderizarCarritoModal();
+    }
+
+    function renderizarCatalogo(filtro) {
+        const contenedor = document.getElementById('contenedorCatalogoInsumos');
+        contenedor.innerHTML = '';
+
+        const term = filtro.toLowerCase().trim();
+        const filtrados = CATALOGO_PRODUCTOS.filter(p => p.titulo.toLowerCase().includes(term));
+
+        if (filtrados.length === 0) {
+            contenedor.innerHTML = '<p class="text-muted small my-3 text-center">No se encontraron productos.</p>';
+            return;
+        }
+
+        filtrados.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'p-2 border rounded item-insumo-card bg-white shadow-sm';
+
+            const stockNum = parseInt(p.stock);
+            let stockBadge = '';
+            if (p.stock_infinito == 1) {
+                stockBadge = '<span class="badge bg-info text-dark">A medida</span>';
+            } else if (stockNum <= 0) {
+                stockBadge = `<span class="badge stock-badge-negativo">Stock: ${stockNum} (Sin Stock)</span>`;
+            } else if (stockNum <= 5) {
+                stockBadge = `<span class="badge stock-badge-cero">Stock: ${stockNum}</span>`;
+            } else {
+                stockBadge = `<span class="badge bg-light text-dark border">Stock: ${stockNum}</span>`;
+            }
+
+            let selectorVariantesHTML = '';
+            if (p.variantes && p.variantes.length > 0) {
+                selectorVariantesHTML = `<select class="form-select form-select-sm my-1" id="var_select_${p.id}">
+                    <option value="0">Color Principal (${p.stock} u.)</option>`;
+                p.variantes.forEach(v => {
+                    selectorVariantesHTML += `<option value="${v.id}" data-nombre="${v.color_nombre}">${v.color_nombre} (${v.stock} u.)</option>`;
+                });
+                selectorVariantesHTML += `</select>`;
+            }
+
+            const imgRuta = p.imagen ? (p.imagen.includes('productos/') ? p.imagen : 'productos/' + p.imagen) : 'productos/sin-imagen.jpg';
+
+            card.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <img src="${DOMINIO_IMG}${imgRuta}" style="width:40px; height:40px; object-fit:cover;" class="rounded border" onerror="this.src='../img/productos/sin-imagen.jpg'">
+                    <div class="flex-grow-1 overflow-hidden">
+                        <strong class="d-block text-truncate small text-dark">${p.titulo}</strong>
+                        <div>${stockBadge} <span class="fw-bold text-success small ms-1">$${p.precio}</span></div>
+                        ${selectorVariantesHTML}
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <input type="number" id="cant_input_${p.id}" class="form-control form-control-sm text-center" value="1" min="1" style="width: 50px;">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="agregarAlCarritoModal(${p.id})">+</button>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(card);
+        });
+    }
+
+    document.getElementById('inputBuscarInsumo').addEventListener('keyup', function() {
+        renderizarCatalogo(this.value);
+    });
+
+    function agregarAlCarritoModal(idProd) {
+        const prod = CATALOGO_PRODUCTOS.find(p => p.id == idProd);
+        if (!prod) return;
+
+        const cantInput = document.getElementById(`cant_input_${idProd}`);
+        const cantidad = parseInt(cantInput.value) || 1;
+
+        let idVariante = 0;
+        let nombreVariante = '';
+        const selectVar = document.getElementById(`var_select_${idProd}`);
+        if (selectVar && selectVar.value != "0") {
+            idVariante = parseInt(selectVar.value);
+            const selectedOpt = selectVar.options[selectVar.selectedIndex];
+            nombreVariante = selectedOpt.getAttribute('data-nombre');
+        }
+
+        const claveUnica = `${idProd}_${idVariante}`;
+        const itemExistente = CARRITO_INSUMOS.find(i => i.clave === claveUnica);
+
+        if (itemExistente) {
+            itemExistente.cantidad += cantidad;
+        } else {
+            CARRITO_INSUMOS.push({
+                clave: claveUnica,
+                idProducto: prod.id,
+                idVariante: idVariante,
+                titulo: prod.titulo + (nombreVariante ? ` (${nombreVariante})` : ''),
+                precioUnitario: parseFloat(prod.precio),
+                cantidad: cantidad
+            });
+        }
+
+        cantInput.value = 1;
+        renderizarCarritoModal();
+    }
+
+    function quitarDelCarritoModal(clave) {
+        CARRITO_INSUMOS = CARRITO_INSUMOS.filter(i => i.clave !== clave);
+        renderizarCarritoModal();
+    }
+
+    function renderizarCarritoModal() {
+        const contenedor = document.getElementById('contenedorCarritoInsumos');
+        const totalBox = document.getElementById('boxTotalCarrito');
+        contenedor.innerHTML = '';
+
+        if (CARRITO_INSUMOS.length === 0) {
+            contenedor.innerHTML = '<p class="text-muted small text-center my-4">No hay insumos agregados aún.</p>';
+            totalBox.style.display = 'none';
+            return;
+        }
+
+        let totalSumado = 0;
+        const listGroup = document.createElement('ul');
+        listGroup.className = 'list-group list-group-flush border rounded';
+
+        CARRITO_INSUMOS.forEach(item => {
+            const subtotal = item.precioUnitario * item.cantidad;
+            totalSumado += subtotal;
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center p-2 small';
+            li.innerHTML = `
+                <div>
+                    <strong class="d-block text-dark">${item.titulo}</strong>
+                    <span class="text-muted">${item.cantidad} x $${item.precioUnitario}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-success">$${subtotal.toLocaleString('es-AR')}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarDelCarritoModal('${item.clave}')">×</button>
+                </div>
+            `;
+            listGroup.appendChild(li);
+        });
+
+        contenedor.appendChild(listGroup);
+        totalBox.style.display = 'block';
+        document.getElementById('textoTotalModal').innerText = '$' + totalSumado.toLocaleString('es-AR');
+    }
+
+    function confirmarInsumosModal() {
+        const modalElement = document.getElementById('modalInsumos');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+
+        const inputHidden = document.getElementById('insumosJsonInput');
+        const panelResumen = document.getElementById('panelResumenInsumos');
+        const listaResumen = document.getElementById('listaResumenInsumos');
+
+        if (CARRITO_INSUMOS.length === 0) {
+            inputHidden.value = '';
+            panelResumen.style.display = 'none';
+            return;
+        }
+
+        inputHidden.value = JSON.stringify(CARRITO_INSUMOS);
+        listaResumen.innerHTML = '';
+        let totalGeneral = 0;
+
+        CARRITO_INSUMOS.forEach(item => {
+            const subtotal = item.precioUnitario * item.cantidad;
+            totalGeneral += subtotal;
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item bg-transparent d-flex justify-content-between align-items-center py-1 px-0';
+            li.innerHTML = `
+                <span><b>${item.cantidad}x</b> ${item.titulo}</span>
+                <span class="fw-bold">$${subtotal.toLocaleString('es-AR')}</span>
+            `;
+            listaResumen.appendChild(li);
+        });
+
+        panelResumen.style.display = 'flex';
+
+        if (totalGeneral > 0) {
+            document.getElementById('MontoReal').value = totalGeneral.toString();
+            document.getElementById('valorDinero').value = '$' + totalGeneral.toLocaleString('es-AR');
+            formatMoney(document.getElementById('valorDinero'));
+        }
+    }
+
     function formatMoney(input) {
         let cursorPos = input.selectionStart;
         let originalLength = input.value.length;
@@ -357,7 +646,6 @@ ob_end_flush();
     }
 
     const moneyInput = document.getElementById('valorDinero');
-
     moneyInput.addEventListener('input', function() { formatMoney(this); });
     moneyInput.addEventListener('focus', function() { this.value = this.value.replace('$', ''); });
     moneyInput.addEventListener('blur', function() {
@@ -369,7 +657,6 @@ ob_end_flush();
         }
     });
 
-    // Tipos de movimiento dinámicos
     const tiposMovimientoData = <?php
         $tiposMovimientoAll = [];
         $sqlTM = "SELECT idTipoMovimiento, denominacion, es_entrada, es_salida FROM tipo_movimiento WHERE idActivo = 1";
@@ -396,13 +683,11 @@ ob_end_flush();
             else if (denominacion.includes('proveedor')) document.getElementById('retiroProveedores').style.display = 'flex';
             else if (denominacion.includes('servicio')) document.getElementById('retiroServicios').style.display = 'flex';
             else if (denominacion.includes('insumo') || denominacion.includes('material')) document.getElementById('retiroInsumos').style.display = 'flex';
-            // Nota: Si es Caja Fuerte, Diferencia o Varios, no entra en ningún if y se queda todo oculto (solo se verá Observaciones).
         }
     }
 
     tipoMovimientoInput.addEventListener('change', actualizarSecciones);
 
-    // Botones tipo movimiento
     document.querySelectorAll('.tipo-movimiento').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.tipo-movimiento').forEach(btn => {
@@ -416,7 +701,6 @@ ob_end_flush();
         });
     });
 
-    // Botones método de pago
     document.querySelectorAll('.metodo-pago').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.metodo-pago').forEach(btn => {
@@ -429,7 +713,6 @@ ob_end_flush();
         });
     });
 
-    // Facturación
     const facturarCheckbox = document.getElementById('facturarCheckbox');
     if (facturarCheckbox) {
         facturarCheckbox.addEventListener('change', function() {
@@ -444,32 +727,6 @@ ob_end_flush();
         });
     }
 
-    // Reset
-    // Reset
-    const resetButton = document.getElementById('resetButton');
-    if (resetButton) {
-        resetButton.addEventListener('click', function() {
-            document.getElementById('MontoReal').value = '0';
-            if (moneyInput) moneyInput.value = '$0,00';
-            document.querySelectorAll('.metodo-pago, .tipo-movimiento').forEach(btn => {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-secondary');
-            });
-            document.getElementById('idTipoPago').value = '';
-            const tipoMovInput = document.getElementById('idTipoMovimiento');
-            if(tipoMovInput) tipoMovInput.value = '';
-            
-            if (facturarCheckbox) facturarCheckbox.checked = false;
-            const facturaFields = document.getElementById('facturaFields');
-            if (facturaFields) facturaFields.style.display = 'none';
-            const numFactura = document.getElementById('numeroFactura');
-            if (numFactura) numFactura.required = false;
-            
-            document.querySelectorAll('.retiro-section').forEach(section => section.style.display = 'none');
-        });
-    }
-
-    // Validación formulario
     const formVenta = document.getElementById('formVenta');
     if (formVenta) {
         formVenta.addEventListener('submit', function(e) {
@@ -487,10 +744,14 @@ ob_end_flush();
         });
     }
 
-    // Inicialización
-    document.addEventListener('DOMContentLoaded', function() { formatMoney(moneyInput); });
+    // Al cargar la página, si ya tenía insumos precargados los mostramos automáticamente
+    document.addEventListener('DOMContentLoaded', function() { 
+        formatMoney(moneyInput); 
+        if (CARRITO_INSUMOS && CARRITO_INSUMOS.length > 0) {
+            confirmarInsumosModal();
+        }
+    });
 
-    // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA AL MODIFICAR ---
     document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         const ticketId = urlParams.get('ticket_mod');
@@ -499,21 +760,15 @@ ob_end_flush();
             if (localStorage.getItem('imprimirTicketVenta') === 'true') {
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
-                
-                // DECIDIR EL TICKET: PHP le avisa a JS si es un retiro (salida) o una venta (entrada)
                 const esRetiro = <?php echo $esSalida ? 'true' : 'false'; ?>;
                 const archivoTicket = esRetiro ? 'ticket_retiro.php' : 'ticket_venta.php';
                 
-                // Cargamos el archivo correcto
                 iframe.src = `${archivoTicket}?id=${ticketId}`;
-                
-                // Esperamos a que el ticket esté 100% cargado antes de redirigir
                 iframe.onload = function() {
                     setTimeout(() => {
                         window.location.href = 'planilla_caja.php';
                     }, 1000);
                 };
-                
                 document.body.appendChild(iframe);
             } else {
                 window.location.href = 'planilla_caja.php';
@@ -521,5 +776,3 @@ ob_end_flush();
         }
     });
 </script>
-
-
