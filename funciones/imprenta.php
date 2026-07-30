@@ -1350,7 +1350,7 @@ function InsertarMovimiento($vConexion) {
         die('<h4>Error: No se encontró un usuario en la sesión.</h4>');
     }
 
-    // Primero insertamos el movimiento básico
+    // 1. Insertamos el movimiento de dinero en caja
     $SQL_Insert = "INSERT INTO detalle_caja (idCaja, idTipoPago, idTipoMovimiento, idUsuario, monto, observaciones)
                    VALUES ('$idCaja', '$idTipoPago', '$idTipoMovimiento', '$idUsuario', '$monto', " . 
                    ($observaciones !== null ? "'$observaciones'" : "NULL") . ")";
@@ -1359,19 +1359,55 @@ function InsertarMovimiento($vConexion) {
         die('<h4>Error al intentar insertar la venta: ' . mysqli_error($vConexion) . '</h4>');
     }
 
-    // Obtenemos el ID del movimiento recién insertado
     $idDetalleCaja = mysqli_insert_id($vConexion);
 
-    // Si se marcó para facturar, actualizamos con los datos de facturación
+    // 2. Si se marcó para facturar, actualizamos
     if ($facturar && $idTipoFactura && $numeroFactura) {
         $SQL_Update = "UPDATE detalle_caja 
-                      SET facturado = 1,
-                          idTipoFactura = '$idTipoFactura',
-                          numeroFactura = '$numeroFactura'
-                      WHERE idDetalleCaja = $idDetalleCaja";
+                       SET facturado = 1,
+                           idTipoFactura = '$idTipoFactura',
+                           numeroFactura = '$numeroFactura'
+                       WHERE idDetalleCaja = $idDetalleCaja";
         
         if (!mysqli_query($vConexion, $SQL_Update)) {
             die('<h4>Error al asociar factura: ' . mysqli_error($vConexion) . '</h4>');
+        }
+    }
+
+    // 3. PROCESAR INSUMOS / PRODUCTOS (Si se seleccionaron productos)
+    if (!empty($_POST['insumos_json'])) {
+        $insumos = json_decode($_POST['insumos_json'], true);
+
+        if (is_array($insumos)) {
+            foreach ($insumos as $item) {
+                $idProducto = (int)$item['idProducto'];
+                $idVariante = !empty($item['idVariante']) ? (int)$item['idVariante'] : 0;
+                $cantidad = (int)$item['cantidad'];
+                $tituloProducto = mysqli_real_escape_string($vConexion, $item['titulo']);
+
+                if ($idProducto > 0 && $cantidad > 0) {
+                    // A. Descontar stock del producto principal (permite valores <= 0)
+                    $sql_desc_prod = "UPDATE productos SET stock = stock - $cantidad WHERE id = $idProducto";
+                    mysqli_query($vConexion, $sql_desc_prod);
+
+                    // B. Descontar stock de la variante si fue seleccionada
+                    if ($idVariante > 0) {
+                        $sql_desc_var = "UPDATE productos_imagenes SET stock = stock - $cantidad WHERE id = $idVariante";
+                        mysqli_query($vConexion, $sql_desc_var);
+                    }
+
+                    // C. Registrar el movimiento en la tabla movimientos_stock
+                    $idVarianteSQL = ($idVariante > 0) ? "'$idVariante'" : "NULL";
+                    $descMovimiento = mysqli_real_escape_string($vConexion, "Venta en Caja #$idDetalleCaja: $tituloProducto x$cantidad");
+
+                    $sql_mov = "INSERT INTO movimientos_stock 
+                                (idProducto, idVariante, cantidad, tipo_movimiento, descripcion, idUsuario) 
+                                VALUES 
+                                ('$idProducto', $idVarianteSQL, -$cantidad, 'VENTA', '$descMovimiento', '$idUsuario')";
+                    
+                    mysqli_query($vConexion, $sql_mov);
+                }
+            }
         }
     }
 
