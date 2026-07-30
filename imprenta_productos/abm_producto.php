@@ -14,7 +14,7 @@ require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 
 // RUTA ABSOLUTA DEL SERVIDOR CORREGIDA (apuntando a la carpeta img principal de la web)
-$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/img/";
+$ruta_servidor_img = "/home/u922707138/domains/robertsgrafica.com/public_html/roberts/img/";
 
 // Inicializar variables por defecto (Agregamos idActivo = 1 por defecto)
 $producto = [
@@ -369,7 +369,7 @@ require ('../shared/barraLateral.inc.php');
                             </div>
 
                             <?php if(!empty($producto['imagen']) && $producto['imagen'] != 'productos/sin-imagen.jpg'): ?>
-                                <img src="https://robertsgrafica.com/img/<?php echo $producto['imagen']; ?>" height="60" class="mt-2 rounded border bg-white shadow-sm">
+                                <img src="../img/<?php echo $producto['imagen']; ?>" height="60" class="mt-2 rounded border bg-white shadow-sm">
                             <?php endif; ?>
                         </div>
 
@@ -416,7 +416,7 @@ require ('../shared/barraLateral.inc.php');
                                     <input type="hidden" name="id_variante" value="<?php echo $v['id']; ?>">
                                     <input type="hidden" name="id_producto" value="<?php echo $producto['id']; ?>">
                                     
-                                    <img src="https://robertsgrafica.com/img/<?php echo $v['nombre_imagen']; ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;" onerror="this.style.display='none'">
+                                    <img src="../img/<?php echo $v['nombre_imagen']; ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;" onerror="this.style.display='none'">
                                     
                                     <div class="flex-grow-1">
                                         <div class="row g-1 align-items-center">
