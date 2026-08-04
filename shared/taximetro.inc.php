@@ -426,7 +426,7 @@ function renderHistorial() {
     const list = document.getElementById('history-list');
     list.innerHTML = '<div class="p-3 text-center text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Cargando cobros...</div>';
 
-    fetch('taximetro_ajax.php?tax_action=obtener')
+    fetch('/shared/taximetro_ajax.php?tax_action=obtener')
         .then(async response => {
             const text = await response.text();
             if (!text || text.trim() === "") {
@@ -501,7 +501,7 @@ function agregarAlTotal(tipo) {
         }
 
         // GUARDAR REGISTRO EN BASE DE DATOS PARA MÉTRICAS
-        fetch('taximetro_ajax.php?tax_action=guardar', {
+        fetch('/shared/taximetro_ajax.php?tax_action=guardar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
