@@ -20,63 +20,75 @@ if (isset($MiConexion) && $MiConexion) {
 }
 ?>
 
-<!-- ESTILOS REFINADOS -->
+<!-- ESTILOS MINIMALISTAS REFINADOS -->
 <style>
     #widget-taximetro {
         position: fixed;
         bottom: 15px;
-        right: 80px; /* Movido para despejar la flecha de subir */
+        right: 80px;
         width: 370px;
         background-color: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.18);
         z-index: 9999;
         font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
         transition: all 0.3s ease;
         overflow: hidden;
-        border: 1px solid rgba(190, 24, 93, 0.2);
+        border: 1px solid rgba(190, 24, 93, 0.15);
     }
     .tax-header {
-        background: linear-gradient(135deg, #be185d 0%, #9d174d 100%); /* Rosa/Fucsia */
+        background: linear-gradient(135deg, #be185d 0%, #9d174d 100%);
         color: white;
-        padding: 10px 14px;
+        padding: 8px 12px; /* Reducido para hacer la barra ultra delgada */
         cursor: pointer;
         display: flex;
         justify-content: space-between;
         align-items: center;
         font-weight: 600;
         user-select: none;
+        height: 40px; /* Alto fijo ultra minimalista */
     }
-    .tax-header:hover { opacity: 0.95; }
+    .tax-header:hover { opacity: 0.96; }
+    .tax-title-text {
+        font-size: 0.82rem;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+    }
     .tax-badges-container {
         display: flex;
         gap: 4px;
-        max-width: 210px;
+        align-items: center;
+        max-width: 170px;
         overflow-x: auto;
         scrollbar-width: none;
     }
     .tax-badges-container::-webkit-scrollbar { display: none; }
     .tax-badge-item {
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #831843;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 2px 7px;
-        border-radius: 10px;
+        background-color: rgba(255, 255, 255, 0.22);
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 6px;
         white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        backdrop-filter: blur(2px);
+    }
+    .tax-header-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* Forzado horizontal limpio */
     }
     .tax-body {
         padding: 12px;
         display: none;
-        background-color: #fdf2f8; /* Fondo suave rosado */
+        background-color: #fdf2f8;
         max-height: 80vh;
         overflow-y: auto;
     }
     .tax-item {
         background: #ffffff;
         border: 1px solid #fbcfe8;
-        border-radius: 12px;
+        border-radius: 10px;
         padding: 10px 12px;
         margin-bottom: 8px;
         box-shadow: 0 2px 5px rgba(190, 24, 93, 0.04);
@@ -93,43 +105,41 @@ if (isset($MiConexion) && $MiConexion) {
     .status-running { background-color: #10b981; animation: blink 1s infinite; }
     .status-paused { background-color: #f59e0b; }
     
-    /* Panel Oculto Descuento */
     .disc-panel { display: none; margin-top: 5px; padding: 4px 8px; background: #fff5f8; border-radius: 6px; border: 1px dashed #f472b6; }
-    .btn-secret { background: none; border: none; color: #9ca3af; padding: 2px 4px; font-size: 0.85rem; cursor: pointer; }
-    .btn-secret:hover { color: #be185d; }
+    .btn-secret { background: none; border: none; color: rgba(255,255,255,0.8); padding: 0; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; }
+    .btn-secret:hover { color: #ffffff; }
 
     @keyframes blink { 50% { opacity: 0.3; } }
 </style>
 
 <div id="widget-taximetro">
     <div class="tax-header" id="tax-header-toggle">
-        <div class="d-flex align-items-center me-2">
-            <i class="bi bi-stopwatch me-1"></i>
-            <span>Taxímetro</span>
+        <div class="d-flex align-items-center me-1">
+            <i class="bi bi-stopwatch me-1 fs-6"></i>
+            <span class="tax-title-text">Control de Tiempo</span>
         </div>
         
-        <!-- En modo minimizado muestra pills individuales -->
+        <!-- pastillas ultracompactas en modo minimizado -->
         <div id="tax-mini-badges" class="tax-badges-container"></div>
 
-        <div>
-            <button class="btn-secret text-white me-1" onclick="toggleHistorial(event)" title="Ver Historial de Cobros">
-                <i class="bi bi-clock-history fs-6"></i>
+        <div class="tax-header-controls">
+            <button class="btn-secret" onclick="toggleHistorial(event)" title="Ver Historial de Cobros">
+                <i class="bi bi-clock-history"></i>
             </button>
-            <i class="bi bi-chevron-up ms-1" id="tax-icon-toggle"></i>
+            <i class="bi bi-chevron-up" id="tax-icon-toggle"></i>
         </div>
     </div>
     
     <div class="tax-body" id="tax-body">
         
-        <!-- VISTA DE RELEJOS -->
+        <!-- VISTA DE RELOJES -->
         <div id="view-timers">
             <!-- Diseño / Acomodo -->
             <div class="tax-item" id="timer-diseno">
                 <div class="tax-title">
                     <span><span class="status-dot" id="dot-diseno"></span>Diseño / Acomodo</span>
-                    <button class="btn-secret" onclick="toggleSecretDisc('diseno')" title="Opciones"><i class="bi bi-gear"></i></button>
+                    <button class="btn-secret text-muted" onclick="toggleSecretDisc('diseno')" title="Opciones"><i class="bi bi-gear"></i></button>
                 </div>
-                <!-- Menú oculto del 10% -->
                 <div class="disc-panel" id="panel-disc-diseno">
                     <div class="form-check form-check-inline m-0">
                         <input class="form-check-input" type="checkbox" id="disc-diseno" onchange="actualizarVista()" style="cursor:pointer;">
@@ -154,7 +164,7 @@ if (isset($MiConexion) && $MiConexion) {
             <div class="tax-item" id="timer-pc1">
                 <div class="tax-title">
                     <span><span class="status-dot" id="dot-pc1"></span>PC 1</span>
-                    <button class="btn-secret" onclick="toggleSecretDisc('pc1')" title="Opciones"><i class="bi bi-gear"></i></button>
+                    <button class="btn-secret text-muted" onclick="toggleSecretDisc('pc1')" title="Opciones"><i class="bi bi-gear"></i></button>
                 </div>
                 <div class="disc-panel" id="panel-disc-pc1">
                     <div class="form-check form-check-inline m-0">
@@ -180,7 +190,7 @@ if (isset($MiConexion) && $MiConexion) {
             <div class="tax-item" id="timer-pc2">
                 <div class="tax-title">
                     <span><span class="status-dot" id="dot-pc2"></span>PC 2</span>
-                    <button class="btn-secret" onclick="toggleSecretDisc('pc2')" title="Opciones"><i class="bi bi-gear"></i></button>
+                    <button class="btn-secret text-muted" onclick="toggleSecretDisc('pc2')" title="Opciones"><i class="bi bi-gear"></i></button>
                 </div>
                 <div class="disc-panel" id="panel-disc-pc2">
                     <div class="form-check form-check-inline m-0">
@@ -203,7 +213,7 @@ if (isset($MiConexion) && $MiConexion) {
             </div>
         </div>
 
-        <!-- VISTA DE HISTORIAL OCULTO -->
+        <!-- VISTA DE HISTORIAL -->
         <div id="view-history" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <strong class="small text-pink-800"><i class="bi bi-journal-check me-1"></i> Útimos Cobros del Día</strong>
@@ -243,7 +253,7 @@ if(isTaxOpen) {
 }
 
 btnToggle.addEventListener('click', (e) => {
-    if(e.target.closest('.btn-secret')) return; // No cerrar si tocó el historial
+    if(e.target.closest('.btn-secret')) return;
     isTaxOpen = !isTaxOpen;
     bodyTax.style.display = isTaxOpen ? 'block' : 'none';
     iconToggle.className = isTaxOpen ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
@@ -348,11 +358,11 @@ function actualizarVista() {
         if(t.state === 'running') {
             dot.classList.add('status-running');
             
-            // AGREGAR PILL COMPACTA AL HEADER MINIMIZADO
-            let nombreTag = tipo === 'diseno' ? 'Diseño' : tipo.toUpperCase();
+            // Nombres cortos para el header minimalista (DIS, PC1, PC2)
+            let nombreTag = tipo === 'diseno' ? 'DIS' : tipo.toUpperCase();
             let badge = document.createElement('span');
             badge.className = 'tax-badge-item';
-            badge.innerText = `${nombreTag}: ${strTiempo} ($${costo.toFixed(0)})`;
+            badge.innerText = `${nombreTag} ${strTiempo} ($${costo.toFixed(0)})`;
             miniBadgesContainer.appendChild(badge);
 
         } else if(t.state === 'paused') {
@@ -421,7 +431,6 @@ function agregarAlTotal(tipo) {
         alert(`Monto calculado: $${costo.toFixed(2)} (${minTotales} min de ${prefijo}). Copialo o ingresalo a mano.`);
     }
 
-    // REGISTRAR EN HISTORIAL LOCAL DE SEGURIDAD
     const ahoraDate = new Date();
     historialCobros.push({
         tipo: prefijo,
@@ -431,7 +440,6 @@ function agregarAlTotal(tipo) {
     });
     localStorage.setItem('taximetro_historial', JSON.stringify(historialCobros));
 
-    // Desmarcar y resetear
     if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
     document.getElementById(`panel-disc-${tipo}`).style.display = 'none';
 
