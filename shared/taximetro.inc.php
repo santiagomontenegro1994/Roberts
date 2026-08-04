@@ -26,7 +26,7 @@ if (isset($MiConexion) && $MiConexion) {
         position: fixed;
         bottom: 15px;
         right: 80px;
-        width: 370px;
+        width: 360px;
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 8px 25px rgba(0,0,0,0.18);
@@ -39,47 +39,46 @@ if (isset($MiConexion) && $MiConexion) {
     .tax-header {
         background: linear-gradient(135deg, #be185d 0%, #9d174d 100%);
         color: white;
-        padding: 8px 12px; /* Reducido para hacer la barra ultra delgada */
+        padding: 6px 10px;
         cursor: pointer;
         display: flex;
         justify-content: space-between;
         align-items: center;
         font-weight: 600;
         user-select: none;
-        height: 40px; /* Alto fijo ultra minimalista */
+        height: 38px; /* Alto ultradelgado */
     }
     .tax-header:hover { opacity: 0.96; }
     .tax-title-text {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         letter-spacing: -0.2px;
         white-space: nowrap;
     }
     .tax-badges-container {
         display: flex;
-        gap: 4px;
+        gap: 3px;
         align-items: center;
-        max-width: 170px;
-        overflow-x: auto;
-        scrollbar-width: none;
+        justify-content: center;
+        flex-grow: 1;
+        overflow: hidden;
     }
-    .tax-badges-container::-webkit-scrollbar { display: none; }
     .tax-badge-item {
         background-color: rgba(255, 255, 255, 0.22);
         color: #ffffff;
-        font-size: 0.68rem;
+        font-size: 0.63rem;
         font-weight: 600;
-        padding: 2px 6px;
-        border-radius: 6px;
+        padding: 1px 4px;
+        border-radius: 4px;
         white-space: nowrap;
         backdrop-filter: blur(2px);
     }
     .tax-header-controls {
         display: flex;
         align-items: center;
-        gap: 8px; /* Forzado horizontal limpio */
+        gap: 8px;
     }
     .tax-body {
-        padding: 12px;
+        padding: 8px; /* Reduce la altura total */
         display: none;
         background-color: #fdf2f8;
         max-height: 80vh;
@@ -88,25 +87,25 @@ if (isset($MiConexion) && $MiConexion) {
     .tax-item {
         background: #ffffff;
         border: 1px solid #fbcfe8;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin-bottom: 8px;
-        box-shadow: 0 2px 5px rgba(190, 24, 93, 0.04);
+        border-radius: 8px;
+        padding: 6px 10px; /* Tarjeta compacta */
+        margin-bottom: 6px;
+        box-shadow: 0 1px 3px rgba(190, 24, 93, 0.04);
     }
     .tax-item:last-child { margin-bottom: 0; }
-    .tax-title { font-weight: 700; font-size: 0.88rem; color: #374151; display: flex; align-items: center; justify-content: space-between; }
-    .tax-displays { display: flex; justify-content: space-between; align-items: center; margin: 4px 0; }
-    .tax-time { font-family: 'Courier New', Courier, monospace; font-size: 1.25rem; font-weight: 800; color: #1f2937; }
-    .tax-cost { font-size: 1.2rem; font-weight: 800; color: #059669; }
-    .tax-controls button { padding: 4px 10px; font-size: 0.82rem; border-radius: 8px; border: none; }
+    .tax-title { font-weight: 700; font-size: 0.82rem; color: #374151; display: flex; align-items: center; justify-content: space-between; }
+    .tax-displays { display: flex; justify-content: space-between; align-items: center; margin: 2px 0; }
+    .tax-time { font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; font-weight: 800; color: #1f2937; }
+    .tax-cost { font-size: 1.05rem; font-weight: 800; color: #059669; }
+    .tax-controls button { padding: 2px 8px; font-size: 0.78rem; border-radius: 6px; border: none; }
     .btn-pink-start { background-color: #be185d; color: white; }
     .btn-pink-start:hover { background-color: #9d174d; color: white; }
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #d1d5db; margin-right: 6px; }
+    .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #d1d5db; margin-right: 5px; }
     .status-running { background-color: #10b981; animation: blink 1s infinite; }
     .status-paused { background-color: #f59e0b; }
     
-    .disc-panel { display: none; margin-top: 5px; padding: 4px 8px; background: #fff5f8; border-radius: 6px; border: 1px dashed #f472b6; }
-    .btn-secret { background: none; border: none; color: rgba(255,255,255,0.8); padding: 0; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; }
+    .disc-panel { display: none; margin-top: 4px; padding: 2px 6px; background: #fff5f8; border-radius: 6px; border: 1px dashed #f472b6; }
+    .btn-secret { background: none; border: none; color: rgba(255,255,255,0.8); padding: 0; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; }
     .btn-secret:hover { color: #ffffff; }
 
     @keyframes blink { 50% { opacity: 0.3; } }
@@ -358,11 +357,11 @@ function actualizarVista() {
         if(t.state === 'running') {
             dot.classList.add('status-running');
             
-            // Nombres cortos para el header minimalista (DIS, PC1, PC2)
-            let nombreTag = tipo === 'diseno' ? 'DIS' : tipo.toUpperCase();
+            // LÍNEAS CORTAS (D para Diseño, PC1 y PC2 cortos):
+            let nombreTag = tipo === 'diseno' ? 'D' : tipo.toUpperCase();
             let badge = document.createElement('span');
             badge.className = 'tax-badge-item';
-            badge.innerText = `${nombreTag} ${strTiempo} ($${costo.toFixed(0)})`;
+            badge.innerText = `${nombreTag}:${strTiempo}($${costo.toFixed(0)})`;
             miniBadgesContainer.appendChild(badge);
 
         } else if(t.state === 'paused') {
