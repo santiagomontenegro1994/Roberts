@@ -141,5 +141,6 @@ $MiConexion->close();
     </nav><!-- End Icons Navigation -->
 
 </header><!-- End Header -->
+<?php require_once 'taximetro.inc.php'; ?>
 </body>
 </html>
