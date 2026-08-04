@@ -474,11 +474,13 @@ function renderHistorial() {
     fetch('?tax_action=obtener')
         .then(async response => {
             const text = await response.text();
+            if (!text || text.trim() === "") {
+                throw new Error(`HTTP ${response.status} ${response.statusText} - El servidor devolvió una respuesta VACÍA (0 bytes).`);
+            }
             try {
                 return JSON.parse(text);
             } catch (e) {
-                // Si PHP devuelve un error o HTML en vez de JSON, lo muestra en pantalla
-                throw new Error("El servidor no devolvió un JSON válido. Respuesta: " + text);
+                throw new Error(`HTTP ${response.status} - La respuesta no es un JSON válido: "${text}"`);
             }
         })
         .then(res => {
@@ -506,7 +508,7 @@ function renderHistorial() {
             });
         })
         .catch(err => {
-            list.innerHTML = `<div class="p-3 text-center text-danger small" style="word-break: break-all; max-height: 150px; overflow-y: auto;">${err.message}</div>`;
+            list.innerHTML = `<div class="p-3 text-center text-danger small" style="word-break: break-all; max-height: 150px; overflow-y: auto;"><strong>Detalle del fallo:</strong> ${err.message}</div>`;
         });
 }
 
