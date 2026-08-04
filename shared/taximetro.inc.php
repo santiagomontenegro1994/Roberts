@@ -65,11 +65,15 @@ if (isset($MiConexion) && $MiConexion) {
     .tax-badge-item {
         background-color: rgba(255, 255, 255, 0.22);
         color: #ffffff;
-        font-size: 0.63rem;
+        font-size: 0.58rem;
         font-weight: 600;
-        padding: 1px 4px;
-        border-radius: 4px;
+        padding: 2px 5px;
+        border-radius: 5px;
         white-space: nowrap;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.1;
         backdrop-filter: blur(2px);
     }
     .tax-header-controls {
@@ -361,7 +365,7 @@ function actualizarVista() {
             let nombreTag = tipo === 'diseno' ? 'D' : tipo.toUpperCase();
             let badge = document.createElement('span');
             badge.className = 'tax-badge-item';
-            badge.innerText = `${nombreTag}:${strTiempo}($${costo.toFixed(0)})`;
+            badge.innerHTML = `<span>${nombreTag} ${strTiempo}</span><span style="opacity: 0.9;">$${costo.toFixed(0)}</span>`;
             miniBadgesContainer.appendChild(badge);
 
         } else if(t.state === 'paused') {
