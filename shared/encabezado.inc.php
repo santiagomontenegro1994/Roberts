@@ -9,7 +9,6 @@ $cajaSeleccionada = null;
 if (!empty($_SESSION['Id_Caja'])) {
     $cajaSeleccionada = Obtener_Info_Caja($MiConexion, $_SESSION['Id_Caja']);
 }
-$MiConexion->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,6 +140,8 @@ $MiConexion->close();
     </nav><!-- End Icons Navigation -->
 
 </header><!-- End Header -->
-<?php require_once 'taximetro.inc.php'; ?>
+<?php require_once 'taximetro.inc.php'; 
+$MiConexion->close();
+?>
 </body>
 </html>
