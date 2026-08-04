@@ -472,10 +472,22 @@ function renderHistorial() {
     list.innerHTML = '<div class="p-3 text-center text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Cargando cobros...</div>';
 
     fetch('?tax_action=obtener')
-        .then(response => response.json())
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                // Si PHP devuelve un error o HTML en vez de JSON, lo muestra en pantalla
+                throw new Error("El servidor no devolvió un JSON válido. Respuesta: " + text);
+            }
+        })
         .then(res => {
             list.innerHTML = '';
-            if (!res.success || !res.data || res.data.length === 0) {
+            if (!res.success) {
+                list.innerHTML = `<div class="p-3 text-center text-danger small">Error del servidor: ${res.error || 'Desconocido'}</div>`;
+                return;
+            }
+            if (!res.data || res.data.length === 0) {
                 list.innerHTML = '<div class="p-3 text-center text-muted">No hay cobros registrados hoy.</div>';
                 return;
             }
@@ -493,8 +505,8 @@ function renderHistorial() {
                 list.appendChild(item);
             });
         })
-        .catch(() => {
-            list.innerHTML = '<div class="p-3 text-center text-danger small">Error al cargar historial.</div>';
+        .catch(err => {
+            list.innerHTML = `<div class="p-3 text-center text-danger small" style="word-break: break-all; max-height: 150px; overflow-y: auto;">${err.message}</div>`;
         });
 }
 
