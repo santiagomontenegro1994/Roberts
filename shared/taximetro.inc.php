@@ -1,11 +1,58 @@
 <?php
-// Valores por defecto
+// Obtener ID del usuario activo en sesión
+$id_usuario_actual = $_SESSION['Usuario_Id'] ?? 0;
+
+// VALIDADOR AJAX (Procesa guardado y lectura de la BD sin recargar página)
+if (isset($_REQUEST['tax_action']) && isset($MiConexion) && $MiConexion) {
+    header('Content-Type: application/json');
+    
+    // Accion: Guardar nuevo cobro en MySQL
+    if ($_REQUEST['tax_action'] === 'guardar') {
+        $tipo = mysqli_real_escape_string($MiConexion, $_POST['tipo'] ?? '');
+        $minutos = (int)($_POST['minutos'] ?? 0);
+        $costo = (float)($_POST['costo'] ?? 0);
+        $descuento = (int)($_POST['descuento'] ?? 0);
+        
+        if (!empty($tipo) && $costo > 0 && $id_usuario_actual > 0) {
+            $sqlInsert = "INSERT INTO historial_taximetro (id_usuario, tipo_servicio, minutos_totales, monto_cobrado, con_descuento, fecha_hora) 
+                          VALUES ($id_usuario_actual, '$tipo', $minutos, $costo, $descuento, NOW())";
+            $status = @mysqli_query($MiConexion, $sqlInsert);
+            echo json_encode(['success' => (bool)$status]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Datos inválidos o sesión no iniciada']);
+        }
+        exit;
+    }
+
+    // Accion: Consultar cobros del día para el usuario logueado
+    if ($_REQUEST['tax_action'] === 'obtener') {
+        $sqlObtener = "SELECT tipo_servicio, minutos_totales, monto_cobrado, DATE_FORMAT(fecha_hora, '%H:%i') AS hora 
+                       FROM historial_taximetro 
+                       WHERE id_usuario = $id_usuario_actual AND DATE(fecha_hora) = CURDATE() 
+                       ORDER BY id_cobro DESC LIMIT 10";
+        $resHist = @mysqli_query($MiConexion, $sqlObtener);
+        $cobros = [];
+        if ($resHist) {
+            while ($row = mysqli_fetch_assoc($resHist)) {
+                $cobros[] = [
+                    'tipo' => $row['tipo_servicio'],
+                    'minutos' => $row['minutos_totales'],
+                    'costo' => $row['monto_cobrado'],
+                    'hora' => $row['hora']
+                ];
+            }
+        }
+        echo json_encode(['success' => true, 'data' => $cobros]);
+        exit;
+    }
+}
+
+// Valores por defecto para la configuracion de precios
 $precio_diseno = 0;
 $precio_cyber  = 0;
 $gracia_diseno = 0;
 $gracia_cyber  = 0;
 
-// Consulta dinámica a la tabla config_taximetro
 if (isset($MiConexion) && $MiConexion) {
     $queryTax = "SELECT * FROM config_taximetro WHERE id_config = 1";
     $resTax = @mysqli_query($MiConexion, $queryTax);
@@ -405,29 +452,42 @@ function actualizarVista() {
             dot.classList.add('status-paused');
         }
     });
+    if (miniBadgesContainer.children.length === 0) {
+        miniBadgesContainer.style.display = 'none';
+    } else {
+        miniBadgesContainer.style.display = 'flex';
+    }
 }
 
 function renderHistorial() {
     const list = document.getElementById('history-list');
-    list.innerHTML = '';
-    
-    if (historialCobros.length === 0) {
-        list.innerHTML = '<div class="p-3 text-center text-muted">No hay cobros guardados.</div>';
-        return;
-    }
+    list.innerHTML = '<div class="p-3 text-center text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Cargando cobros...</div>';
 
-    historialCobros.slice(-8).reverse().forEach(h => {
-        let item = document.createElement('div');
-        item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-2';
-        item.innerHTML = `
-            <div>
-                <strong class="d-block text-dark">${h.tipo} - ${h.minutos} min</strong>
-                <small class="text-muted">${h.hora}</small>
-            </div>
-            <span class="fw-bold text-success fs-6">$${h.costo}</span>
-        `;
-        list.appendChild(item);
-    });
+    fetch('?tax_action=obtener')
+        .then(response => response.json())
+        .then(res => {
+            list.innerHTML = '';
+            if (!res.success || !res.data || res.data.length === 0) {
+                list.innerHTML = '<div class="p-3 text-center text-muted">No hay cobros registrados hoy.</div>';
+                return;
+            }
+
+            res.data.forEach(h => {
+                let item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-2';
+                item.innerHTML = `
+                    <div>
+                        <strong class="d-block text-dark">${h.tipo} - ${h.minutos} min</strong>
+                        <small class="text-muted">${h.hora} hs</small>
+                    </div>
+                    <span class="fw-bold text-success fs-6">$${parseFloat(h.costo).toFixed(2)}</span>
+                `;
+                list.appendChild(item);
+            });
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="p-3 text-center text-danger small">Error al cargar historial.</div>';
+        });
 }
 
 function agregarAlTotal(tipo) {
@@ -445,7 +505,8 @@ function agregarAlTotal(tipo) {
     let inputObservaciones = document.getElementById('observaciones');
 
     let prefijo = tipo === 'diseno' ? 'Diseño' : 'Uso de ' + tipo.toUpperCase();
-    let hasDesc = document.getElementById(`disc-${tipo}`)?.checked ? ' (con 10% desc)' : '';
+    let esDescuento = document.getElementById(`disc-${tipo}`)?.checked ? 1 : 0;
+    let hasDesc = esDescuento ? ' (con 10% desc)' : '';
 
     if (inputValorVis || inputMontoReal) {
         let montoActual = parseFloat(inputMontoReal ? inputMontoReal.value : 0) || 0;
@@ -462,17 +523,19 @@ function agregarAlTotal(tipo) {
             inputObservaciones.value = inputObservaciones.value ? inputObservaciones.value + textoExtra : textoExtra.trim();
         }
 
-        alert(`¡Éxito! Se sumaron $${costo.toFixed(2)} al valor actual.`);
-
-        // REGISTRAR Y RESETEAR SOLO SI SE INGRESÓ EN LA VENTA
-        const ahoraDate = new Date();
-        historialCobros.push({
-            tipo: prefijo,
-            minutos: minTotales,
-            costo: costo.toFixed(2),
-            hora: ahoraDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        // GUARDAR REGISTRO EN BASE DE DATOS PARA MÉTRICAS
+        fetch('?tax_action=guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                'tipo': prefijo,
+                'minutos': minTotales,
+                'costo': costo.toFixed(2),
+                'descuento': esDescuento
+            })
         });
-        localStorage.setItem('taximetro_historial', JSON.stringify(historialCobros));
+
+        alert(`¡Éxito! Se sumaron $${costo.toFixed(2)} al valor actual.`);
 
         if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
         document.getElementById(`panel-disc-${tipo}`).style.display = 'none';
@@ -483,7 +546,6 @@ function agregarAlTotal(tipo) {
         guardarTimers();
         actualizarVista();
     } else {
-        // Fuera de la pantalla de venta: solo avisa y mantiene el reloj contando/congelado sin borrar nada
         alert(`Monto calculado: $${costo.toFixed(2)} (${minTotales} min de ${prefijo}). Dirigite a la pantalla de Agregar Venta para sumarlo.`);
     }
 }
