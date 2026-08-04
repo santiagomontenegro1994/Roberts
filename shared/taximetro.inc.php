@@ -1,159 +1,219 @@
 <?php
+// Valores por defecto
 $precio_diseno = 0;
-$precio_cyber = 0;
+$precio_cyber  = 0;
 $gracia_diseno = 0;
-$gracia_cyber = 0;
+$gracia_cyber  = 0;
 
+// Consulta dinámica a la tabla config_taximetro
 if (isset($MiConexion) && $MiConexion) {
     $queryTax = "SELECT * FROM config_taximetro WHERE id_config = 1";
     $resTax = @mysqli_query($MiConexion, $queryTax);
     
     if ($resTax && mysqli_num_rows($resTax) > 0) {
         $configTax = mysqli_fetch_assoc($resTax);
-        $precio_diseno = $configTax['precio_min_diseno'] ?? 0;
-        $precio_cyber = $configTax['precio_min_cyber'] ?? 0;
-        $gracia_diseno = $configTax['gracia_diseno'] ?? 0;
-        $gracia_cyber = $configTax['gracia_cyber'] ?? 0;
+        $precio_diseno = (float)($configTax['precio_min_diseno'] ?? 0);
+        $precio_cyber  = (float)($configTax['precio_min_cyber'] ?? 0);
+        $gracia_diseno = (int)($configTax['gracia_diseno'] ?? 0);
+        $gracia_cyber  = (int)($configTax['gracia_cyber'] ?? 0);
     }
 }
 ?>
 
-<!-- ESTILOS Y DISEÑO MEJORADO -->
+<!-- ESTILOS REFINADOS -->
 <style>
     #widget-taximetro {
         position: fixed;
-        bottom: 20px;
-        right: 35px; /* Movido 15px a la izquierda */
-        width: 360px;
-        background-color: #fff;
-        border-radius: 10px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        bottom: 15px;
+        right: 80px; /* Movido para despejar la flecha de subir */
+        width: 370px;
+        background-color: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         z-index: 9999;
-        font-family: 'Open Sans', sans-serif;
+        font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
         transition: all 0.3s ease;
         overflow: hidden;
-        border: 1px solid #0d6efd;
+        border: 1px solid rgba(190, 24, 93, 0.2);
     }
     .tax-header {
-        background-color: #0d6efd; /* Mismo color que botón iniciar */
+        background: linear-gradient(135deg, #be185d 0%, #9d174d 100%); /* Rosa/Fucsia */
         color: white;
-        padding: 10px 15px;
+        padding: 10px 14px;
         cursor: pointer;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-weight: bold;
+        font-weight: 600;
         user-select: none;
     }
-    .tax-header:hover { background-color: #0b5ed7; }
-    .tax-header-info {
-        font-size: 0.8rem;
-        background: rgba(255,255,255,0.2);
-        padding: 2px 8px;
-        border-radius: 12px;
-        max-width: 220px;
+    .tax-header:hover { opacity: 0.95; }
+    .tax-badges-container {
+        display: flex;
+        gap: 4px;
+        max-width: 210px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .tax-badges-container::-webkit-scrollbar { display: none; }
+    .tax-badge-item {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #831843;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .tax-body {
-        padding: 15px;
+        padding: 12px;
         display: none;
-        background-color: #f8f9fa;
+        background-color: #fdf2f8; /* Fondo suave rosado */
+        max-height: 80vh;
+        overflow-y: auto;
     }
     .tax-item {
         background: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
+        border: 1px solid #fbcfe8;
+        border-radius: 12px;
         padding: 10px 12px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        margin-bottom: 8px;
+        box-shadow: 0 2px 5px rgba(190, 24, 93, 0.04);
     }
     .tax-item:last-child { margin-bottom: 0; }
-    .tax-title { font-weight: bold; font-size: 0.9rem; color: #333; display: flex; align-items: center; justify-content: space-between; }
-    .tax-displays { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; }
-    .tax-time { font-family: 'Courier New', Courier, monospace; font-size: 1.25rem; font-weight: bold; color: #212529; }
-    .tax-cost { font-size: 1.15rem; font-weight: bold; color: #198754; }
-    .tax-controls button { padding: 3px 9px; font-size: 0.82rem; margin-right: 2px; }
-    .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #adb5bd; margin-right: 6px; }
-    .status-running { background-color: #198754; animation: blink 1s infinite; }
-    .status-paused { background-color: #ffc107; }
+    .tax-title { font-weight: 700; font-size: 0.88rem; color: #374151; display: flex; align-items: center; justify-content: space-between; }
+    .tax-displays { display: flex; justify-content: space-between; align-items: center; margin: 4px 0; }
+    .tax-time { font-family: 'Courier New', Courier, monospace; font-size: 1.25rem; font-weight: 800; color: #1f2937; }
+    .tax-cost { font-size: 1.2rem; font-weight: 800; color: #059669; }
+    .tax-controls button { padding: 4px 10px; font-size: 0.82rem; border-radius: 8px; border: none; }
+    .btn-pink-start { background-color: #be185d; color: white; }
+    .btn-pink-start:hover { background-color: #9d174d; color: white; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #d1d5db; margin-right: 6px; }
+    .status-running { background-color: #10b981; animation: blink 1s infinite; }
+    .status-paused { background-color: #f59e0b; }
     
-    @keyframes blink { 50% { opacity: 0.4; } }
+    /* Panel Oculto Descuento */
+    .disc-panel { display: none; margin-top: 5px; padding: 4px 8px; background: #fff5f8; border-radius: 6px; border: 1px dashed #f472b6; }
+    .btn-secret { background: none; border: none; color: #9ca3af; padding: 2px 4px; font-size: 0.85rem; cursor: pointer; }
+    .btn-secret:hover { color: #be185d; }
+
+    @keyframes blink { 50% { opacity: 0.3; } }
 </style>
 
 <div id="widget-taximetro">
     <div class="tax-header" id="tax-header-toggle">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-stopwatch me-1"></i> Taxímetro
-            <span id="tax-mini-summary" class="tax-header-info ms-2" style="display: none;"></span>
+        <div class="d-flex align-items-center me-2">
+            <i class="bi bi-stopwatch me-1"></i>
+            <span>Taxímetro</span>
         </div>
-        <i class="bi bi-chevron-up" id="tax-icon-toggle"></i>
+        
+        <!-- En modo minimizado muestra pills individuales -->
+        <div id="tax-mini-badges" class="tax-badges-container"></div>
+
+        <div>
+            <button class="btn-secret text-white me-1" onclick="toggleHistorial(event)" title="Ver Historial de Cobros">
+                <i class="bi bi-clock-history fs-6"></i>
+            </button>
+            <i class="bi bi-chevron-up ms-1" id="tax-icon-toggle"></i>
+        </div>
     </div>
     
     <div class="tax-body" id="tax-body">
-        <!-- Diseño / Acomodo -->
-        <div class="tax-item" id="timer-diseno">
-            <div class="tax-title">
-                <span><span class="status-dot" id="dot-diseno"></span>Diseño / Acomodo</span>
-                <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="disc-diseno" onchange="actualizarVista()" style="cursor:pointer;">
-                    <label class="form-check-label small text-muted" for="disc-diseno" style="cursor:pointer; font-size: 0.75rem;">10% desc.</label>
+        
+        <!-- VISTA DE RELEJOS -->
+        <div id="view-timers">
+            <!-- Diseño / Acomodo -->
+            <div class="tax-item" id="timer-diseno">
+                <div class="tax-title">
+                    <span><span class="status-dot" id="dot-diseno"></span>Diseño / Acomodo</span>
+                    <button class="btn-secret" onclick="toggleSecretDisc('diseno')" title="Opciones"><i class="bi bi-gear"></i></button>
+                </div>
+                <!-- Menú oculto del 10% -->
+                <div class="disc-panel" id="panel-disc-diseno">
+                    <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input" type="checkbox" id="disc-diseno" onchange="actualizarVista()" style="cursor:pointer;">
+                        <label class="form-check-label small fw-bold text-danger" for="disc-diseno" style="cursor:pointer; font-size: 0.75rem;">Aplicar 10% Descuento</label>
+                    </div>
+                </div>
+                <div class="tax-displays">
+                    <span class="tax-time" id="time-diseno">00:00</span>
+                    <span class="tax-cost" id="cost-diseno">$0.00</span>
+                </div>
+                <div class="tax-controls d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-pink-start" onclick="manejarTimer('diseno', 'start')" title="Iniciar"><i class="bi bi-play-fill"></i></button>
+                        <button class="btn btn-warning text-white" onclick="manejarTimer('diseno', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
+                        <button class="btn btn-danger" onclick="manejarTimer('diseno', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
+                    </div>
+                    <button class="btn btn-success fw-bold" onclick="agregarAlTotal('diseno')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
                 </div>
             </div>
-            <div class="tax-displays">
-                <span class="tax-time" id="time-diseno">00:00:00</span>
-                <span class="tax-cost" id="cost-diseno">$0.00</span>
+
+            <!-- PC 1 -->
+            <div class="tax-item" id="timer-pc1">
+                <div class="tax-title">
+                    <span><span class="status-dot" id="dot-pc1"></span>PC 1</span>
+                    <button class="btn-secret" onclick="toggleSecretDisc('pc1')" title="Opciones"><i class="bi bi-gear"></i></button>
+                </div>
+                <div class="disc-panel" id="panel-disc-pc1">
+                    <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input" type="checkbox" id="disc-pc1" onchange="actualizarVista()" style="cursor:pointer;">
+                        <label class="form-check-label small fw-bold text-danger" for="disc-pc1" style="cursor:pointer; font-size: 0.75rem;">Aplicar 10% Descuento</label>
+                    </div>
+                </div>
+                <div class="tax-displays">
+                    <span class="tax-time" id="time-pc1">00:00</span>
+                    <span class="tax-cost" id="cost-pc1">$0.00</span>
+                </div>
+                <div class="tax-controls d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-pink-start" onclick="manejarTimer('pc1', 'start')" title="Iniciar"><i class="bi bi-play-fill"></i></button>
+                        <button class="btn btn-warning text-white" onclick="manejarTimer('pc1', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
+                        <button class="btn btn-danger" onclick="manejarTimer('pc1', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
+                    </div>
+                    <button class="btn btn-success fw-bold" onclick="agregarAlTotal('pc1')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
+                </div>
             </div>
-            <div class="tax-controls">
-                <button class="btn btn-primary" onclick="manejarTimer('diseno', 'start')" title="Iniciar/Continuar"><i class="bi bi-play-fill"></i></button>
-                <button class="btn btn-warning text-white" onclick="manejarTimer('diseno', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
-                <button class="btn btn-danger" onclick="manejarTimer('diseno', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
-                <button class="btn btn-success float-end fw-bold" onclick="agregarAlTotal('diseno')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
+
+            <!-- PC 2 -->
+            <div class="tax-item" id="timer-pc2">
+                <div class="tax-title">
+                    <span><span class="status-dot" id="dot-pc2"></span>PC 2</span>
+                    <button class="btn-secret" onclick="toggleSecretDisc('pc2')" title="Opciones"><i class="bi bi-gear"></i></button>
+                </div>
+                <div class="disc-panel" id="panel-disc-pc2">
+                    <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input" type="checkbox" id="disc-pc2" onchange="actualizarVista()" style="cursor:pointer;">
+                        <label class="form-check-label small fw-bold text-danger" for="disc-pc2" style="cursor:pointer; font-size: 0.75rem;">Aplicar 10% Descuento</label>
+                    </div>
+                </div>
+                <div class="tax-displays">
+                    <span class="tax-time" id="time-pc2">00:00</span>
+                    <span class="tax-cost" id="cost-pc2">$0.00</span>
+                </div>
+                <div class="tax-controls d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-pink-start" onclick="manejarTimer('pc2', 'start')" title="Iniciar"><i class="bi bi-play-fill"></i></button>
+                        <button class="btn btn-warning text-white" onclick="manejarTimer('pc2', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
+                        <button class="btn btn-danger" onclick="manejarTimer('pc2', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
+                    </div>
+                    <button class="btn btn-success fw-bold" onclick="agregarAlTotal('pc2')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
+                </div>
             </div>
         </div>
 
-        <!-- PC 1 -->
-        <div class="tax-item" id="timer-pc1">
-            <div class="tax-title">
-                <span><span class="status-dot" id="dot-pc1"></span>PC 1</span>
-                <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="disc-pc1" onchange="actualizarVista()" style="cursor:pointer;">
-                    <label class="form-check-label small text-muted" for="disc-pc1" style="cursor:pointer; font-size: 0.75rem;">10% desc.</label>
-                </div>
+        <!-- VISTA DE HISTORIAL OCULTO -->
+        <div id="view-history" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong class="small text-pink-800"><i class="bi bi-journal-check me-1"></i> Útimos Cobros del Día</strong>
+                <button class="btn btn-sm btn-outline-secondary py-0" onclick="toggleHistorial(event)">Volver</button>
             </div>
-            <div class="tax-displays">
-                <span class="tax-time" id="time-pc1">00:00:00</span>
-                <span class="tax-cost" id="cost-pc1">$0.00</span>
-            </div>
-            <div class="tax-controls">
-                <button class="btn btn-primary" onclick="manejarTimer('pc1', 'start')" title="Iniciar/Continuar"><i class="bi bi-play-fill"></i></button>
-                <button class="btn btn-warning text-white" onclick="manejarTimer('pc1', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
-                <button class="btn btn-danger" onclick="manejarTimer('pc1', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
-                <button class="btn btn-success float-end fw-bold" onclick="agregarAlTotal('pc1')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
+            <div id="history-list" class="list-group list-group-flush small rounded bg-white border">
+                <div class="p-3 text-center text-muted">No hay cobros registrados hoy.</div>
             </div>
         </div>
 
-        <!-- PC 2 -->
-        <div class="tax-item" id="timer-pc2">
-            <div class="tax-title">
-                <span><span class="status-dot" id="dot-pc2"></span>PC 2</span>
-                <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="disc-pc2" onchange="actualizarVista()" style="cursor:pointer;">
-                    <label class="form-check-label small text-muted" for="disc-pc2" style="cursor:pointer; font-size: 0.75rem;">10% desc.</label>
-                </div>
-            </div>
-            <div class="tax-displays">
-                <span class="tax-time" id="time-pc2">00:00:00</span>
-                <span class="tax-cost" id="cost-pc2">$0.00</span>
-            </div>
-            <div class="tax-controls">
-                <button class="btn btn-primary" onclick="manejarTimer('pc2', 'start')" title="Iniciar/Continuar"><i class="bi bi-play-fill"></i></button>
-                <button class="btn btn-warning text-white" onclick="manejarTimer('pc2', 'pause')" title="Pausar"><i class="bi bi-pause-fill"></i></button>
-                <button class="btn btn-danger" onclick="manejarTimer('pc2', 'stop')" title="Reiniciar"><i class="bi bi-stop-fill"></i></button>
-                <button class="btn btn-success float-end fw-bold" onclick="agregarAlTotal('pc2')"><i class="bi bi-plus-circle me-1"></i>Agregar</button>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -170,7 +230,8 @@ let timers = JSON.parse(localStorage.getItem('taximetro_timers')) || {
     pc2: { state: 'stopped', start: 0, elapsed: 0 }
 };
 
-// Control Maximizado / Minimizado
+let historialCobros = JSON.parse(localStorage.getItem('taximetro_historial')) || [];
+
 const btnToggle = document.getElementById('tax-header-toggle');
 const bodyTax = document.getElementById('tax-body');
 const iconToggle = document.getElementById('tax-icon-toggle');
@@ -181,12 +242,37 @@ if(isTaxOpen) {
     iconToggle.className = 'bi bi-chevron-down';
 }
 
-btnToggle.addEventListener('click', () => {
+btnToggle.addEventListener('click', (e) => {
+    if(e.target.closest('.btn-secret')) return; // No cerrar si tocó el historial
     isTaxOpen = !isTaxOpen;
     bodyTax.style.display = isTaxOpen ? 'block' : 'none';
     iconToggle.className = isTaxOpen ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
     localStorage.setItem('taximetro_open', isTaxOpen);
 });
+
+function toggleSecretDisc(tipo) {
+    const p = document.getElementById(`panel-disc-${tipo}`);
+    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+}
+
+function toggleHistorial(e) {
+    if(e) e.stopPropagation();
+    const vTimers = document.getElementById('view-timers');
+    const vHist = document.getElementById('view-history');
+    
+    if (vHist.style.display === 'none') {
+        renderHistorial();
+        vTimers.style.display = 'none';
+        vHist.style.display = 'block';
+        if(!isTaxOpen) {
+            bodyTax.style.display = 'block';
+            isTaxOpen = true;
+        }
+    } else {
+        vTimers.style.display = 'block';
+        vHist.style.display = 'none';
+    }
+}
 
 function guardarTimers() {
     localStorage.setItem('taximetro_timers', JSON.stringify(timers));
@@ -217,11 +303,9 @@ function calcularCostoYMinutos(tipo, tiempoTotalMs) {
     const conf = TAX_CONFIG[tipo];
     let minTotales = Math.floor(tiempoTotalMs / 60000);
     
-    // SÓLO SE COBRAN LOS MINUTOS EXCEDENTES
     let minExcedentes = Math.max(0, minTotales - conf.graciaMin);
     let costo = minExcedentes * conf.precioMin;
 
-    // Aplicar 10% de descuento si está tildado el checkbox
     const discCheckbox = document.getElementById(`disc-${tipo}`);
     if (discCheckbox && discCheckbox.checked && costo > 0) {
         costo = costo * 0.90;
@@ -232,7 +316,8 @@ function calcularCostoYMinutos(tipo, tiempoTotalMs) {
 
 function actualizarVista() {
     const ahora = Date.now();
-    let resumenActivos = [];
+    const miniBadgesContainer = document.getElementById('tax-mini-badges');
+    miniBadgesContainer.innerHTML = '';
 
     Object.keys(timers).forEach(tipo => {
         const t = timers[tipo];
@@ -254,34 +339,51 @@ function actualizarVista() {
         let strTiempo = horas > 0 ? `${strHoras}:${strMin}:${strSeg}` : `${strMin}:${strSeg}`;
         document.getElementById(`time-${tipo}`).innerText = strTiempo;
 
-        // Obtener costo procesado
         const { costo } = calcularCostoYMinutos(tipo, tiempoTotalMs);
         document.getElementById(`cost-${tipo}`).innerText = `$${costo.toFixed(2)}`;
 
-        // Actualizar estados visuales
         const dot = document.getElementById(`dot-${tipo}`);
         dot.className = 'status-dot';
+        
         if(t.state === 'running') {
             dot.classList.add('status-running');
+            
+            // AGREGAR PILL COMPACTA AL HEADER MINIMIZADO
             let nombreTag = tipo === 'diseno' ? 'Diseño' : tipo.toUpperCase();
-            resumenActivos.push(`${nombreTag}: ${strTiempo} ($${costo.toFixed(0)})`);
+            let badge = document.createElement('span');
+            badge.className = 'tax-badge-item';
+            badge.innerText = `${nombreTag}: ${strTiempo} ($${costo.toFixed(0)})`;
+            miniBadgesContainer.appendChild(badge);
+
         } else if(t.state === 'paused') {
             dot.classList.add('status-paused');
         }
     });
-
-    // Actualizar resumen en la barra azul minimizada
-    const elSummary = document.getElementById('tax-mini-summary');
-    if (resumenActivos.length > 0) {
-        elSummary.innerText = resumenActivos.join(' | ');
-        elSummary.style.display = 'inline-block';
-    } else {
-        elSummary.style.display = 'none';
-        elSummary.innerText = '';
-    }
 }
 
-// Inyección inteligente compatible con tu agregar_venta.php
+function renderHistorial() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = '';
+    
+    if (historialCobros.length === 0) {
+        list.innerHTML = '<div class="p-3 text-center text-muted">No hay cobros guardados.</div>';
+        return;
+    }
+
+    historialCobros.slice(-8).reverse().forEach(h => {
+        let item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-2';
+        item.innerHTML = `
+            <div>
+                <strong class="d-block text-dark">${h.tipo} - ${h.minutos} min</strong>
+                <small class="text-muted">${h.hora}</small>
+            </div>
+            <span class="fw-bold text-success fs-6">$${h.costo}</span>
+        `;
+        list.appendChild(item);
+    });
+}
+
 function agregarAlTotal(tipo) {
     const t = timers[tipo];
     let tiempoTotalMs = t.state === 'running' ? Date.now() - t.start : t.elapsed;
@@ -292,48 +394,52 @@ function agregarAlTotal(tipo) {
         return;
     }
 
-    // Identificamos tus campos específicos de agregar_venta.php
     let inputValorVis = document.getElementById('valorDinero');
     let inputMontoReal = document.getElementById('MontoReal');
     let inputObservaciones = document.getElementById('observaciones');
 
+    let prefijo = tipo === 'diseno' ? 'Diseño' : 'Uso de ' + tipo.toUpperCase();
+    let hasDesc = document.getElementById(`disc-${tipo}`)?.checked ? ' (con 10% desc)' : '';
+
     if (inputValorVis || inputMontoReal) {
-        // Obtenemos el monto numérico real actual
         let montoActual = parseFloat(inputMontoReal ? inputMontoReal.value : 0) || 0;
         let nuevoMonto = montoActual + costo;
 
-        // Inyectamos en ambos campos
         if (inputMontoReal) inputMontoReal.value = nuevoMonto.toFixed(2);
         if (inputValorVis) {
             inputValorVis.value = '$' + nuevoMonto.toFixed(2).replace('.', ',');
-            // Si la función formatMoney existe en la pantalla, la ejecutamos para dar formato
-            if (typeof formatMoney === 'function') {
-                formatMoney(inputValorVis);
-            }
+            if (typeof formatMoney === 'function') formatMoney(inputValorVis);
         }
 
-        // Anotamos en las observaciones
         if (inputObservaciones) {
-            let prefijo = tipo === 'diseno' ? 'Diseño' : 'Uso de ' + tipo.toUpperCase();
-            let hasDesc = document.getElementById(`disc-${tipo}`)?.checked ? ' (con 10% desc)' : '';
             let textoExtra = ` + ${minTotales} min de ${prefijo}${hasDesc}`;
             inputObservaciones.value = inputObservaciones.value ? inputObservaciones.value + textoExtra : textoExtra.trim();
         }
 
         alert(`¡Éxito! Se sumaron $${costo.toFixed(2)} al valor actual.`);
-
-        // Desmarcamos el descuento y reiniciamos el contador cobrado
-        if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
-
-        t.elapsed = 0;
-        t.start = 0;
-        t.state = 'stopped';
-        guardarTimers();
-        actualizarVista();
     } else {
-        // Si no está en agregar_venta.php, avisa el monto calculado
-        alert(`El valor a cobrar es $${costo.toFixed(2)} (${minTotales} min), pero no te encontrás en la pantalla de Agregar Venta.`);
+        alert(`Monto calculado: $${costo.toFixed(2)} (${minTotales} min de ${prefijo}). Copialo o ingresalo a mano.`);
     }
+
+    // REGISTRAR EN HISTORIAL LOCAL DE SEGURIDAD
+    const ahoraDate = new Date();
+    historialCobros.push({
+        tipo: prefijo,
+        minutos: minTotales,
+        costo: costo.toFixed(2),
+        hora: ahoraDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+    localStorage.setItem('taximetro_historial', JSON.stringify(historialCobros));
+
+    // Desmarcar y resetear
+    if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
+    document.getElementById(`panel-disc-${tipo}`).style.display = 'none';
+
+    t.elapsed = 0;
+    t.start = 0;
+    t.state = 'stopped';
+    guardarTimers();
+    actualizarVista();
 }
 
 setInterval(actualizarVista, 1000);
