@@ -1,60 +1,4 @@
 <?php
-// Obtener ID del usuario activo en sesión
-$id_usuario_actual = $_SESSION['Usuario_Id'] ?? 0;
-
-// VALIDADOR AJAX (Procesa guardado y lectura de la BD sin recargar página)
-if (isset($_REQUEST['tax_action'])) {
-    if (ob_get_length()) {
-        @ob_clean();
-    }
-    header('Content-Type: application/json; charset=utf-8');
-
-    if (!isset($MiConexion) || !$MiConexion) {
-        echo json_encode(['success' => false, 'error' => 'No hay conexión a la base de datos']);
-        exit;
-    }
-    
-    // Accion: Guardar nuevo cobro en MySQL
-    if ($_REQUEST['tax_action'] === 'guardar') {
-        $tipo = mysqli_real_escape_string($MiConexion, $_POST['tipo'] ?? '');
-        $minutos = (int)($_POST['minutos'] ?? 0);
-        $costo = (float)($_POST['costo'] ?? 0);
-        $descuento = (int)($_POST['descuento'] ?? 0);
-        
-        if (!empty($tipo) && $costo > 0 && $id_usuario_actual > 0) {
-            $sqlInsert = "INSERT INTO historial_taximetro (id_usuario, tipo_servicio, minutos_totales, monto_cobrado, con_descuento, fecha_hora) 
-                          VALUES ($id_usuario_actual, '$tipo', $minutos, $costo, $descuento, NOW())";
-            $status = @mysqli_query($MiConexion, $sqlInsert);
-            echo json_encode(['success' => (bool)$status]);
-        } else {
-            echo json_encode(['success' => false, 'error' => 'Datos inválidos o sesión no iniciada']);
-        }
-        exit;
-    }
-
-    // Accion: Consultar cobros del día para el usuario logueado
-    if ($_REQUEST['tax_action'] === 'obtener') {
-        $sqlObtener = "SELECT tipo_servicio, minutos_totales, monto_cobrado, DATE_FORMAT(fecha_hora, '%H:%i') AS hora 
-                       FROM historial_taximetro 
-                       WHERE id_usuario = $id_usuario_actual AND DATE(fecha_hora) = CURDATE() 
-                       ORDER BY id_cobro DESC LIMIT 10";
-        $resHist = @mysqli_query($MiConexion, $sqlObtener);
-        $cobros = [];
-        if ($resHist) {
-            while ($row = mysqli_fetch_assoc($resHist)) {
-                $cobros[] = [
-                    'tipo' => $row['tipo_servicio'],
-                    'minutos' => $row['minutos_totales'],
-                    'costo' => $row['monto_cobrado'],
-                    'hora' => $row['hora']
-                ];
-            }
-        }
-        echo json_encode(['success' => true, 'data' => $cobros]);
-        exit;
-    }
-}
-
 // Valores por defecto para la configuracion de precios
 $precio_diseno = 0;
 $precio_cyber  = 0;
@@ -168,8 +112,19 @@ if (isset($MiConexion) && $MiConexion) {
     .tax-time { font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; font-weight: 800; color: #1f2937; }
     .tax-cost { font-size: 1.05rem; font-weight: 800; color: #059669; }
     .tax-controls button { padding: 2px 8px; font-size: 0.78rem; border-radius: 6px; border: none; }
-    .btn-pink-start { background-color: #be185d; color: white; }
-    .btn-pink-start:hover { background-color: #9d174d; color: white; }
+    .btn-pink-start { 
+        background-color: #be185d !important; 
+        border-color: #be185d !important; 
+        color: white !important; 
+    }
+    .btn-pink-start:hover, 
+    .btn-pink-start:focus, 
+    .btn-pink-start:active { 
+        background-color: #9d174d !important; 
+        border-color: #9d174d !important; 
+        color: white !important; 
+        box-shadow: none !important;
+    }
     .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #d1d5db; margin-right: 5px; }
     .status-running { background-color: #10b981; animation: blink 1s infinite; }
     .status-paused { background-color: #f59e0b; }
@@ -471,7 +426,7 @@ function renderHistorial() {
     const list = document.getElementById('history-list');
     list.innerHTML = '<div class="p-3 text-center text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Cargando cobros...</div>';
 
-    fetch('?tax_action=obtener')
+    fetch('taximetro_ajax.php?tax_action=obtener')
         .then(async response => {
             const text = await response.text();
             if (!text || text.trim() === "") {
@@ -546,7 +501,7 @@ function agregarAlTotal(tipo) {
         }
 
         // GUARDAR REGISTRO EN BASE DE DATOS PARA MÉTRICAS
-        fetch('?tax_action=guardar', {
+        fetch('taximetro_ajax.php?tax_action=guardar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
