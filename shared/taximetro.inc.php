@@ -3,8 +3,16 @@
 $id_usuario_actual = $_SESSION['Usuario_Id'] ?? 0;
 
 // VALIDADOR AJAX (Procesa guardado y lectura de la BD sin recargar página)
-if (isset($_REQUEST['tax_action']) && isset($MiConexion) && $MiConexion) {
-    header('Content-Type: application/json');
+if (isset($_REQUEST['tax_action'])) {
+    if (ob_get_length()) {
+        @ob_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8');
+
+    if (!isset($MiConexion) || !$MiConexion) {
+        echo json_encode(['success' => false, 'error' => 'No hay conexión a la base de datos']);
+        exit;
+    }
     
     // Accion: Guardar nuevo cobro en MySQL
     if ($_REQUEST['tax_action'] === 'guardar') {
