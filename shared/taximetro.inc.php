@@ -20,90 +20,76 @@ if (isset($MiConexion) && $MiConexion) {
 }
 ?>
 
-<!-- ESTILOS MINIMALISTAS (CÁPSULA -> EXPANDIBLE) -->
+    <!-- ESTILOS MINIMALISTAS (CÁPSULA -> EXPANDIBLE) -->
 <style>
     #widget-taximetro {
         position: fixed;
         bottom: 15px;
-        right: 80px;
-        width: 110px; /* Ancho ultra compacto en estado minimizado */
+        right: 70px;
+        width: auto; /* Se ajusta automáticamente al contenido */
+        max-width: 340px;
         background-color: #ffffff;
-        border-radius: 18px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        border-radius: 20px; /* Forma de cápsula/botón */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.18);
         z-index: 9999;
         font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
         border: 1px solid rgba(190, 24, 93, 0.2);
     }
     
-    /* Al abrirse, la tarjeta se expande automáticamente */
+    /* Al abrirse expande el ancho normal */
     #widget-taximetro.is-open {
         width: 360px;
+        max-width: 360px;
         border-radius: 12px;
     }
 
     .tax-header {
         background: linear-gradient(135deg, #be185d 0%, #9d174d 100%);
         color: white;
-        padding: 8px 6px;
+        padding: 4px 10px;
         cursor: pointer;
         display: flex;
-        flex-direction: column; /* Apilado vertical para la cápsula minimizada */
+        flex-direction: row; /* Horizontal: ya no choca hacia arriba */
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         user-select: none;
+        height: 36px; /* Altura ultra delgada fija */
     }
     .tax-header:hover { opacity: 0.96; }
-    
-    /* Al desplegarse, la cabecera vuelve a ser horizontal */
-    #widget-taximetro.is-open .tax-header {
-        flex-direction: row;
-        height: 38px;
-        padding: 6px 10px;
-        justify-content: space-between;
-    }
 
     .tax-title-text {
-        font-size: 0.72rem;
+        font-size: 0.75rem;
         font-weight: 700;
-        letter-spacing: -0.2px;
+        white-space: nowrap;
     }
 
     .tax-badges-container {
         display: flex;
-        flex-direction: column; /* Filas verticales dentro de la pastilla */
-        gap: 3px;
-        width: 100%;
+        flex-direction: row;
+        gap: 4px;
         align-items: center;
     }
     
-    /* Esconde los mini-badges cuando la tarjeta ya está abierta */
     #widget-taximetro.is-open .tax-badges-container {
-        display: none;
+        display: none !important;
     }
 
     .tax-badge-item {
-        background-color: rgba(255, 255, 255, 0.18);
+        background-color: rgba(255, 255, 255, 0.22);
         color: #ffffff;
-        font-size: 0.6rem;
+        font-size: 0.62rem;
         font-weight: 600;
-        padding: 2px 4px;
-        border-radius: 5px;
+        padding: 2px 6px;
+        border-radius: 10px;
         white-space: nowrap;
-        width: 100%;
-        text-align: center;
-        backdrop-filter: blur(2px);
     }
 
     .tax-header-controls {
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-top: 2px;
-    }
-    #widget-taximetro.is-open .tax-header-controls {
-        margin-top: 0;
     }
 
     .tax-body {
