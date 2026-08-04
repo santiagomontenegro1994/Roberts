@@ -124,6 +124,16 @@ if (isset($MiConexion) && $MiConexion) {
     .btn-secret:hover { color: #ffffff; }
 
     @keyframes blink { 50% { opacity: 0.3; } }
+
+    /* Oculta el botón de historial mientras esté minimizado */
+    #widget-taximetro:not(.is-open) .tax-header-controls .btn-secret {
+        display: none !important;
+    }
+
+    /* Oculta la palabra "Tiempo" cuando está minimizado */
+    #widget-taximetro:not(.is-open) .tax-title-text {
+        display: none !important;
+    }
 </style>
 
 <div id="widget-taximetro">
