@@ -116,7 +116,7 @@ if (isset($MiConexion) && $MiConexion) {
     <div class="tax-header" id="tax-header-toggle">
         <div class="d-flex align-items-center me-1">
             <i class="bi bi-stopwatch me-1 fs-6"></i>
-            <span class="tax-title-text">Control de Tiempo</span>
+            <span class="tax-title-text">Tiempo</span>
         </div>
         
         <!-- pastillas ultracompactas en modo minimizado -->
@@ -427,27 +427,29 @@ function agregarAlTotal(tipo) {
         }
 
         alert(`¡Éxito! Se sumaron $${costo.toFixed(2)} al valor actual.`);
+
+        // REGISTRAR Y RESETEAR SOLO SI SE INGRESÓ EN LA VENTA
+        const ahoraDate = new Date();
+        historialCobros.push({
+            tipo: prefijo,
+            minutos: minTotales,
+            costo: costo.toFixed(2),
+            hora: ahoraDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        localStorage.setItem('taximetro_historial', JSON.stringify(historialCobros));
+
+        if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
+        document.getElementById(`panel-disc-${tipo}`).style.display = 'none';
+
+        t.elapsed = 0;
+        t.start = 0;
+        t.state = 'stopped';
+        guardarTimers();
+        actualizarVista();
     } else {
-        alert(`Monto calculado: $${costo.toFixed(2)} (${minTotales} min de ${prefijo}). Copialo o ingresalo a mano.`);
+        // Fuera de la pantalla de venta: solo avisa y mantiene el reloj contando/congelado sin borrar nada
+        alert(`Monto calculado: $${costo.toFixed(2)} (${minTotales} min de ${prefijo}). Dirigite a la pantalla de Agregar Venta para sumarlo.`);
     }
-
-    const ahoraDate = new Date();
-    historialCobros.push({
-        tipo: prefijo,
-        minutos: minTotales,
-        costo: costo.toFixed(2),
-        hora: ahoraDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    localStorage.setItem('taximetro_historial', JSON.stringify(historialCobros));
-
-    if (document.getElementById(`disc-${tipo}`)) document.getElementById(`disc-${tipo}`).checked = false;
-    document.getElementById(`panel-disc-${tipo}`).style.display = 'none';
-
-    t.elapsed = 0;
-    t.start = 0;
-    t.state = 'stopped';
-    guardarTimers();
-    actualizarVista();
 }
 
 setInterval(actualizarVista, 1000);
