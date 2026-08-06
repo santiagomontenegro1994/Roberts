@@ -333,37 +333,34 @@ function cambiarFavicon(url) {
 }
 
 // ==========================================
-// GENERADOR DE SONIDO DE ALERTA (Sin archivos externos)
+// GENERADOR DE SONIDO DE ALERTA (Más fuerte y repetitivo)
 // ==========================================
 function reproducirSonidoAlerta() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         const ctx = new AudioContext();
-
-        // Primer tono (Beep)
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(800, ctx.currentTime);
-        gain1.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start(ctx.currentTime);
-        osc1.stop(ctx.currentTime + 0.15);
-
-        // Segundo tono un poco más agudo (Bop)
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1200, ctx.currentTime + 0.2);
-        gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.2);
-        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(ctx.currentTime + 0.2);
-        osc2.stop(ctx.currentTime + 0.35);
+        
+        // Hacemos que suene 3 veces seguidas
+        for (let i = 0; i < 3; i++) {
+            const startTime = ctx.currentTime + (i * 0.35); // Intervalo de 0.35 segundos entre beeps
+            
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'square'; // Onda cuadrada: suena más penetrante, tipo "alarma"
+            osc.frequency.setValueAtTime(880, startTime); // Tono agudo claro
+            
+            // Subir volumen rápido y bajarlo rápido
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05); // Volumen 0.3 (más fuerte)
+            gain.gain.linearRampToValueAtTime(0, startTime + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.3);
+        }
     } catch (e) {
         console.log("Audio no soportado o bloqueado:", e);
     }
