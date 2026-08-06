@@ -410,11 +410,13 @@ function actualizarVista() {
         // ➕ AGREGAR ESTE BLOQUE EXACTO ACÁ:
         if (tipo === 'diseno' && t.state === 'running') {
             const isSilent = document.getElementById('silent-diseno')?.checked;
+            console.log("Taxímetro corriendo. Minutos actuales:", minutos, "Modo silencioso:", isSilent, "Última alerta:", t.lastAlertMinute); // 👈 NUEVO
+
             if (!isSilent) {
-                // Primer aviso a los 10 minutos
                 if (minutos >= 1 && t.lastAlertMinute === 0) {
+                    console.log("¡Se cumplió la condición del minuto! Intentando disparar notificación..."); // 👈 NUEVO
                     t.lastAlertMinute = 1;
-                    dispararNotificacionWindows("⚠️ ¡Límite de Diseño Excedido!", "El diseño lleva 10 minutos en mostrador. ¡Atención!");
+                    dispararNotificacionWindows("⚠️ ¡Prueba de Alerta!", "El diseño lleva 1 minuto.");
                     guardarTimers();
                 } 
                 // Repetición cada 5 minutos posteriores (15, 20, 25, etc.)
@@ -518,9 +520,12 @@ function dispararNotificacionWindows(titulo, mensaje) {
         try {
             new Notification(titulo, {
                 body: mensaje,
-                icon: "../assets/img/favicono.png",
-                requireInteraction: true // Mantiene la notificación visible en Windows
+                // icon: "../assets/img/favicono.png", // 👈 COMENTADO TEMPORALMENTE
+                requireInteraction: true 
             });
+            console.log("Notificación enviada con éxito por JavaScript."); // 👈 NUEVO
+        } else {
+            console.log("No se pudo enviar: Permiso no concedido o Notification no disponible.");
         } catch (err) {
             console.error("Error al disparar notificación:", err);
         }
