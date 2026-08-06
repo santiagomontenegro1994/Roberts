@@ -520,15 +520,14 @@ function dispararNotificacionWindows(titulo, mensaje) {
         try {
             new Notification(titulo, {
                 body: mensaje,
-                // icon: "../assets/img/favicono.png", // 👈 COMENTADO TEMPORALMENTE
                 requireInteraction: true 
             });
-            console.log("Notificación enviada con éxito por JavaScript."); // 👈 NUEVO
-        } else {
-            console.log("No se pudo enviar: Permiso no concedido o Notification no disponible.");
+            console.log("✅ Notificación enviada con éxito por JavaScript.");
         } catch (err) {
-            console.error("Error al disparar notificación:", err);
+            console.error("❌ Error al disparar notificación:", err);
         }
+    } else {
+        console.log("⚠️ No se pudo enviar: El permiso de notificaciones es:", Notification.permission);
     }
 }
 
