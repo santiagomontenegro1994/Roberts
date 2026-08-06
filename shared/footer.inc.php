@@ -31,7 +31,7 @@
 
   <!-- Template Main JS File 2023-->
    
-  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/main.js?v=4"></script>
   <script src="../assets/js/pedidos_imprenta.js?v=3"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
