@@ -179,6 +179,11 @@ if (isset($MiConexion) && $MiConexion) {
                         <input class="form-check-input" type="checkbox" id="disc-diseno" onchange="actualizarVista()" style="cursor:pointer;">
                         <label class="form-check-label small fw-bold text-danger" for="disc-diseno" style="cursor:pointer; font-size: 0.75rem;">Aplicar 10% Descuento</label>
                     </div>
+                    <!-- ➕ AGREGAR ESTO ACÁ ABAJO: -->
+                    <div class="form-check form-check-inline m-0 mt-1">
+                        <input class="form-check-input" type="checkbox" id="silent-diseno" onchange="guardarPreferenciaSilencio()" style="cursor:pointer;">
+                        <label class="form-check-label small fw-bold text-secondary" for="silent-diseno" style="cursor:pointer; font-size: 0.75rem;">Modo sin atención (Silenciar alertas)</label>
+                    </div>
                 </div>
                 <div class="tax-displays">
                     <span class="tax-time" id="time-diseno">00:00</span>
@@ -269,10 +274,25 @@ const TAX_CONFIG = {
 };
 
 let timers = JSON.parse(localStorage.getItem('taximetro_timers')) || {
-    diseno: { state: 'stopped', start: 0, elapsed: 0 },
+    diseno: { state: 'stopped', start: 0, elapsed: 0, lastAlertMinute: 0 }, // ➕ Agregado lastAlertMinute
     pc1: { state: 'stopped', start: 0, elapsed: 0 },
     pc2: { state: 'stopped', start: 0, elapsed: 0 }
 };
+
+// ➕ AGREGAR ESTO ABAJO DE TIMERS (Pide permiso nativo al cargar)
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Pedir permisos nativos de Windows
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+
+    // 2. Cargar la preferencia guardada del modo silencioso
+    const savedSilent = localStorage.getItem('silent_diseno') === 'true';
+    const checkboxSilent = document.getElementById('silent-diseno');
+    if (checkboxSilent) {
+        checkboxSilent.checked = savedSilent;
+    }
+});
 
 let historialCobros = JSON.parse(localStorage.getItem('taximetro_historial')) || [];
 
@@ -349,6 +369,7 @@ function manejarTimer(tipo, accion) {
         t.elapsed = 0;
         t.start = 0;
         t.state = 'stopped';
+        if(tipo === 'diseno') t.lastAlertMinute = 0;
     }
     
     guardarTimers();
@@ -388,6 +409,25 @@ function actualizarVista() {
         let minutos = Math.floor((segTotales % 3600) / 60);
         let segundos = segTotales % 60;
         
+        // ➕ AGREGAR ESTE BLOQUE EXACTO ACÁ:
+        if (tipo === 'diseno' && t.state === 'running') {
+            const isSilent = document.getElementById('silent-diseno')?.checked;
+            if (!isSilent) {
+                // Primer aviso a los 10 minutos
+                if (minutos >= 10 && t.lastAlertMinute === 0) {
+                    t.lastAlertMinute = 10;
+                    dispararNotificacionWindows("⚠️ ¡Límite de Diseño Excedido!", "El diseño lleva 10 minutos en mostrador. ¡Atención!");
+                    guardarTimers();
+                } 
+                // Repetición cada 5 minutos posteriores (15, 20, 25, etc.)
+                else if (minutos >= 15 && minutos % 5 === 0 && t.lastAlertMinute !== minutos) {
+                    t.lastAlertMinute = minutos;
+                    dispararNotificacionWindows("⏰ Recordatorio de Diseño", `El diseño ya acumuló ${minutos} minutos de atención.`);
+                    guardarTimers();
+                }
+            }
+        }
+        
         let strHoras = horas.toString().padStart(2, '0');
         let strMin = minutos.toString().padStart(2, '0');
         let strSeg = segundos.toString().padStart(2, '0');
@@ -413,6 +453,7 @@ function actualizarVista() {
 
         } else if(t.state === 'paused') {
             dot.classList.add('status-paused');
+            if (tipo === 'diseno') t.lastAlertMinute = 0;
         }
     });
     if (miniBadgesContainer.children.length === 0) {
@@ -420,6 +461,13 @@ function actualizarVista() {
     } else {
         miniBadgesContainer.style.display = 'flex';
     }
+}
+
+// Función para guardar el estado del modo silencioso en la memoria del navegador
+function guardarPreferenciaSilencio() {
+    const silent = document.getElementById('silent-diseno').checked;
+    localStorage.setItem('silent_diseno', silent);
+    actualizarVista();
 }
 
 function renderHistorial() {
@@ -465,6 +513,20 @@ function renderHistorial() {
         .catch(err => {
             list.innerHTML = `<div class="p-3 text-center text-danger small" style="word-break: break-all; max-height: 150px; overflow-y: auto;"><strong>Detalle del fallo:</strong> ${err.message}</div>`;
         });
+}
+
+function dispararNotificacionWindows(titulo, mensaje) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        try {
+            new Notification(titulo, {
+                body: mensaje,
+                icon: "../assets/img/favicono.png",
+                requireInteraction: true // Mantiene la notificación visible en Windows
+            });
+        } catch (err) {
+            console.error("Error al disparar notificación:", err);
+        }
+    }
 }
 
 function agregarAlTotal(tipo) {
@@ -520,6 +582,7 @@ function agregarAlTotal(tipo) {
         t.elapsed = 0;
         t.start = 0;
         t.state = 'stopped';
+        if (tipo === 'diseno') t.lastAlertMinute = 0;
         guardarTimers();
         actualizarVista();
     } else {
