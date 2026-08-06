@@ -332,6 +332,43 @@ function cambiarFavicon(url) {
     }
 }
 
+// ==========================================
+// GENERADOR DE SONIDO DE ALERTA (Sin archivos externos)
+// ==========================================
+function reproducirSonidoAlerta() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        // Primer tono (Beep)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(800, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.15);
+
+        // Segundo tono un poco más agudo (Bop)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1200, ctx.currentTime + 0.2);
+        gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.2);
+        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(ctx.currentTime + 0.2);
+        osc2.stop(ctx.currentTime + 0.35);
+    } catch (e) {
+        console.log("Audio no soportado o bloqueado:", e);
+    }
+}
+
 // Función para apagar las alertas visuales cuando atiendes el pedido o reinicias
 function detenerParpadeo() {
     if (intervalFavicon) {
@@ -421,14 +458,19 @@ function manejarTimer(tipo, accion) {
     const t = timers[tipo];
 
     if (accion === 'start' && t.state !== 'running') {
-        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
         t.start = ahora - t.elapsed;
         t.state = 'running';
     } else if (accion === 'pause' && t.state === 'running') {
         t.elapsed = ahora - t.start;
         t.state = 'paused';
+        if (tipo === 'diseno') {
+            detenerParpadeo(); // Apaga el parpadeo de la pestaña y el favicon al pausar
+            const itemCard = document.getElementById('timer-diseno');
+            if (itemCard) { 
+                itemCard.style.backgroundColor = '#ffffff'; 
+                itemCard.style.border = '1px solid #fbcfe8'; 
+            }
+        }
     } else if (accion === 'stop') {
         if(!confirm(`¿Desea reiniciar el contador de ${tipo.toUpperCase()}?`)) return;
         t.elapsed = 0;
@@ -489,9 +531,13 @@ function actualizarVista() {
                 if (minutos >= 1 && t.lastAlertMinute === 0) {
                     t.lastAlertMinute = 1;
                     
-                    // Activar titileo de pestaña, favicon y alerta visual en pantalla
+                    // 1. Reproduce el sonido de alerta por los parlantes 🔊
+                    reproducirSonidoAlerta();
+
+                    // 2. Activa el parpadeo de pestaña y favicon
                     iniciarParpadeoFavicon("¡Límite de Diseño Excedido!");
 
+                    // 3. Pinta el widget de diseño en pantalla de color rojo
                     const itemCard = document.getElementById('timer-diseno');
                     if (itemCard) {
                         itemCard.style.backgroundColor = '#ffe4e6';
@@ -502,6 +548,7 @@ function actualizarVista() {
                 } 
                 else if (minutos >= 15 && minutos % 5 === 0 && t.lastAlertMinute !== minutos) {
                     t.lastAlertMinute = minutos;
+                    reproducirSonidoAlerta(); // Sonido también para los recordatorios posteriores
                     iniciarParpadeoFavicon("Recordatorio de Diseño");
                     guardarTimers();
                 }
@@ -593,22 +640,6 @@ function renderHistorial() {
         });
 }
 
-function dispararNotificacionWindows(titulo, mensaje) {
-    if ("Notification" in window && Notification.permission === "granted") {
-        try {
-            new Notification(titulo, {
-                body: mensaje,
-                requireInteraction: true 
-            });
-            console.log("✅ Notificación enviada con éxito por JavaScript.");
-        } catch (err) {
-            console.error("❌ Error al disparar notificación:", err);
-        }
-    } else {
-        console.log("⚠️ No se pudo enviar: El permiso de notificaciones es:", Notification.permission);
-    }
-}
-
 function agregarAlTotal(tipo) {
     const t = timers[tipo];
     let tiempoTotalMs = t.state === 'running' ? Date.now() - t.start : t.elapsed;
@@ -663,7 +694,7 @@ function agregarAlTotal(tipo) {
         t.state = 'stopped';
         if (tipo === 'diseno') {
             t.lastAlertMinute = 0;
-            detenerParpadeo(); // 👈 Apaga las alertas visuales al cobrar
+            detenerParpadeo(); // Apaga las alertas visuales al cobrar
             const itemCard = document.getElementById('timer-diseno');
             if (itemCard) { 
                 itemCard.style.backgroundColor = '#ffffff'; 
