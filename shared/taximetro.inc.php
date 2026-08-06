@@ -279,14 +279,8 @@ let timers = JSON.parse(localStorage.getItem('taximetro_timers')) || {
     pc2: { state: 'stopped', start: 0, elapsed: 0 }
 };
 
-// ➕ AGREGAR ESTO ABAJO DE TIMERS (Pide permiso nativo al cargar)
+// Cargar la preferencia guardada del modo silencioso al iniciar la página
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Pedir permisos nativos de Windows
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
-    }
-
-    // 2. Cargar la preferencia guardada del modo silencioso
     const savedSilent = localStorage.getItem('silent_diseno') === 'true';
     const checkboxSilent = document.getElementById('silent-diseno');
     if (checkboxSilent) {
@@ -359,6 +353,10 @@ function manejarTimer(tipo, accion) {
     const t = timers[tipo];
 
     if (accion === 'start' && t.state !== 'running') {
+        // ➕ AQUÍ PEDIMOS EL PERMISO CON UN CLIC DEL USUARIO (OBLIGATORIO PARA CHROME)
+        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
         t.start = ahora - t.elapsed;
         t.state = 'running';
     } else if (accion === 'pause' && t.state === 'running') {
