@@ -274,10 +274,78 @@ const TAX_CONFIG = {
 };
 
 let timers = JSON.parse(localStorage.getItem('taximetro_timers')) || {
-    diseno: { state: 'stopped', start: 0, elapsed: 0, lastAlertMinute: 0 }, // ➕ Agregado lastAlertMinute
+    diseno: { state: 'stopped', start: 0, elapsed: 0, lastAlertMinute: 0 },
     pc1: { state: 'stopped', start: 0, elapsed: 0 },
     pc2: { state: 'stopped', start: 0, elapsed: 0 }
 };
+
+// ==========================================
+// CONTROL DE ALERTAS VISUALES (Pestaña e Icono)
+// ==========================================
+let intervalFavicon = null;
+let intervalTitulo = null;
+let faviconOriginal = "../assets/img/favicono.png"; // Ruta de tu favicon actual
+
+function iniciarParpadeoFavicon(tituloAlerta) {
+    if (intervalFavicon) return; // Evita duplicar intervalos
+
+    let state = false;
+    intervalFavicon = setInterval(() => {
+        state = !state;
+        if (state) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#e11d48'; // Color rojo alerta
+            ctx.beginPath();
+            ctx.arc(8, 8, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('!', 8, 8);
+            cambiarFavicon(canvas.toDataURL('image/png'));
+        } else {
+            cambiarFavicon(faviconOriginal);
+        }
+    }, 800);
+
+    // Hacer parpadear también el texto de la pestaña del navegador
+    if (!intervalTitulo) {
+        let toggle = false;
+        intervalTitulo = setInterval(() => {
+            document.title = toggle ? "⚠️ ¡ATENCIÓN DISEÑO!" : "⏱️ ¡TIEMPO EXCEDIDO!";
+            toggle = !toggle;
+        }, 1000);
+    }
+}
+
+function cambiarFavicon(url) {
+    let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/x-icon';
+    link.rel = 'shortcut icon';
+    link.href = url;
+    if (!document.querySelector("link[rel*='icon']")) {
+        document.head.appendChild(link);
+    }
+}
+
+// Función para apagar las alertas visuales cuando atiendes el pedido o reinicias
+function detenerParpadeo() {
+    if (intervalFavicon) {
+        clearInterval(intervalFavicon);
+        intervalFavicon = null;
+    }
+    cambiarFavicon(faviconOriginal);
+    
+    if (intervalTitulo) {
+        clearInterval(intervalTitulo);
+        intervalTitulo = null;
+    }
+    document.title = "Sistema de Gestión - Gráfica Roberts"; // Título habitual de tu sistema
+}
 
 // Cargar la preferencia guardada del modo silencioso al iniciar la página
 document.addEventListener("DOMContentLoaded", () => {
@@ -334,7 +402,7 @@ function toggleHistorial(e) {
         if(!isTaxOpen) {
             bodyTax.style.display = 'block';
             widgetEl.classList.add('is-open');
-            iconToggle.className = 'bi bi-chevron-down'; // Giro visual de la flechita
+            iconToggle.className = 'bi bi-chevron-down';
             isTaxOpen = true;
             localStorage.setItem('taximetro_open', true);
         }
@@ -353,7 +421,6 @@ function manejarTimer(tipo, accion) {
     const t = timers[tipo];
 
     if (accion === 'start' && t.state !== 'running') {
-        // ➕ AQUÍ PEDIMOS EL PERMISO CON UN CLIC DEL USUARIO (OBLIGATORIO PARA CHROME)
         if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
@@ -367,7 +434,15 @@ function manejarTimer(tipo, accion) {
         t.elapsed = 0;
         t.start = 0;
         t.state = 'stopped';
-        if(tipo === 'diseno') t.lastAlertMinute = 0;
+        if(tipo === 'diseno') {
+            t.lastAlertMinute = 0;
+            detenerParpadeo(); // Apaga las alertas visuales si se reinicia manual
+            const itemCard = document.getElementById('timer-diseno');
+            if (itemCard) { 
+                itemCard.style.backgroundColor = '#ffffff'; 
+                itemCard.style.border = '1px solid #fbcfe8'; 
+            }
+        }
     }
     
     guardarTimers();
@@ -407,22 +482,27 @@ function actualizarVista() {
         let minutos = Math.floor((segTotales % 3600) / 60);
         let segundos = segTotales % 60;
         
-        // ➕ AGREGAR ESTE BLOQUE EXACTO ACÁ:
         if (tipo === 'diseno' && t.state === 'running') {
             const isSilent = document.getElementById('silent-diseno')?.checked;
-            console.log("Taxímetro corriendo. Minutos actuales:", minutos, "Modo silencioso:", isSilent, "Última alerta:", t.lastAlertMinute); // 👈 NUEVO
 
             if (!isSilent) {
                 if (minutos >= 1 && t.lastAlertMinute === 0) {
-                    console.log("¡Se cumplió la condición del minuto! Intentando disparar notificación..."); // 👈 NUEVO
                     t.lastAlertMinute = 1;
-                    dispararNotificacionWindows("⚠️ ¡Prueba de Alerta!", "El diseño lleva 1 minuto.");
+                    
+                    // Activar titileo de pestaña, favicon y alerta visual en pantalla
+                    iniciarParpadeoFavicon("¡Límite de Diseño Excedido!");
+
+                    const itemCard = document.getElementById('timer-diseno');
+                    if (itemCard) {
+                        itemCard.style.backgroundColor = '#ffe4e6';
+                        itemCard.style.border = '2px solid #e11d48';
+                    }
+
                     guardarTimers();
                 } 
-                // Repetición cada 5 minutos posteriores (15, 20, 25, etc.)
                 else if (minutos >= 15 && minutos % 5 === 0 && t.lastAlertMinute !== minutos) {
                     t.lastAlertMinute = minutos;
-                    dispararNotificacionWindows("⏰ Recordatorio de Diseño", `El diseño ya acumuló ${minutos} minutos de atención.`);
+                    iniciarParpadeoFavicon("Recordatorio de Diseño");
                     guardarTimers();
                 }
             }
@@ -444,7 +524,6 @@ function actualizarVista() {
         if(t.state === 'running') {
             dot.classList.add('status-running');
             
-            // LÍNEAS CORTAS (D para Diseño, PC1 y PC2 cortos):
             let iconoTag = tipo === 'diseno' ? '🎨' : (tipo === 'pc1' ? '💻1' : '💻2');
             let badge = document.createElement('span');
             badge.className = 'tax-badge-item';
@@ -463,7 +542,6 @@ function actualizarVista() {
     }
 }
 
-// Función para guardar el estado del modo silencioso en la memoria del navegador
 function guardarPreferenciaSilencio() {
     const silent = document.getElementById('silent-diseno').checked;
     localStorage.setItem('silent_diseno', silent);
@@ -564,7 +642,6 @@ function agregarAlTotal(tipo) {
             inputObservaciones.value = inputObservaciones.value ? inputObservaciones.value + textoExtra : textoExtra.trim();
         }
 
-        // GUARDAR REGISTRO EN BASE DE DATOS PARA MÉTRICAS
         fetch('/shared/taximetro_ajax.php?tax_action=guardar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -584,7 +661,15 @@ function agregarAlTotal(tipo) {
         t.elapsed = 0;
         t.start = 0;
         t.state = 'stopped';
-        if (tipo === 'diseno') t.lastAlertMinute = 0;
+        if (tipo === 'diseno') {
+            t.lastAlertMinute = 0;
+            detenerParpadeo(); // 👈 Apaga las alertas visuales al cobrar
+            const itemCard = document.getElementById('timer-diseno');
+            if (itemCard) { 
+                itemCard.style.backgroundColor = '#ffffff'; 
+                itemCard.style.border = '1px solid #fbcfe8'; 
+            }
+        }
         guardarTimers();
         actualizarVista();
     } else {
