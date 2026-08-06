@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 // Valores por defecto para la configuracion de precios
 $precio_diseno = 0;
 $precio_cyber  = 0;
