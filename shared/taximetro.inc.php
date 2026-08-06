@@ -414,8 +414,8 @@ function actualizarVista() {
             const isSilent = document.getElementById('silent-diseno')?.checked;
             if (!isSilent) {
                 // Primer aviso a los 10 minutos
-                if (minutos >= 10 && t.lastAlertMinute === 0) {
-                    t.lastAlertMinute = 10;
+                if (minutos >= 1 && t.lastAlertMinute === 0) {
+                    t.lastAlertMinute = 1;
                     dispararNotificacionWindows("⚠️ ¡Límite de Diseño Excedido!", "El diseño lleva 10 minutos en mostrador. ¡Atención!");
                     guardarTimers();
                 } 
