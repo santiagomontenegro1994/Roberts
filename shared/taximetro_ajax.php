@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 session_start();
 require_once(__DIR__ . '/../funciones/conexion.php'); // Verificá que esta ruta apunte bien a tu archivo de conexión
 
