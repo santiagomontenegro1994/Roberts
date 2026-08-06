@@ -31,10 +31,13 @@ if ($accion === 'guardar') {
     $descuento = (int)($_POST['descuento'] ?? 0);
     
     if (!empty($tipo) && $costo > 0 && $id_usuario_actual > 0) {
-        $sqlInsert = "INSERT INTO historial_taximetro (id_usuario, tipo_servicio, minutos_totales, monto_cobrado, con_descuento, fecha_hora) 
-                      VALUES ($id_usuario_actual, '$tipo', $minutos, $costo, $descuento, NOW())";
-        $status = @mysqli_query($MiConexion, $sqlInsert);
-        echo json_encode(['success' => (bool)$status]);
+    // Obtenemos la fecha y hora exacta ya adaptada por PHP a nuestra zona horaria
+    $fecha_argentina = date('Y-m-d H:i:s');
+    
+    $sqlInsert = "INSERT INTO historial_taximetro (id_usuario, tipo_servicio, minutos_totales, monto_cobrado, con_descuento, fecha_hora) 
+                  VALUES ($id_usuario_actual, '$tipo', $minutos, $costo, $descuento, '$fecha_argentina')";
+    $status = @mysqli_query($MiConexion, $sqlInsert);
+    echo json_encode(['success' => (bool)$status]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Datos inválidos o sesión no iniciada']);
     }
