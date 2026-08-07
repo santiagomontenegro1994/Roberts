@@ -526,8 +526,8 @@ function actualizarVista() {
             const isSilent = document.getElementById('silent-diseno')?.checked;
 
             if (!isSilent) {
-                if (minutos >= 1 && t.lastAlertMinute === 0) {
-                    t.lastAlertMinute = 1;
+                if (minutos >= 10 && t.lastAlertMinute === 0) {
+                    t.lastAlertMinute = 10;
                     
                     // 1. Reproduce el sonido de alerta por los parlantes 🔊
                     reproducirSonidoAlerta();
