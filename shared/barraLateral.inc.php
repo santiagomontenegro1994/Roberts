@@ -17,17 +17,27 @@
 
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#clientes-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-person-bounding-box"></i><span>Clientes</span><i class="bi bi-chevron-down ms-auto"></i>
+          <i class="bi bi-person-bounding-box"></i><span>Clientes y Empresas</span><i class="bi bi-chevron-down ms-auto"></i>
         </a>
         <ul id="clientes-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
             <a href="../imprenta_clientes/agregar_clientes.php">
-              <i class="bi bi-circle"></i><span>Agregar</span>
+              <i class="bi bi-circle"></i><span>Agregar Cliente</span>
+            </a>
+          </li>
+          <li>
+            <a href="../imprenta_clientes/agregar_empresas.php">
+              <i class="bi bi-circle"></i><span>Agregar Empresa</span>
             </a>
           </li>
           <li>
             <a href="../imprenta_clientes/listados_clientes.php">
-              <i class="bi bi-circle"></i><span>Listados</span>
+              <i class="bi bi-circle"></i><span>Listado de Clientes</span>
+            </a>
+          </li>
+          <li>
+            <a href="../imprenta_clientes/listados_empresas.php">
+              <i class="bi bi-circle"></i><span>Listado de Empresas</span>
             </a>
           </li>
         </ul>

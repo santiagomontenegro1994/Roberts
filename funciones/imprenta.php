@@ -198,6 +198,140 @@ function Listar_Empresas($vConexion) {
     return $Listado;
 }
 
+function Validar_Empresa(){
+    $_SESSION['Mensaje']='';
+    if (strlen($_POST['NombreEmpresa']) < 2) {
+        $_SESSION['Mensaje'].='Debes ingresar un nombre de empresa válido. <br />';
+    }
+    foreach($_POST as $Id=>$Valor){
+        $_POST[$Id] = trim($_POST[$Id]);
+        $_POST[$Id] = strip_tags($_POST[$Id]);
+    }
+    return $_SESSION['Mensaje'];
+}
+
+function InsertarEmpresa($vConexion) {
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['NombreEmpresa']);
+    $telefono = mysqli_real_escape_string($vConexion, $_POST['TelefonoEmpresa']);
+    $cuit = mysqli_real_escape_string($vConexion, $_POST['CuitEmpresa']);
+
+    // Verificamos si el CUIT ya existe (si fue ingresado)
+    if (!empty($cuit)) {
+        $SQL_Check = "SELECT idEmpresa FROM empresas WHERE cuit = '$cuit' LIMIT 1";
+        $resultado = mysqli_query($vConexion, $SQL_Check);
+        if (mysqli_num_rows($resultado) > 0) {
+            return "Ya existe una empresa registrada con este CUIT.";
+        }
+    }
+    
+    $SQL_Insert = "INSERT INTO empresas (nombre_empresa, telefono_empresa, cuit, idActivo)
+                   VALUES ('$nombre', '$telefono', '$cuit', 1)";
+    
+    if (!mysqli_query($vConexion, $SQL_Insert)) {
+        return 'Error al intentar insertar la empresa: ' . mysqli_error($vConexion);
+    }
+    return true;
+}
+
+function Listar_Empresas_General($vConexion, $estado = 1) {
+    $Listado = array();
+    $SQL = "SELECT * FROM empresas WHERE idActivo = $estado ORDER BY nombre_empresa ASC";
+    $rs = mysqli_query($vConexion, $SQL);
+    if ($rs) {
+        $i = 0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_EMPRESA'] = $data['idEmpresa'];
+            $Listado[$i]['NOMBRE_EMPRESA'] = $data['nombre_empresa'];
+            $Listado[$i]['TELEFONO'] = $data['telefono_empresa'];
+            $Listado[$i]['CUIT'] = $data['cuit'];
+            $Listado[$i]['ACTIVO'] = $data['idActivo'];
+            $i++;
+        }
+    }
+    return $Listado;
+}
+
+function Listar_Empresas_Parametro($vConexion, $criterio, $parametro, $estado = 1) {
+    $Listado = array();
+    $sql = "";
+    switch ($criterio) { 
+        case 'Nombre': 
+            $sql = "SELECT * FROM empresas WHERE nombre_empresa LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+        case 'Cuit':
+            $sql = "SELECT * FROM empresas WHERE cuit LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+        case 'Telefono':
+            $sql = "SELECT * FROM empresas WHERE telefono_empresa LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+        case 'idEmpresa':
+            $sql = "SELECT * FROM empresas WHERE idEmpresa LIKE '%$parametro%' AND idActivo = $estado";
+            break;
+    }    
+    
+    if (!empty($sql)) {
+        $rs = mysqli_query($vConexion, $sql);
+        if ($rs) {
+            $i = 0;
+            while ($data = mysqli_fetch_array($rs)) {
+                $Listado[$i]['ID_EMPRESA'] = $data['idEmpresa'];
+                $Listado[$i]['NOMBRE_EMPRESA'] = $data['nombre_empresa'];
+                $Listado[$i]['TELEFONO'] = $data['telefono_empresa'];
+                $Listado[$i]['CUIT'] = $data['cuit'];
+                $Listado[$i]['ACTIVO'] = $data['idActivo'];
+                $i++;
+            }
+        }
+    }
+    return $Listado;
+}
+
+function Datos_Empresa($vConexion, $vIdEmpresa) {
+    $DatosEmpresa = array();
+    $SQL = "SELECT * FROM empresas WHERE idEmpresa = $vIdEmpresa";
+    $rs = mysqli_query($vConexion, $SQL);
+    $data = mysqli_fetch_array($rs);
+    if (!empty($data)) {
+        $DatosEmpresa['ID_EMPRESA'] = $data['idEmpresa'];
+        $DatosEmpresa['NOMBRE_EMPRESA'] = $data['nombre_empresa'];
+        $DatosEmpresa['TELEFONO'] = $data['telefono_empresa'];
+        $DatosEmpresa['CUIT'] = $data['cuit'];
+    }
+    return $DatosEmpresa;
+}
+
+function Modificar_Empresa($vConexion) {
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['NombreEmpresa']);
+    $telefono = mysqli_real_escape_string($vConexion, $_POST['TelefonoEmpresa']);
+    $cuit = mysqli_real_escape_string($vConexion, $_POST['CuitEmpresa']);
+    $idEmpresa = mysqli_real_escape_string($vConexion, $_POST['IdEmpresa']);
+
+    $SQL_Update = "UPDATE empresas 
+    SET nombre_empresa = '$nombre',
+        telefono_empresa = '$telefono',
+        cuit = '$cuit'
+    WHERE idEmpresa = '$idEmpresa'";
+
+    if (mysqli_query($vConexion, $SQL_Update) !== false) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function Anular_Empresa($vConexion, $vIdEmpresa) {
+    $SQL_MiConsulta = "SELECT idEmpresa FROM empresas WHERE idEmpresa = $vIdEmpresa";
+    $rs = mysqli_query($vConexion, $SQL_MiConsulta);
+    $data = mysqli_fetch_array($rs);
+
+    if (!empty($data['idEmpresa'])) {
+        mysqli_query($vConexion, "UPDATE empresas SET idActivo = 2 WHERE idEmpresa = $vIdEmpresa");
+        return true;
+    } else {
+        return false;
+    }
+}
+
 function Listar_Proveedores($vConexion) {
 
     $Listado=array();
