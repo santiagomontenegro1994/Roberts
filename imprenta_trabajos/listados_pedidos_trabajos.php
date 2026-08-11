@@ -158,16 +158,15 @@ if ($rs_prov) {
             font-size: 0.7rem;
         }
         
-        /* Columnas específicas */
+        /* Columnas específicas (Se quitó la columna de facturación independiente) */
         .col-id { width: 50px; }
         .col-fecha { width: 90px; }
-        .col-cliente { width: 120px; min-width: 120px; }
-        .col-facturacion { width: 90px; }
-        .col-detalle { width: 100px; }
+        .col-cliente { width: 140px; min-width: 140px; }
+        .col-detalle { width: 120px; }
         .col-precio { width: 80px; }
         .col-senia { width: 80px; }
         .col-saldo { width: 80px; }
-        .col-tomado { width: 100px; }
+        .col-tomado { width: 110px; }
         .col-acciones { width: 180px; }
     </style>
 </head>
@@ -212,10 +211,11 @@ if ($rs_prov) {
                                value="<?= htmlspecialchars($fechaBuscada) ?>">
                     </div>
                     
+                    <!-- CAMBIO: Etiqueta actualizada para reflejar búsqueda por Cliente y Empresa -->
                     <div class="col-md-4">
-                        <label class="form-label text-tiny mb-0 fw-bold">Cliente (Nombre y/o Apellido)</label>
+                        <label class="form-label text-tiny mb-0 fw-bold">Cliente / Empresa (Nombre, Apellido...)</label>
                         <input type="text" class="form-control form-control-sm" name="clienteBuscado" 
-                               value="<?= htmlspecialchars($clienteBuscado) ?>" placeholder="Ej: Juan Perez">
+                               value="<?= htmlspecialchars($clienteBuscado) ?>" placeholder="Ej: Juan Perez o Empresa X">
                     </div>
                     
                     <div class="col-md-3">
@@ -286,14 +286,15 @@ if ($rs_prov) {
                     </div>
                 </div>
             </form>
+
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead class="table-light">
                         <tr>
                             <th scope="col" class="col-id">ID</th>
                             <th scope="col" class="col-fecha">Fecha</th>
-                            <th scope="col" class="col-cliente">Cliente</th>
-                            <th scope="col" class="col-facturacion">Facturación</th>
+                            <th scope="col" class="col-cliente">Cliente / Empresa</th>
+                            <!-- Columna Facturación eliminada para ahorrar espacio -->
                             <th scope="col" class="col-detalle">Detalle</th>
                             <th scope="col" class="col-precio">Precio</th>
                             <th scope="col" class="col-senia">Seña</th>
@@ -305,13 +306,12 @@ if ($rs_prov) {
                     <tbody>
                         <?php if ($CantidadPedidos == 0): ?>
                             <tr>
-                                <td colspan="10" class="text-center py-4 text-muted">No hay registros con estos filtros</td>
+                                <td colspan="9" class="text-center py-4 text-muted">No hay registros con estos filtros</td>
                             </tr>
                         <?php else: ?>
                             <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
                                 $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
                                 
-                                // ACÁ SE LLAMA A TU FUNCIÓN DE COLORES
                                 list($Title, $Color) = ColorDeFilaPedidoTrabajo($ListadoPedidos[$i]['ESTADO']);
                                 
                                 $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
@@ -337,40 +337,13 @@ if ($rs_prov) {
                                     <?php endif; ?>
                                 </td>
                                 
-                                <td class="col-facturacion text-center">
-                                    <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
-                                        <span class="badge bg-success d-inline-flex align-items-center" 
-                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                            <i class="bi bi-check-circle-fill me-1"></i>
-                                            <span>Facturado</span>
-                                        </span>
-                                    <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
-                                        <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
-                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                            <i class="bi bi-exclamation-circle-fill me-1"></i>
-                                            <span>Parcial</span>
-                                        </span>
-                                    <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
-                                        <span class="badge bg-info d-inline-flex align-items-center" 
-                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                            <i class="bi bi-info-circle-fill me-1"></i>
-                                            <span>Sin detalles</span>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary d-inline-flex align-items-center" 
-                                              data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>">
-                                            <i class="bi bi-x-circle-fill me-1"></i>
-                                            <span>No facturado</span>
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                
+                                <!-- DETALLE UNIFICADO CON FACTURACIÓN Y data-bs-boundary="viewport" para evitar cortes de scroll -->
                                 <td class="col-detalle">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="dropdown mb-1">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
                                             Ver (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
                                         </button>
-                                        <ul class="dropdown-menu" aria-labelledby="dropdownTrabajos<?= $i ?>">
+                                        <ul class="dropdown-menu shadow" aria-labelledby="dropdownTrabajos<?= $i ?>">
                                             <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
                                                 <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
                                                     <li>
@@ -386,11 +359,43 @@ if ($rs_prov) {
                                             <?php endif; ?>
                                         </ul>
                                     </div>
+
+                                    <!-- Insignia de Facturación reubicada aquí para ahorrar una columna entera -->
+                                    <div>
+                                        <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
+                                            <span class="badge bg-success d-inline-flex align-items-center" 
+                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Facturado
+                                            </span>
+                                        <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
+                                            <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
+                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                                <i class="bi bi-exclamation-circle-fill me-1"></i> Parcial
+                                            </span>
+                                        <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
+                                            <span class="badge bg-info d-inline-flex align-items-center" 
+                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                                <i class="bi bi-info-circle-fill me-1"></i> Sin detalles
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary d-inline-flex align-items-center" 
+                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                                <i class="bi bi-x-circle-fill me-1"></i> No facturado
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
+
                                 <td class="col-precio text-compact">$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
                                 <td class="col-senia text-compact">$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
                                 <td class="col-saldo text-compact">$<?= number_format($saldo, 2) ?></td>
-                                <td class="col-tomado text-compact"><?= $ListadoPedidos[$i]['USUARIO'] ?></td>
+                                
+                                <!-- TOMADO CON ICONO DE HISTORIAL / TRAYECTORIA DINÁMICO -->
+                                <td class="col-tomado text-compact">
+                                    <?= $ListadoPedidos[$i]['USUARIO'] ?>
+                                    <i class="bx bx-history" style="cursor:pointer; color:#2563eb; margin-left:5px;" onclick="verHistorial(<?= $ListadoPedidos[$i]['ID'] ?>)" title="Ver bitácora"></i>
+                                </td>
+
                                 <td class="col-acciones">
                                     <div class="btn-group" role="group">
                                         <a href="eliminar_pedido_trabajo.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" 
@@ -407,10 +412,10 @@ if ($rs_prov) {
                                         </a>
 
                                         <div class="btn-group">
-                                            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones de Impresión">
+                                            <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" title="Opciones de Impresión">
                                                 <i class="bi bi-printer"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow">
                                                 <li>
                                                     <a class="dropdown-item" href="generar_pdf_trabajos.php?ID_PEDIDO=<?= $ListadoPedidos[$i]['ID'] ?>" target="_blank">
                                                         <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Descargar PDF (A4)
@@ -617,10 +622,14 @@ window.reimprimirTicket = function(idPedido) {
     iframe.style.height = '0px';
     iframe.style.border = 'none';
     
-    // Llamamos al archivo ticket_pedido.php que armamos antes, pasándole el ID
     iframe.src = `ticket_pedido.php?id=${idPedido}`; 
     
     document.body.appendChild(iframe);
+};
+
+// Función global provisional para la bitácora
+window.verHistorial = function(idPedido) {
+    alert("Próximamente: Bitácora de trazabilidad del pedido ID " + idPedido);
 };
 </script>
 

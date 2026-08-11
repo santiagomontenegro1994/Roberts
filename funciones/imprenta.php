@@ -3885,10 +3885,11 @@ function Generar_Where_Pedidos_Avanzado($filtros) {
         $where[] = "PT.fecha LIKE '%$fecha%'";
     }
 
-    // 3. Filtro Cliente (Con tu lógica original para separar Nombre y Apellido)
+    // 3. Filtro Cliente / Empresa (Incluye Nombre, Apellido y Empresa asociada)
     if (!empty($filtros['clienteBuscado'])) {
         $parametro = strtolower(trim($filtros['clienteBuscado']));
         $nombreApellido = explode(' ', $parametro);
+        $p_full = addslashes($parametro);
         
         if (count($nombreApellido) >= 2) {
             $n1 = addslashes($nombreApellido[0]);
@@ -3897,10 +3898,16 @@ function Generar_Where_Pedidos_Avanzado($filtros) {
                 (LOWER(C.nombre) LIKE '%$n1%' AND LOWER(C.apellido) LIKE '%$n2%') 
                 OR 
                 (LOWER(C.nombre) LIKE '%$n2%' AND LOWER(C.apellido) LIKE '%$n1%')
+                OR 
+                (LOWER(E.nombre_empresa) LIKE '%$p_full%')
             )";
         } else {
             $n1 = addslashes($parametro);
-            $where[] = "(LOWER(C.nombre) LIKE '%$n1%' OR LOWER(C.apellido) LIKE '%$n1%')";
+            $where[] = "(
+                LOWER(C.nombre) LIKE '%$n1%' 
+                OR LOWER(C.apellido) LIKE '%$n1%' 
+                OR LOWER(E.nombre_empresa) LIKE '%$n1%'
+            )";
         }
     }
 
@@ -3953,10 +3960,11 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
     $Listado = array();
     $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
     
-    // 1. Obtener IDs limitados para la página actual
+    // 1. Obtener IDs limitados para la página actual (Con LEFT JOIN a empresas incorporado)
     $SQL_IDs = "SELECT DISTINCT PT.idPedidoTrabajos 
                 FROM pedido_trabajos PT
                 INNER JOIN clientes C ON PT.idCliente = C.idCliente
+                LEFT JOIN empresas E ON C.idEmpresa = E.idEmpresa
                 $whereSQL
                 ORDER BY PT.idPedidoTrabajos DESC
                 LIMIT $offset, $limite";
@@ -3970,7 +3978,7 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
     if (empty($ids)) return $Listado;
     $ids_string = implode(',', $ids);
 
-    // 2. Obtener toda la info cabecera de esos IDs (ESTRUCTURA ORIGINAL INTACTA)
+    // 2. Obtener toda la info cabecera de esos IDs (Con datos de la empresa incluidos)
     $SQL = "SELECT 
                 PT.idPedidoTrabajos,
                 PT.fecha,
@@ -3978,6 +3986,7 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
                 C.nombre AS nombre_cliente,
                 C.apellido AS apellido_cliente,
                 C.telefono,
+                E.nombre_empresa AS nombre_empresa,
                 ET.idEstado,
                 US.nombre AS usuario,
                 ET.denominacion AS estado_nombre,
@@ -3986,6 +3995,7 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
                 SUM(CASE WHEN DT.facturado = 1 THEN 1 ELSE 0 END) as detalles_facturados
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            LEFT JOIN empresas E ON C.idEmpresa = E.idEmpresa
             INNER JOIN estado_trabajo ET ON PT.idEstado = ET.idEstado
             INNER JOIN usuarios US ON PT.idUsuario = US.idUsuario
             LEFT JOIN detalle_trabajos DT ON PT.idPedidoTrabajos = DT.id_pedido_trabajos AND DT.idActivo = 1
@@ -3996,14 +4006,20 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
     $rs = mysqli_query($vConexion, $SQL);
     $pedidos = array();
     while ($data = mysqli_fetch_assoc($rs)) {
+        // Formatear el nombre del cliente incluyendo la empresa si la tiene
+        $nombreClienteFormateado = $data['nombre_cliente'] . ' ' . $data['apellido_cliente'];
+        if (!empty($data['nombre_empresa'])) {
+            $nombreClienteFormateado .= ' (' . $data['nombre_empresa'] . ')';
+        }
+
         $pedidos[$data['idPedidoTrabajos']] = array(
             'ID' => $data['idPedidoTrabajos'],
             'FECHA' => $data['fecha'],
             'SEÑA' => $data['senia'],
             'TELEFONO' => $data['telefono'],
-            'CLIENTE_N' => $data['nombre_cliente'],
-            'CLIENTE_A' => $data['apellido_cliente'],
-            'ESTADO' => $data['idEstado'], // Aquí está la clave para que funcionen los colores
+            'CLIENTE_N' => $nombreClienteFormateado, // Muestra Nombre + Apellido + (Empresa)
+            'CLIENTE_A' => '', // Ya integrado en CLIENTE_N para mantener compatibilidad visual en la tabla
+            'ESTADO' => $data['idEstado'], 
             'USUARIO' => $data['usuario'],
             'ESTADO_NOMBRE' => $data['estado_nombre'],
             'PRECIO' => $data['precio_total'],
