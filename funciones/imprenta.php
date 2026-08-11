@@ -3944,14 +3944,17 @@ function Generar_Where_Pedidos_Avanzado($filtros) {
 
 function Contar_Pedidos_Filtrados($vConexion, $filtros) {
     $whereSQL = Generar_Where_Pedidos_Avanzado($filtros);
-    $SQL = "SELECT COUNT(DISTINCT PT.idPedidoTrabajos) as total
+    
+    // Se agregó el LEFT JOIN empresas E ON C.idEmpresa = E.idEmpresa
+    $SQL = "SELECT COUNT(DISTINCT PT.idPedidoTrabajos) as total 
             FROM pedido_trabajos PT
             INNER JOIN clientes C ON PT.idCliente = C.idCliente
+            LEFT JOIN empresas E ON C.idEmpresa = E.idEmpresa
             $whereSQL";
             
     $rs = mysqli_query($vConexion, $SQL);
-    if ($rs && $row = mysqli_fetch_assoc($rs)) {
-        return $row['total'];
+    if ($rs && $data = mysqli_fetch_assoc($rs)) {
+        return $data['total'];
     }
     return 0;
 }
