@@ -62,15 +62,15 @@ $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 if ($pagina_actual < 1) $pagina_actual = 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-// Obtener valores actuales de los filtros
-$filtros = $_SESSION['filtros_pedidos'];
-$idBuscado = $filtros['idBuscado'];
-$fechaBuscada = $filtros['fechaBuscada'];
-$clienteBuscado = $filtros['clienteBuscado'];
-$telefonoBuscado = $filtros['telefonoBuscado'];
-$estadoBuscado = $filtros['estadoBuscado'];
-$proveedorBuscado = $filtros['proveedorBuscado'];
-$trabajoBuscado = $filtros['trabajoBuscado'];
+// Obtener valores actuales de los filtros de forma segura
+$filtros = $_SESSION['filtros_pedidos'] ?? [];
+$idBuscado = $filtros['idBuscado'] ?? '';
+$fechaBuscada = $filtros['fechaBuscada'] ?? '';
+$clienteBuscado = $filtros['clienteBuscado'] ?? '';
+$telefonoBuscado = $filtros['telefonoBuscado'] ?? '';
+$estadoBuscado = $filtros['estadoBuscado'] ?? '';
+$proveedorBuscado = $filtros['proveedorBuscado'] ?? '';
+$trabajoBuscado = $filtros['trabajoBuscado'] ?? '';
 
 // Ejecutar funciones
 $TotalRegistros = Contar_Pedidos_Filtrados($MiConexion, $filtros);
