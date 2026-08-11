@@ -12,20 +12,15 @@ require_once '../funciones/conexion.php';
 $MiConexion = ConexionBD();
 require_once '../funciones/imprenta.php';
 
-// Determinamos qué estado buscar. 
-// Si el checkbox 'chkInactivos' viene marcado, buscamos 2 (Inactivos), sino 1 (Activos).
 $estadoBuscar = !empty($_POST['chkInactivos']) ? 2 : 1; 
 
-// Inicializamos listado
 $ListadoClientes = array();
 
 if (!empty($_POST['BotonBuscar'])) {
     $parametro = $_POST['parametro'];
     $criterio = $_POST['gridRadios'];
-    // Pasamos el $estadoBuscar a la función
     $ListadoClientes = Listar_Clientes_Parametro($MiConexion, $criterio, $parametro, $estadoBuscar);
 } else {
-    // Pasamos el $estadoBuscar a la función
     $ListadoClientes = Listar_Clientes($MiConexion, $estadoBuscar);
 }
 
@@ -59,12 +54,13 @@ $CantidadClientes = count($ListadoClientes);
           <?php } ?>
 
           <Form method="POST">
-          <div class="row mb-4 align-items-end"> <div class="col-sm-3">
+          <div class="row mb-4 align-items-end"> 
+              <div class="col-sm-3">
                 <label for="parametro" class="form-label">Buscar</label>
                 <input type="text" class="form-control" name="parametro" id="parametro" value="<?php echo $_POST['parametro'] ?? ''; ?>">
               </div>
 
-              <div class="col-sm-4">
+              <div class="col-sm-5">
                     <div class="form-check form-check-inline small-text">
                       <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value="Nombre" <?php echo (empty($_POST['gridRadios']) || $_POST['gridRadios'] == 'Nombre') ? 'checked' : ''; ?>>
                       <label class="form-check-label" for="gridRadios1">Nombre</label>
@@ -74,8 +70,12 @@ $CantidadClientes = count($ListadoClientes);
                       <label class="form-check-label" for="gridRadios2">Teléfono</label>
                     </div>
                     <div class="form-check form-check-inline small-text">
-                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="idCliente" <?php echo (isset($_POST['gridRadios']) && $_POST['gridRadios'] == 'idCliente') ? 'checked' : ''; ?>>
-                      <label class="form-check-label" for="gridRadios3">ID</label>
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios3" value="Cuit" <?php echo (isset($_POST['gridRadios']) && $_POST['gridRadios'] == 'Cuit') ? 'checked' : ''; ?>>
+                      <label class="form-check-label" for="gridRadios3">CUIT</label>
+                    </div>
+                    <div class="form-check form-check-inline small-text">
+                      <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios4" value="Empresa" <?php echo (isset($_POST['gridRadios']) && $_POST['gridRadios'] == 'Empresa') ? 'checked' : ''; ?>>
+                      <label class="form-check-label" for="gridRadios4">Empresa</label>
                     </div>
               </div>
 
@@ -86,13 +86,11 @@ $CantidadClientes = count($ListadoClientes);
                   </div>
               </div>
 
-              <div class="col-sm-3">
+              <div class="col-sm-2">
                 <style> .btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; } </style>
                 <button type="submit" class="btn btn-success btn-xs" value="buscar" name="BotonBuscar">Buscar</button>
                 <a href="listados_clientes.php" class="btn btn-danger btn-xs">Limpiar</a>
-                <button type="submit" class="btn btn-primary btn-xs" value="descargar" name="Descargar">Descargar</button>
               </div>
-              
           </div>
           </Form>
 
@@ -101,8 +99,10 @@ $CantidadClientes = count($ListadoClientes);
               <thead>
                 <tr>
                   <th scope="col">ID</th>
-                  <th scope="col">Nombre</th>
-                  <th scope="col">Telefono</th>
+                  <th scope="col">Nombre y Apellido</th>
+                  <th scope="col">Teléfono</th>
+                  <th scope="col">CUIT</th>
+                  <th scope="col">Empresa</th>
                   <th scope="col">Acciones</th>
                 </tr>
               </thead>
@@ -113,9 +113,11 @@ $CantidadClientes = count($ListadoClientes);
                         <td class="extra-small"><?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?></td>
                         <td class="extra-small"><?php echo $ListadoClientes[$i]['NOMBRE']; ?> <?php echo $ListadoClientes[$i]['APELLIDO']; ?></td>
                         <td class="extra-small"><?php echo $ListadoClientes[$i]['TELEFONO']; ?></td>
+                        <td class="extra-small"><?php echo !empty($ListadoClientes[$i]['CUIT']) ? $ListadoClientes[$i]['CUIT'] : '-'; ?></td>
+                        <td class="extra-small fw-bold text-primary"><?php echo $ListadoClientes[$i]['NOMBRE_EMPRESA']; ?></td>
                         <td class="extra-small">
                           
-                          <?php if ($estadoBuscar == 1) { // Si estamos viendo ACTIVOS ?>
+                          <?php if ($estadoBuscar == 1) { ?>
                               
                               <a href="eliminar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
                                 class="btn btn-xs btn-danger me-2"
@@ -130,7 +132,7 @@ $CantidadClientes = count($ListadoClientes);
                               <i class="bi bi-pencil-fill"></i>
                               </a>
 
-                          <?php } else { // Si estamos viendo INACTIVOS ?>
+                          <?php } else { ?>
                               
                               <a href="reactivar_clientes.php?ID_CLIENTE=<?php echo $ListadoClientes[$i]['ID_CLIENTE']; ?>" 
                                 class="btn btn-xs btn-success me-2"
@@ -146,7 +148,7 @@ $CantidadClientes = count($ListadoClientes);
                     <?php } ?>
                 <?php } else { ?>
                     <tr>
-                        <td colspan="4" class="text-center text-muted">No se encontraron clientes.</td>
+                        <td colspan="6" class="text-center text-muted">No se encontraron clientes.</td>
                     </tr>
                 <?php } ?>
               </tbody>

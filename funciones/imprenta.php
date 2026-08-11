@@ -1,93 +1,142 @@
 <?php
+
 function InsertarClientes($vConexion) {
-    // 1. Primero verificamos si el teléfono ya existe
+    // 1. Verificamos si el teléfono ya existe
     $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
     $SQL_Check = "SELECT idCliente FROM clientes WHERE telefono = '$telefono' LIMIT 1";
-    
     $resultado = mysqli_query($vConexion, $SQL_Check);
     
     if (mysqli_num_rows($resultado) > 0) {
-        // Si existe un cliente con ese teléfono, retornamos un error
         return "Ya existe un cliente registrado con este número de teléfono";
     }
     
-    // 2. Si no existe, procedemos con la inserción
+    // 2. Recibimos los nuevos campos (CUIT e idEmpresa)
     $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
     $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
+    $cuit = !empty($_POST['Cuit']) ? "'" . mysqli_real_escape_string($vConexion, $_POST['Cuit']) . "'" : "NULL";
+    $idEmpresa = !empty($_POST['IdEmpresa']) ? (int)$_POST['IdEmpresa'] : "NULL";
     
-    $SQL_Insert = "INSERT INTO clientes (nombre, apellido, telefono)
-                  VALUES ('$nombre', '$apellido', '$telefono')";
+    $SQL_Insert = "INSERT INTO clientes (nombre, apellido, telefono, cuit, idEmpresa)
+                   VALUES ('$nombre', '$apellido', '$telefono', $cuit, $idEmpresa)";
     
     if (!mysqli_query($vConexion, $SQL_Insert)) {
-        die('<h4>Error al intentar insertar el registro.</h4>');
+        return 'Error al intentar insertar el registro: ' . mysqli_error($vConexion);
     }
     
     return true;
 }
 
+function Datos_Cliente($vConexion, $vIdCliente) {
+    $DatosCliente = array();
+    $SQL = "SELECT * FROM clientes WHERE idCliente = $vIdCliente";
+    $rs = mysqli_query($vConexion, $SQL);
+    $data = mysqli_fetch_array($rs);
+    
+    if (!empty($data)) {
+        $DatosCliente['ID_CLIENTE'] = $data['idCliente'];
+        $DatosCliente['NOMBRE'] = $data['nombre'];
+        $DatosCliente['APELLIDO'] = $data['apellido'];
+        $DatosCliente['TELEFONO'] = $data['telefono'];
+        $DatosCliente['CUIT'] = $data['cuit'];
+        $DatosCliente['ID_EMPRESA'] = $data['idEmpresa'];
+    }
+    return $DatosCliente;
+}
+
+function Modificar_Cliente($vConexion) {
+    $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
+    $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
+    $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
+    $idCliente = mysqli_real_escape_string($vConexion, $_POST['IdCliente']);
+    $cuit = !empty($_POST['Cuit']) ? "'" . mysqli_real_escape_string($vConexion, $_POST['Cuit']) . "'" : "NULL";
+    $idEmpresa = !empty($_POST['IdEmpresa']) ? (int)$_POST['IdEmpresa'] : "NULL";
+
+    $SQL_MiConsulta = "UPDATE clientes 
+    SET nombre = '$nombre',
+        apellido = '$apellido',
+        telefono = '$telefono',
+        cuit = $cuit,
+        idEmpresa = $idEmpresa
+    WHERE idCliente = '$idCliente'";
+
+    if (mysqli_query($vConexion, $SQL_MiConsulta) !== false) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function Listar_Clientes($vConexion, $estado = 1) {
+    $Listado = array();
+    // Traemos también el nombre de la empresa haciendo un LEFT JOIN
+    $SQL = "SELECT c.*, e.nombre_empresa 
+            FROM clientes c 
+            LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+            WHERE c.idActivo = $estado";
+
+    $rs = mysqli_query($vConexion, $SQL);
+    $i = 0;
+    while ($data = mysqli_fetch_array($rs)) {
+        $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
+        $Listado[$i]['NOMBRE'] = $data['nombre'];
+        $Listado[$i]['APELLIDO'] = $data['apellido'];
+        $Listado[$i]['TELEFONO'] = $data['telefono'];
+        $Listado[$i]['CUIT'] = $data['cuit'];
+        $Listado[$i]['NOMBRE_EMPRESA'] = $data['nombre_empresa'] ?? '-';
+        $Listado[$i]['ACTIVO'] = $data['idActivo'];
+        $i++;
+    }
+    return $Listado;
+}
+
 function Listar_Clientes_Parametro($vConexion, $criterio, $parametro, $estado = 1) {
     $Listado = array();
-
-    // 1) genero la consulta agregando el filtro de estado variable
     $sql = "";
+    
+    // Mejoramos el buscador para contemplar también CUIT y Empresa
     switch ($criterio) { 
         case 'Nombre': 
-            $partes = explode(' ', trim($parametro));
-            $nombre = isset($partes[0]) ? $partes[0] : '';
-            $apellido = isset($partes[1]) ? $partes[1] : '';
-            
-            if ($nombre && $apellido) {
-                $sql = "SELECT * FROM clientes 
-                        WHERE (nombre LIKE '$nombre%' AND apellido LIKE '$apellido%') 
-                        AND idActivo = $estado";
-            } else {
-                $sql = "SELECT * FROM clientes 
-                        WHERE (nombre LIKE '%$parametro%' OR apellido LIKE '%$parametro%') 
-                        AND idActivo = $estado";
-            }
-            break;
-        case 'idCliente':
-            $sql = "SELECT * FROM clientes WHERE idCliente LIKE '%$parametro%' AND idActivo = $estado";
+            $sql = "SELECT c.*, e.nombre_empresa FROM clientes c 
+                    LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+                    WHERE (c.nombre LIKE '%$parametro%' OR c.apellido LIKE '%$parametro%') 
+                    AND c.idActivo = $estado";
             break;
         case 'Telefono':
-            $sql = "SELECT * FROM clientes WHERE telefono LIKE '%$parametro%' AND idActivo = $estado";
+            $sql = "SELECT c.*, e.nombre_empresa FROM clientes c 
+                    LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+                    WHERE c.telefono LIKE '%$parametro%' AND c.idActivo = $estado";
+            break;
+        case 'Cuit':
+            $sql = "SELECT c.*, e.nombre_empresa FROM clientes c 
+                    LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+                    WHERE c.cuit LIKE '%$parametro%' AND c.idActivo = $estado";
+            break;
+        case 'Empresa':
+            $sql = "SELECT c.*, e.nombre_empresa FROM clientes c 
+                    LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+                    WHERE e.nombre_empresa LIKE '%$parametro%' AND c.idActivo = $estado";
+            break;
+        case 'idCliente':
+            $sql = "SELECT c.*, e.nombre_empresa FROM clientes c 
+                    LEFT JOIN empresas e ON c.idEmpresa = e.idEmpresa 
+                    WHERE c.idCliente LIKE '%$parametro%' AND c.idActivo = $estado";
             break;
     }    
     
     $rs = mysqli_query($vConexion, $sql);
-    
-    $i = 0;
-    while ($data = mysqli_fetch_array($rs)) {
-        $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
-        $Listado[$i]['NOMBRE'] = $data['nombre'];
-        $Listado[$i]['APELLIDO'] = $data['apellido'];
-        $Listado[$i]['TELEFONO'] = $data['telefono'];
-        $Listado[$i]['ACTIVO'] = $data['idActivo']; // Agregamos este dato por si sirve visualmente
-        $i++;
+    if ($rs) {
+        $i = 0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
+            $Listado[$i]['NOMBRE'] = $data['nombre'];
+            $Listado[$i]['APELLIDO'] = $data['apellido'];
+            $Listado[$i]['TELEFONO'] = $data['telefono'];
+            $Listado[$i]['CUIT'] = $data['cuit'];
+            $Listado[$i]['NOMBRE_EMPRESA'] = $data['nombre_empresa'] ?? '-';
+            $Listado[$i]['ACTIVO'] = $data['idActivo'];
+            $i++;
+        }
     }
-
-    return $Listado;
-}
-
-function Listar_Clientes($vConexion, $estado = 1) {
-
-    $Listado = array();
-
-    // 1) Buscamos según el estado que recibimos
-    $SQL = "SELECT * FROM clientes WHERE idActivo = $estado";
-
-    $rs = mysqli_query($vConexion, $SQL);
-    
-    $i = 0;
-    while ($data = mysqli_fetch_array($rs)) {
-        $Listado[$i]['ID_CLIENTE'] = $data['idCliente'];
-        $Listado[$i]['NOMBRE'] = $data['nombre'];
-        $Listado[$i]['APELLIDO'] = $data['apellido'];
-        $Listado[$i]['TELEFONO'] = $data['telefono'];
-        $Listado[$i]['ACTIVO'] = $data['idActivo'];
-        $i++;
-    }
-
     return $Listado;
 }
 
@@ -115,25 +164,6 @@ function Anular_Cliente($vConexion , $vIdConsulta) {
     
 }
 
-function Datos_Cliente($vConexion , $vIdCliente) {
-    $DatosCliente  =   array();
-    //me aseguro que la consulta exista
-    $SQL = "SELECT * FROM clientes 
-            WHERE idCliente = $vIdCliente";
-
-    $rs = mysqli_query($vConexion, $SQL);
-
-    $data = mysqli_fetch_array($rs) ;
-    if (!empty($data)) {
-        $DatosCliente['ID_CLIENTE'] = $data['idCliente'];
-        $DatosCliente['NOMBRE'] = $data['nombre'];
-        $DatosCliente['APELLIDO'] = $data['apellido'];
-        $DatosCliente['TELEFONO'] = $data['telefono'];
-    }
-    return $DatosCliente;
-
-}
-
 function Validar_Cliente(){
     $_SESSION['Mensaje']='';
     if (strlen($_POST['Nombre']) < 3) {
@@ -150,26 +180,6 @@ function Validar_Cliente(){
     }
 
     return $_SESSION['Mensaje'];
-}
-
-function Modificar_Cliente($vConexion) {
-    $nombre = mysqli_real_escape_string($vConexion, $_POST['Nombre']);
-    $apellido = mysqli_real_escape_string($vConexion, $_POST['Apellido']);
-    $telefono = mysqli_real_escape_string($vConexion, $_POST['Telefono']);
-    $idCliente = mysqli_real_escape_string($vConexion, $_POST['IdCliente']);
-
-    $SQL_MiConsulta = "UPDATE clientes 
-    SET nombre = '$nombre',
-    apellido = '$apellido',
-    telefono = '$telefono'
-    WHERE idCliente = '$idCliente'";
-
-    if ( mysqli_query($vConexion, $SQL_MiConsulta) != false) {
-        return true;
-    }else {
-        return false;
-    }
-    
 }
 
 function Listar_Proveedores($vConexion) {
