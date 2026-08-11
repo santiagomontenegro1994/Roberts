@@ -182,6 +182,22 @@ function Validar_Cliente(){
     return $_SESSION['Mensaje'];
 }
 
+function Listar_Empresas($vConexion) {
+    $Listado = array();
+    $SQL = "SELECT idEmpresa AS ID_EMPRESA, nombre_empresa AS NOMBRE_EMPRESA, cuit AS CUIT FROM empresas WHERE idActivo = 1 ORDER BY nombre_empresa ASC";
+    $rs = mysqli_query($vConexion, $SQL);
+    if ($rs) {
+        $i = 0;
+        while ($data = mysqli_fetch_array($rs)) {
+            $Listado[$i]['ID_EMPRESA'] = $data['ID_EMPRESA'];
+            $Listado[$i]['NOMBRE_EMPRESA'] = $data['NOMBRE_EMPRESA'];
+            $Listado[$i]['CUIT'] = $data['CUIT'];
+            $i++;
+        }
+    }
+    return $Listado;
+}
+
 function Listar_Proveedores($vConexion) {
 
     $Listado=array();
