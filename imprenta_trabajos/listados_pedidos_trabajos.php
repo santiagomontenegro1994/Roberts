@@ -161,7 +161,7 @@ if ($rs_prov) {
             font-size: 0.7rem;
         }
         
-        /* Columnas específicas (Se quitó la columna de facturación independiente) */
+        /* Columnas específicas */
         .col-id { width: 50px; }
         .col-fecha { width: 90px; }
         .col-cliente { width: 140px; min-width: 140px; }
@@ -212,7 +212,6 @@ if ($rs_prov) {
                                value="<?= htmlspecialchars($fechaBuscada) ?>">
                     </div>
                     
-                    <!-- CAMBIO: Etiqueta actualizada para reflejar búsqueda por Cliente y Empresa -->
                     <div class="col-md-4">
                         <label class="form-label text-tiny mb-0 fw-bold">Cliente / Empresa (Nombre, Apellido...)</label>
                         <input type="text" class="form-control form-control-sm" name="clienteBuscado" 
@@ -295,7 +294,6 @@ if ($rs_prov) {
                             <th scope="col" class="col-id">ID</th>
                             <th scope="col" class="col-fecha">Fecha</th>
                             <th scope="col" class="col-cliente">Cliente / Empresa</th>
-                            <!-- Columna Facturación eliminada para ahorrar espacio -->
                             <th scope="col" class="col-detalle">Detalle</th>
                             <th scope="col" class="col-importes">Importes</th>
                             <th scope="col" class="col-tomado">Tomado</th>
@@ -305,7 +303,7 @@ if ($rs_prov) {
                     <tbody>
                         <?php if ($CantidadPedidos == 0): ?>
                             <tr>
-                                <td colspan="9" class="text-center py-4 text-muted">No hay registros con estos filtros</td>
+                                <td colspan="7" class="text-center py-4 text-muted">No hay registros con estos filtros</td>
                             </tr>
                         <?php else: ?>
                             <?php for ($i=0; $i<$CantidadPedidos; $i++) { 
@@ -315,6 +313,15 @@ if ($rs_prov) {
                                 
                                 $nombreCliente = htmlspecialchars($ListadoPedidos[$i]['CLIENTE_N'] . ' ' . $ListadoPedidos[$i]['CLIENTE_A']);
                                 $nombreMostrar = (strlen($nombreCliente) > 15) ? substr($nombreCliente, 0, 15) . '...' : $nombreCliente;
+                                
+                                // Generar resumen corto de nombres de trabajos para la celda
+                                $nombresTrabajos = [];
+                                if (!empty($ListadoPedidos[$i]['TRABAJOS'])) {
+                                    foreach ($ListadoPedidos[$i]['TRABAJOS'] as $t) {
+                                        $nombresTrabajos[] = $t['DENOMINACION'];
+                                    }
+                                }
+                                $resumenNombres = !empty($nombresTrabajos) ? implode(' / ', $nombresTrabajos) : 'Sin trabajos';
                                 
                                 // Determinar estado de facturación
                                 $detallesFacturados = isset($ListadoPedidos[$i]['DETALLES_FACTURADOS']) ? $ListadoPedidos[$i]['DETALLES_FACTURADOS'] : 0;
@@ -332,7 +339,6 @@ if ($rs_prov) {
                                 <td class="col-cliente">
                                     <strong class="text-compact" title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
                                     
-                                    <!-- Si el cliente pertenece a una empresa, se muestra aquí sutilmente -->
                                     <?php if (!empty($ListadoPedidos[$i]['EMPRESA'])): ?>
                                         <br><span class="badge bg-light text-dark text-tiny border px-1 py-0" style="font-size: 0.65rem;">
                                             <i class="bi bi-building text-primary"></i> <?= htmlspecialchars($ListadoPedidos[$i]['EMPRESA']) ?>
@@ -344,49 +350,35 @@ if ($rs_prov) {
                                     <?php endif; ?>
                                 </td>
                                 
-                                <!-- DETALLE UNIFICADO CON FACTURACIÓN Y data-bs-boundary="viewport" para evitar cortes de scroll -->
+                                <!-- DETALLE CON RESUMEN CORTO Y MODAL -->
                                 <td class="col-detalle">
-                                    <div class="dropdown mb-1">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownTrabajos<?= $i ?>" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
-                                            Ver (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
-                                        </button>
-                                        <ul class="dropdown-menu shadow" aria-labelledby="dropdownTrabajos<?= $i ?>">
-                                            <?php if (!empty($ListadoPedidos[$i]['TRABAJOS'])): ?>
-                                                <?php foreach ($ListadoPedidos[$i]['TRABAJOS'] as $trabajo): ?>
-                                                    <li>
-                                                        <span class="dropdown-item-text text-compact">
-                                                            <strong><?= htmlspecialchars($trabajo['DENOMINACION']) ?></strong>
-                                                            <br>
-                                                            <small><?= htmlspecialchars($trabajo['DESCRIPCION']) ?></small>
-                                                        </span>
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <li><span class="dropdown-item-text text-compact">Sin trabajos</span></li>
-                                            <?php endif; ?>
-                                        </ul>
+                                    <div class="mb-1 text-compact fw-bold text-dark" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($resumenNombres) ?>">
+                                        <?= htmlspecialchars($resumenNombres) ?>
                                     </div>
 
-                                    <!-- Insignia de Facturación reubicada aquí para ahorrar una columna entera -->
-                                    <div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" 
+                                            data-bs-toggle="modal" data-bs-target="#detallePedidoModal"
+                                            data-pedido-id="<?= $ListadoPedidos[$i]['ID'] ?>"
+                                            data-pedido-json='<?= htmlspecialchars(json_encode($ListadoPedidos[$i]['TRABAJOS']), ENT_QUOTES, 'UTF-8') ?>'>
+                                        <i class="bi bi-eye"></i> Ver más (<?= count($ListadoPedidos[$i]['TRABAJOS']) ?>)
+                                    </button>
+
+                                    <!-- Insignia de Facturación -->
+                                    <div class="mt-1">
                                         <?php if ($estadoFacturacion['estado'] == 'totalmente_facturado'): ?>
-                                            <span class="badge bg-success d-inline-flex align-items-center" 
-                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                            <span class="badge bg-success d-inline-flex align-items-center" data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
                                                 <i class="bi bi-check-circle-fill me-1"></i> Facturado
                                             </span>
                                         <?php elseif ($estadoFacturacion['estado'] == 'parcialmente_facturado'): ?>
-                                            <span class="badge bg-warning text-dark d-inline-flex align-items-center" 
-                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                            <span class="badge bg-warning text-dark d-inline-flex align-items-center" data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
                                                 <i class="bi bi-exclamation-circle-fill me-1"></i> Parcial
                                             </span>
                                         <?php elseif ($estadoFacturacion['estado'] == 'sin_detalles'): ?>
-                                            <span class="badge bg-info d-inline-flex align-items-center" 
-                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                            <span class="badge bg-info d-inline-flex align-items-center" data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
                                                 <i class="bi bi-info-circle-fill me-1"></i> Sin detalles
                                             </span>
                                         <?php else: ?>
-                                            <span class="badge bg-secondary d-inline-flex align-items-center" 
-                                                  data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
+                                            <span class="badge bg-secondary d-inline-flex align-items-center" data-bs-toggle="tooltip" title="<?= $estadoFacturacion['tooltip'] ?>" style="font-size: 0.65rem;">
                                                 <i class="bi bi-x-circle-fill me-1"></i> No facturado
                                             </span>
                                         <?php endif; ?>
@@ -394,8 +386,6 @@ if ($rs_prov) {
                                 </td>
 
                                 <?php 
-                                    $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
-                                    // Saldo en rojo si debe (>0), verde si está al día (<=0)
                                     $claseSaldo = ($saldo > 0) ? 'text-danger fw-bold' : 'text-success fw-bold';
                                 ?>
                                 <td class="col-importes text-compact">
@@ -410,7 +400,6 @@ if ($rs_prov) {
                                     </div>
                                 </td>
                                 
-                                <!-- TOMADO CON ICONO DE HISTORIAL / TRAYECTORIA DINÁMICO -->
                                 <td class="col-tomado text-compact">
                                     <?= $ListadoPedidos[$i]['USUARIO'] ?>
                                     <i class="bx bx-history" style="cursor:pointer; color:#2563eb; margin-left:5px;" onclick="verHistorial(<?= $ListadoPedidos[$i]['ID'] ?>)" title="Ver bitácora"></i>
@@ -449,7 +438,7 @@ if ($rs_prov) {
                                             </ul>
                                         </div>
 
-                                        <button type="button" class="btn btn-sm btn-success" 
+                                        <button type="button" class="btn btn-sm btn-success ms-1" 
                                                 data-bs-toggle="modal" data-bs-target="#retirarPedidoModal"
                                                 data-pedido-id="<?= $ListadoPedidos[$i]['ID'] ?>"
                                                 data-pedido-saldo="<?= $saldo ?>"
@@ -501,6 +490,7 @@ if ($rs_prov) {
     </div>
 </section>
 
+<!-- Modal Retirar Pedido -->
 <div class="modal fade" id="retirarPedidoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -540,13 +530,33 @@ if ($rs_prov) {
     </div>
 </div>
 
+<!-- Modal Detalle del Pedido -->
+<div class="modal fade" id="detallePedidoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-card-checklist me-2"></i> Detalle del Pedido #<span id="modalIdPedido"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContenidoTrabajos" class="list-group list-group-flush">
+                    <!-- Los trabajos se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
-  $_SESSION['Mensaje'] = '';
-  require ('../shared/footer.inc.php');
+    $_SESSION['Mensaje'] = '';
+    require ('../shared/footer.inc.php');
 ?>
 
 <script>
-// Función para descargar informes (definida en ámbito global)
+// Función para descargar informes
 function descargarInforme(tipo) {
     const spinner = document.createElement('div');
     spinner.className = 'position-fixed top-50 start-50 translate-middle';
@@ -603,7 +613,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const proveedorSelect = document.getElementById('proveedorBuscado');
     const fechaInput = document.getElementById('fechaBuscada');
 
-    // FILTROS AUTOMÁTICOS AL CAMBIAR
     estadoSelect.addEventListener('change', function() {
         formBusqueda.submit();
     });
@@ -612,7 +621,6 @@ document.addEventListener('DOMContentLoaded', function() {
         formBusqueda.submit();
     });
     
-    // Auto-filtrar al seleccionar una fecha en el calendario
     if (fechaInput) {
         fechaInput.addEventListener('change', function() {
             formBusqueda.submit();
@@ -632,18 +640,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Función global para imprimir un ticket específico desde la tabla
+// Función global para imprimir un ticket
 window.reimprimirTicket = function(idPedido) {
-    console.log("Generando ticket para el pedido ID: " + idPedido);
-    
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.width = '0px';
     iframe.style.height = '0px';
     iframe.style.border = 'none';
-    
     iframe.src = `ticket_pedido.php?id=${idPedido}`; 
-    
     document.body.appendChild(iframe);
 };
 
@@ -651,6 +655,54 @@ window.reimprimirTicket = function(idPedido) {
 window.verHistorial = function(idPedido) {
     alert("Próximamente: Bitácora de trazabilidad del pedido ID " + idPedido);
 };
+
+// Control para la Modal de Detalles del Pedido
+const detallePedidoModal = document.getElementById('detallePedidoModal');
+if (detallePedidoModal) {
+    detallePedidoModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const pedidoId = button.getAttribute('data-pedido-id');
+        const trabajosJson = button.getAttribute('data-pedido-json');
+
+        document.getElementById('modalIdPedido').textContent = pedidoId;
+
+        const contenedor = document.getElementById('modalContenidoTrabajos');
+        contenedor.innerHTML = '';
+
+        try {
+            const trabajos = JSON.parse(trabajosJson);
+            if (trabajos && trabajos.length > 0) {
+                trabajos.forEach((trabajo, index) => {
+                    const itemHtml = `
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-primary fw-bold">${index + 1}. ${escapeHtml(trabajo.DENOMINACION)}</h6>
+                            </div>
+                            <p class="mb-1 text-muted text-compact" style="white-space: pre-line; background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                                ${escapeHtml(trabajo.DESCRIPCION || 'Sin descripción detallada.')}
+                            </p>
+                        </div>
+                    `;
+                    contenedor.innerHTML += itemHtml;
+                });
+            } else {
+                contenedor.innerHTML = '<p class="text-center text-muted py-3">No hay trabajos registrados en este pedido.</p>';
+            }
+        } catch (e) {
+            console.error('Error al parsear los trabajos:', e);
+            contenedor.innerHTML = '<p class="text-center text-danger py-3">Error al cargar los detalles.</p>';
+        }
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, "&amp;")
+               .replace(/</g, "&lt;")
+               .replace(/>/g, "&gt;")
+               .replace(/"/g, "&quot;")
+               .replace(/'/g, "&#039;");
+}
 </script>
 
 </body>

@@ -76,7 +76,7 @@ if (!empty($_POST['BotonRegistrarEmpresa'])) {
                 <div class="row mb-3">
                   <label for="cuitEmpresa" class="col-sm-2 col-form-label">CUIT</label>
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" name="CuitEmpresa" id="cuitEmpresa" placeholder="Ej: 30-12345678-9"
+                    <input type="text" class="form-control" name="CuitEmpresa" id="cuitEmpresa" placeholder="Ej: 30123456789 (sin guiones)"
                     value="<?php echo !empty($_POST['CuitEmpresa']) ? $_POST['CuitEmpresa'] : ''; ?>">
                   </div>
                 </div>
