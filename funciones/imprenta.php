@@ -4020,8 +4020,9 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
             'FECHA' => $data['fecha'],
             'SEÑA' => $data['senia'],
             'TELEFONO' => $data['telefono'],
-            'CLIENTE_N' => $nombreClienteFormateado, // Muestra Nombre + Apellido + (Empresa)
-            'CLIENTE_A' => '', // Ya integrado en CLIENTE_N para mantener compatibilidad visual en la tabla
+            'CLIENTE_N' => $data['nombre_cliente'],
+            'CLIENTE_A' => $data['apellido_cliente'],
+            'EMPRESA' => $data['nombre_empresa'] ?? '', // <- Lo dejamos separado aquí
             'ESTADO' => $data['idEstado'], 
             'USUARIO' => $data['usuario'],
             'ESTADO_NOMBRE' => $data['estado_nombre'],

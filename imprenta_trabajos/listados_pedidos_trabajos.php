@@ -335,6 +335,14 @@ if ($rs_prov) {
                                 <td class="col-fecha text-compact"><?= date('d/m/Y', strtotime($ListadoPedidos[$i]['FECHA'])) ?></td>
                                 <td class="col-cliente">
                                     <strong class="text-compact" title="<?= htmlspecialchars($nombreCliente) ?>"><?= $nombreMostrar ?></strong>
+                                    
+                                    <!-- Si el cliente pertenece a una empresa, se muestra aquí sutilmente -->
+                                    <?php if (!empty($ListadoPedidos[$i]['EMPRESA'])): ?>
+                                        <br><span class="badge bg-light text-dark text-tiny border px-1 py-0" style="font-size: 0.65rem;">
+                                            <i class="bi bi-building text-primary"></i> <?= htmlspecialchars($ListadoPedidos[$i]['EMPRESA']) ?>
+                                        </span>
+                                    <?php endif; ?>
+
                                     <?php if (!empty($ListadoPedidos[$i]['TELEFONO'])): ?>
                                         <br><small class="text-muted text-tiny"><i class="bi bi-telephone"></i> <?= htmlspecialchars($ListadoPedidos[$i]['TELEFONO']) ?></small>
                                     <?php endif; ?>
