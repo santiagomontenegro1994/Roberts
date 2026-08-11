@@ -166,9 +166,7 @@ if ($rs_prov) {
         .col-fecha { width: 90px; }
         .col-cliente { width: 140px; min-width: 140px; }
         .col-detalle { width: 120px; }
-        .col-precio { width: 80px; }
-        .col-senia { width: 80px; }
-        .col-saldo { width: 80px; }
+        .col-importes { width: 110px; min-width: 110px; }
         .col-tomado { width: 110px; }
         .col-acciones { width: 180px; }
     </style>
@@ -299,9 +297,7 @@ if ($rs_prov) {
                             <th scope="col" class="col-cliente">Cliente / Empresa</th>
                             <!-- Columna Facturación eliminada para ahorrar espacio -->
                             <th scope="col" class="col-detalle">Detalle</th>
-                            <th scope="col" class="col-precio">Precio</th>
-                            <th scope="col" class="col-senia">Seña</th>
-                            <th scope="col" class="col-saldo">Saldo</th>
+                            <th scope="col" class="col-importes">Importes</th>
                             <th scope="col" class="col-tomado">Tomado</th>
                             <th scope="col" class="col-acciones">Acciones</th>
                         </tr>
@@ -397,9 +393,22 @@ if ($rs_prov) {
                                     </div>
                                 </td>
 
-                                <td class="col-precio text-compact">$<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?></td>
-                                <td class="col-senia text-compact">$<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?></td>
-                                <td class="col-saldo text-compact">$<?= number_format($saldo, 2) ?></td>
+                                <?php 
+                                    $saldo = $ListadoPedidos[$i]['PRECIO'] - $ListadoPedidos[$i]['SEÑA'];
+                                    // Saldo en rojo si debe (>0), verde si está al día (<=0)
+                                    $claseSaldo = ($saldo > 0) ? 'text-danger fw-bold' : 'text-success fw-bold';
+                                ?>
+                                <td class="col-importes text-compact">
+                                    <div class="text-dark">
+                                        <span class="text-muted text-tiny">Tot:</span> $<?= number_format($ListadoPedidos[$i]['PRECIO'], 2) ?>
+                                    </div>
+                                    <div class="text-primary">
+                                        <span class="text-muted text-tiny">Seña:</span> $<?= number_format($ListadoPedidos[$i]['SEÑA'], 2) ?>
+                                    </div>
+                                    <div class="<?= $claseSaldo ?>">
+                                        <span class="text-muted text-tiny">Saldo:</span> $<?= number_format($saldo, 2) ?>
+                                    </div>
+                                </td>
                                 
                                 <!-- TOMADO CON ICONO DE HISTORIAL / TRAYECTORIA DINÁMICO -->
                                 <td class="col-tomado text-compact">
