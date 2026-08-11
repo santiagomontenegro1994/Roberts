@@ -615,17 +615,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const proveedorSelect = document.getElementById('proveedorBuscado');
     const fechaInput = document.getElementById('fechaBuscada');
 
-    if (estadoSelect) {
-        estadoSelect.addEventListener('change', function() {
-            formBusqueda.submit();
-        });
-    }
+    estadoSelect.addEventListener('change', function() {
+        formBusqueda.submit();
+    });
 
-    if (proveedorSelect) {
-        proveedorSelect.addEventListener('change', function() {
-            formBusqueda.submit();
-        });
-    }
+    proveedorSelect.addEventListener('change', function() {
+        formBusqueda.submit();
+    });
     
     if (fechaInput) {
         fechaInput.addEventListener('change', function() {
@@ -664,45 +660,6 @@ window.verHistorial = function(idPedido) {
 
 const listaEstadosTrabajo = <?php echo $estadosTrabajoJSON; ?>;
 
-// --- DELEGACIÓN DE EVENTOS GLOBAL PARA CAMBIO RÁPIDO DE ESTADO ---
-document.addEventListener('change', function(e) {
-    if (e.target && e.target.classList.contains('select-estado-rapido')) {
-        const selectElement = e.target;
-        const idDetalle = selectElement.getAttribute('data-id-detalle');
-        const idPedido = selectElement.getAttribute('data-id-pedido');
-        const nuevoEstado = selectElement.value;
-
-        selectElement.disabled = true; // Bloquear select temporalmente
-
-        const formData = new URLSearchParams();
-        formData.append('accion', 'cambiar_estado_rapido');
-        formData.append('idDetalle', idDetalle);
-        formData.append('IdPedido', idPedido);
-        formData.append('idEstadoTrabajo', nuevoEstado);
-
-        fetch('procesar_detalle.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            selectElement.disabled = false;
-            if (response.ok) {
-                // Feedback visual sutil (borde verde)
-                selectElement.style.borderColor = '#198754';
-                setTimeout(() => selectElement.style.borderColor = '', 1500);
-            } else {
-                alert('Error al actualizar el estado.');
-            }
-        })
-        .catch(error => {
-            selectElement.disabled = false;
-            console.error('Error:', error);
-            alert('Error de red al actualizar.');
-        });
-    }
-});
-
-// Control para la Modal de Detalles del Pedido
 const detallePedidoModal = document.getElementById('detallePedidoModal');
 if (detallePedidoModal) {
     detallePedidoModal.addEventListener('show.bs.modal', function(event) {
@@ -721,7 +678,7 @@ if (detallePedidoModal) {
                 trabajos.forEach((trabajo, index) => {
                     let opcionesEstados = '';
                     listaEstadosTrabajo.forEach(est => {
-                        let selected = (est.idEstado == trabalho.ID_ESTADO) ? 'selected' : '';
+                        let selected = (est.idEstado == trabajo.ID_ESTADO) ? 'selected' : '';
                         opcionesEstados += `<option value="${est.idEstado}" ${selected}>${est.denominacion}</option>`;
                     });
 
@@ -742,6 +699,44 @@ if (detallePedidoModal) {
                         </div>
                     `;
                     contenedor.innerHTML += itemHtml;
+                });
+
+                // Activar evento de cambio rápido con AJAX
+                document.querySelectorAll('.select-estado-rapido').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const idDetalle = this.getAttribute('data-id-detalle');
+                        const idPedido = this.getAttribute('data-id-pedido');
+                        const nuevoEstado = this.value;
+                        const selectElement = this;
+
+                        selectElement.disabled = true;
+
+                        const formData = new URLSearchParams();
+                        formData.append('accion', 'cambiar_estado_rapido');
+                        formData.append('idDetalle', idDetalle);
+                        formData.append('IdPedido', idPedido);
+                        formData.append('idEstadoTrabajo', nuevoEstado);
+
+                        fetch('procesar_detalle.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            selectElement.disabled = false;
+                            if (response.ok) {
+                                // Opcional: mostrar un feedback visual sutil o recargar la tabla de fondo
+                                selectElement.classList.add('border-success');
+                                setTimeout(() => selectElement.classList.remove('border-success'), 1500);
+                            } else {
+                                alert('Error al actualizar el estado.');
+                            }
+                        })
+                        .catch(error => {
+                            selectElement.disabled = false;
+                            console.error('Error:', error);
+                            alert('Error de red al actualizar.');
+                        });
+                    });
                 });
 
             } else {
