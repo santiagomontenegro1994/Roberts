@@ -2419,7 +2419,7 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
     date_default_timezone_set('America/Argentina/Buenos_Aires');
 
     // Validar parámetros básicos
-    if (!in_array($accion, ['agregar', 'editar', 'eliminar'])) {
+    if (!in_array($accion, ['agregar', 'editar', 'eliminar', 'cambiar_estado_rapido'])) {
         error_log("Acción no válida: $accion");
         return false;
     }
@@ -2563,7 +2563,14 @@ function Procesar_Detalle_Trabajo($conexion, $accion, $datos) {
                     $idUsuarioEnvio
                 );
                 break;
-                
+
+            case 'cambiar_estado_rapido':
+                $query = "UPDATE detalle_trabajos SET idEstadoTrabajo = ? WHERE idDetalleTrabajo = ?";
+                $stmt = $conexion->prepare($query);
+                if (!$stmt) throw new Exception($conexion->error);
+                $stmt->bind_param('ii', $idEstadoTrabajo, $idDetalle);
+                break;  
+
             case 'eliminar':
                 $query = "DELETE FROM detalle_trabajos WHERE idDetalleTrabajo = ?";
                 $stmt = $conexion->prepare($query);
@@ -4035,16 +4042,20 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
 
     // 3. Obtener los detalles de esos trabajos (ESTRUCTURA ORIGINAL INTACTA)
     $SQL_DT = "SELECT 
-                    DT.id_pedido_trabajos,
-                    DT.idDetalleTrabajo,
-                    DT.idTrabajo,
-                    DT.descripcion,
-                    TT.denominacion AS nombre_trabajo
-                FROM detalle_trabajos DT
-                INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
-                WHERE DT.id_pedido_trabajos IN ($ids_string)
-                AND DT.idActivo = 1
-                ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
+                DT.id_pedido_trabajos,
+                DT.idDetalleTrabajo,
+                DT.idTrabajo,
+                DT.idEstadoTrabajo,
+                DT.descripcion,
+                TT.denominacion AS nombre_trabajo,
+                ET.idEstado AS estado_id,
+                ET.denominacion AS estado_nombre
+            FROM detalle_trabajos DT
+            INNER JOIN tipo_trabajo TT ON DT.idTrabajo = TT.idTipoTrabajo
+            INNER JOIN estado_trabajo ET ON DT.idEstadoTrabajo = ET.idEstado
+            WHERE DT.id_pedido_trabajos IN ($ids_string)
+            AND DT.idActivo = 1
+            ORDER BY DT.id_pedido_trabajos DESC, DT.idDetalleTrabajo ASC";
 
     $rs_dt = mysqli_query($vConexion, $SQL_DT);
     if ($rs_dt) {
@@ -4052,9 +4063,12 @@ function Listar_Pedidos_Filtrados_Paginados($vConexion, $filtros, $offset, $limi
             $idPedido = $data['id_pedido_trabajos'];
             if (isset($pedidos[$idPedido])) {
                 $pedidos[$idPedido]['TRABAJOS'][] = array(
+                    'ID_DETALLE' => $data['idDetalleTrabajo'],
                     'ID_TRABAJO' => $data['idTrabajo'],
                     'DENOMINACION' => $data['nombre_trabajo'],
-                    'DESCRIPCION' => $data['descripcion']
+                    'DESCRIPCION' => $data['descripcion'],
+                    'ID_ESTADO' => $data['estado_id'],
+                    'ESTADO_NOMBRE' => $data['estado_nombre']
                 );
             }
         }

@@ -87,6 +87,8 @@ if ($rs_prov) {
         $proveedores[] = $row;
     }
 }
+
+$estadosTrabajoJSON = json_encode(Datos_Estados_Trabajo($MiConexion));
 ?>
 
 <!DOCTYPE html>
@@ -656,7 +658,8 @@ window.verHistorial = function(idPedido) {
     alert("Próximamente: Bitácora de trazabilidad del pedido ID " + idPedido);
 };
 
-// Control para la Modal de Detalles del Pedido
+const listaEstadosTrabajo = <?php echo $estadosTrabajoJSON; ?>;
+
 const detallePedidoModal = document.getElementById('detallePedidoModal');
 if (detallePedidoModal) {
     detallePedidoModal.addEventListener('show.bs.modal', function(event) {
@@ -673,18 +676,69 @@ if (detallePedidoModal) {
             const trabajos = JSON.parse(trabajosJson);
             if (trabajos && trabajos.length > 0) {
                 trabajos.forEach((trabajo, index) => {
+                    let opcionesEstados = '';
+                    listaEstadosTrabajo.forEach(est => {
+                        let selected = (est.idEstado == trabajo.ID_ESTADO) ? 'selected' : '';
+                        opcionesEstados += `<option value="${est.idEstado}" ${selected}>${est.denominacion}</option>`;
+                    });
+
                     const itemHtml = `
-                        <div class="list-group-item px-0 py-2">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1 text-primary fw-bold">${index + 1}. ${escapeHtml(trabajo.DENOMINACION)}</h6>
+                        <div class="list-group-item px-0 py-3 border-bottom" data-id-detalle="${trabajo.ID_DETALLE}">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0 text-primary fw-bold">${index + 1}. ${escapeHtml(trabajo.DENOMINACION)}</h6>
+                                <div class="d-flex align-items-center">
+                                    <label class="small text-muted me-2 mb-0">Estado:</label>
+                                    <select class="form-select form-select-sm select-estado-rapido" data-id-detalle="${trabajo.ID_DETALLE}" data-id-pedido="${pedidoId}">
+                                        ${opcionesEstados}
+                                    </select>
+                                </div>
                             </div>
-                            <p class="mb-1 text-muted text-compact" style="white-space: pre-line; background: #f8f9fa; padding: 8px; border-radius: 4px;">
+                            <p class="mb-0 text-muted text-compact" style="white-space: pre-line; background: #f8f9fa; padding: 8px; border-radius: 4px;">
                                 ${escapeHtml(trabajo.DESCRIPCION || 'Sin descripción detallada.')}
                             </p>
                         </div>
                     `;
                     contenedor.innerHTML += itemHtml;
                 });
+
+                // Activar evento de cambio rápido con AJAX
+                document.querySelectorAll('.select-estado-rapido').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const idDetalle = this.getAttribute('data-id-detalle');
+                        const idPedido = this.getAttribute('data-id-pedido');
+                        const nuevoEstado = this.value;
+                        const selectElement = this;
+
+                        selectElement.disabled = true;
+
+                        const formData = new URLSearchParams();
+                        formData.append('accion', 'cambiar_estado_rapido');
+                        formData.append('idDetalle', idDetalle);
+                        formData.append('IdPedido', idPedido);
+                        formData.append('idEstadoTrabajo', nuevoEstado);
+
+                        fetch('procesar_detalle.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            selectElement.disabled = false;
+                            if (response.ok) {
+                                // Opcional: mostrar un feedback visual sutil o recargar la tabla de fondo
+                                selectElement.classList.add('border-success');
+                                setTimeout(() => selectElement.classList.remove('border-success'), 1500);
+                            } else {
+                                alert('Error al actualizar el estado.');
+                            }
+                        })
+                        .catch(error => {
+                            selectElement.disabled = false;
+                            console.error('Error:', error);
+                            alert('Error de red al actualizar.');
+                        });
+                    });
+                });
+
             } else {
                 contenedor.innerHTML = '<p class="text-center text-muted py-3">No hay trabajos registrados en este pedido.</p>';
             }

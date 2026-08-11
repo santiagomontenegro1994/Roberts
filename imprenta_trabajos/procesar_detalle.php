@@ -22,9 +22,15 @@ $accion = $_REQUEST['accion'] ?? '';
 $conexion = ConexionBD();
 
 if (!$conexion || empty($accion) || empty($idPedido)) {
+    // Si es una petición AJAX, responder con JSON en lugar de redirigir con HTML
+    if ($accion === 'cambiar_estado_rapido') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Faltan datos obligatorios']);
+        exit;
+    }
+
     $_SESSION['Mensaje'] = 'Error: Faltan datos obligatorios (Acción o ID Pedido).';
     $_SESSION['Estilo'] = 'danger';
-    // Intentar volver aunque sea sin ID
     if($idPedido) header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido");
     else echo "Error crítico: No se recibió ID de pedido.";
     exit;
@@ -40,7 +46,7 @@ $datos = [
     'horaEntrega' => $_POST['horaEntrega'] ?? '',
     'descripcion' => $_POST['descripcion'] ?? '',
     'idProveedor' => $_POST['idProveedor'] ?? 0,
-    'idEstadoTrabajo' => $_POST['idEstadoTrabajo'] ?? 0,
+    'idEstadoTrabajo' => $_REQUEST['idEstadoTrabajo'] ?? 0, // Usamos _REQUEST para asegurar compatibilidad con AJAX y Formularios
     'facturado' => isset($_POST['facturado']) ? 1 : 0,
     'idTipoFactura' => $_POST['idTipoFactura'] ?? null,
     'numeroFactura' => $_POST['numeroFactura'] ?? null
@@ -53,12 +59,25 @@ if ($resultado) {
     $_SESSION['Mensaje'] = 'Cambios guardados correctamente.';
     $_SESSION['Estilo'] = 'success';
 } else {
-    // Si falla, probablemente quedó un error en el log de errores de PHP
     $_SESSION['Mensaje'] = 'Error al guardar. Verifica los datos ingresados.';
     $_SESSION['Estilo'] = 'danger';
 }
 
-// VOLVER
+// --- RESPUESTA ESPECÍFICA PARA AJAX (CAMBIO RÁPIDO DE ESTADO) ---
+if ($accion === 'cambiar_estado_rapido') {
+    header('Content-Type: application/json');
+    if ($resultado) {
+        http_response_code(200);
+        echo json_encode(['success' => true]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['success' => false]);
+    }
+    exit;
+}
+// -----------------------------------------------------------------
+
+// VOLVER (Para los formularios tradicionales de agregar, editar y eliminar)
 header("Location: modificar_pedidos_trabajos.php?ID_PEDIDO=$idPedido&t=".time());
 exit;
 ?>
