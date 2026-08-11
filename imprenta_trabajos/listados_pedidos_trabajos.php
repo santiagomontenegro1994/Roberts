@@ -615,29 +615,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const proveedorSelect = document.getElementById('proveedorBuscado');
     const fechaInput = document.getElementById('fechaBuscada');
 
-    estadoSelect.addEventListener('change', function() {
-        formBusqueda.submit();
-    });
-
-    proveedorSelect.addEventListener('change', function() {
-        formBusqueda.submit();
-    });
-    
+    if (estadoSelect) {
+        estadoSelect.addEventListener('change', function() { formBusqueda.submit(); });
+    }
+    if (proveedorSelect) {
+        proveedorSelect.addEventListener('change', function() { formBusqueda.submit(); });
+    }
     if (fechaInput) {
-        fechaInput.addEventListener('change', function() {
-            formBusqueda.submit();
-        });
+        fechaInput.addEventListener('change', function() { formBusqueda.submit(); });
     }
 
-    new bootstrap.Tooltip(document.body, {
-        selector: '[data-bs-toggle="tooltip"]'
-    });
+    new bootstrap.Tooltip(document.body, { selector: '[data-bs-toggle="tooltip"]' });
 
     document.querySelectorAll('.dropdown-item.descargar-informe').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
-            const tipo = this.getAttribute('data-tipo');
-            descargarInforme(tipo);
+            descargarInforme(this.getAttribute('data-tipo'));
         });
     });
 });
@@ -646,9 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
 window.reimprimirTicket = function(idPedido) {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
-    iframe.style.width = '0px';
-    iframe.style.height = '0px';
-    iframe.style.border = 'none';
+    iframe.style.width = '0px'; iframe.style.height = '0px'; iframe.style.border = 'none';
     iframe.src = `ticket_pedido.php?id=${idPedido}`; 
     document.body.appendChild(iframe);
 };
@@ -660,6 +651,45 @@ window.verHistorial = function(idPedido) {
 
 const listaEstadosTrabajo = <?php echo $estadosTrabajoJSON; ?>;
 
+// --- DELEGACIÓN DE EVENTOS PARA CAMBIO RÁPIDO DE ESTADO (AUTOMATIZADO) ---
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('select-estado-rapido')) {
+        const selectElement = e.target;
+        const idDetalle = selectElement.getAttribute('data-id-detalle');
+        const idPedido = selectElement.getAttribute('data-id-pedido');
+        const nuevoEstado = selectElement.value;
+
+        selectElement.disabled = true;
+
+        const formData = new URLSearchParams();
+        formData.append('accion', 'cambiar_estado_rapido');
+        formData.append('idDetalle', idDetalle);
+        formData.append('IdPedido', idPedido);
+        formData.append('idEstadoTrabajo', nuevoEstado);
+
+        fetch('procesar_detalle.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json()) // Leemos la respuesta como JSON
+        .then(data => {
+            if (data.success) {
+                // AUTOMATIZACIÓN: Recargamos la página para reflejar el estado actual y colores
+                window.location.reload();
+            } else {
+                selectElement.disabled = false;
+                alert('Error al actualizar el estado.');
+            }
+        })
+        .catch(error => {
+            selectElement.disabled = false;
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        });
+    }
+});
+
+// Control para la Modal de Detalles del Pedido
 const detallePedidoModal = document.getElementById('detallePedidoModal');
 if (detallePedidoModal) {
     detallePedidoModal.addEventListener('show.bs.modal', function(event) {
@@ -682,8 +712,8 @@ if (detallePedidoModal) {
                         opcionesEstados += `<option value="${est.idEstado}" ${selected}>${est.denominacion}</option>`;
                     });
 
-                    const itemHtml = `
-                        <div class="list-group-item px-0 py-3 border-bottom" data-id-detalle="${trabajo.ID_DETALLE}">
+                    contenedor.innerHTML += `
+                        <div class="list-group-item px-0 py-3 border-bottom">
                             <div class="d-flex w-100 justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0 text-primary fw-bold">${index + 1}. ${escapeHtml(trabajo.DENOMINACION)}</h6>
                                 <div class="d-flex align-items-center">
@@ -698,64 +728,19 @@ if (detallePedidoModal) {
                             </p>
                         </div>
                     `;
-                    contenedor.innerHTML += itemHtml;
                 });
-
-                // Activar evento de cambio rápido con AJAX
-                document.querySelectorAll('.select-estado-rapido').forEach(select => {
-                    select.addEventListener('change', function() {
-                        const idDetalle = this.getAttribute('data-id-detalle');
-                        const idPedido = this.getAttribute('data-id-pedido');
-                        const nuevoEstado = this.value;
-                        const selectElement = this;
-
-                        selectElement.disabled = true;
-
-                        const formData = new URLSearchParams();
-                        formData.append('accion', 'cambiar_estado_rapido');
-                        formData.append('idDetalle', idDetalle);
-                        formData.append('IdPedido', idPedido);
-                        formData.append('idEstadoTrabajo', nuevoEstado);
-
-                        fetch('procesar_detalle.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => {
-                            selectElement.disabled = false;
-                            if (response.ok) {
-                                // Opcional: mostrar un feedback visual sutil o recargar la tabla de fondo
-                                selectElement.classList.add('border-success');
-                                setTimeout(() => selectElement.classList.remove('border-success'), 1500);
-                            } else {
-                                alert('Error al actualizar el estado.');
-                            }
-                        })
-                        .catch(error => {
-                            selectElement.disabled = false;
-                            console.error('Error:', error);
-                            alert('Error de red al actualizar.');
-                        });
-                    });
-                });
-
             } else {
-                contenedor.innerHTML = '<p class="text-center text-muted py-3">No hay trabajos registrados en este pedido.</p>';
+                contenedor.innerHTML = '<p class="text-center text-muted py-3">No hay trabajos registrados.</p>';
             }
         } catch (e) {
-            console.error('Error al parsear los trabajos:', e);
-            contenedor.innerHTML = '<p class="text-center text-danger py-3">Error al cargar los detalles.</p>';
+            contenedor.innerHTML = '<p class="text-center text-danger py-3">Error al cargar.</p>';
         }
     });
 }
 
 function escapeHtml(text) {
     if (!text) return '';
-    return text.replace(/&/g, "&amp;")
-               .replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;")
-               .replace(/"/g, "&quot;")
-               .replace(/'/g, "&#039;");
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 </script>
 
