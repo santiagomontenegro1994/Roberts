@@ -1751,8 +1751,19 @@ function InsertarMovimientoRetiro($vConexion) {
 }
 
 function ColorDeFilaCaja($idTipoMovimiento) {
-    // Conexión a la base de datos (ajusta según tu contexto)
-    $conexion = ConexionBD(); // O usa $GLOBALS['MiConexion'] si ya está abierta
+    // 1. Usamos la conexión que ya está abierta en la página
+    global $MiConexion; 
+    
+    // Fallback de seguridad por si en algún archivo se llama distinto
+    $conexion = $MiConexion ? $MiConexion : ConexionBD(); 
+
+    // 2. Memoria caché estática para no repetir consultas a la BD
+    static $cacheMovimientos = [];
+    
+    // Si ya buscamos este color antes en este mismo ciclo, lo devolvemos al instante
+    if (isset($cacheMovimientos[$idTipoMovimiento])) {
+        return $cacheMovimientos[$idTipoMovimiento];
+    }
 
     $query = "SELECT es_entrada, es_salida FROM tipo_movimiento WHERE idTipoMovimiento = ?";
     $stmt = $conexion->prepare($query);
@@ -1772,9 +1783,12 @@ function ColorDeFilaCaja($idTipoMovimiento) {
         $Title = 'Salida';
         $Color = 'table-danger';
     }
-    // Si ambos son false, no asigna color ni título
 
-    return [$Title, $Color];
+    // 3. Guardamos el resultado en la memoria caché antes de devolverlo
+    $resultado = [$Title, $Color];
+    $cacheMovimientos[$idTipoMovimiento] = $resultado;
+
+    return $resultado;
 }
 
 function ColorDeFilaPedidoTrabajo($vEstado) {
