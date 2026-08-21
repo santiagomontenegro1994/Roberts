@@ -356,9 +356,6 @@ $cajaEfectivoActual = $cajaInicial + $totalIngresosEfectivo - $totalRetirosEfect
                             <?php 
                                 $contador = 1;
                                 foreach ($detalles as $fila) { 
-                                // --- AGREGAR ESTO PARA DEBUG ---
-                                echo "<tr><td colspan='8' class='text-danger'>Intentando cargar ID Detalle: " . $fila['idDetalleCaja'] . " (Movimiento ID: " . $fila['idTipoMovimiento'] . ")</td></tr>";
-                                // -------------------------------
                                 list($Title, $Color) = ColorDeFilaCaja($fila['idTipoMovimiento']);
                             ?>
                                 <tr class="<?php echo $Color; ?>" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="<?php echo $Title; ?>">
